@@ -18,6 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@adyen/api-library": "16.0.1",
     "@commercetools-backend/loggers": "22.17.2",
     "@commercetools/connect-payments-sdk": "0.1.0",
     "@commercetools/platform-sdk": "7.3.0",

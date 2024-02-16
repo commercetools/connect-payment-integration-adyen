@@ -19,6 +19,13 @@ export const config = {
 
   // Payment Providers config
   returnUrl: process.env.RETURN_URL,
+  adyenEnvironment: process.env.ADYEN_ENVIRONMENT || '',
+  adyenClientKey: process.env.ADYEN_CLIENT_KEY || '',
+  adyenApiKey: process.env.ADYEN_API_KEY || '',
+  adyenHMACKey: process.env.ADYEN_NOTIFICATION_HMAC_KEY || '',
+  adyenLiveUrlPrefix: process.env.ADYEN_LIVE_URL_PREFIX || '',
+  adyenMerchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT || '',
+  adyenReturnUrl: process.env.ADYEN_RETURN_URL || '',
 
   // TODO review these configurations
   // supportedUIElements: convertStringCommaSeparatedValuesToArray(process.env.SUPPORTED_UI_ELEMENTS),
