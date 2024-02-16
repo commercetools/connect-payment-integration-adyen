@@ -1,36 +1,24 @@
 import { SessionAuthenticationHook } from '@commercetools/connect-payments-sdk';
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import {
-  PaymentRequestSchema,
-  PaymentRequestSchemaDTO,
-  PaymentResponseSchema,
-  PaymentResponseSchemaDTO,
-} from '../dtos/mock-payment.dto';
-import { MockPaymentService } from '../services/mock-payment.service';
+import { PaymentNotificationSchemaDTO } from '../dtos/adyen-payment.dts';
+import { AdyenPaymentService } from '../services/adyen-payment.service';
+
+const ACK_NOTIFICATION = '[accepted]';
 
 type PaymentRoutesOptions = {
-  paymentService: MockPaymentService;
+  paymentService: AdyenPaymentService;
   sessionAuthHook: SessionAuthenticationHook;
 };
 
 export const paymentRoutes = async (fastify: FastifyInstance, opts: FastifyPluginOptions & PaymentRoutesOptions) => {
-  fastify.post<{ Body: PaymentRequestSchemaDTO; Reply: PaymentResponseSchemaDTO }>(
-    '/payments',
-    {
-      preHandler: [opts.sessionAuthHook.authenticate()],
-      schema: {
-        body: PaymentRequestSchema,
-        response: {
-          200: PaymentResponseSchema,
-        },
-      },
-    },
-    async (request, reply) => {
-      const resp = await opts.paymentService.createPayment({
-        data: request.body,
-      });
+  /**
+   * Listen to the notification from Adyen
+   */
+  fastify.post<{ Body: PaymentNotificationSchemaDTO; Reply: any }>('/notifications', {}, async (request, reply) => {
+    await opts.notificationService.processNotification({
+      data: request.body,
+    });
 
-      return reply.status(200).send(resp);
-    },
-  );
+    return reply.status(200).send(ACK_NOTIFICATION);
+  });
 };

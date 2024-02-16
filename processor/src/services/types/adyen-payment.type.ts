@@ -1,3 +1,5 @@
-import { Notification } from '@adyen/api-library/lib/src/typings/notification/notification';
+import { PaymentNotificationSchemaDTO } from '../../dtos/adyen-payment.dts';
 
-export type PaymentNotification = Notification;
+export type ProcessNotification = {
+  data: PaymentNotificationSchemaDTO;
+};
