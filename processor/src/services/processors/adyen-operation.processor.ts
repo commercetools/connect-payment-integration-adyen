@@ -14,7 +14,7 @@ import {
 } from '../types/operation.type';
 const packageJSON = require('../../package.json');
 
-export class MockOperationProcessor implements OperationProcessor {
+export class AdyenOperationProcessor implements OperationProcessor {
   async config(): Promise<ConfigResponse> {
     return {
       clientKey: config.adyenClientKey,
