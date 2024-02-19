@@ -70,8 +70,8 @@ export class MockOperationProcessor implements OperationProcessor {
     const interfaceId = request.payment.interfaceId as string;
     await AdyenAPI().ModificationsApi.captureAuthorisedPayment(interfaceId, {
       amount: {
-        value: request.amount.amount,
-        currency: request.amount.currency,
+        value: request.amount.centAmount,
+        currency: request.amount.currencyCode,
       },
       merchantAccount: config.adyenMerchantAccount,
       reference: interfaceId,
@@ -92,8 +92,8 @@ export class MockOperationProcessor implements OperationProcessor {
     const interfaceId = request.payment.interfaceId as string;
     await AdyenAPI().ModificationsApi.refundCapturedPayment(interfaceId, {
       amount: {
-        value: request.amount.amount,
-        currency: request.amount.currency,
+        value: request.amount.centAmount,
+        currency: request.amount.currencyCode,
       },
       merchantAccount: config.adyenMerchantAccount,
       reference: request.payment.id,
