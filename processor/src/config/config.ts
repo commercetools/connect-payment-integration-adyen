@@ -18,7 +18,6 @@ export const config = {
   mockEnvironment: process.env.MOCK_ENVIRONMENT,
 
   // Payment Providers config
-  returnUrl: process.env.RETURN_URL,
   adyenEnvironment: process.env.ADYEN_ENVIRONMENT || '',
   adyenClientKey: process.env.ADYEN_CLIENT_KEY || '',
   adyenApiKey: process.env.ADYEN_API_KEY || '',

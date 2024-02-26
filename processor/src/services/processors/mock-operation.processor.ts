@@ -18,7 +18,7 @@ export class MockOperationProcessor implements OperationProcessor {
     return {
       clientKey: config.mockClientKey,
       environment: config.mockEnvironment,
-    };
+    } as unknown as ConfigResponse;
   }
 
   async status(): Promise<StatusResponse> {
