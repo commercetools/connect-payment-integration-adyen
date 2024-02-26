@@ -3,7 +3,6 @@ import { AdyenAPI } from '../../clients/adyen/adyen.client';
 import { config } from '../../config/config';
 import { PaymentModificationStatus } from '../../dtos/operations/payment-intents.dto';
 import { paymentSDK } from '../../payment-sdk';
-import { OperationProcessor } from './operation.processor';
 import {
   CancelPaymentRequest,
   CapturePaymentRequest,
@@ -12,14 +11,15 @@ import {
   RefundPaymentRequest,
   StatusResponse,
 } from '../types/operation.type';
-const packageJSON = require('../../package.json');
+import { OperationProcessor } from './operation.processor';
+const packageJSON = require('../../../package.json');
 
 export class AdyenOperationProcessor implements OperationProcessor {
   async config(): Promise<ConfigResponse> {
     return {
       clientKey: config.adyenClientKey,
       environment: config.adyenEnvironment,
-      returnUrl: config.returnUrl,
+      returnUrl: config.adyenReturnUrl,
     };
   }
 

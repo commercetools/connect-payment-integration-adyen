@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 import { paymentSDK } from '../../payment-sdk';
 import { operationsRoute } from '../../routes/operation.route';
 import { DefaultOperationService } from '../../services/operation.service';
-import { MockOperationProcessor } from '../../services/processors/mock-operation.processor';
+import { AdyenOperationProcessor } from '../../services/processors/adyen-operation.processor';
 
 export default async function (server: FastifyInstance) {
-  const paymentProcessor = new MockOperationProcessor();
+  const paymentProcessor = new AdyenOperationProcessor();
 
   const operationService = new DefaultOperationService({
     ctCartService: paymentSDK.ctCartService,
