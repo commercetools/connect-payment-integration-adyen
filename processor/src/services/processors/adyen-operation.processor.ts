@@ -1,5 +1,5 @@
 import { healthCheckCommercetoolsPermissions, statusHandler } from '@commercetools/connect-payments-sdk';
-import { AdyenAPI } from '../../clients/adyen/adyen.client';
+import { AdyenApi } from '../../clients/adyen.client';
 import { config } from '../../config/config';
 import { PaymentModificationStatus } from '../../dtos/operations/payment-intents.dto';
 import { paymentSDK } from '../../payment-sdk';
@@ -12,6 +12,7 @@ import {
   StatusResponse,
 } from '../types/operation.type';
 import { OperationProcessor } from './operation.processor';
+import { log } from '../../libs/logger';
 const packageJSON = require('../../../package.json');
 
 export class AdyenOperationProcessor implements OperationProcessor {
@@ -19,7 +20,6 @@ export class AdyenOperationProcessor implements OperationProcessor {
     return {
       clientKey: config.adyenClientKey,
       environment: config.adyenEnvironment,
-      returnUrl: config.adyenReturnUrl,
     };
   }
 
@@ -34,7 +34,7 @@ export class AdyenOperationProcessor implements OperationProcessor {
         }),
         async () => {
           try {
-            const result = await AdyenAPI().PaymentsApi.paymentMethods({
+            const result = await AdyenApi().PaymentsApi.paymentMethods({
               merchantAccount: config.adyenMerchantAccount,
             });
             return {
@@ -68,36 +68,51 @@ export class AdyenOperationProcessor implements OperationProcessor {
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
     const interfaceId = request.payment.interfaceId as string;
-    await AdyenAPI().ModificationsApi.captureAuthorisedPayment(interfaceId, {
-      amount: {
-        value: request.amount.centAmount,
-        currency: request.amount.currencyCode,
-      },
-      merchantAccount: config.adyenMerchantAccount,
-      reference: interfaceId,
-    });
-    return { outcome: PaymentModificationStatus.RECEIVED, pspReference: interfaceId };
+    try {
+      await AdyenApi().ModificationsApi.captureAuthorisedPayment(interfaceId, {
+        amount: {
+          value: request.amount.centAmount,
+          currency: request.amount.currencyCode,
+        },
+        merchantAccount: config.adyenMerchantAccount,
+        reference: interfaceId,
+      });
+      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: interfaceId };
+    } catch (e) {
+      log.error('Error capturing payment', e);
+      return { outcome: PaymentModificationStatus.REJECTED, pspReference: interfaceId };
+    }
   }
 
   async cancelPayment(request: CancelPaymentRequest): Promise<PaymentProviderModificationResponse> {
     const interfaceId = request.payment.interfaceId as string;
-    await AdyenAPI().ModificationsApi.cancelAuthorisedPaymentByPspReference(interfaceId, {
-      merchantAccount: config.adyenMerchantAccount,
-      reference: interfaceId,
-    });
-    return { outcome: PaymentModificationStatus.RECEIVED, pspReference: interfaceId };
+    try {
+      await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(interfaceId, {
+        merchantAccount: config.adyenMerchantAccount,
+        reference: interfaceId,
+      });
+      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: interfaceId };
+    } catch (e) {
+      log.error('Error cancelling payment', e);
+      return { outcome: PaymentModificationStatus.REJECTED, pspReference: interfaceId };
+    }
   }
 
   async refundPayment(request: RefundPaymentRequest): Promise<PaymentProviderModificationResponse> {
     const interfaceId = request.payment.interfaceId as string;
-    await AdyenAPI().ModificationsApi.refundCapturedPayment(interfaceId, {
-      amount: {
-        value: request.amount.centAmount,
-        currency: request.amount.currencyCode,
-      },
-      merchantAccount: config.adyenMerchantAccount,
-      reference: request.payment.id,
-    });
-    return { outcome: PaymentModificationStatus.APPROVED, pspReference: interfaceId };
+    try {
+      await AdyenApi().ModificationsApi.refundCapturedPayment(interfaceId, {
+        amount: {
+          value: request.amount.centAmount,
+          currency: request.amount.currencyCode,
+        },
+        merchantAccount: config.adyenMerchantAccount,
+        reference: request.payment.id,
+      });
+      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: interfaceId };
+    } catch (e) {
+      log.error('Error refunding payment', e);
+      return { outcome: PaymentModificationStatus.REJECTED, pspReference: interfaceId };
+    }
   }
 }

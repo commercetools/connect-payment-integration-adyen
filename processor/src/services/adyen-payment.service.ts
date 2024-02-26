@@ -1,42 +1,190 @@
 import { CommercetoolsCartService, CommercetoolsPaymentService } from '@commercetools/connect-payments-sdk';
-import { NotificationConverter } from './converters/notification.converter';
-import { ProcessNotification as ProcessNotificationRequest } from './types/adyen-payment.type';
-import { hmacValidator } from '@adyen/api-library';
-import { config } from '../config/config';
+import {
+  ConfirmPaymentRequestDTO,
+  ConfirmPaymentResponseDTO,
+  CreatePaymentRequestDTO,
+  CreatePaymentResponseDTO,
+  CreateSessionRequestDTO,
+  CreateSessionResponseDTO,
+} from '../dtos/adyen-payment.dto';
+import { AdyenApi } from '../clients/adyen.client';
+import { getCartIdFromContext, getPaymentInterfaceFromContext } from '../libs/fastify/context/context';
+import { CreateSessionConverter } from './converters/create-session.converter';
+import { CreatePaymentConverter } from './converters/create-payment.converter';
+import { ConfirmPaymentConverter } from './converters/confirm-payment.converter';
+import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
+import { log } from 'console';
 
 export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
   ctPaymentService: CommercetoolsPaymentService;
-  notificationConverter: NotificationConverter;
 };
 
 export class AdyenPaymentService {
   private ctCartService: CommercetoolsCartService;
   private ctPaymentService: CommercetoolsPaymentService;
-  private notificationConverter: NotificationConverter;
+  private createSessionConverter: CreateSessionConverter;
+  private createPaymentConverter: CreatePaymentConverter;
+  private confirmPaymentConverter: ConfirmPaymentConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
     this.ctCartService = opts.ctCartService;
     this.ctPaymentService = opts.ctPaymentService;
-    this.notificationConverter = opts.notificationConverter;
+    this.createSessionConverter = new CreateSessionConverter();
+    this.createPaymentConverter = new CreatePaymentConverter();
+    this.confirmPaymentConverter = new ConfirmPaymentConverter();
   }
 
-  public async processNotification(opts: ProcessNotificationRequest): Promise<void> {
-    await this.validateHmac(opts);
-    const updateData = await this.notificationConverter.convert(opts);
-    await this.ctPaymentService.updatePayment(updateData);
+  async createSession(opts: { data: CreateSessionRequestDTO }): Promise<CreateSessionResponseDTO> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+    const ctPayment = await this.ctPaymentService.createPayment({
+      amountPlanned,
+      paymentMethodInfo: {
+        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+      },
+      ...(ctCart.customerId && {
+        customer: {
+          typeId: 'customer',
+          id: ctCart.customerId,
+        },
+      }),
+      ...(ctCart.anonymousId && {
+        anonymousId: ctCart.anonymousId,
+      }),
+    });
+
+    const updatedCart = await this.ctCartService.addPayment({
+      resource: {
+        id: ctCart.id,
+        version: ctCart.version,
+      },
+      paymentId: ctPayment.id,
+    });
+
+    const adyenRequestData = await this.createSessionConverter.convert({
+      data: opts.data,
+      cart: updatedCart,
+      payment: ctPayment,
+    });
+
+    try {
+      const res = await AdyenApi().PaymentsApi.sessions(adyenRequestData);
+      return {
+        sessionData: res,
+        paymentReference: ctPayment.id,
+      };
+    } catch (e) {
+      log('Adyen createSession error', e);
+      throw e;
+    }
   }
 
-  private async validateHmac(opts: ProcessNotificationRequest): Promise<void> {
-    if (!opts.data.notificationItems || opts.data.notificationItems.length === 0) {
-      //TODO: throw an error 401
+  public async createPayment(opts: { data: CreatePaymentRequestDTO }): Promise<CreatePaymentResponseDTO> {
+    let ctCart, ctPayment;
+    ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    if (opts.data.paymentReference) {
+      ctPayment = await this.ctPaymentService.getPayment({
+        id: opts.data.paymentReference,
+      });
+    } else {
+      const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+      ctPayment = await this.ctPaymentService.createPayment({
+        amountPlanned,
+        paymentMethodInfo: {
+          paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+        },
+        ...(ctCart.customerId && {
+          customer: {
+            typeId: 'customer',
+            id: ctCart.customerId,
+          },
+        }),
+        ...(ctCart.anonymousId && {
+          anonymousId: ctCart.anonymousId,
+        }),
+      });
+
+      ctCart = await this.ctCartService.addPayment({
+        resource: {
+          id: ctCart.id,
+          version: ctCart.version,
+        },
+        paymentId: ctPayment.id,
+      });
     }
 
-    const validator = new hmacValidator();
-    const item = opts.data.notificationItems[0].NotificationRequestItem;
+    const data = await this.createPaymentConverter.convert({
+      data: opts.data,
+      cart: ctCart,
+      payment: ctPayment,
+    });
 
-    if (!validator.validateHMAC(item, config.adyenHMACKey)) {
-      //TODO: throw an error 401
+    const res = await AdyenApi().PaymentsApi.payments(data);
+
+    const updatedPayment = await this.ctPaymentService.updatePayment({
+      id: ctPayment.id,
+      pspReference: res.pspReference,
+      paymentMethod: res.paymentMethod?.type, //TODO: review
+      transaction: {
+        type: 'Authorization', //TODO: review
+        amount: ctPayment.amountPlanned,
+        interactionId: res.pspReference,
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum),
+      },
+    });
+
+    return {
+      ...res,
+      paymentReference: updatedPayment.id,
+    } as CreatePaymentResponseDTO;
+  }
+
+  public async confirmPayment(opts: { data: ConfirmPaymentRequestDTO }): Promise<ConfirmPaymentResponseDTO> {
+    const ctPayment = await this.ctPaymentService.getPayment({
+      id: opts.data.paymentReference,
+    });
+
+    const data = await this.confirmPaymentConverter.convert({
+      data: opts.data,
+    });
+    const res = await AdyenApi().PaymentsApi.paymentsDetails(data);
+
+    const updatedPayment = await this.ctPaymentService.updatePayment({
+      id: ctPayment.id,
+      pspReference: res.pspReference,
+      paymentMethod: res.paymentMethod?.type, //TODO:review
+      transaction: {
+        type: 'Authorization',
+        amount: ctPayment.amountPlanned,
+        interactionId: res.pspReference,
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum),
+      },
+    });
+    return {
+      ...res,
+      paymentReference: updatedPayment.id,
+    } as ConfirmPaymentResponseDTO;
+  }
+
+  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum): string {
+    switch (resultCode) {
+      case PaymentResponse.ResultCodeEnum.Authorised:
+        return 'Success';
+      case PaymentResponse.ResultCodeEnum.Pending:
+        return 'Pending';
+      case PaymentResponse.ResultCodeEnum.Refused:
+      case PaymentResponse.ResultCodeEnum.Error:
+      case PaymentResponse.ResultCodeEnum.Cancelled:
+        return 'Failure';
+      default:
+        return 'Initial';
     }
   }
 }

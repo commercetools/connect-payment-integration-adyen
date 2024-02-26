@@ -1,7 +1,7 @@
 import { Client, CheckoutAPI } from '@adyen/api-library';
-import { config } from '../../config/config';
+import { config } from '../config/config';
 
-export const AdyenAPI = (): CheckoutAPI => {
+export const AdyenApi = (): CheckoutAPI => {
   const apiClient = new Client({
     apiKey: config.adyenApiKey,
     environment: config.adyenEnvironment.toUpperCase() as Environment,
