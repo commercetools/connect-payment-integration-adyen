@@ -1,14 +1,12 @@
 import { Money } from '@commercetools/platform-sdk';
-
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
-
-import { ProcessNotification } from '../types/adyen-payment.type';
+import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
 import { TransactionData, UpdatePayment } from '@commercetools/connect-payments-sdk';
 
 export class NotificationConverter {
   constructor() {}
 
-  public async convert(opts: ProcessNotification): Promise<UpdatePayment> {
+  public async convert(opts: { data: NotificationRequestDTO }): Promise<UpdatePayment> {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 
     return {

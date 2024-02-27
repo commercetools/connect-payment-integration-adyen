@@ -1,4 +1,4 @@
-import { PaymentNotificationSchemaDTO } from '../../dtos/adyen-payment.dts';
+import { PaymentNotificationSchemaDTO } from '../../dtos/adyen-payment.dto';
 
 export type ProcessNotification = {
   data: PaymentNotificationSchemaDTO;
