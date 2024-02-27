@@ -2,11 +2,14 @@ import { CreateCheckoutSessionRequest } from '@adyen/api-library/lib/src/typings
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
 import { PaymentDetailsRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsRequest';
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
+import { PaymentMethodsRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsRequest';
+import { PaymentMethodsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsResponse';
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { Notification } from '@adyen/api-library/lib/src/typings/notification/notification';
 
-export type PaymentNotificationSchemaDTO = Notification;
+export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount' | 'countryCode'>;
+export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
 
 export type CreateSessionRequestDTO = Omit<
   CreateCheckoutSessionRequest,
@@ -58,3 +61,5 @@ export type ConfirmPaymentResponseDTO = Pick<
 > & {
   paymentReference: string;
 };
+
+export type NotificationRequestDTO = Notification;

@@ -22,7 +22,7 @@ export class CreatePaymentConverter {
       merchantAccount: config.adyenMerchantAccount,
       countryCode: opts.cart.country,
       shopperEmail: opts.cart.customerEmail,
-      returnUrl: getProcessorUrlFromContext() + `/payments/confirmations?paymentReference=${opts.payment.id}`,
+      returnUrl: getProcessorUrlFromContext() + `/payments/details?paymentReference=${opts.payment.id}`,
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),

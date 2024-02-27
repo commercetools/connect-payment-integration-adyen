@@ -6,12 +6,17 @@ import {
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
   CreateSessionResponseDTO,
+  NotificationRequestDTO,
+  PaymentMethodsRequestDTO,
+  PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi } from '../clients/adyen.client';
 import { getCartIdFromContext, getPaymentInterfaceFromContext } from '../libs/fastify/context/context';
 import { CreateSessionConverter } from './converters/create-session.converter';
 import { CreatePaymentConverter } from './converters/create-payment.converter';
 import { ConfirmPaymentConverter } from './converters/confirm-payment.converter';
+import { NotificationConverter } from './converters/notification.converter';
+import { PaymentMethodsConverter } from './converters/payment-methods.converter';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { log } from 'console';
 
@@ -23,16 +28,36 @@ export type AdyenPaymentServiceOptions = {
 export class AdyenPaymentService {
   private ctCartService: CommercetoolsCartService;
   private ctPaymentService: CommercetoolsPaymentService;
+  private paymentMethodsConverter: PaymentMethodsConverter;
   private createSessionConverter: CreateSessionConverter;
   private createPaymentConverter: CreatePaymentConverter;
   private confirmPaymentConverter: ConfirmPaymentConverter;
+  private notificationConverter: NotificationConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
     this.ctCartService = opts.ctCartService;
     this.ctPaymentService = opts.ctPaymentService;
+    this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
     this.createPaymentConverter = new CreatePaymentConverter();
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
+    this.notificationConverter = new NotificationConverter();
+  }
+
+  async getPaymentMethods(opts: { data: PaymentMethodsRequestDTO }): Promise<PaymentMethodsResponseDTO> {
+    const data = await this.paymentMethodsConverter.convertRequest({
+      data: opts.data,
+    });
+
+    try {
+      const res = await AdyenApi().PaymentsApi.paymentMethods(data);
+      return this.paymentMethodsConverter.convertResponse({
+        data: res,
+      });
+    } catch (e) {
+      log('Adyen getPaymentMethods error', e);
+      throw e;
+    }
   }
 
   async createSession(opts: { data: CreateSessionRequestDTO }): Promise<CreateSessionResponseDTO> {
@@ -171,6 +196,11 @@ export class AdyenPaymentService {
       ...res,
       paymentReference: updatedPayment.id,
     } as ConfirmPaymentResponseDTO;
+  }
+
+  public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
+    const updateData = await this.notificationConverter.convert(opts);
+    await this.ctPaymentService.updatePayment(updateData);
   }
 
   private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum): string {

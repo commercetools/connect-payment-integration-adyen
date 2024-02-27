@@ -22,7 +22,7 @@ export class CreateSessionConverter {
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
       countryCode: opts.cart.country,
-      returnUrl: getProcessorUrlFromContext() + `/payments/confirmations?paymentReference=${opts.payment.id}`,
+      returnUrl: getProcessorUrlFromContext() + `/payments/details?paymentReference=${opts.payment.id}`,
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
       allowedPaymentMethods: convertAllowedPaymentMethodsToAdyenFormat(),
       //lineItems: populateLineItems(opts.cart),

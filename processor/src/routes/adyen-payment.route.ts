@@ -7,35 +7,40 @@ import {
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
   CreateSessionResponseDTO,
-  PaymentNotificationSchemaDTO,
+  NotificationRequestDTO,
+  PaymentMethodsRequestDTO,
+  PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { config } from '../config/config';
-
-const ACK_NOTIFICATION = '[accepted]';
+import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
   sessionAuthHook: SessionAuthenticationHook;
+  hmacAuthHook: HmacAuthHook;
 };
 
 export const adyenPaymentRoutes = async (
   fastify: FastifyInstance,
   opts: FastifyPluginOptions & PaymentRoutesOptions,
 ) => {
-  /**
-   * Listen to the notification from Adyen
-   */
-  fastify.post<{ Body: PaymentNotificationSchemaDTO; Reply: any }>('/notifications', {}, async (request, reply) => {
-    await opts.notificationService.processNotification({
-      data: request.body,
-    });
+  fastify.post<{ Body: PaymentMethodsRequestDTO; Reply: PaymentMethodsResponseDTO }>(
+    '/payment-methods',
+    {
+      preHandler: [opts.sessionAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.getPaymentMethods({
+        data: request.body,
+      });
 
-    return reply.status(200).send(ACK_NOTIFICATION);
-  });
+      return reply.status(200).send(resp);
+    },
+  );
 
   fastify.post<{ Body: CreateSessionRequestDTO; Reply: CreateSessionResponseDTO }>(
-    '/payment-sessions',
+    '/sessions',
     {
       preHandler: [opts.sessionAuthHook.authenticate()],
     },
@@ -62,7 +67,7 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.get<{ Reply: ConfirmPaymentResponseDTO }>('/payments/confirmations', {}, async (request, reply) => {
+  fastify.get<{ Reply: ConfirmPaymentResponseDTO }>('/payments/details', {}, async (request, reply) => {
     const queryParams = request.query as any;
     const res = await opts.paymentService.confirmPayment({
       data: {
@@ -77,13 +82,27 @@ export const adyenPaymentRoutes = async (
   });
 
   fastify.post<{ Body: ConfirmPaymentRequestDTO; Reply: ConfirmPaymentResponseDTO }>(
-    '/payments/confirmations',
+    '/payments/details',
     {},
     async (request, reply) => {
       const res = await opts.paymentService.confirmPayment({
         data: request.body,
       });
       return reply.status(200).send(res);
+    },
+  );
+
+  fastify.post<{ Body: NotificationRequestDTO }>(
+    '/notifications',
+    {
+      preHandler: [opts.hmacAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      await opts.notificationService.processNotification({
+        data: request.body,
+      });
+
+      return reply.status(200).send('[accepted]');
     },
   );
 };
