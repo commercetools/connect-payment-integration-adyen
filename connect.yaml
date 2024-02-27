@@ -20,6 +20,18 @@ deployAs:
           description: Commercetools API URL
         - key: CTP_SESSION_URL
           description: Session API URL
+        - key: ADYEN_ENVIRONMENT
+          description: Adyen environment
+        - key: ADYEN_API_KEY
+          description: Adyen API key
+        - key: ADYEN_CLIENT_KEY
+          description: Adyen client key
+        - key: ADYEN_LIVE_URL_PREFIX
+          description: Adyen live URL prefix
+        - key: ADYEN_NOTIFICATION_HMAC_KEY
+          description: Adyen HMAC key
+        - key: MERCHANT_RETURN_URL
+          description: Merchant return URL
   - name: enabler
     applicationType: service
     endpoint: /

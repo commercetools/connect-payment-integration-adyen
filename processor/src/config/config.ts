@@ -1,6 +1,6 @@
 export const config = {
   // Required by Payment SDK
-  projectKey: process.env.CTP_PROJECT_KEY || 'payment-integration',
+  projectKey: process.env.CTP_PROJECT_KEY || 'projectKey',
   clientId: process.env.CTP_CLIENT_ID || 'xxx',
   clientSecret: process.env.CTP_CLIENT_SECRET || 'xxx',
   jwksUrl: process.env.CTP_JWKS_URL || 'https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json',
