@@ -23,6 +23,9 @@ deployAs:
           description: Adyen environment
           required: true
           default: TEST
+        - key: ADYEN_MERCHANT_ACCOUNT
+          description: Adyen merchant account
+          required: true
         - key: ADYEN_CLIENT_KEY
           description: Adyen client key
           required: true
