@@ -3,13 +3,9 @@ deployAs:
     applicationType: service
     endpoint: /
     configuration:
-      securedConfiguration:
+      standardConfiguration:
         - key: CTP_PROJECT_KEY
           description: Commercetools project key
-        - key: CTP_CLIENT_ID
-          description: Commercetools client ID
-        - key: CTP_CLIENT_SECRET
-          description: Commercetools client secret
         - key: CTP_SCOPE
           description: Commercetools client scope
         - key: CTP_REGION
@@ -22,16 +18,21 @@ deployAs:
           description: Session API URL
         - key: ADYEN_ENVIRONMENT
           description: Adyen environment
-        - key: ADYEN_API_KEY
-          description: Adyen API key
         - key: ADYEN_CLIENT_KEY
           description: Adyen client key
         - key: ADYEN_LIVE_URL_PREFIX
           description: Adyen live URL prefix
-        - key: ADYEN_NOTIFICATION_HMAC_KEY
-          description: Adyen HMAC key
         - key: MERCHANT_RETURN_URL
           description: Merchant return URL
+      securedConfiguration:
+        - key: CTP_CLIENT_ID
+          description: Commercetools client ID
+        - key: CTP_CLIENT_SECRET
+          description: Commercetools client secret
+        - key: ADYEN_API_KEY
+          description: Adyen API key
+        - key: ADYEN_NOTIFICATION_HMAC_KEY
+          description: Adyen HMAC key
   - name: enabler
     applicationType: service
     endpoint: /
