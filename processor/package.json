@@ -1,7 +1,7 @@
 {
-  "name": "payment-integration-template",
-  "version": "1.0.0",
-  "description": "Payment provider integration template",
+  "name": "payment-integration-adyen",
+  "version": "0.0.2",
+  "description": "Payment integration with Adyen",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/main.js",
