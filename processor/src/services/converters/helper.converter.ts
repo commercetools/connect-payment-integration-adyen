@@ -1,7 +1,7 @@
 import { Address } from '@adyen/api-library/lib/src/typings/checkout/address';
 import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
 import { Cart, LineItem as CoCoLineItem, CustomLineItem, Address as CartAddress } from '@commercetools/platform-sdk';
-import { getAllowedPaymentMethodsFromContext } from '../../libs/fastify/context/context';
+import { getAllowedPaymentMethodsFromContext, getProcessorUrlFromContext } from '../../libs/fastify/context/context';
 
 export const populateLineItems = (cart: Cart): LineItem[] => {
   const lineItems: LineItem[] = [];
@@ -76,6 +76,12 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
   } else {
     return paymentMethod;
   }
+};
+
+export const buildReturnUrl = (paymentReference: string): string => {
+  const url = new URL('/payments/details', getProcessorUrlFromContext());
+  url.searchParams.append('paymentReference', paymentReference);
+  return url.toString();
 };
 
 const getAmountIncludingTax = (lineItem: CoCoLineItem | CustomLineItem): number => {

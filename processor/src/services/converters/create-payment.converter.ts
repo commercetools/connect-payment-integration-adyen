@@ -2,8 +2,7 @@ import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paym
 import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 import { Cart, Payment } from '@commercetools/platform-sdk';
-import { populateCartAddress, populateLineItems } from './helper.converter';
-import { getProcessorUrlFromContext } from '../../libs/fastify/context/context';
+import { buildReturnUrl, populateCartAddress, populateLineItems } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 
 export class CreatePaymentConverter {
@@ -22,7 +21,7 @@ export class CreatePaymentConverter {
       merchantAccount: config.adyenMerchantAccount,
       countryCode: opts.cart.country,
       shopperEmail: opts.cart.customerEmail,
-      returnUrl: getProcessorUrlFromContext() + `/payments/details?paymentReference=${opts.payment.id}`,
+      returnUrl: buildReturnUrl(opts.payment.id),
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),

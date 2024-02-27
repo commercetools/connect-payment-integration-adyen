@@ -67,7 +67,15 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.get<{ Reply: ConfirmPaymentResponseDTO }>('/payments/details', {}, async (request, reply) => {
+  fastify.get<{
+    Reply: ConfirmPaymentResponseDTO;
+    Querystring: {
+      paymentReference: string;
+      redirectResult?: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      [key: string]: any;
+    };
+  }>('/payments/details', {}, async (request, reply) => {
     const queryParams = request.query as any;
     const res = await opts.paymentService.confirmPayment({
       data: {

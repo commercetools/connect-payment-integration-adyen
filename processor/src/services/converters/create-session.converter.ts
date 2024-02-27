@@ -1,7 +1,6 @@
 import { CreateCheckoutSessionRequest } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionRequest';
 import { config } from '../../config/config';
-import { convertAllowedPaymentMethodsToAdyenFormat, populateCartAddress } from './helper.converter';
-import { getProcessorUrlFromContext } from '../../libs/fastify/context/context';
+import { buildReturnUrl, convertAllowedPaymentMethodsToAdyenFormat, populateCartAddress } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, Payment } from '@commercetools/platform-sdk';
 
@@ -22,7 +21,7 @@ export class CreateSessionConverter {
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
       countryCode: opts.cart.country,
-      returnUrl: getProcessorUrlFromContext() + `/payments/details?paymentReference=${opts.payment.id}`,
+      returnUrl: buildReturnUrl(opts.payment.id),
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
       allowedPaymentMethods: convertAllowedPaymentMethodsToAdyenFormat(),
       //lineItems: populateLineItems(opts.cart),
