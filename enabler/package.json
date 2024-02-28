@@ -12,6 +12,7 @@
     "serve": "npm run build && serve dist -l 3000 --cors"
   },
   "dependencies": {
+    "@adyen/adyen-web": "5.51.0",
     "serve": "14.2.1"
   },
   "devDependencies": {
