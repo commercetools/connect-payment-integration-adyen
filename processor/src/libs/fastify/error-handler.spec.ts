@@ -29,9 +29,14 @@ describe('error-handler', () => {
     });
 
     expect(response.json()).toStrictEqual({
-      code: 'ErrorCode',
       message: 'someMessage',
       statusCode: 404,
+      errors: [
+        {
+          code: 'ErrorCode',
+          message: 'someMessage',
+        },
+      ],
     });
   });
 
@@ -53,7 +58,6 @@ describe('error-handler', () => {
     });
 
     expect(response.json()).toStrictEqual({
-      code: 'ErrorCode',
       message: 'someMessage',
       statusCode: 404,
       errors: [
@@ -77,9 +81,14 @@ describe('error-handler', () => {
     });
 
     expect(response.json()).toStrictEqual({
-      code: 'General',
       message: 'Internal server error.',
       statusCode: 500,
+      errors: [
+        {
+          code: 'General',
+          message: 'Internal server error.',
+        },
+      ],
     });
   });
 });

@@ -1,4 +1,9 @@
-import { CommercetoolsCartService, CommercetoolsPaymentService } from '@commercetools/connect-payments-sdk';
+import {
+  CommercetoolsCartService,
+  CommercetoolsPaymentService,
+  healthCheckCommercetoolsPermissions,
+  statusHandler,
+} from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
@@ -10,31 +15,52 @@ import {
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
-import { AdyenApi } from '../clients/adyen.client';
+import { AdyenApi, wrapAdyenError } from '../clients/adyen.client';
 import { getCartIdFromContext, getPaymentInterfaceFromContext } from '../libs/fastify/context/context';
 import { CreateSessionConverter } from './converters/create-session.converter';
 import { CreatePaymentConverter } from './converters/create-payment.converter';
 import { ConfirmPaymentConverter } from './converters/confirm-payment.converter';
 import { NotificationConverter } from './converters/notification.converter';
 import { PaymentMethodsConverter } from './converters/payment-methods.converter';
+import { PaymentComponentsConverter } from './converters/payment-components.converter';
+import { CapturePaymentConverter } from './converters/capture-payment.converter';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
-import { log } from 'console';
+import {
+  CancelPaymentRequest,
+  CapturePaymentRequest,
+  ConfigResponse,
+  PaymentProviderModificationResponse,
+  RefundPaymentRequest,
+  StatusResponse,
+} from './types/operation.type';
+import { config } from '../config/config';
+import { paymentSDK } from '../payment-sdk';
+import { PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
+import { AbstractPaymentService } from './abstract-payment.service';
+import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-componets.dto';
+import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
+import { CancelPaymentConverter } from './converters/cancel-payment.converter';
+import { RefundPaymentConverter } from './converters/refund-payment.converter';
+const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
   ctPaymentService: CommercetoolsPaymentService;
 };
 
-export class AdyenPaymentService {
-  private ctCartService: CommercetoolsCartService;
-  private ctPaymentService: CommercetoolsPaymentService;
+export class AdyenPaymentService extends AbstractPaymentService {
   private paymentMethodsConverter: PaymentMethodsConverter;
   private createSessionConverter: CreateSessionConverter;
   private createPaymentConverter: CreatePaymentConverter;
   private confirmPaymentConverter: ConfirmPaymentConverter;
   private notificationConverter: NotificationConverter;
+  private paymentComponentsConverter: PaymentComponentsConverter;
+  private cancelPaymentConverter: CancelPaymentConverter;
+  private capturePaymentConverter: CapturePaymentConverter;
+  private refundPaymentConverter: RefundPaymentConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
+    super(opts.ctCartService, opts.ctPaymentService);
     this.ctCartService = opts.ctCartService;
     this.ctPaymentService = opts.ctPaymentService;
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
@@ -42,6 +68,63 @@ export class AdyenPaymentService {
     this.createPaymentConverter = new CreatePaymentConverter();
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
     this.notificationConverter = new NotificationConverter();
+    this.paymentComponentsConverter = new PaymentComponentsConverter();
+    this.cancelPaymentConverter = new CancelPaymentConverter();
+    this.capturePaymentConverter = new CapturePaymentConverter();
+    this.refundPaymentConverter = new RefundPaymentConverter();
+  }
+  async config(): Promise<ConfigResponse> {
+    return {
+      clientKey: config.adyenClientKey,
+      environment: config.adyenEnvironment,
+    };
+  }
+
+  async status(): Promise<StatusResponse> {
+    const handler = await statusHandler({
+      timeout: config.healthCheckTimeout,
+      checks: [
+        healthCheckCommercetoolsPermissions({
+          requiredPermissions: ['manage_payments', 'view_sessions', 'view_api_clients'],
+          ctAuthorizationService: paymentSDK.ctAuthorizationService,
+          projectKey: config.projectKey,
+        }),
+        async () => {
+          try {
+            const result = await AdyenApi().PaymentsApi.paymentMethods({
+              merchantAccount: config.adyenMerchantAccount,
+            });
+            return {
+              name: 'Adyen Status check',
+              status: 'UP',
+              data: {
+                paymentMethods: result.paymentMethods,
+              },
+            };
+          } catch (e) {
+            return {
+              name: 'Adyen Status check',
+              status: 'DOWN',
+              data: {
+                error: e,
+              },
+            };
+          }
+        },
+      ],
+      metadataFn: async () => ({
+        name: packageJSON.name,
+        description: packageJSON.description,
+        '@commercetools/sdk-client-v2': packageJSON.dependencies['@commercetools/sdk-client-v2'],
+        '@adyen/api-library': packageJSON.dependencies['@adyen/api-library'],
+      }),
+    })();
+
+    return handler.body;
+  }
+
+  async getSupportedPaymentComponents(): Promise<SupportedPaymentComponentsSchemaDTO> {
+    return this.paymentComponentsConverter.convertResponse();
   }
 
   async getPaymentMethods(opts: { data: PaymentMethodsRequestDTO }): Promise<PaymentMethodsResponseDTO> {
@@ -55,8 +138,7 @@ export class AdyenPaymentService {
         data: res,
       });
     } catch (e) {
-      log('Adyen getPaymentMethods error', e);
-      throw e;
+      throw wrapAdyenError(e);
     }
   }
 
@@ -90,7 +172,7 @@ export class AdyenPaymentService {
       paymentId: ctPayment.id,
     });
 
-    const adyenRequestData = await this.createSessionConverter.convert({
+    const adyenRequestData = this.createSessionConverter.convertRequest({
       data: opts.data,
       cart: updatedCart,
       payment: ctPayment,
@@ -103,8 +185,7 @@ export class AdyenPaymentService {
         paymentReference: ctPayment.id,
       };
     } catch (e) {
-      log('Adyen createSession error', e);
-      throw e;
+      throw wrapAdyenError(e);
     }
   }
 
@@ -145,13 +226,18 @@ export class AdyenPaymentService {
       });
     }
 
-    const data = await this.createPaymentConverter.convert({
+    const data = this.createPaymentConverter.convertRequest({
       data: opts.data,
       cart: ctCart,
       payment: ctPayment,
     });
 
-    const res = await AdyenApi().PaymentsApi.payments(data);
+    let res!: PaymentResponse;
+    try {
+      res = await AdyenApi().PaymentsApi.payments(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -176,10 +262,16 @@ export class AdyenPaymentService {
       id: opts.data.paymentReference,
     });
 
-    const data = await this.confirmPaymentConverter.convert({
+    const data = this.confirmPaymentConverter.convertRequest({
       data: opts.data,
     });
-    const res = await AdyenApi().PaymentsApi.paymentsDetails(data);
+
+    let res!: PaymentDetailsResponse;
+    try {
+      res = await AdyenApi().PaymentsApi.paymentsDetails(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -201,6 +293,46 @@ export class AdyenPaymentService {
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     const updateData = await this.notificationConverter.convert(opts);
     await this.ctPaymentService.updatePayment(updateData);
+  }
+
+  async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
+    const interfaceId = request.payment.interfaceId as string;
+    try {
+      const res = await AdyenApi().ModificationsApi.captureAuthorisedPayment(
+        interfaceId,
+        this.capturePaymentConverter.convertRequest(request),
+      );
+
+      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+  }
+
+  async cancelPayment(request: CancelPaymentRequest): Promise<PaymentProviderModificationResponse> {
+    const interfaceId = request.payment.interfaceId as string;
+    try {
+      const res = await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(
+        interfaceId,
+        this.cancelPaymentConverter.convertRequest(request),
+      );
+      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+  }
+
+  async refundPayment(request: RefundPaymentRequest): Promise<PaymentProviderModificationResponse> {
+    const interfaceId = request.payment.interfaceId as string;
+    try {
+      const res = await AdyenApi().ModificationsApi.refundCapturedPayment(
+        interfaceId,
+        this.refundPaymentConverter.convertRequest(request),
+      );
+      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
   }
 
   private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum): string {

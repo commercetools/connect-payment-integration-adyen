@@ -8,7 +8,7 @@ import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 export class CreatePaymentConverter {
   constructor() {}
 
-  public async convert(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): Promise<PaymentRequest> {
+  public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { paymentReference: _, ...requestData } = opts.data;
     return {

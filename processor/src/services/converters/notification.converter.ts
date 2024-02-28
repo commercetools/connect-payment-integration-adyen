@@ -6,7 +6,7 @@ import { TransactionData, UpdatePayment } from '@commercetools/connect-payments-
 export class NotificationConverter {
   constructor() {}
 
-  public async convert(opts: { data: NotificationRequestDTO }): Promise<UpdatePayment> {
+  public convert(opts: { data: NotificationRequestDTO }): UpdatePayment {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 
     return {
