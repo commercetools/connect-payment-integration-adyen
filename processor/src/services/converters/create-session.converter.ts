@@ -7,12 +7,12 @@ import { Cart, Payment } from '@commercetools/platform-sdk';
 export class CreateSessionConverter {
   constructor() {}
 
-  public async convert(opts: {
+  public convertRequest(opts: {
     data: CreateSessionRequestDTO;
     cart: Cart;
     payment: Payment;
-  }): Promise<CreateCheckoutSessionRequest> {
-    const data: CreateCheckoutSessionRequest = {
+  }): CreateCheckoutSessionRequest {
+    return {
       ...opts.data,
       amount: {
         value: opts.payment.amountPlanned.centAmount,
@@ -33,7 +33,5 @@ export class CreateSessionConverter {
       }),
       shopperEmail: opts.cart.customerEmail,
     };
-
-    return data;
   }
 }

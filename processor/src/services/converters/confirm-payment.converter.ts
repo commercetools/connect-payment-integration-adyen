@@ -4,7 +4,7 @@ import { PaymentDetailsRequest } from '@adyen/api-library/lib/src/typings/checko
 export class ConfirmPaymentConverter {
   constructor() {}
 
-  public async convert(opts: { data: ConfirmPaymentRequestDTO }): Promise<PaymentDetailsRequest> {
+  public convertRequest(opts: { data: ConfirmPaymentRequestDTO }): PaymentDetailsRequest {
     return {
       ...opts.data,
     };
