@@ -88,8 +88,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           paymentReference,
         };
         const url = options.processorUrl.endsWith('/') 
-          ? `${options.processorUrl}payment/details`
-          : `${options.processorUrl}/payment/details`;
+          ? `${options.processorUrl}payments/details`
+          : `${options.processorUrl}/payments/details`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Session-Id': options.sessionId },
