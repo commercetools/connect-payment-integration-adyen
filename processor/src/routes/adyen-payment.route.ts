@@ -106,7 +106,7 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.hmacAuthHook.authenticate()],
     },
     async (request, reply) => {
-      await opts.notificationService.processNotification({
+      await opts.paymentService.processNotification({
         data: request.body,
       });
 
