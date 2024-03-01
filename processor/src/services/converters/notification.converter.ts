@@ -28,7 +28,7 @@ export class NotificationConverter {
       case NotificationRequestItem.EventCodeEnum.Capture:
         return {
           type: 'Charge',
-          state: 'Failure',
+          state: item.success ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
