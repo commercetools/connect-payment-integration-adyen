@@ -14,12 +14,12 @@ export const config = {
   loggerLevel: process.env.LOGGER_LEVEL || 'info',
 
   // Payment Providers config
-  adyenEnvironment: process.env.ADYEN_ENVIRONMENT || '',
-  adyenClientKey: process.env.ADYEN_CLIENT_KEY || '',
-  adyenApiKey: process.env.ADYEN_API_KEY || '',
-  adyenHMACKey: process.env.ADYEN_NOTIFICATION_HMAC_KEY || '',
+  adyenEnvironment: process.env.ADYEN_ENVIRONMENT || 'TEST',
+  adyenClientKey: process.env.ADYEN_CLIENT_KEY || 'adyenClientKey',
+  adyenApiKey: process.env.ADYEN_API_KEY || 'adyenApiKey',
+  adyenHMACKey: process.env.ADYEN_NOTIFICATION_HMAC_KEY || 'adyenHMACKey',
   adyenLiveUrlPrefix: process.env.ADYEN_LIVE_URL_PREFIX || '',
-  adyenMerchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT || '',
+  adyenMerchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT || 'adyenMerchantAccount',
 
   merchantReturnUrl: process.env.MERCHANT_RETURN_URL || '',
 };
