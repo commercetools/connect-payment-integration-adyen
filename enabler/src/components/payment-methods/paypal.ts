@@ -1,5 +1,7 @@
-import { BaseComponent, BaseOptions } from '../base';
-import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
+import {
+  PaymentMethod
+} from "../../payment-enabler/payment-enabler";
+import { AdyenBaseComponentBuilder, BaseOptions } from "../base";
 
 /**
  * Paypal component
@@ -7,9 +9,11 @@ import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-e
  * Configuration options:
  * https://docs.adyen.com/payment-methods/paypal/web-component/
  */
-export class Paypal extends BaseComponent {
-  constructor(baseOptions: BaseOptions, componentOptions: ComponentOptions) {
-    // TODO: 
+export class PaypalBuilder extends AdyenBaseComponentBuilder {
+  public componentHasSubmit = false;
+
+  constructor(baseOptions: BaseOptions) {
+    // TODO:
 
     /*
 
@@ -22,6 +26,6 @@ export class Paypal extends BaseComponent {
 
       const paypalComponent = checkout.create('paypal', paypalConfiguration).mount('#paypal-container');
       */
-    super(PaymentMethod.paypal, baseOptions, componentOptions);
+    super(PaymentMethod.paypal, baseOptions);
   }
 }

@@ -1,6 +1,6 @@
 export interface PaymentComponent {
-  mount(selector: string): void;
   submit(): void;
+  mount(selector: string): void;
   showValidation?(): void;
   isValid?(): boolean;
   getState?(): {
@@ -10,6 +10,11 @@ export interface PaymentComponent {
       expiryDate?: string;
     }
   };
+}
+
+export interface PaymentComponentBuilder {
+  componentHasSubmit: boolean;
+  build(config: ComponentOptions): PaymentComponent;
 }
 
 export type EnablerOptions = {
@@ -41,14 +46,12 @@ export type PaymentResult = {
 } | { isSuccess: false };
 
 export type ComponentOptions = {
-  config: {
-    showPayButton?: boolean;
-  };
+  showPayButton?: boolean;
 };
 
 export interface PaymentEnabler {
   /** 
    * @throws {Error}
    */
-  createComponent: (type: string, opts: ComponentOptions) => Promise<PaymentComponent | never>
+  createComponentBuilder: (type: string) => Promise<PaymentComponentBuilder | never>
 }

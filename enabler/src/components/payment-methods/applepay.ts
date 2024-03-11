@@ -1,5 +1,5 @@
-import { BaseComponent, BaseOptions } from '../base';
-import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
+import { PaymentMethod } from "../../payment-enabler/payment-enabler";
+import { AdyenBaseComponentBuilder, BaseOptions } from "../base";
 
 /**
  * Apple pay component
@@ -7,8 +7,9 @@ import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-e
  * Configuration options:
  * https://docs.adyen.com/payment-methods/apple-pay/web-component/
  */
-export class Applepay extends BaseComponent {
-  constructor(baseOptions: BaseOptions, componentOptions: ComponentOptions) {
-    super(PaymentMethod.applepay, baseOptions, componentOptions);
+export class ApplepayBuilder extends AdyenBaseComponentBuilder {
+  public componentHasSubmit = false;
+  constructor(baseOptions: BaseOptions) {
+    super(PaymentMethod.applepay, baseOptions);
   }
 }

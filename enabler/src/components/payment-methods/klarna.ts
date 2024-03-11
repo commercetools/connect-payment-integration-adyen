@@ -1,5 +1,5 @@
-import { BaseComponent, BaseOptions } from '../base';
-import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
+import { PaymentMethod } from '../../payment-enabler/payment-enabler';
+import { AdyenBaseComponentBuilder, BaseOptions } from '../base';
 
 /**
  * Klarna component
@@ -7,11 +7,11 @@ import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-e
  * Configuration options:
  * https://docs.adyen.com/payment-methods/klarna/web-component/
  */
-export class Klarna extends BaseComponent {
-  constructor(baseOptions: BaseOptions, componentOptions: ComponentOptions) {
+export class KlarnaBuilder extends AdyenBaseComponentBuilder {
+  constructor(baseOptions: BaseOptions) {
     /* todo:
       pass locale
     */
-    super(PaymentMethod.klarna, baseOptions, componentOptions);
+    super(PaymentMethod.klarna, baseOptions);
   }
 }
