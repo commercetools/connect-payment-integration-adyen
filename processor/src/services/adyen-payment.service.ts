@@ -247,7 +247,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
         type: 'Authorization', //TODO: review
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
-        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum),
+        state: this.convertAdyenResultCode(
+          res.resultCode as PaymentResponse.ResultCodeEnum,
+          this.isActionRequired(res),
+        ),
       },
     });
 
@@ -281,7 +284,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
-        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum),
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
     return {
@@ -335,18 +338,23 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum): string {
-    switch (resultCode) {
-      case PaymentResponse.ResultCodeEnum.Authorised:
-        return 'Success';
-      case PaymentResponse.ResultCodeEnum.Pending:
-        return 'Pending';
-      case PaymentResponse.ResultCodeEnum.Refused:
-      case PaymentResponse.ResultCodeEnum.Error:
-      case PaymentResponse.ResultCodeEnum.Cancelled:
-        return 'Failure';
-      default:
-        return 'Initial';
+  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum, isActionRequired: boolean): string {
+    if (resultCode === PaymentResponse.ResultCodeEnum.Authorised) {
+      return 'Success';
+    } else if (resultCode === PaymentResponse.ResultCodeEnum.Pending && !isActionRequired) {
+      return 'Pending';
+    } else if (
+      resultCode === PaymentResponse.ResultCodeEnum.Refused ||
+      resultCode === PaymentResponse.ResultCodeEnum.Error ||
+      resultCode === PaymentResponse.ResultCodeEnum.Cancelled
+    ) {
+      return 'Failure';
+    } else {
+      return 'Initial';
     }
+  }
+
+  private isActionRequired(data: PaymentResponse): boolean {
+    return data.action?.type !== undefined;
   }
 }
