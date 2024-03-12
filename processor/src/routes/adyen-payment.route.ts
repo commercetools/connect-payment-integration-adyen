@@ -1,4 +1,7 @@
-import { SessionAuthenticationHook } from '@commercetools/connect-payments-sdk';
+import {
+  SessionHeaderAuthenticationHook,
+  SessionQueryParamAuthenticationHook,
+} from '@commercetools/connect-payments-sdk';
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import {
   ConfirmPaymentRequestDTO,
@@ -12,12 +15,12 @@ import {
   PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
-import { config } from '../config/config';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
-  sessionAuthHook: SessionAuthenticationHook;
+  sessionHeaderAuthHook: SessionHeaderAuthenticationHook;
+  sessionQueryParamAuthHook: SessionQueryParamAuthenticationHook;
   hmacAuthHook: HmacAuthHook;
 };
 
@@ -28,7 +31,7 @@ export const adyenPaymentRoutes = async (
   fastify.post<{ Body: PaymentMethodsRequestDTO; Reply: PaymentMethodsResponseDTO }>(
     '/payment-methods',
     {
-      preHandler: [opts.sessionAuthHook.authenticate()],
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
       const resp = await opts.paymentService.getPaymentMethods({
@@ -42,7 +45,7 @@ export const adyenPaymentRoutes = async (
   fastify.post<{ Body: CreateSessionRequestDTO; Reply: CreateSessionResponseDTO }>(
     '/sessions',
     {
-      preHandler: [opts.sessionAuthHook.authenticate()],
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
       const resp = await opts.paymentService.createSession({
@@ -56,7 +59,7 @@ export const adyenPaymentRoutes = async (
   fastify.post<{ Body: CreatePaymentRequestDTO; Reply: CreatePaymentResponseDTO }>(
     '/payments',
     {
-      preHandler: [opts.sessionAuthHook.authenticate()],
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
       const resp = await opts.paymentService.createPayment({
@@ -75,23 +78,31 @@ export const adyenPaymentRoutes = async (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       [key: string]: any;
     };
-  }>('/payments/details', {}, async (request, reply) => {
-    const queryParams = request.query as any;
-    const res = await opts.paymentService.confirmPayment({
-      data: {
-        details: {
-          redirectResult: queryParams.redirectResult as string,
+  }>(
+    '/payments/details',
+    {
+      preHandler: [opts.sessionQueryParamAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const queryParams = request.query as any;
+      const res = await opts.paymentService.confirmPayment({
+        data: {
+          details: {
+            redirectResult: queryParams.redirectResult as string,
+          },
+          paymentReference: queryParams.paymentReference as string,
         },
-        paymentReference: queryParams.paymentReference as string,
-      },
-    });
+      });
 
-    return reply.redirect(buildRedirectUrl(res.paymentReference));
-  });
+      return reply.redirect(res.merchantReturnUrl);
+    },
+  );
 
   fastify.post<{ Body: ConfirmPaymentRequestDTO; Reply: ConfirmPaymentResponseDTO }>(
     '/payments/details',
-    {},
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
     async (request, reply) => {
       const res = await opts.paymentService.confirmPayment({
         data: request.body,
@@ -113,10 +124,4 @@ export const adyenPaymentRoutes = async (
       return reply.status(200).send('[accepted]');
     },
   );
-};
-
-const buildRedirectUrl = (paymentReference: string) => {
-  const redirectUrl = new URL(config.merchantReturnUrl);
-  redirectUrl.searchParams.append('paymentReference', paymentReference);
-  return redirectUrl.toString();
 };

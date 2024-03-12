@@ -1,6 +1,6 @@
 {
   "name": "payment-integration-adyen",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Payment integration with Adyen",
   "main": "dist/server.js",
   "scripts": {
@@ -20,7 +20,7 @@
   "dependencies": {
     "@adyen/api-library": "16.1.0",
     "@commercetools-backend/loggers": "22.20.0",
-    "@commercetools/connect-payments-sdk": "0.2.0",
+    "@commercetools/connect-payments-sdk": "0.3.0",
     "@commercetools/platform-sdk": "7.4.0",
     "@commercetools/sdk-client-v2": "2.3.0",
     "@fastify/autoload": "5.8.0",

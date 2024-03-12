@@ -49,6 +49,7 @@ export type CreatePaymentResponseDTO = Pick<
   'action' | 'resultCode' | 'threeDS2ResponseData' | 'threeDS2Result' | 'threeDSPaymentData'
 > & {
   paymentReference: string;
+  merchantReturnUrl?: string;
 };
 
 export type ConfirmPaymentRequestDTO = PaymentDetailsRequest & {
@@ -60,6 +61,7 @@ export type ConfirmPaymentResponseDTO = Pick<
   'resultCode' | 'threeDS2ResponseData' | 'threeDS2Result' | 'threeDSPaymentData'
 > & {
   paymentReference: string;
+  merchantReturnUrl: string;
 };
 
 export type NotificationRequestDTO = Notification;
