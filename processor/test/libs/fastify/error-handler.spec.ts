@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { errorHandler } from './error-handler';
+import { errorHandler } from '../../../src/libs/fastify/error-handler';
 import { Errorx } from '@commercetools/connect-payments-sdk';
 
 describe('error-handler', () => {

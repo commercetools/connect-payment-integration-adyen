@@ -4,5 +4,8 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   setupFiles: ['./src/jest.setup.ts'],
-  roots: ['./src'],
+  roots: ['./test'],
+  collectCoverageFrom: [
+    "src/**/*.ts*"
+  ]
 };

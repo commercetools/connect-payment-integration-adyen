@@ -97,7 +97,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
             return {
               name: 'Adyen Status check',
               status: 'UP',
-              data: {
+              details: {
                 paymentMethods: result.paymentMethods,
               },
             };
@@ -105,7 +105,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
             return {
               name: 'Adyen Status check',
               status: 'DOWN',
-              data: {
+              details: {
                 error: e,
               },
             };

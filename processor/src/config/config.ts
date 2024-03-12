@@ -23,3 +23,6 @@ export const config = {
 
   merchantReturnUrl: process.env.MERCHANT_RETURN_URL || '',
 };
+export const getConfig = () => {
+  return config;
+};
