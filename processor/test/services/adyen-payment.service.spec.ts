@@ -2,7 +2,14 @@ import { describe, test, expect, afterEach, jest, beforeEach } from '@jest/globa
 import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/services/types/operation.type';
 import { paymentSDK } from '../../src/payment-sdk';
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
-import { mockGetPaymentResult, mockUpdatePaymentResult, mockAdyenPaymentMethodsResponse, mockAdyenCancelPaymentResponse } from '../utils/mock-payment-data';
+import {
+    mockGetPaymentResult,
+    mockUpdatePaymentResult,
+    mockAdyenPaymentMethodsResponse,
+    mockAdyenCancelPaymentResponse,
+    mockAdyenCapturePaymentResponse,
+    mockAdyenRefundPaymentResponse
+} from '../utils/mock-payment-data';
 import * as Config from '../../src/config/config';
 import { AbstractPaymentService } from '../../src/services/abstract-payment.service';
 import { AdyenPaymentService } from '../../src/services/adyen-payment.service';
@@ -18,6 +25,7 @@ import {
     HealthCheckResult
 } from '@commercetools/connect-payments-sdk';
 import {SupportedPaymentComponentsSchemaDTO} from "../../src/dtos/operations/payment-componets.dto";
+
 
 interface FlexibleConfig {
     [key: string]: string; // Adjust the type according to your config values
@@ -99,7 +107,7 @@ describe('adyen-payment.service', () => {
         expect(result?.checks[1]?.details).toBeDefined();
     });
 
-    test('modifyPayment', async () => {
+    test('cancelPayment', async () => {
         const modifyPaymentOpts: ModifyPayment = {
             paymentId: 'dummy-paymentId',
             data: {
@@ -115,6 +123,56 @@ describe('adyen-payment.service', () => {
         jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
         jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
         jest.spyOn(ModificationsApi.prototype, 'cancelAuthorisedPaymentByPspReference').mockResolvedValue(mockAdyenCancelPaymentResponse);
+
+        const result = await paymentService.modifyPayment(modifyPaymentOpts);
+        expect(result?.outcome).toStrictEqual('received');
+    });
+
+    test('capturePayment', async () => {
+        const modifyPaymentOpts: ModifyPayment = {
+            paymentId: 'dummy-paymentId',
+            data: {
+                actions: [
+                    {
+                        action: 'capturePayment',
+                        amount: {
+                            centAmount: 150000,
+                            currencyCode: 'USD',
+                        },
+                    },
+                ],
+            },
+        };
+
+        jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+        jest.spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment').mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+        const result = await paymentService.modifyPayment(modifyPaymentOpts);
+        expect(result?.outcome).toStrictEqual('received');
+    });
+
+    test('refundPayment', async () => {
+        const modifyPaymentOpts: ModifyPayment = {
+            paymentId: 'dummy-paymentId',
+            data: {
+                actions: [
+                    {
+                        action: 'refundPayment',
+                        amount: {
+                            centAmount: 150000,
+                            currencyCode: 'USD',
+                        },
+                    },
+                ],
+            },
+        };
+
+        jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+        jest.spyOn(ModificationsApi.prototype, 'refundCapturedPayment').mockResolvedValue(mockAdyenRefundPaymentResponse);
 
         const result = await paymentService.modifyPayment(modifyPaymentOpts);
         expect(result?.outcome).toStrictEqual('received');

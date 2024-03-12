@@ -2,6 +2,8 @@ import { Payment } from '@commercetools/platform-sdk';
 import { Transaction } from '@commercetools/platform-sdk/dist/declarations/src';
 import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse'
 import { PaymentMethodsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsResponse';
+import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
+import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
 
 export const mockGetPaymentResult: Payment = {
     id: '123456',
@@ -68,3 +70,29 @@ export const mockAdyenCancelPaymentResponse : PaymentCancelResponse = {
 export const mockAdyenPaymentMethodsResponse : PaymentMethodsResponse = {
     paymentMethods : [{ name : 'card'}]
 }
+
+export const mockAdyenCapturePaymentResponse : PaymentCaptureResponse = {
+    status : PaymentCaptureResponse.StatusEnum.Received,
+    paymentPspReference : '24680',
+    pspReference: '123456',
+    merchantAccount: 'ABC',
+    reference: '123456',
+    amount: {
+        currency: 'USD',
+        value: 150000
+    },
+}
+
+
+export const mockAdyenRefundPaymentResponse : PaymentRefundResponse = {
+    status : PaymentRefundResponse.StatusEnum.Received,
+    paymentPspReference : '24680',
+    pspReference: '123456',
+    merchantAccount: 'ABC',
+    reference: '123456',
+    amount: {
+        currency: 'USD',
+        value: 150000
+    },
+}
+
