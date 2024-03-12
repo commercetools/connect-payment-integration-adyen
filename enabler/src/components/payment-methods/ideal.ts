@@ -21,7 +21,9 @@ export class IdealBuilder extends AdyenBaseComponentBuilder {
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    return new IdealComponent(this.paymentMethod, this.adyenCheckout, config);
+    const idealComponent = new IdealComponent(this.paymentMethod, this.adyenCheckout, config);
+    idealComponent.init();
+    return idealComponent;
   }
 }
 

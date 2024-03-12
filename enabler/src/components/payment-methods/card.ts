@@ -41,6 +41,21 @@ export class CardComponent extends DefaultAdyenComponent {
     super(paymentMethod, adyenCheckout, componentOptions);
   }
 
+  init() {
+    const that = this;
+    this.component = this.adyenCheckout.create(this.paymentMethod, {
+      onFieldValid : function(data) {
+        const { endDigits, fieldType } = data;
+        if (endDigits && fieldType === 'encryptedCardNumber') {
+          that.endDigits = endDigits;
+        }
+      },
+      hasHolderName: true,
+      holderNameRequired: true,
+      ...this.componentOptions,
+    });
+  }
+
   showValidation() {
     this.component.showValidation();
   }

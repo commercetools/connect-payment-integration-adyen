@@ -20,15 +20,11 @@ export interface PaymentComponentBuilder {
 export type EnablerOptions = {
   processorUrl: string;
   sessionId: string;
-  config?: { 
-    locale?: string;
-    showPayButton?: boolean;
-  };
+  locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
   onError?: (error: any) => void;
 };
-
 
 export enum PaymentMethod {
   applepay = "applepay",
@@ -36,7 +32,6 @@ export enum PaymentMethod {
   dropin = "dropin",
   googlepay = "googlepay",
   ideal = "ideal",
-  klarna = "klarna",
   paypal = "paypal",
 }
 
@@ -47,6 +42,7 @@ export type PaymentResult = {
 
 export type ComponentOptions = {
   showPayButton?: boolean;
+  onClick?: () => boolean;
 };
 
 export interface PaymentEnabler {
