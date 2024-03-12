@@ -5,7 +5,4 @@ module.exports = {
   testEnvironment: 'node',
   setupFiles: ['./src/jest.setup.ts'],
   roots: ['./test'],
-  collectCoverageFrom: [
-    "src/**/*.ts*"
-  ]
 };
