@@ -1,7 +1,11 @@
 import { Address } from '@adyen/api-library/lib/src/typings/checkout/address';
 import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
 import { Cart, LineItem as CoCoLineItem, CustomLineItem, Address as CartAddress } from '@commercetools/platform-sdk';
-import { getAllowedPaymentMethodsFromContext, getProcessorUrlFromContext } from '../../libs/fastify/context/context';
+import {
+  getAllowedPaymentMethodsFromContext,
+  getCtSessionIdFromContext,
+  getProcessorUrlFromContext,
+} from '../../libs/fastify/context/context';
 
 export const populateLineItems = (cart: Cart): LineItem[] => {
   const lineItems: LineItem[] = [];
@@ -81,6 +85,7 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
 export const buildReturnUrl = (paymentReference: string): string => {
   const url = new URL('/payments/details', getProcessorUrlFromContext());
   url.searchParams.append('paymentReference', paymentReference);
+  url.searchParams.append('ctsid', getCtSessionIdFromContext());
   return url.toString();
 };
 

@@ -1,5 +1,5 @@
 import fastify from 'fastify';
-import { describe, beforeAll, afterAll, test, expect } from '@jest/globals';
+import { describe, beforeAll, afterAll, test, expect, jest, afterEach } from '@jest/globals';
 import {
   AuthorityAuthorizationHook,
   AuthorityAuthorizationManager,
@@ -11,8 +11,8 @@ import {
   Oauth2AuthenticationHook,
   Oauth2AuthenticationManager,
   RequestContextData,
-  SessionAuthenticationHook,
-  SessionAuthenticationManager,
+  SessionHeaderAuthenticationHook,
+  SessionHeaderAuthenticationManager,
 } from '@commercetools/connect-payments-sdk';
 import { IncomingHttpHeaders } from 'node:http';
 import { operationsRoute } from '../../src/routes/operation.route';
@@ -37,7 +37,7 @@ describe('/operations APIs', () => {
     });
 
   const spyAuthenticateSession = jest
-    .spyOn(SessionAuthenticationHook.prototype, 'authenticate')
+    .spyOn(SessionHeaderAuthenticationHook.prototype, 'authenticate')
     .mockImplementationOnce(() => async (request: { headers: IncomingHttpHeaders }) => {
       expect(request.headers['x-session-id']).toContain('session-id');
     });
@@ -52,8 +52,8 @@ describe('/operations APIs', () => {
     contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
   });
 
-  const spiedSessionAuthenticationHook = new SessionAuthenticationHook({
-    authenticationManager: jest.fn() as unknown as SessionAuthenticationManager,
+  const spiedSessionHeaderAuthenticationHook = new SessionHeaderAuthenticationHook({
+    authenticationManager: jest.fn() as unknown as SessionHeaderAuthenticationManager,
     contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
   });
 
@@ -72,7 +72,7 @@ describe('/operations APIs', () => {
       prefix: '/operations',
       oauth2AuthHook: spiedOauth2AuthenticationHook,
       jwtAuthHook: spiedJwtAuthenticationHook,
-      sessionAuthHook: spiedSessionAuthenticationHook,
+      sessionHeaderAuthHook: spiedSessionHeaderAuthenticationHook,
       authorizationHook: spiedAuthorityAuthorizationHook,
       paymentService: spiedPaymentService,
     });
