@@ -1,4 +1,5 @@
 import {
+  ErrorInvalidJsonInput,
   SessionHeaderAuthenticationHook,
   SessionQueryParamAuthenticationHook,
 } from '@commercetools/connect-payments-sdk';
@@ -62,8 +63,11 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
+      const data = request.body as CreatePaymentRequestDTO;
+      validateCardData(data);
+
       const resp = await opts.paymentService.createPayment({
-        data: request.body,
+        data,
       });
 
       return reply.status(200).send(resp);
@@ -124,4 +128,20 @@ export const adyenPaymentRoutes = async (
       return reply.status(200).send('[accepted]');
     },
   );
+};
+
+/**
+ * Check if the payment method is a card and if so, ensure the card data is not sent in the fields that accept plain text
+ * @param data
+ */
+const validateCardData = (data: CreatePaymentRequestDTO) => {
+  if (
+    data.paymentMethod?.type === 'scheme' &&
+    (data.paymentMethod?.number ||
+      data.paymentMethod?.expiryMonth ||
+      data.paymentMethod?.expiryYear ||
+      data.paymentMethod?.cvc)
+  ) {
+    throw new ErrorInvalidJsonInput('Not encrypted card data is not allowed');
+  }
 };
