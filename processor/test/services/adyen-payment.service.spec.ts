@@ -70,13 +70,12 @@ describe('adyen-payment.service', () => {
 
   test('getConfig', async () => {
     // Setup mock config for a system using `clientKey`
-    setupMockConfig({ mockClientKey: '', mockEnvironment: 'test' });
+    setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'test' });
 
     const result: ConfigResponse = await paymentService.config();
-
     // Assertions can remain the same or be adapted based on the abstracted access
-    expect(result?.clientKey).toStrictEqual('');
-    expect(result?.environment).toStrictEqual('');
+    expect(result?.clientKey).toStrictEqual('adyen');
+    expect(result?.environment).toStrictEqual('test');
   });
 
   test('getSupportedPaymentComponents', async () => {
