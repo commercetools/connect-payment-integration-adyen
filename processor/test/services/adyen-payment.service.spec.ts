@@ -29,7 +29,11 @@ import {
   HealthCheckResult,
 } from '@commercetools/connect-payments-sdk';
 import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/payment-componets.dto';
-import { CreatePaymentRequestDTO, CreateSessionRequestDTO } from '../../src/dtos/adyen-payment.dto';
+import {
+  CreatePaymentRequestDTO,
+  CreateSessionRequestDTO,
+  PaymentMethodsRequestDTO
+} from '../../src/dtos/adyen-payment.dto';
 
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
@@ -214,6 +218,23 @@ describe('adyen-payment.service', () => {
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
     expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
     expect(result?.paymentReference).toStrictEqual('123456');
+  });
+
+  test('getPaymentMethods', async () => {
+    const getPaymentMethodsOpts: { data: PaymentMethodsRequestDTO } = {
+      data: {},
+    };
+
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
+    jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['card']);
+
+    const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
+    const result = await adyenPaymentService.getPaymentMethods(getPaymentMethodsOpts);
+
+    expect(result.paymentMethods).toBeDefined();
+    expect(result.paymentMethods).toHaveLength(0);
   });
 
   test('createSession', async () => {
