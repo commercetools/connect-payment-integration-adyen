@@ -1,6 +1,7 @@
 import {
   CommercetoolsCartService,
   CommercetoolsPaymentService,
+  ErrorInvalidOperation,
   healthCheckCommercetoolsPermissions,
   statusHandler,
 } from '@commercetools/connect-payments-sdk';
@@ -16,7 +17,11 @@ import {
   PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, wrapAdyenError } from '../clients/adyen.client';
-import { getCartIdFromContext, getPaymentInterfaceFromContext } from '../libs/fastify/context/context';
+import {
+  getCartIdFromContext,
+  getMerchantReturnUrlFromContext,
+  getPaymentInterfaceFromContext,
+} from '../libs/fastify/context/context';
 import { CreateSessionConverter } from './converters/create-session.converter';
 import { CreatePaymentConverter } from './converters/create-payment.converter';
 import { ConfirmPaymentConverter } from './converters/confirm-payment.converter';
@@ -41,6 +46,7 @@ import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
+import { Cart, Payment } from '@commercetools/platform-sdk';
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
@@ -199,6 +205,15 @@ export class AdyenPaymentService extends AbstractPaymentService {
       ctPayment = await this.ctPaymentService.getPayment({
         id: opts.data.paymentReference,
       });
+
+      if (await this.hasPaymentAmountChanged(ctCart, ctPayment)) {
+        throw new ErrorInvalidOperation('The payment amount does not fulfill the remaining amount of the cart', {
+          fields: {
+            cartId: ctCart.id,
+            paymentId: ctPayment.id,
+          },
+        });
+      }
     } else {
       const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
       ctPayment = await this.ctPaymentService.createPayment({
@@ -239,21 +254,28 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
+    const txState = this.convertAdyenResultCode(
+      res.resultCode as PaymentResponse.ResultCodeEnum,
+      this.isActionRequired(res),
+    );
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
-      paymentMethod: res.paymentMethod?.type, //TODO: review
+      paymentMethod: res.paymentMethod?.type, //TODO: should be converted to a standard format? i.e scheme to card
       transaction: {
-        type: 'Authorization', //TODO: review
+        type: 'Authorization', //TODO: is there any case where this could be a direct charge?
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
-        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum),
+        state: txState,
       },
     });
 
     return {
       ...res,
       paymentReference: updatedPayment.id,
+      ...(txState === 'Success' || txState === 'Pending'
+        ? { merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id) }
+        : {}),
     } as CreatePaymentResponseDTO;
   }
 
@@ -281,12 +303,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
-        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum),
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
     return {
       ...res,
       paymentReference: updatedPayment.id,
+      merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id),
     } as ConfirmPaymentResponseDTO;
   }
 
@@ -335,18 +358,38 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum): string {
-    switch (resultCode) {
-      case PaymentResponse.ResultCodeEnum.Authorised:
-        return 'Success';
-      case PaymentResponse.ResultCodeEnum.Pending:
-        return 'Pending';
-      case PaymentResponse.ResultCodeEnum.Refused:
-      case PaymentResponse.ResultCodeEnum.Error:
-      case PaymentResponse.ResultCodeEnum.Cancelled:
-        return 'Failure';
-      default:
-        return 'Initial';
+  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum, isActionRequired: boolean): string {
+    if (resultCode === PaymentResponse.ResultCodeEnum.Authorised) {
+      return 'Success';
+    } else if (resultCode === PaymentResponse.ResultCodeEnum.Pending && !isActionRequired) {
+      return 'Pending';
+    } else if (
+      resultCode === PaymentResponse.ResultCodeEnum.Refused ||
+      resultCode === PaymentResponse.ResultCodeEnum.Error ||
+      resultCode === PaymentResponse.ResultCodeEnum.Cancelled
+    ) {
+      return 'Failure';
+    } else {
+      return 'Initial';
     }
+  }
+
+  private isActionRequired(data: PaymentResponse): boolean {
+    return data.action?.type !== undefined;
+  }
+
+  private async hasPaymentAmountChanged(cart: Cart, ctPayment: Payment): Promise<boolean> {
+    const amountPlanned = await this.ctCartService.getPaymentAmount({ cart });
+    return (
+      ctPayment.amountPlanned.centAmount !== amountPlanned.centAmount ||
+      ctPayment.amountPlanned.currencyCode !== amountPlanned.currencyCode
+    );
+  }
+
+  private buildRedirectMerchantUrl(paymentReference: string): string {
+    const merchantReturnUrl = getMerchantReturnUrlFromContext() || config.merchantReturnUrl;
+    const redirectUrl = new URL(merchantReturnUrl);
+    redirectUrl.searchParams.append('paymentReference', paymentReference);
+    return redirectUrl.toString();
   }
 }

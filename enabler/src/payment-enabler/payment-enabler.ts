@@ -1,6 +1,6 @@
 export interface PaymentComponent {
-  mount(selector: string): void;
   submit(): void;
+  mount(selector: string): void;
   showValidation?(): void;
   isValid?(): boolean;
   getState?(): {
@@ -12,18 +12,19 @@ export interface PaymentComponent {
   };
 }
 
+export interface PaymentComponentBuilder {
+  componentHasSubmit: boolean;
+  build(config: ComponentOptions): PaymentComponent;
+}
+
 export type EnablerOptions = {
   processorUrl: string;
   sessionId: string;
-  config?: { 
-    locale?: string;
-    showPayButton?: boolean;
-  };
+  locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
   onError?: (error: any) => void;
 };
-
 
 export enum PaymentMethod {
   applepay = "applepay",
@@ -31,7 +32,6 @@ export enum PaymentMethod {
   dropin = "dropin",
   googlepay = "googlepay",
   ideal = "ideal",
-  klarna = "klarna",
   paypal = "paypal",
 }
 
@@ -41,14 +41,13 @@ export type PaymentResult = {
 } | { isSuccess: false };
 
 export type ComponentOptions = {
-  config: {
-    showPayButton?: boolean;
-  };
+  showPayButton?: boolean;
+  onClick?: () => boolean;
 };
 
 export interface PaymentEnabler {
   /** 
    * @throws {Error}
    */
-  createComponent: (type: string, opts: ComponentOptions) => Promise<PaymentComponent | never>
+  createComponentBuilder: (type: string) => Promise<PaymentComponentBuilder | never>
 }

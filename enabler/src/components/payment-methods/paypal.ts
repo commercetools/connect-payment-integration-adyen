@@ -1,5 +1,14 @@
-import { BaseComponent, BaseOptions } from '../base';
-import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
+import Core from "@adyen/adyen-web/dist/types/core/core";
+import {
+  ComponentOptions,
+  PaymentComponent,
+  PaymentMethod
+} from "../../payment-enabler/payment-enabler";
+import {
+  AdyenBaseComponentBuilder,
+  DefaultAdyenComponent,
+  BaseOptions,
+} from "../base";
 
 /**
  * Paypal component
@@ -7,21 +16,35 @@ import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-e
  * Configuration options:
  * https://docs.adyen.com/payment-methods/paypal/web-component/
  */
-export class Paypal extends BaseComponent {
-  constructor(baseOptions: BaseOptions, componentOptions: ComponentOptions) {
-    // TODO: 
+export class PaypalBuilder extends AdyenBaseComponentBuilder {
+  public componentHasSubmit = false;
+  
+  constructor(baseOptions: BaseOptions) {
+    super(PaymentMethod.paypal, baseOptions);
+  }
 
-    /*
+  build(config: ComponentOptions): PaymentComponent {
+    const paypalComponent = new PaypalComponent(this.paymentMethod, this.adyenCheckout, config);
+    paypalComponent.init();
+    return paypalComponent;
+  }
+}
 
-    Hide Venmo
+export class PaypalComponent extends DefaultAdyenComponent {
+  constructor(
+    paymentMethod: PaymentMethod,
+    adyenCheckout: typeof Core,
+    componentOptions: ComponentOptions
+  ) {
+    super(paymentMethod, adyenCheckout, componentOptions);
+  }
 
-      If you and your shopper are both located in the US, Venmo is shown in the PayPal Component by default. To hide Venmo in the PayPal Component, set blockPayPalVenmoButton to true.
-
-      Use the create method of your AdyenCheckout instance, in this case checkout, to create an instance of the Component. Add the configuration object if you created one.
-
-
-      const paypalComponent = checkout.create('paypal', paypalConfiguration).mount('#paypal-container');
-      */
-    super(PaymentMethod.paypal, baseOptions, componentOptions);
+  init() {
+    this.component = this.adyenCheckout.create(this.paymentMethod, {
+      ...this.componentOptions,
+      blockPayPalCreditButton: true,
+      blockPayPalPayLaterButton: true,
+      blockPayPalVenmoButton: true,
+    });
   }
 }

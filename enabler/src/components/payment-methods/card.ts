@@ -1,5 +1,14 @@
-import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
-import { BaseComponent, BaseOptions } from '../base';
+import Core from "@adyen/adyen-web/dist/types/core/core";
+import {
+  ComponentOptions,
+  PaymentComponent,
+  PaymentMethod,
+} from "../../payment-enabler/payment-enabler";
+import {
+  AdyenBaseComponentBuilder,
+  BaseOptions,
+  DefaultAdyenComponent,
+} from "../base";
 
 /**
  * Credit card component
@@ -8,27 +17,44 @@ import { BaseComponent, BaseOptions } from '../base';
  * https://docs.adyen.com/payment-methods/cards/web-component/
  */
 
+export class CardBuilder extends AdyenBaseComponentBuilder {
 
-export class Card extends BaseComponent {
-  private endDigits: string;
-
-  constructor(baseOptions: BaseOptions, componentOptions: ComponentOptions) {
-    super(PaymentMethod.card, baseOptions, componentOptions);
+  constructor(baseOptions: BaseOptions) {
+    super(PaymentMethod.card, baseOptions);
   }
 
-  protected _create() {
+  build(config: ComponentOptions): PaymentComponent {
+    const cardComponent = new CardComponent(this.paymentMethod, this.adyenCheckout, config);
+    cardComponent.init();
+    return cardComponent;
+  }
+}
+
+export class CardComponent extends DefaultAdyenComponent {
+  private endDigits: string;
+
+  constructor(
+    paymentMethod: PaymentMethod,
+    adyenCheckout: typeof Core,
+    componentOptions: ComponentOptions
+  ) {
+    super(paymentMethod, adyenCheckout, componentOptions);
+  }
+
+  init() {
     const that = this;
-    return this.adyenCheckout.create(this.paymentMethod, {
+    this.component = this.adyenCheckout.create(this.paymentMethod, {
       onFieldValid : function(data) {
         const { endDigits, fieldType } = data;
         if (endDigits && fieldType === 'encryptedCardNumber') {
           that.endDigits = endDigits;
         }
       },
-      ...this.config,
+      hasHolderName: true,
+      holderNameRequired: true,
+      ...this.componentOptions,
     });
   }
-
 
   showValidation() {
     this.component.showValidation();
@@ -43,8 +69,7 @@ export class Card extends BaseComponent {
       card: {
         endDigits: this.endDigits,
         brand: this.component.state.selectedBrandValue,
-      }
+      },
     };
   }
-
 }

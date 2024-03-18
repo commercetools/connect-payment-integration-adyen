@@ -33,7 +33,7 @@ export class CreatePaymentConverter {
   }
 
   private populateAddionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
-    switch (data.paymentMethod.type) {
+    switch (data?.paymentMethod?.type) {
       case 'scheme':
         return this.populateAdditionalCardData();
       case 'klarna':
