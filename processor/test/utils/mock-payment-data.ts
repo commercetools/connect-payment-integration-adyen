@@ -4,6 +4,8 @@ import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checko
 import { PaymentMethodsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsResponse';
 import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
+import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
+
 import { Cart } from '@commercetools/platform-sdk';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
@@ -138,4 +140,17 @@ export const mockGetPaymentAmount: PaymentAmount = {
 export const mockAdyenCreatePaymentResponse: PaymentResponse = {
   pspReference: '123456',
   resultCode: PaymentResponse.ResultCodeEnum.Received,
+};
+
+export const mockAdyenCreateSessionResponse: CreateCheckoutSessionResponse = {
+  id: '12345',
+  merchantAccount: '123456',
+  reference: '123456',
+  returnUrl: 'http://127.0.0.1',
+
+  amount: {
+    currency: 'USD',
+    value: 150000,
+  },
+  expiresAt: new Date('2024-12-31T00:00:00Z'),
 };

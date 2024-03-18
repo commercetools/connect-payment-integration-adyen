@@ -8,6 +8,7 @@ import {
   mockGetCartResult,
   mockGetPaymentAmount,
   mockUpdatePaymentResult,
+  mockAdyenCreateSessionResponse,
   mockAdyenPaymentMethodsResponse,
   mockAdyenCancelPaymentResponse,
   mockAdyenCapturePaymentResponse,
@@ -28,10 +29,12 @@ import {
   HealthCheckResult,
 } from '@commercetools/connect-payments-sdk';
 import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/payment-componets.dto';
-import { CreatePaymentRequestDTO } from '../../src/dtos/adyen-payment.dto';
+import { CreatePaymentRequestDTO, CreateSessionRequestDTO } from '../../src/dtos/adyen-payment.dto';
 
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
+import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
+import {getCtSessionIdFromContext} from "../../src/libs/fastify/context/context";
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -211,5 +214,29 @@ describe('adyen-payment.service', () => {
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
     expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
     expect(result?.paymentReference).toStrictEqual('123456');
+  });
+
+  test('createSession', async () => {
+    const createSessionOpts: { data: CreateSessionRequestDTO } = {
+      data: {},
+    };
+
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['applepay']);
+
+    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    jest.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('123456789');
+
+    jest.spyOn(PaymentsApi.prototype, 'sessions').mockResolvedValue(mockAdyenCreateSessionResponse);
+
+    const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
+
+    const result = await adyenPaymentService.createSession(createSessionOpts);
+    // expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
+    // expect(result?.paymentReference).toStrictEqual('123456');
   });
 });
