@@ -12,7 +12,7 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "5.59.0",
+    "@adyen/adyen-web": "5.60.0",
     "serve": "14.2.1"
   },
   "devDependencies": {
