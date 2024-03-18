@@ -34,7 +34,7 @@ import { CreatePaymentRequestDTO, CreateSessionRequestDTO } from '../../src/dtos
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
-import {getCtSessionIdFromContext} from "../../src/libs/fastify/context/context";
+import { getCtSessionIdFromContext } from '../../src/libs/fastify/context/context';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -234,9 +234,16 @@ describe('adyen-payment.service', () => {
     jest.spyOn(PaymentsApi.prototype, 'sessions').mockResolvedValue(mockAdyenCreateSessionResponse);
 
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
-
     const result = await adyenPaymentService.createSession(createSessionOpts);
-    // expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
-    // expect(result?.paymentReference).toStrictEqual('123456');
+    expect(result.sessionData).toBeDefined();
+    expect(result.paymentReference).toBeDefined();
+    expect(result?.sessionData.id).toStrictEqual('12345');
+    expect(result?.sessionData.merchantAccount).toStrictEqual('123456');
+    expect(result?.sessionData.reference).toStrictEqual('123456');
+    expect(result?.sessionData.returnUrl).toStrictEqual('http://127.0.0.1');
+    expect(result?.sessionData?.amount.currency).toStrictEqual('USD');
+    expect(result?.sessionData?.amount.value).toStrictEqual(150000);
+    expect(result?.sessionData.expiresAt).toStrictEqual(new Date('2024-12-31T00:00:00.000Z'));
+    expect(result.paymentReference).toStrictEqual('123456');
   });
 });
