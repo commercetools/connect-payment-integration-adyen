@@ -39,6 +39,8 @@ import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { getCtSessionIdFromContext } from '../../src/libs/fastify/context/context';
 import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
+import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDetails';
+import { ApplePayDetails } from '@adyen/api-library/lib/src/typings/checkout/applePayDetails';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -194,7 +196,60 @@ describe('adyen-payment.service', () => {
     expect(result?.outcome).toStrictEqual('received');
   });
 
-  test('createPayment', async () => {
+  test('createApplePayPayment', async () => {
+    const applePayDetails: ApplePayDetails = {
+      applePayToken: '123456789',
+      type: ApplePayDetails.TypeEnum.Applepay,
+    };
+    const createPaymentOpts: { data: CreatePaymentRequestDTO } = {
+      data: {
+        paymentMethod: applePayDetails,
+      },
+    };
+
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
+
+    const result = await adyenPaymentService.createPayment(createPaymentOpts);
+    expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
+    expect(result?.paymentReference).toStrictEqual('123456');
+  });
+
+  test('createSchemeCardPayment', async () => {
+    const cardDetails: CardDetails = {
+      type: CardDetails.TypeEnum.Scheme,
+    };
+    const createPaymentOpts: { data: CreatePaymentRequestDTO } = {
+      data: {
+        paymentMethod: cardDetails,
+      },
+    };
+
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
+
+    const result = await adyenPaymentService.createPayment(createPaymentOpts);
+    expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
+    expect(result?.paymentReference).toStrictEqual('123456');
+  });
+
+  test('createKlarnaPayment', async () => {
     const klarnaDetails: KlarnaDetails = {
       type: KlarnaDetails.TypeEnum.KlarnaAccount,
     };
