@@ -6,10 +6,8 @@ import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/check
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
 
-import { Cart } from '@commercetools/platform-sdk';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
-import { randomUUID } from 'crypto';
 
 export const mockGetPaymentResult: Payment = {
   id: '123456',
@@ -99,37 +97,6 @@ export const mockAdyenRefundPaymentResponse: PaymentRefundResponse = {
     currency: 'USD',
     value: 150000,
   },
-};
-
-export const mockGetCartResult = () => {
-  const cartId = randomUUID();
-  const mockGetCartResult: Cart = {
-    id: cartId,
-    version: 1,
-    lineItems: [],
-    customLineItems: [],
-    totalPrice: {
-      type: 'centPrecision',
-      currencyCode: 'USD',
-      centAmount: 150000,
-      fractionDigits: 2,
-    },
-    cartState: 'Ordered',
-    origin: 'Customer',
-    taxMode: 'ExternalAmount',
-    taxRoundingMode: 'HalfEven',
-    taxCalculationMode: 'LineItemLevel',
-    shipping: [],
-    discountCodes: [],
-    directDiscounts: [],
-    refusedGifts: [],
-    itemShippingAddresses: [],
-    inventoryMode: 'ReserveOnOrder',
-    shippingMode: 'Single',
-    createdAt: '2024-01-01T00:00:00Z',
-    lastModifiedAt: '2024-01-01T00:00:00Z',
-  };
-  return mockGetCartResult;
 };
 
 export const mockGetPaymentAmount: PaymentAmount = {

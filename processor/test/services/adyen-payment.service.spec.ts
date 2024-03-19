@@ -5,7 +5,6 @@ import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
 import {
   mockGetPaymentResult,
-  mockGetCartResult,
   mockGetPaymentAmount,
   mockUpdatePaymentResult,
   mockAdyenCreateSessionResponse,
@@ -15,13 +14,14 @@ import {
   mockAdyenCreatePaymentResponse,
   mockAdyenRefundPaymentResponse,
 } from '../utils/mock-payment-data';
+
+import { mockGetCartResult } from '../utils/mock-cart-data';
 import * as Config from '../../src/config/config';
 import { AbstractPaymentService } from '../../src/services/abstract-payment.service';
 import { AdyenPaymentService } from '../../src/services/adyen-payment.service';
 import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/handlers/status.handler';
 import { PaymentsApi } from '@adyen/api-library/lib/src/services/checkout/paymentsApi';
 import { ModificationsApi } from '@adyen/api-library/lib/src/services/checkout/modificationsApi';
-import { ApplePayDetails } from '@adyen/api-library/lib/src/typings/checkout/applePayDetails';
 
 import {
   CommercetoolsCartService,
@@ -32,13 +32,13 @@ import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/p
 import {
   CreatePaymentRequestDTO,
   CreateSessionRequestDTO,
-  PaymentMethodsRequestDTO
+  PaymentMethodsRequestDTO,
 } from '../../src/dtos/adyen-payment.dto';
 
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
-import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
 import { getCtSessionIdFromContext } from '../../src/libs/fastify/context/context';
+import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -195,12 +195,12 @@ describe('adyen-payment.service', () => {
   });
 
   test('createPayment', async () => {
-    const applePayDetails: ApplePayDetails = {
-      applePayToken: '123456789',
+    const klarnaDetails: KlarnaDetails = {
+      type: KlarnaDetails.TypeEnum.KlarnaAccount,
     };
     const createPaymentOpts: { data: CreatePaymentRequestDTO } = {
       data: {
-        paymentMethod: applePayDetails,
+        paymentMethod: klarnaDetails,
       },
     };
 

@@ -240,7 +240,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentId: ctPayment.id,
       });
     }
-
     const data = this.createPaymentConverter.convertRequest({
       data: opts.data,
       cart: ctCart,
