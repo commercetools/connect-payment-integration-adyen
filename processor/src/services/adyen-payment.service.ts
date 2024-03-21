@@ -38,7 +38,7 @@ import {
   RefundPaymentRequest,
   StatusResponse,
 } from './types/operation.type';
-import { config } from '../config/config';
+import { getConfig, config } from '../config/config';
 import { paymentSDK } from '../payment-sdk';
 import { PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
 import { AbstractPaymentService } from './abstract-payment.service';
@@ -81,8 +81,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
   async config(): Promise<ConfigResponse> {
     return {
-      clientKey: config.adyenClientKey,
-      environment: config.adyenEnvironment,
+      clientKey: getConfig().adyenClientKey,
+      environment: getConfig().adyenEnvironment,
     };
   }
 
@@ -103,7 +103,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
             return {
               name: 'Adyen Status check',
               status: 'UP',
-              data: {
+              details: {
                 paymentMethods: result.paymentMethods,
               },
             };
@@ -111,7 +111,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
             return {
               name: 'Adyen Status check',
               status: 'DOWN',
-              data: {
+              details: {
                 error: e,
               },
             };
@@ -240,7 +240,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentId: ctPayment.id,
       });
     }
-
     const data = this.createPaymentConverter.convertRequest({
       data: opts.data,
       cart: ctCart,
