@@ -63,10 +63,13 @@
                 },
               });
         
-              enabler.createComponent('card', {
-                config: {},
+              enabler.createComponentBuilder('card')
+              .then(builder => {
+                const paymentElement = builder.build({
+                  config: {},
+                });
+                paymentElement.mount('#card-component')
               })
-              .then(e => e.mount('#card-component'));
             });
       
           </script>
