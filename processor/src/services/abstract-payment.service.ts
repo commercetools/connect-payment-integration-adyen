@@ -3,6 +3,7 @@ import {
   CommercetoolsPaymentService,
   ErrorInvalidJsonInput,
   ErrorInvalidOperation,
+  Payment,
 } from '@commercetools/connect-payments-sdk';
 import {
   CancelPaymentRequest,
@@ -18,7 +19,6 @@ import {
   PaymentIntentResponseSchemaDTO,
   PaymentModificationStatus,
 } from '../dtos/operations/payment-intents.dto';
-import { Payment } from '@commercetools/platform-sdk';
 import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-componets.dto';
 
 export abstract class AbstractPaymentService {

@@ -5,7 +5,7 @@ import {
   populateCartAddress,
 } from '../../../src/services/converters/helper.converter';
 import { Address as AdyenAddress } from '@adyen/api-library/lib/src/typings/checkout/address';
-import { Address } from '@commercetools/platform-sdk';
+import { Address } from '@commercetools/connect-payments-sdk';
 describe('helper.converter', () => {
   beforeEach(() => {
     jest.setTimeout(10000);

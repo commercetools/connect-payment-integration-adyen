@@ -1,6 +1,5 @@
-import { LineItem, CustomLineItem, ShippingInfo } from '@commercetools/platform-sdk';
+import { LineItem, CustomLineItem, ShippingInfo, Cart } from '@commercetools/connect-payments-sdk';
 import { randomUUID } from 'crypto';
-import { Cart } from '@commercetools/platform-sdk';
 
 export const mockGetCartResult = () => {
   const cartId = randomUUID();
