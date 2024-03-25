@@ -1,6 +1,11 @@
 import { Address } from '@adyen/api-library/lib/src/typings/checkout/address';
 import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
-import { Cart, LineItem as CoCoLineItem, CustomLineItem, Address as CartAddress } from '@commercetools/platform-sdk';
+import {
+  Cart,
+  LineItem as CoCoLineItem,
+  CustomLineItem,
+  Address as CartAddress,
+} from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
   getCtSessionIdFromContext,

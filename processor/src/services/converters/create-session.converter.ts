@@ -2,7 +2,7 @@ import { CreateCheckoutSessionRequest } from '@adyen/api-library/lib/src/typings
 import { config } from '../../config/config';
 import { buildReturnUrl, convertAllowedPaymentMethodsToAdyenFormat, populateCartAddress } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
-import { Cart, Payment } from '@commercetools/platform-sdk';
+import { Cart, Payment } from '@commercetools/connect-payments-sdk';
 
 export class CreateSessionConverter {
   constructor() {}

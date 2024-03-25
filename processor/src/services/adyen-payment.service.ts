@@ -4,6 +4,8 @@ import {
   ErrorInvalidOperation,
   healthCheckCommercetoolsPermissions,
   statusHandler,
+  Cart,
+  Payment,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -46,7 +48,6 @@ import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
-import { Cart, Payment } from '@commercetools/platform-sdk';
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {

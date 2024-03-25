@@ -1,7 +1,6 @@
-import { Money } from '@commercetools/platform-sdk';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
-import { TransactionData, UpdatePayment } from '@commercetools/connect-payments-sdk';
+import { TransactionData, UpdatePayment, Money } from '@commercetools/connect-payments-sdk';
 
 export class NotificationConverter {
   constructor() {}
