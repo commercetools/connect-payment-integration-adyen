@@ -123,5 +123,8 @@ Here you can see the details about various variables in configuration
 - CTP_JWT_ISSUER: The issuer inside JSON Web Token which is required in JWT validation process.
 - ADYEN_ENVIRONMENT: The indicator of adyen environment.  Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
 - ADYEN_MERCHANT_ACCOUNT: The name of adyen merchant account.
-- ADYEN_CLIENT_KEY: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication)
-- ADYEN_LIVE_URL_PREFIX: It represents live endpoint prefix used by Adyen platform. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/) 
+- ADYEN_CLIENT_KEY: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication).
+- ADYEN_LIVE_URL_PREFIX: It represents live endpoint prefix used by Adyen platform. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
+- MERCHANT_RETURN_URL: The return URL located in merchant platform.
+- ADYEN_API_KEY: It represents the API Key used for Ayden request authentication. For details, please refer to [Ayden API key authentication](https://docs.adyen.com/development-resources/api-authentication/#api-key-authentication).
+- ADYEN_NOTIFICATION_HMAC_KEY: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
