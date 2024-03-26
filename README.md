@@ -19,7 +19,7 @@ Their values are taken as input as environment variables/ configuration for conn
 
 #### 3. Adyen account credentials
 Various account data provided by Adyen are necessary to be configured so that the requests from the connect application can be authenticated by Adyen platform within the integration.
-Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX`.
+Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX` and `ADYEN_ENVIRONMENT`.
 
 ## Getting started
 The template contains two modules :  
