@@ -1,5 +1,5 @@
-# connect-payment-integration-template
-This repository provides a [connect](https://docs.commercetools.com/connect) template for payment integration connector. This boilerplate code acts as a starting point for integration with external payment service provider.
+# connect-payment-integration-adyen
+This repository provides a [connect](https://docs.commercetools.com/connect) for integration to Adyen payment service provider (PSP).
 
 ## Template Features
 - Typescript language supported.
@@ -16,20 +16,20 @@ In addition, please make sure the API client should have enough scope to be able
 #### 2. various URLs from commercetools composable commerce
 Various URLs from commercetools platform are required to be configured so that the connect application can handle session and authentication process for endpoints.
 Their values are taken as input as environment variables/ configuration for connect with variable names `CTP_API_URL`, `CTP_AUTH_URL` and `CTP_SESSION_URL`.
- 
+
+#### 3. Adyen account credentials
+Various account data provided by Adyen are necessary to be configured so that the requests from the connect application can be authenticated by Adyen platform within the integration.
+Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX`.
+
 ## Getting started
 The template contains two modules :  
-- Enabler: Acts as a wrapper implementation in which frontend components from PSPs embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
-- Processor : Acts as backend services which is middleware to 3rd party PSPs to be responsible for managing transactions with PSPs and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
+- Enabler: Acts as a wrapper implementation in which frontend components from Adyen embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
+- Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
 
 Regarding the development of processor module, please refer to the following documentations:
 - [Development of Processor](./processor/README.md)
 
-#### 1. Develop your specific needs 
-To proceed payment operations via external PSPs, users need to extend this connector with the following task
-- API communication: Implementation to communicate between this connector application and the external system using libraries provided by PSPs. Please remember that the payment requests might not be sent to PSPs successfully in a single attempt. It should have needed retry and recovery mechanism.
-
-#### 2. Register as connector in commercetools Connect
+#### 1. Register as connector in commercetools Connect
 Follow guidelines [here](https://docs.commercetools.com/connect/getting-started) to register the connector for public/private use.
 
 ## Deployment Configuration
@@ -54,26 +54,56 @@ deployAs:
     applicationType: service
     endpoint: /
     configuration:
-      securedConfiguration:
+      standardConfiguration:
         - key: CTP_PROJECT_KEY
           description: Commercetools project key
-        - key: CTP_CLIENT_ID
-          description: Commercetools client ID
-        - key: CTP_CLIENT_SECRET
-          description: Commercetools client secret
-        - key: CTP_SCOPE
-          description: Commercetools client scope
+          required: true
         - key: CTP_REGION
           description: Region of Commercetools project
+          required: true
         - key: CTP_AUTH_URL
           description: Commercetools Auth URL
+          required: true
         - key: CTP_API_URL
           description: Commercetools API URL
+          required: true
         - key: CTP_SESSION_URL
           description: Session API URL
+          required: true
+        - key: ADYEN_ENVIRONMENT
+          description: Adyen environment
+          required: true
+          default: TEST
+        - key: ADYEN_MERCHANT_ACCOUNT
+          description: Adyen merchant account
+          required: true
+        - key: ADYEN_CLIENT_KEY
+          description: Adyen client key
+          required: true
+        - key: ADYEN_LIVE_URL_PREFIX
+          description: Adyen live URL prefix
+        - key: MERCHANT_RETURN_URL
+          description: Merchant return URL
+        - key: CTP_JWKS_URL
+          description: JWKs url
+        - key: CTP_JWT_ISSUER
+          description: JWT Issuer for jwt validation
+      securedConfiguration:
+        - key: CTP_CLIENT_ID
+          description: Commercetools client ID
+          required: true
+        - key: CTP_CLIENT_SECRET
+          description: Commercetools client secret
+          required: true
+        - key: ADYEN_API_KEY
+          description: Adyen API key
+          required: true
+        - key: ADYEN_NOTIFICATION_HMAC_KEY
+          description: Adyen HMAC key
+          required: true
   - name: enabler
     applicationType: service
-    endpoint: /enabler
+    endpoint: /
     configuration:
       securedConfiguration:
         - key: CTP_REGION
