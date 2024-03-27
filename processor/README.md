@@ -128,3 +128,30 @@ Token can be found in response
 ```
 
 Use the token to authenticate requests protected by JWT: `Authorization: Bearer <token>`. 
+
+## Integration Guide
+The processor supports following operations by integration with Adyen platform:
+
+### Get payment methods
+TBC
+
+### Create payment session
+TBC
+
+### Create payment
+TBC
+
+### Confirm payment
+TBC 
+
+### Get supported payment components
+TBC
+
+### Get status
+TBC
+
+### Get config
+TBC
+
+### Modify payment
+TBC
