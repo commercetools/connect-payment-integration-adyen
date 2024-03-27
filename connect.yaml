@@ -51,9 +51,4 @@ deployAs:
           description: Adyen HMAC key
           required: true
   - name: enabler
-    applicationType: service
-    endpoint: /
-    configuration:
-      securedConfiguration:
-        - key: CTP_REGION
-          description: Region of Commercetools project
+    applicationType: assets
