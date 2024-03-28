@@ -1,7 +1,7 @@
 # Payment Integration Processor
 This module provides an application based on [commercetools Connect](https://docs.commercetools.com/connect), which is triggered by HTTP requests from Checkout UI for payment operations.
 
-The corresponding payment, cart or order details would be fetched from composable commerce platform, and then be sent to external PSPs for various payment operations such as create/capture/cancel/refund payment.
+The corresponding payment, cart or order details would be fetched from composable commerce platform, and then be sent to Adyen payment service for various payment operations such as create session and create/capture/cancel/refund payment.
 
 The module also provides template scripts for post-deployment and pre-undeployment action. After deployment or before undeployment via connect service completed, customized actions can be performed based on users' needs.
 
