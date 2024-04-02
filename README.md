@@ -13,7 +13,14 @@ The adyen-integration connector contains two modules :
 - Enabler: Acts as a wrapper implementation in which frontend components from Adyen embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
 - Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
 
-TBC...
+![connect-adyen-architecture](./docs/connect-adyen.png)
+1. commercetools checkout anywhere in front-end side sends requests to composable commerce for cart creation.
+2. commercetools checkout anywhere retrieves SDK as static assets from enabler in connector.
+3. After downloading the SDK, commercetools checkout anywhere sends request via the SDK to endpoints exposed by processor for various payment operations.
+4. The processor transforms the received request and send them to Ayden platform.
+5. Adyen processes the payment operations and return the response to processor.
+6. The processor handles the payment persistence to composable commerce, and return the result to front-end.
+7. commercetools checkout anywhere handles the order management in composable commerce once it receives the result from the processor. 
 
 ## Prerequisite
 #### 1. commercetools composable commerce API client
@@ -40,7 +47,7 @@ Follow guidelines [here](https://docs.commercetools.com/connect/getting-started)
 
 #### Deployment Configuration
 In order to deploy your customized connector application on commercetools Connect, it needs to be published. For details, please refer to [documentation about commercetools Connect](https://docs.commercetools.com/connect/concepts)
-In addition, in order to support connect, the tax integration connector template has a folder structure as listed below
+In addition, in order to support connect, the adyen payment integration connector has a folder structure as listed below
 ```
 ├── enabler
 │   ├── src

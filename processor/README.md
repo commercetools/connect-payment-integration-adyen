@@ -130,7 +130,7 @@ Token can be found in response
 Use the token to authenticate requests protected by JWT: `Authorization: Bearer <token>`. 
 
 ## APIs
-The processor exposes following endpoints to supports various operations with Adyen platform:
+The processor exposes following endpoints to execute various operations with Adyen platform:
 
 ### Get payment methods
 TBC
