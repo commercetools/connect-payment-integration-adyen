@@ -13,7 +13,35 @@ The adyen-integration connector contains two modules :
 - Enabler: Acts as a wrapper implementation in which frontend components from Adyen embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
 - Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
 
-![connect-adyen-architecture](./docs/connect-adyen.png)
+```mermaid
+%%{ init : { "theme" : "", "flowchart" : { "defaultRenderer": "dagre-wrapper", "curve" : "linear" }}}%%
+
+flowchart TD
+    node1(( ))
+    node2(( ))
+    user("User")-->checkout("Commercetools Checkout")
+    subgraph connector
+        enabler
+        processor
+    end
+    subgraph coco["Commercetools Composable Commerce"]
+        cart
+        order
+        payment
+        
+    end
+    checkout----node1
+    
+    node1--"1. Cart management"-->cart("cart")
+    node1--"2. Order management"-->order("order")
+    checkout("Commercetools Checkout")----node2
+    node2--"3. Get static assets"-->enabler("enabler")
+    node2--"4. Request payment \noperations"-->processor("processor")
+    processor--"5. Request payment \noperations"-->psp("Adyen payment service provider")
+    psp("Adyen payment service provider")--"6. Return response"-->processor
+    processor--"7. Payment management"-->payment("payment")
+```
+
 1. commercetools Checkout in front-end side sends requests to composable commerce for cart creation.
 2. commercetools Checkout retrieves SDK as static assets from enabler in connector.
 3. After downloading the SDK, commercetools Checkout sends request via the SDK to endpoints exposed by processor for various payment operations.
