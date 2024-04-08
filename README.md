@@ -88,7 +88,7 @@ In addition, in order to support connect, the adyen payment integration connecto
 └── connect.yaml
 ```
 
-Connect deployment configuration is specified in `connect.yaml` which is required information needed for publishing of the application. Following is the deployment configuration used by full ingestion and incremental updater modules
+Connect deployment configuration is specified in `connect.yaml` which is required information needed for publishing of the application. Following is the deployment configuration used by enabler and processor modules
 ```
 deployAs:
   - name: processor
