@@ -10,7 +10,7 @@ This repository provides a [connect](https://docs.commercetools.com/connect) for
 
 ## Prerequisite
 #### 1. commercetools composable commerce API client
-Users are expected to create API client responsible for payment management in composable commerce project. Details of the API client are taken as input as environment variables/ configuration for connect such as `CTP_PROJECT_KEY` , `CTP_CLIENT_ID`, `CTP_CLIENT_SECRET`, `CTP_REGION`. For details, please read [Deployment Configuration](./README.md#deployment-configuration).
+Users are expected to create API client responsible for payment management in composable commerce project. Details of the API client are taken as input as environment variables/ configuration for connect such as `CTP_PROJECT_KEY` , `CTP_CLIENT_ID`, `CTP_CLIENT_SECRET`. For details, please read [Deployment Configuration](./README.md#deployment-configuration).
 In addition, please make sure the API client should have enough scope to be able to manage payment. For details, please refer to [Running Application](./processor/README.md#running-application)
 
 #### 2. various URLs from commercetools composable commerce
@@ -58,9 +58,6 @@ deployAs:
         - key: CTP_PROJECT_KEY
           description: Commercetools project key
           required: true
-        - key: CTP_REGION
-          description: Region of Commercetools project
-          required: true
         - key: CTP_AUTH_URL
           description: Commercetools Auth URL
           required: true
@@ -69,6 +66,9 @@ deployAs:
           required: true
         - key: CTP_SESSION_URL
           description: Session API URL
+          required: true
+        - key: CTP_CLIENT_ID
+          description: Commercetools client ID
           required: true
         - key: ADYEN_ENVIRONMENT
           description: Adyen environment
@@ -89,9 +89,6 @@ deployAs:
         - key: CTP_JWT_ISSUER
           description: JWT Issuer for jwt validation
       securedConfiguration:
-        - key: CTP_CLIENT_ID
-          description: Commercetools client ID
-          required: true
         - key: CTP_CLIENT_SECRET
           description: Commercetools client secret
           required: true
@@ -102,19 +99,13 @@ deployAs:
           description: Adyen HMAC key
           required: true
   - name: enabler
-    applicationType: service
-    endpoint: /
-    configuration:
-      securedConfiguration:
-        - key: CTP_REGION
-          description: Region of Commercetools project
+    applicationType: assets
 ```
 
 Here you can see the details about various variables in configuration
 - CTP_PROJECT_KEY: The key of commercetools composable commerce project.
 - CTP_CLIENT_ID: The client ID of your commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK.
 - CTP_CLIENT_SECRET: The client secret of commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK.
-- CTP_REGION: As the commercetools composable commerce APIs are provided in six different region, it defines the region which your commercetools composable commerce user account belongs to.
 - CTP_AUTH_URL: The URL for authentication in commercetools platform. It is used to generate OAuth 2.0 token which is required in every API call to commercetools composable commerce. The default value is `https://auth.europe-west1.gcp.commercetools.com`. For details, please refer to documentation [here](https://docs.commercetools.com/tutorials/api-tutorial#authentication).
 - CTP_API_URL: The URL for commercetools composable commerce API. Default value is `https://api.europe-west1.gcp.commercetools.com`.
 - CTP_SESSION_URL: The URL for session creation in commercetools platform. Connectors relies on the session created to be able to share information between enabler and processor. The default value is `https://session.europe-west1.gcp.commercetools.com`.

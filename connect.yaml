@@ -7,9 +7,6 @@ deployAs:
         - key: CTP_PROJECT_KEY
           description: Commercetools project key
           required: true
-        - key: CTP_REGION
-          description: Region of Commercetools project
-          required: true
         - key: CTP_AUTH_URL
           description: Commercetools Auth URL
           required: true
@@ -18,6 +15,9 @@ deployAs:
           required: true
         - key: CTP_SESSION_URL
           description: Session API URL
+          required: true
+        - key: CTP_CLIENT_ID
+          description: Commercetools client ID
           required: true
         - key: ADYEN_ENVIRONMENT
           description: Adyen environment
@@ -38,9 +38,6 @@ deployAs:
         - key: CTP_JWT_ISSUER
           description: JWT Issuer for jwt validation
       securedConfiguration:
-        - key: CTP_CLIENT_ID
-          description: Commercetools client ID
-          required: true
         - key: CTP_CLIENT_SECRET
           description: Commercetools client secret
           required: true
