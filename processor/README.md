@@ -133,7 +133,21 @@ Use the token to authenticate requests protected by JWT: `Authorization: Bearer 
 The processor exposes following endpoints to execute various operations with Adyen platform:
 
 ### Get payment methods
-TBC
+It obtains the available payment methods supported by the given Adyen account.
+#### Endpoint
+`POST /payment-methods`
+
+#### Request Parameters
+The request body is same as [adyen checkout payment methods request](https://docs.adyen.com/api-explorer/Checkout/71/post/paymentMethods#request) except following parameters are not required
+- amount
+- merchantAccount
+- countryCode
+
+#### Response Parameters
+- paymentMethods: Detailed list of payment methods required to generate payment forms.
+- storedPaymentMethods : List of all stored payment methods.
+ 
+For details, please check in [adyen checkout payment methods response](https://docs.adyen.com/api-explorer/Checkout/71/post/paymentMethods#responses-200-paymentMethods).
 
 ### Create payment session
 It creates payment resource in composable commerce and create Adyen payment session in payment service provider.
@@ -141,7 +155,7 @@ It creates payment resource in composable commerce and create Adyen payment sess
 `POST /sessions`
 
 #### Request Parameters
-The request body is same as [adyen checkout create session request](https://docs.adyen.com/api-explorer/Checkout/69/post/sessions#request) except following parameters are not required
+The request body is same as [adyen checkout create session request](https://docs.adyen.com/api-explorer/Checkout/71/post/sessions#request) except following parameters are not required
 - amount
 - merchantAccount
 - countryCode
@@ -155,7 +169,7 @@ The request body is same as [adyen checkout create session request](https://docs
 These parameters are already provided by the cart created in composable commerce platform, therefore they are not required to be provided when calling the endpoint.
 
 #### Response Parameters
-- sessionData: The [adyen checkout create session response](https://docs.adyen.com/api-explorer/Checkout/69/post/sessions#responses) returned by Adyen platform after Adyen session created. 
+- sessionData: The [adyen checkout create session response](https://docs.adyen.com/api-explorer/Checkout/71/post/sessions#responses) returned by Adyen platform after Adyen session created. 
 - paymentReference : It represents the unique identifier of payment resource created in composable commerce platform. 
 
 ### Create payment
@@ -164,7 +178,7 @@ It mainly starts an Ayden payment transaction in payment services provider. If p
 `POST /payments`
 
 #### Request Parameters
-The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/69/post/payments#request) except following parameters are not required
+The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request) except following parameters are not required
 - amount
 - additionalAmount
 - merchantAccount
