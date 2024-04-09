@@ -210,8 +210,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     if (opts.data.paymentReference) {
-      ctPayment = await this.ctPaymentService.getPayment({
+      ctPayment = await this.ctPaymentService.updatePayment({
         id: opts.data.paymentReference,
+        paymentMethod: opts.data.paymentMethod?.type,
       });
 
       if (await this.hasPaymentAmountChanged(ctCart, ctPayment)) {
@@ -228,6 +229,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         amountPlanned,
         paymentMethodInfo: {
           paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          method: opts.data.paymentMethod?.type,
         },
         ...(ctCart.customerId && {
           customer: {
@@ -268,7 +270,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
-      paymentMethod: res.paymentMethod?.type, //TODO: should be converted to a standard format? i.e scheme to card
       transaction: {
         type: 'Authorization', //TODO: is there any case where this could be a direct charge?
         amount: ctPayment.amountPlanned,
@@ -305,7 +306,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
-      paymentMethod: res.paymentMethod?.type, //TODO:review
       transaction: {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
