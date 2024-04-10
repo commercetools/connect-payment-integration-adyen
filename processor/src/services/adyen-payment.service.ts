@@ -322,6 +322,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
+    log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     const updateData = await this.notificationConverter.convert(opts);
     const updatedPayment = await this.ctPaymentService.updatePayment(updateData);
     log.info('Payment updated after processing the notification', {
