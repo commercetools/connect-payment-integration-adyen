@@ -20,14 +20,14 @@ export class NotificationConverter {
       case NotificationRequestItem.EventCodeEnum.Authorisation:
         return {
           type: 'Authorization',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
       case NotificationRequestItem.EventCodeEnum.Capture:
         return {
           type: 'Charge',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
@@ -41,14 +41,14 @@ export class NotificationConverter {
       case NotificationRequestItem.EventCodeEnum.Cancellation:
         return {
           type: 'CancelAuthorization',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
       case NotificationRequestItem.EventCodeEnum.Refund:
         return {
           type: 'Refund',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };

@@ -48,6 +48,7 @@ import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
+import { log } from '../libs/logger';
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
@@ -322,7 +323,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     const updateData = await this.notificationConverter.convert(opts);
-    await this.ctPaymentService.updatePayment(updateData);
+    const updatedPayment = await this.ctPaymentService.updatePayment(updateData);
+    log.info('Payment updated after processing the notification', {
+      paymentId: updatedPayment.id,
+      version: updatedPayment.version,
+      pspReference: updateData.pspReference,
+      transaction: JSON.stringify(updateData.transaction),
+    });
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
