@@ -201,7 +201,14 @@ These parameters are already provided by the cart created in composable commerce
 - merchantReturnUrl:
 
 ### Confirm payment
-TBC 
+Submits details for a payment to Adyen platform to confirm a payment. It is only necessary when the payment is initialized through [create payment](#create-payment)
+`POST /payments/details`
+
+#### Request Parameters
+The request body is same as [adyen checkout create payment details request](The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request)) with following parameters :
+- authenticationData: Data for 3DS authentication.
+- details: 
+- paymentData
 
 ### Get supported payment components
 TBC
