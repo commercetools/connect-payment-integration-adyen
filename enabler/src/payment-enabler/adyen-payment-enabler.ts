@@ -13,6 +13,16 @@ import { IdealBuilder } from "../components/payment-methods/ideal";
 import { PaypalBuilder } from "../components/payment-methods/paypal";
 
 
+class AdyenInitError extends Error {
+  sessionId: string;
+  constructor(message: string, sessionId: string) {
+    super(message);
+    this.name = "AdyenInitError";
+    this.message = message;
+    this.sessionId = sessionId;
+  }
+}
+
 type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
 };
@@ -52,8 +62,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
-      console.log('Error: No session data found');
-      options.onError && options.onError('Error: No session data found');
+      throw new AdyenInitError("No session data found", options.sessionId);
     } else {
       const adyenCheckout = await AdyenCheckout({
         onPaymentCompleted: (result, component) => {
