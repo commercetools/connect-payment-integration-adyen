@@ -202,16 +202,46 @@ These parameters are already provided by the cart created in composable commerce
 
 ### Confirm payment
 Submits details for a payment to Adyen platform to confirm a payment. It is only necessary when the payment is initialized through [create payment](#create-payment)
+#### Endpoint
 `POST /payments/details`
 
 #### Request Parameters
 The request body is same as [adyen checkout create payment details request](The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request)) with following parameters :
 - authenticationData: Data for 3DS authentication.
-- details: 
-- paymentData
+- details: A collection of result returned from the `/payments` call.
+- paymentData: Encoded payment data returned from the `/payments` call. If `AuthenticationNotRequired` is received as `resultCode` in the `/payments` response, use the `threeDSPaymentData` from the same response. If the `resultCode` is `AuthenticationFinished`, use the `action.paymentData` from the same response.
+
+#### Response Parameters
+TBC 
 
 ### Get supported payment components
-TBC
+Private endpoint protected by JSON Web Token that exposes the payment methods supported by the connector so that checkout application can retrieve the available payment components. 
+#### Endpoint
+`GET /operations/payment-components`
+
+#### Request Parameters
+N/A
+
+#### Response Parameters
+Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal` and `Sofort`
+```
+{
+    components: [
+        {
+          type: 'card',
+        },
+        {
+          type: 'ideal',
+        },
+        {
+          type: 'paypal',
+        },
+        {
+          type: 'sofort',
+        },
+    ],
+}
+```
 
 ### Get status
 TBC
