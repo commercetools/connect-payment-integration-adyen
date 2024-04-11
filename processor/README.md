@@ -128,3 +128,75 @@ Token can be found in response
 ```
 
 Use the token to authenticate requests protected by JWT: `Authorization: Bearer <token>`. 
+
+## APIs
+The processor exposes following endpoints to execute various operations with Adyen platform:
+
+### Get payment methods
+TBC
+
+### Create payment session
+It creates payment resource in composable commerce and create Adyen payment session in payment service provider.
+#### Endpoint
+`POST /sessions`
+
+#### Request Parameters
+The request body is same as [adyen checkout create session request](https://docs.adyen.com/api-explorer/Checkout/69/post/sessions#request) except following parameters are not required
+- amount
+- merchantAccount
+- countryCode
+- returnUrl
+- reference
+- storePaymentMethod
+- shopperReference
+- recurringProcessingModel
+- storePaymentMethodMode
+
+These parameters are already provided by the cart created in composable commerce platform, therefore they are not required to be provided when calling the endpoint.
+
+#### Response Parameters
+- sessionData: The [adyen checkout create session response](https://docs.adyen.com/api-explorer/Checkout/69/post/sessions#responses) returned by Adyen platform after Adyen session created. 
+- paymentReference : It represents the unique identifier of payment resource created in composable commerce platform. 
+
+### Create payment
+It mainly starts an Ayden payment transaction in payment services provider. If payment reference is absent in request parameters, the endpoint creates payment resource in composable commerce based on data from the cart.
+#### Endpoint
+`POST /payments`
+
+#### Request Parameters
+The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/69/post/payments#request) except following parameters are not required
+- amount
+- additionalAmount
+- merchantAccount
+- countryCode
+- returnUrl
+- lineItems
+- reference
+- shopperReference
+- recurringProcessingModel
+
+These parameters are already provided by the cart created in composable commerce platform, therefore they are not required to be provided when calling the endpoint.
+
+#### Response Parameters
+- action: The [action](https://docs.adyen.com/api-explorer/Checkout/69/post/payments#responses-200-action) to be taken in Adyen platform to complete the payment. 
+- resultCode: It represents the [resultCode](https://docs.adyen.com/api-explorer/Checkout/69/post/payments#responses-200-resultCode) of the payment in Adyen platform. 
+- threeDS2ResponseData: Response of the 3D Secure 2 authentication.
+- threeDS2Result: Result of the 3D Secure 2 authentication.
+- threeDSPaymentData: Returned by Adyen platform. When it is non-empty, it contains a value that is mandatory parameter as paymentData for payment confirmation in next step.
+- paymentReference: It represents the unique identifier of the update payment resource in composable commerce.
+- merchantReturnUrl:
+
+### Confirm payment
+TBC 
+
+### Get supported payment components
+TBC
+
+### Get status
+TBC
+
+### Get config
+TBC
+
+### Modify payment
+TBC

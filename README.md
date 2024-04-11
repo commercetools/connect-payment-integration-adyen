@@ -1,12 +1,54 @@
 # connect-payment-integration-adyen
 This repository provides a [connect](https://docs.commercetools.com/connect) for integration to Adyen payment service provider (PSP).
 
-## Template Features
+## Features
 - Typescript language supported.
 - Uses Fastify as web server framework.
 - Uses [commercetools SDK](https://docs.commercetools.com/sdk/js-sdk-getting-started) for the commercetools-specific communication.
 - Uses [connect payment SDK](https://github.com/commercetools/connect-payments-sdk) to manage request context, sessions and JWT authentication.
 - Includes local development utilities in npm commands to build, start, test, lint & prettify code.
+
+## Overview
+The adyen-integration connector contains two modules :  
+- Enabler: Acts as a wrapper implementation in which frontend components from Adyen embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
+- Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
+
+```mermaid
+%%{ init : { "theme" : "", "flowchart" : { "defaultRenderer": "dagre-wrapper", "curve" : "linear" }}}%%
+
+flowchart TD
+    node1(( ))
+    node2(( ))
+    user("User")-->checkout("Commercetools Checkout")
+    subgraph connector
+        enabler
+        processor
+    end
+    subgraph coco["Commercetools Composable Commerce"]
+        cart
+        order
+        payment
+        
+    end
+    checkout----node1
+    
+    node1--"1. Cart management"-->cart("cart")
+    node1--"2. Order management"-->order("order")
+    checkout("Commercetools Checkout")----node2
+    node2--"3. Get static assets"-->enabler("enabler")
+    node2--"4. Request payment \noperations"-->processor("processor")
+    processor--"5. Request payment \noperations"-->psp("Adyen payment service provider")
+    psp("Adyen payment service provider")--"6. Return response"-->processor
+    processor--"7. Payment management"-->payment("payment")
+```
+
+1. commercetools Checkout in front-end side sends requests to composable commerce for cart creation.
+2. commercetools Checkout retrieves SDK as static assets from enabler in connector.
+3. After downloading the SDK, commercetools Checkout sends request via the SDK to endpoints exposed by processor for various payment operations.
+4. The processor transforms the received request and send them to Ayden platform.
+5. Adyen processes the payment operations and return the response to processor.
+6. The processor handles the payment persistence to composable commerce, and return the result to front-end.
+7. commercetools Checkout handles the order management in composable commerce once it receives the result from the processor. 
 
 ## Prerequisite
 #### 1. commercetools composable commerce API client
@@ -21,20 +63,19 @@ Their values are taken as input as environment variables/ configuration for conn
 Various account data provided by Adyen are necessary to be configured so that the requests from the connect application can be authenticated by Adyen platform within the integration.
 Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX` and `ADYEN_ENVIRONMENT`.
 
-## Getting started
-The template contains two modules :  
-- Enabler: Acts as a wrapper implementation in which frontend components from Adyen embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
-- Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
+## Development Guide
+Regarding the development of enabler module, please refer to the following documentations:
+- [Development of Enabler](./enabler/README.md)
 
 Regarding the development of processor module, please refer to the following documentations:
 - [Development of Processor](./processor/README.md)
 
-#### 1. Register as connector in commercetools Connect
-Follow guidelines [here](https://docs.commercetools.com/connect/getting-started) to register the connector for public/private use.
+#### Connector in commercetools Connect
+Use public connector listed in connect marketplace. If any customization done, follow guidelines [here](https://docs.commercetools.com/connect/getting-started) to register the connector for private use.
 
-## Deployment Configuration
+#### Deployment Configuration
 In order to deploy your customized connector application on commercetools Connect, it needs to be published. For details, please refer to [documentation about commercetools Connect](https://docs.commercetools.com/connect/concepts)
-In addition, in order to support connect, the tax integration connector template has a folder structure as listed below
+In addition, in order to support connect, the adyen payment integration connector has a folder structure as listed below
 ```
 ├── enabler
 │   ├── src
@@ -47,7 +88,7 @@ In addition, in order to support connect, the tax integration connector template
 └── connect.yaml
 ```
 
-Connect deployment configuration is specified in `connect.yaml` which is required information needed for publishing of the application. Following is the deployment configuration used by full ingestion and incremental updater modules
+Connect deployment configuration is specified in `connect.yaml` which is required information needed for publishing of the application. Following is the deployment configuration used by enabler and processor modules
 ```
 deployAs:
   - name: processor
