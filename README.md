@@ -70,8 +70,8 @@ Regarding the development of enabler module, please refer to the following docum
 Regarding the development of processor module, please refer to the following documentations:
 - [Development of Processor](./processor/README.md)
 
-#### Register as connector in commercetools Connect
-Follow guidelines [here](https://docs.commercetools.com/connect/getting-started) to register the connector for public/private use.
+#### Connector in commercetools Connect
+Use public connector listed in connect marketplace. If any customization done, follow guidelines [here](https://docs.commercetools.com/connect/getting-started) to register the connector for private use.
 
 #### Deployment Configuration
 In order to deploy your customized connector application on commercetools Connect, it needs to be published. For details, please refer to [documentation about commercetools Connect](https://docs.commercetools.com/connect/concepts)
