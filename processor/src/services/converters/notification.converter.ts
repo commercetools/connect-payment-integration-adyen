@@ -1,6 +1,7 @@
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
 import { TransactionData, UpdatePayment, Money } from '@commercetools/connect-payments-sdk';
+import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 
 export class NotificationConverter {
   constructor() {}
@@ -10,7 +11,7 @@ export class NotificationConverter {
 
     return {
       id: item.merchantReference,
-      pspReference: item.pspReference,
+      pspReference: item.originalReference || item.pspReference,
       transaction: this.populateTransaction(item),
     };
   }
@@ -67,8 +68,7 @@ export class NotificationConverter {
           interactionId: item.pspReference,
         };
       default:
-        //TODO: throw unsupported notification error
-        throw new Error('Unsupported notification');
+        throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
     }
   }
 

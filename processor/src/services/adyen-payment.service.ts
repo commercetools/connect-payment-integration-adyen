@@ -6,6 +6,7 @@ import {
   statusHandler,
   Cart,
   Payment,
+  UpdatePayment,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -49,6 +50,7 @@ import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/check
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { log } from '../libs/logger';
+import { UnsupportedNotificationError } from '../errors/adyen-api.error';
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
@@ -336,7 +338,19 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
-    const updateData = await this.notificationConverter.convert(opts);
+    let updateData!: UpdatePayment;
+
+    try {
+      updateData = await this.notificationConverter.convert(opts);
+    } catch (e) {
+      if (e instanceof UnsupportedNotificationError) {
+        log.info('Unsupported notification received', { notification: JSON.stringify(opts.data) });
+        return;
+      }
+      log.error('Error processing notification', { error: e });
+      throw e;
+    }
+
     const updatedPayment = await this.ctPaymentService.updatePayment(updateData);
     log.info('Payment updated after processing the notification', {
       paymentId: updatedPayment.id,
