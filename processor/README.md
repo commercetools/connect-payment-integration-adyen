@@ -247,7 +247,21 @@ Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal` and
 TBC
 
 ### Get config
-TBC
+Exposes configuration to the frontend such as clientKey and environment
+#### Endpoint
+`GET /operations/config`
+
+#### Request Parameters
+N/A
+
+#### Response Parameters
+It returns an object with clientKey and environment as key-value pair as below
+```
+{
+  clientKey: <clientKey>,
+  environment: <environment>,
+}
+```
 
 ### Modify payment
 TBC
