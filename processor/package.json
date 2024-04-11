@@ -1,6 +1,6 @@
 {
   "name": "payment-integration-adyen",
-  "version": "3.0.0",
+  "version": "3.0.2",
   "description": "Payment integration with Adyen",
   "main": "dist/server.js",
   "scripts": {
