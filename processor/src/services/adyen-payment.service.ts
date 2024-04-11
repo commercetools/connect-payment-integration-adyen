@@ -279,6 +279,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       },
     });
 
+    log.info(`Payment authorization processed.`, {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
     return {
       ...res,
       paymentReference: updatedPayment.id,
@@ -314,6 +320,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
+
+    log.info(`Payment confirmation processed.`, {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
     return {
       ...res,
       paymentReference: updatedPayment.id,
