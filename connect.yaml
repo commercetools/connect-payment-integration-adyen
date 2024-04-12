@@ -1,4 +1,6 @@
 deployAs:
+  - name: enabler
+    applicationType: assets
   - name: processor
     applicationType: service
     endpoint: /
@@ -8,14 +10,17 @@ deployAs:
           description: Commercetools project key
           required: true
         - key: CTP_AUTH_URL
-          description: Commercetools Auth URL
+          description: commercetools Auth URL
           required: true
+          default: https://auth.europe-west1.gcp.commercetools.com
         - key: CTP_API_URL
-          description: Commercetools API URL
+          description: commercetools API URL
           required: true
+          default: https://api.europe-west1.gcp.commercetools.com
         - key: CTP_SESSION_URL
           description: Session API URL
           required: true
+          default: https://session.europe-west1.gcp.commercetools.com
         - key: CTP_CLIENT_ID
           description: Commercetools client ID
           required: true
@@ -35,8 +40,11 @@ deployAs:
           description: Merchant return URL
         - key: CTP_JWKS_URL
           description: JWKs url
+          required: true
+          default: https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json
         - key: CTP_JWT_ISSUER
           description: JWT Issuer for jwt validation
+          required: true
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: Commercetools client secret
@@ -47,5 +55,3 @@ deployAs:
         - key: ADYEN_NOTIFICATION_HMAC_KEY
           description: Adyen HMAC key
           required: true
-  - name: enabler
-    applicationType: assets
