@@ -91,25 +91,30 @@ In addition, in order to support connect, the adyen payment integration connecto
 Connect deployment configuration is specified in `connect.yaml` which is required information needed for publishing of the application. Following is the deployment configuration used by enabler and processor modules
 ```
 deployAs:
+  - name: enabler
+    applicationType: assets
   - name: processor
     applicationType: service
     endpoint: /
     configuration:
       standardConfiguration:
         - key: CTP_PROJECT_KEY
-          description: Commercetools project key
+          description: commercetools project key
           required: true
         - key: CTP_AUTH_URL
-          description: Commercetools Auth URL
+          description: commercetools Auth URL
           required: true
+          default: https://auth.europe-west1.gcp.commercetools.com
         - key: CTP_API_URL
-          description: Commercetools API URL
+          description: commercetools API URL
           required: true
+          default: https://api.europe-west1.gcp.commercetools.com
         - key: CTP_SESSION_URL
           description: Session API URL
           required: true
+          default: https://session.europe-west1.gcp.commercetools.com
         - key: CTP_CLIENT_ID
-          description: Commercetools client ID
+          description: commercetools client ID
           required: true
         - key: ADYEN_ENVIRONMENT
           description: Adyen environment
@@ -125,13 +130,17 @@ deployAs:
           description: Adyen live URL prefix
         - key: MERCHANT_RETURN_URL
           description: Merchant return URL
+          required: true
         - key: CTP_JWKS_URL
           description: JWKs url
+          required: true
+          default: https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json
         - key: CTP_JWT_ISSUER
           description: JWT Issuer for jwt validation
+          required: true
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
-          description: Commercetools client secret
+          description: commercetools client secret
           required: true
         - key: ADYEN_API_KEY
           description: Adyen API key
@@ -139,8 +148,7 @@ deployAs:
         - key: ADYEN_NOTIFICATION_HMAC_KEY
           description: Adyen HMAC key
           required: true
-  - name: enabler
-    applicationType: assets
+
 ```
 
 Here you can see the details about various variables in configuration
@@ -155,7 +163,7 @@ Here you can see the details about various variables in configuration
 - ADYEN_ENVIRONMENT: The indicator of adyen environment.  Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
 - ADYEN_MERCHANT_ACCOUNT: The name of adyen merchant account.
 - ADYEN_CLIENT_KEY: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication).
-- ADYEN_LIVE_URL_PREFIX: It represents live endpoint prefix used by Adyen platform. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
+- ADYEN_LIVE_URL_PREFIX: It represents live endpoint prefix used by Adyen platform. It is only required for Adyen live environment. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
 - MERCHANT_RETURN_URL: The return URL located in merchant platform.
 - ADYEN_API_KEY: It represents the API Key used for Ayden request authentication. For details, please refer to [Ayden API key authentication](https://docs.adyen.com/development-resources/api-authentication/#api-key-authentication).
 - ADYEN_NOTIFICATION_HMAC_KEY: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
