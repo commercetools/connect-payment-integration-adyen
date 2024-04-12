@@ -38,6 +38,7 @@ deployAs:
           description: Adyen live URL prefix
         - key: MERCHANT_RETURN_URL
           description: Merchant return URL
+          required: true
         - key: CTP_JWKS_URL
           description: JWKs url
           required: true
