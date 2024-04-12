@@ -7,7 +7,7 @@ deployAs:
     configuration:
       standardConfiguration:
         - key: CTP_PROJECT_KEY
-          description: Commercetools project key
+          description: commercetools project key
           required: true
         - key: CTP_AUTH_URL
           description: commercetools Auth URL
@@ -22,7 +22,7 @@ deployAs:
           required: true
           default: https://session.europe-west1.gcp.commercetools.com
         - key: CTP_CLIENT_ID
-          description: Commercetools client ID
+          description: commercetools client ID
           required: true
         - key: ADYEN_ENVIRONMENT
           description: Adyen environment
@@ -48,7 +48,7 @@ deployAs:
           required: true
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
-          description: Commercetools client secret
+          description: commercetools client secret
           required: true
         - key: ADYEN_API_KEY
           description: Adyen API key
