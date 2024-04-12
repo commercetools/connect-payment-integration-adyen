@@ -66,7 +66,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     } else {
       const adyenCheckout = await AdyenCheckout({
         onPaymentCompleted: (result, component) => {
-          debugger;
           console.info(result, component);
           window.location.href = options.processorUrl + '/confirm';
         },
