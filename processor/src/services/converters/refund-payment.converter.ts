@@ -3,8 +3,6 @@ import { PaymentRefundRequest } from '@adyen/api-library/lib/src/typings/checkou
 import { RefundPaymentRequest } from '../types/operation.type';
 
 export class RefundPaymentConverter {
-  constructor() {}
-
   public convertRequest(opts: RefundPaymentRequest): PaymentRefundRequest {
     return {
       merchantAccount: config.adyenMerchantAccount,

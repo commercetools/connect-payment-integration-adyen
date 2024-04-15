@@ -5,8 +5,6 @@ import { ErrorAuthErrorResponse } from '@commercetools/connect-payments-sdk';
 import { NotificationRequestDTO } from '../../../dtos/adyen-payment.dto';
 
 export class HmacAuthHook {
-  constructor() {}
-
   public authenticate() {
     return async (request: FastifyRequest) => {
       const data = request.body as NotificationRequestDTO;

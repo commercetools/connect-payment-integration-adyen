@@ -6,8 +6,6 @@ import { buildReturnUrl, populateCartAddress, populateLineItems } from './helper
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 
 export class CreatePaymentConverter {
-  constructor() {}
-
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { paymentReference: _, ...requestData } = opts.data;

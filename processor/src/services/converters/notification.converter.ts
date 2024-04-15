@@ -4,8 +4,6 @@ import { TransactionData, UpdatePayment, Money } from '@commercetools/connect-pa
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 
 export class NotificationConverter {
-  constructor() {}
-
   public convert(opts: { data: NotificationRequestDTO }): UpdatePayment {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 

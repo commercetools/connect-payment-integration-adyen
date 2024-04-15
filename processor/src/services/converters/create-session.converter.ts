@@ -5,8 +5,6 @@ import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
 
 export class CreateSessionConverter {
-  constructor() {}
-
   public convertRequest(opts: {
     data: CreateSessionRequestDTO;
     cart: Cart;
