@@ -20,7 +20,7 @@
   "license": "ISC",
   "dependencies": {
     "@adyen/api-library": "16.2.0",
-    "@commercetools-backend/loggers": "22.23.2",
+    "@commercetools-backend/loggers": "22.23.3",
     "@commercetools/connect-payments-sdk": "0.4.4",
     "@fastify/autoload": "5.8.0",
     "@fastify/cors": "9.0.1",
@@ -37,9 +37,9 @@
   "devDependencies": {
     "@jest/globals": "29.7.0",
     "@types/jest": "29.5.12",
-    "@types/node": "20.12.5",
-    "@typescript-eslint/eslint-plugin": "7.5.0",
-    "@typescript-eslint/parser": "7.5.0",
+    "@types/node": "20.12.7",
+    "@typescript-eslint/eslint-plugin": "7.6.0",
+    "@typescript-eslint/parser": "7.6.0",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.29.1",
@@ -53,6 +53,6 @@
     "prettier": "3.2.5",
     "ts-jest": "29.1.2",
     "ts-node": "10.9.2",
-    "typescript": "5.4.4"
+    "typescript": "5.4.5"
   }
 }
