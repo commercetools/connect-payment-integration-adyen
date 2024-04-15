@@ -212,7 +212,11 @@ The request body is same as [adyen checkout create payment details request](The 
 - paymentData: Encoded payment data returned from the `/payments` call. If `AuthenticationNotRequired` is received as `resultCode` in the `/payments` response, use the `threeDSPaymentData` from the same response. If the `resultCode` is `AuthenticationFinished`, use the `action.paymentData` from the same response.
 
 #### Response Parameters
-TBC 
+It returns following attributes in response
+- 
+- 
+- paymentReference: Unique identifier of payment resources updated in commercetools composable commerce.
+-  
 
 ### Get supported payment components
 Private endpoint protected by JSON Web Token that exposes the payment methods supported by the connector so that checkout application can retrieve the available payment components. 
@@ -243,11 +247,8 @@ Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal` and
 }
 ```
 
-### Get status
-TBC
-
 ### Get config
-Exposes configuration to the frontend such as clientKey and environment
+Exposes configuration to the frontend such as `clientKey` and `environment`.
 #### Endpoint
 `GET /operations/config`
 
@@ -255,7 +256,7 @@ Exposes configuration to the frontend such as clientKey and environment
 N/A
 
 #### Response Parameters
-It returns an object with clientKey and environment as key-value pair as below
+It returns an object with `clientKey` and `environment` as key-value pair as below:
 ```
 {
   clientKey: <clientKey>,
@@ -263,5 +264,84 @@ It returns an object with clientKey and environment as key-value pair as below
 }
 ```
 
+
+### Get status
+It provides health check feature for checkout front-end so that the correctness of configurations can be verified.
+#### Endpoint
+`GET /operations/status`
+
+#### Request Parameters
+N/A
+
+#### Response Parameters
+It returns following attributes in response:
+- status: It indicates the health check status. It can be `OK`, `Partially Available` or `Unavailable`
+- timestamp: The timestamp of the status request
+- version: Current version of the payment connector.
+- checks: List of health check result details. It contains health check result with various external system including commercetools composable commerce and Adyen payment services provider.
+```
+    [ 
+        {
+            name: <name of external system>
+            status: <status with indicator UP or DOWN>
+            details: TBC
+        }
+    ]
+```
+- metadata: It lists a collection of metadata including the name/description of the connector and the version of SDKs used to connect to external system.  
 ### Modify payment
-TBC
+Private endpoint called by Checkout frontend to support various payment update requests such as cancel/refund/capture payment. It is protected by `manage_checkout_payment_intents` access right of composable commerce OAuth2 token.
+#### Endpoint
+`POST /operations/payment-intents/{paymentsId}`
+
+#### Request Parameters
+The request payload is different based on different update operations:
+- Cancel Payment
+
+```
+{
+    actions: [{
+        action: "cancelPayment",
+    }]
+}
+```
+
+- Capture Payment
+    - centAmount: Amount in the smallest indivisible unit of a currency. For example, 5 EUR is specified as 500 while 5 JPY is specified as 5.
+    - currencyCode: Currency code compliant to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
+    
+    ```
+    {
+        actions: [{
+            action: "capturePayment",
+            amount: {
+                centAmount: <amount>,
+                currencyCode: <currecy code>
+            }
+        }]
+    } 
+    ```
+  
+- Refund Payment
+    - centAmount: Amount in the smallest indivisible unit of a currency. For example, 5 EUR is specified as 500 while 5 JPY is specified as 5.
+    - currencyCode: Currency code compliant to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
+    
+    ```
+    {
+        actions: [{
+            action: "refundPayment",
+            amount: {
+                centAmount: <amount>,
+                currencyCode: <currecy code>
+            }
+        }]
+    } 
+    ```
+
+#### Response Parameters
+```
+{
+    outcome: "approved|rejected|received"
+}
+
+```
