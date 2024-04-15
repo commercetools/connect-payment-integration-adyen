@@ -3,8 +3,6 @@ import { PaymentCancelRequest } from '@adyen/api-library/lib/src/typings/checkou
 import { CancelPaymentRequest } from '../types/operation.type';
 
 export class CancelPaymentConverter {
-  constructor() {}
-
   public convertRequest(opts: CancelPaymentRequest): PaymentCancelRequest {
     return {
       merchantAccount: config.adyenMerchantAccount,

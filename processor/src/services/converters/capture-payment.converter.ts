@@ -3,8 +3,6 @@ import { PaymentCaptureRequest } from '@adyen/api-library/lib/src/typings/checko
 import { CapturePaymentRequest } from '../types/operation.type';
 
 export class CapturePaymentConverter {
-  constructor() {}
-
   public convertRequest(opts: CapturePaymentRequest): PaymentCaptureRequest {
     return {
       merchantAccount: config.adyenMerchantAccount,
