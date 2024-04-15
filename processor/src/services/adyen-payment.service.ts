@@ -6,6 +6,7 @@ import {
   statusHandler,
   Cart,
   Payment,
+  UpdatePayment,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -48,6 +49,8 @@ import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
+import { log } from '../libs/logger';
+import { UnsupportedNotificationError } from '../errors/adyen-api.error';
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
@@ -210,8 +213,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     if (opts.data.paymentReference) {
-      ctPayment = await this.ctPaymentService.getPayment({
+      ctPayment = await this.ctPaymentService.updatePayment({
         id: opts.data.paymentReference,
+        paymentMethod: opts.data.paymentMethod?.type,
       });
 
       if (await this.hasPaymentAmountChanged(ctCart, ctPayment)) {
@@ -228,6 +232,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         amountPlanned,
         paymentMethodInfo: {
           paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          method: opts.data.paymentMethod?.type,
         },
         ...(ctCart.customerId && {
           customer: {
@@ -268,13 +273,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
-      paymentMethod: res.paymentMethod?.type, //TODO: should be converted to a standard format? i.e scheme to card
       transaction: {
         type: 'Authorization', //TODO: is there any case where this could be a direct charge?
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
         state: txState,
       },
+    });
+
+    log.info(`Payment authorization processed.`, {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
     });
 
     return {
@@ -305,7 +315,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
-      paymentMethod: res.paymentMethod?.type, //TODO:review
       transaction: {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
@@ -313,6 +322,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
+
+    log.info(`Payment confirmation processed.`, {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
     return {
       ...res,
       paymentReference: updatedPayment.id,
@@ -321,8 +337,27 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
-    const updateData = await this.notificationConverter.convert(opts);
-    await this.ctPaymentService.updatePayment(updateData);
+    log.info('Processing notification', { notification: JSON.stringify(opts.data) });
+    let updateData!: UpdatePayment;
+
+    try {
+      updateData = await this.notificationConverter.convert(opts);
+    } catch (e) {
+      if (e instanceof UnsupportedNotificationError) {
+        log.info('Unsupported notification received', { notification: JSON.stringify(opts.data) });
+        return;
+      }
+      log.error('Error processing notification', { error: e });
+      throw e;
+    }
+
+    const updatedPayment = await this.ctPaymentService.updatePayment(updateData);
+    log.info('Payment updated after processing the notification', {
+      paymentId: updatedPayment.id,
+      version: updatedPayment.version,
+      pspReference: updateData.pspReference,
+      transaction: JSON.stringify(updateData.transaction),
+    });
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {

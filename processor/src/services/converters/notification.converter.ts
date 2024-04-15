@@ -1,6 +1,7 @@
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
 import { TransactionData, UpdatePayment, Money } from '@commercetools/connect-payments-sdk';
+import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 
 export class NotificationConverter {
   constructor() {}
@@ -10,7 +11,7 @@ export class NotificationConverter {
 
     return {
       id: item.merchantReference,
-      pspReference: item.pspReference,
+      pspReference: item.originalReference || item.pspReference,
       transaction: this.populateTransaction(item),
     };
   }
@@ -20,14 +21,14 @@ export class NotificationConverter {
       case NotificationRequestItem.EventCodeEnum.Authorisation:
         return {
           type: 'Authorization',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
       case NotificationRequestItem.EventCodeEnum.Capture:
         return {
           type: 'Charge',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
@@ -41,14 +42,14 @@ export class NotificationConverter {
       case NotificationRequestItem.EventCodeEnum.Cancellation:
         return {
           type: 'CancelAuthorization',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
       case NotificationRequestItem.EventCodeEnum.Refund:
         return {
           type: 'Refund',
-          state: item.success ? 'Success' : 'Failure',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
           amount: this.populateAmount(item),
           interactionId: item.pspReference,
         };
@@ -67,8 +68,7 @@ export class NotificationConverter {
           interactionId: item.pspReference,
         };
       default:
-        //TODO: throw unsupported notification error
-        throw new Error('Unsupported notification');
+        throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
     }
   }
 
