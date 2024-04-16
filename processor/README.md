@@ -132,23 +132,6 @@ Use the token to authenticate requests protected by JWT: `Authorization: Bearer 
 ## APIs
 The processor exposes following endpoints to execute various operations with Adyen platform:
 
-### Get payment methods
-It obtains the available payment methods supported by the given Adyen account.
-#### Endpoint
-`POST /payment-methods`
-
-#### Request Parameters
-The request body is same as [adyen checkout payment methods request](https://docs.adyen.com/api-explorer/Checkout/71/post/paymentMethods#request) except following parameters are not required
-- amount
-- merchantAccount
-- countryCode
-
-#### Response Parameters
-- paymentMethods: Detailed list of payment methods required to generate payment forms.
-- storedPaymentMethods : List of all stored payment methods.
- 
-For details, please check in [adyen checkout payment methods response](https://docs.adyen.com/api-explorer/Checkout/71/post/paymentMethods#responses-200-paymentMethods).
-
 ### Create payment session
 It creates payment resource in composable commerce and create Adyen payment session in payment service provider.
 #### Endpoint
@@ -227,7 +210,7 @@ Private endpoint protected by JSON Web Token that exposes the payment methods su
 N/A
 
 #### Response Parameters
-Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal` and `Sofort`
+Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal`
 ```
 {
     components: [
@@ -239,9 +222,6 @@ Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal` and
         },
         {
           type: 'paypal',
-        },
-        {
-          type: 'sofort',
         },
     ],
 }
