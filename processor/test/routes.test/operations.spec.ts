@@ -8,6 +8,7 @@ import {
   ContextProvider,
   JWTAuthenticationHook,
   JWTAuthenticationManager,
+  Logger,
   Oauth2AuthenticationHook,
   Oauth2AuthenticationManager,
   RequestContextData,
@@ -23,6 +24,7 @@ describe('/operations APIs', () => {
   const token = 'token';
   const jwtToken = 'jwtToken';
   const sessionId = 'session-id';
+  const logger = jest.fn() as unknown as Logger;
 
   const spyAuthenticateJWT = jest
     .spyOn(JWTAuthenticationHook.prototype, 'authenticate')
@@ -45,21 +47,25 @@ describe('/operations APIs', () => {
   const spiedJwtAuthenticationHook = new JWTAuthenticationHook({
     authenticationManager: jest.fn() as unknown as JWTAuthenticationManager,
     contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    logger,
   });
 
   const spiedOauth2AuthenticationHook = new Oauth2AuthenticationHook({
     authenticationManager: jest.fn() as unknown as Oauth2AuthenticationManager,
     contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    logger,
   });
 
   const spiedSessionHeaderAuthenticationHook = new SessionHeaderAuthenticationHook({
     authenticationManager: jest.fn() as unknown as SessionHeaderAuthenticationManager,
     contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    logger,
   });
 
   const spiedAuthorityAuthorizationHook = new AuthorityAuthorizationHook({
     authorizationManager: jest.fn() as unknown as AuthorityAuthorizationManager,
     contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    logger,
   });
 
   const spiedPaymentService = new AdyenPaymentService({
