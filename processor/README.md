@@ -264,7 +264,7 @@ It returns following attributes in response:
         {
             name: <name of external system>
             status: <status with indicator UP or DOWN>
-            details: TBC
+            details: <additional information for connection checking>
         }
     ]
 ```
