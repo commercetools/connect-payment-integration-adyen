@@ -132,16 +132,13 @@ Use the token to authenticate requests protected by JWT: `Authorization: Bearer 
 ## APIs
 The processor exposes following endpoints to execute various operations with Adyen platform:
 
-### Get payment methods
-TBC
-
 ### Create payment session
 It creates payment resource in composable commerce and create Adyen payment session in payment service provider.
 #### Endpoint
 `POST /sessions`
 
 #### Request Parameters
-The request body is same as [adyen checkout create session request](https://docs.adyen.com/api-explorer/Checkout/69/post/sessions#request) except following parameters are not required
+The request body is same as [adyen checkout create session request](https://docs.adyen.com/api-explorer/Checkout/71/post/sessions#request) except following parameters are not required
 - amount
 - merchantAccount
 - countryCode
@@ -155,7 +152,7 @@ The request body is same as [adyen checkout create session request](https://docs
 These parameters are already provided by the cart created in composable commerce platform, therefore they are not required to be provided when calling the endpoint.
 
 #### Response Parameters
-- sessionData: The [adyen checkout create session response](https://docs.adyen.com/api-explorer/Checkout/69/post/sessions#responses) returned by Adyen platform after Adyen session created. 
+- sessionData: The [adyen checkout create session response](https://docs.adyen.com/api-explorer/Checkout/71/post/sessions#responses) returned by Adyen platform after Adyen session created. 
 - paymentReference : It represents the unique identifier of payment resource created in composable commerce platform. 
 
 ### Create payment
@@ -164,7 +161,7 @@ It mainly starts an Ayden payment transaction in payment services provider. If p
 `POST /payments`
 
 #### Request Parameters
-The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/69/post/payments#request) except following parameters are not required
+The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request) except following parameters are not required
 - amount
 - additionalAmount
 - merchantAccount
@@ -187,16 +184,144 @@ These parameters are already provided by the cart created in composable commerce
 - merchantReturnUrl:
 
 ### Confirm payment
-TBC 
+Submits details for a payment to Adyen platform to confirm a payment. It is only necessary when the payment is initialized through [create payment](#create-payment)
+#### Endpoint
+`POST /payments/details`
+
+#### Request Parameters
+The request body is same as [adyen checkout create payment details request](The request body is same as [adyen checkout create payment request](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request)) with following parameters :
+- authenticationData: Data for 3DS authentication.
+- details: A collection of result returned from the `/payments` call.
+- paymentData: Encoded payment data returned from the `/payments` call. If `AuthenticationNotRequired` is received as `resultCode` in the `/payments` response, use the `threeDSPaymentData` from the same response. If the `resultCode` is `AuthenticationFinished`, use the `action.paymentData` from the same response.
+
+#### Response Parameters
+It returns following attributes in response
+- 
+- 
+- paymentReference: Unique identifier of payment resources updated in commercetools composable commerce.
+-  
 
 ### Get supported payment components
-TBC
+Private endpoint protected by JSON Web Token that exposes the payment methods supported by the connector so that checkout application can retrieve the available payment components. 
+#### Endpoint
+`GET /operations/payment-components`
 
-### Get status
-TBC
+#### Request Parameters
+N/A
+
+#### Response Parameters
+Now the connector supports payment methods such as `card`, `iDEAL`, `PayPal`
+```
+{
+    components: [
+        {
+          type: 'card',
+        },
+        {
+          type: 'ideal',
+        },
+        {
+          type: 'paypal',
+        },
+    ],
+}
+```
 
 ### Get config
-TBC
+Exposes configuration to the frontend such as `clientKey` and `environment`.
+#### Endpoint
+`GET /operations/config`
 
+#### Request Parameters
+N/A
+
+#### Response Parameters
+It returns an object with `clientKey` and `environment` as key-value pair as below:
+```
+{
+  clientKey: <clientKey>,
+  environment: <environment>,
+}
+```
+
+
+### Get status
+It provides health check feature for checkout front-end so that the correctness of configurations can be verified.
+#### Endpoint
+`GET /operations/status`
+
+#### Request Parameters
+N/A
+
+#### Response Parameters
+It returns following attributes in response:
+- status: It indicates the health check status. It can be `OK`, `Partially Available` or `Unavailable`
+- timestamp: The timestamp of the status request
+- version: Current version of the payment connector.
+- checks: List of health check result details. It contains health check result with various external system including commercetools composable commerce and Adyen payment services provider.
+```
+    [ 
+        {
+            name: <name of external system>
+            status: <status with indicator UP or DOWN>
+            details: <additional information for connection checking>
+        }
+    ]
+```
+- metadata: It lists a collection of metadata including the name/description of the connector and the version of SDKs used to connect to external system.  
 ### Modify payment
-TBC
+Private endpoint called by Checkout frontend to support various payment update requests such as cancel/refund/capture payment. It is protected by `manage_checkout_payment_intents` access right of composable commerce OAuth2 token.
+#### Endpoint
+`POST /operations/payment-intents/{paymentsId}`
+
+#### Request Parameters
+The request payload is different based on different update operations:
+- Cancel Payment
+
+```
+{
+    actions: [{
+        action: "cancelPayment",
+    }]
+}
+```
+
+- Capture Payment
+    - centAmount: Amount in the smallest indivisible unit of a currency. For example, 5 EUR is specified as 500 while 5 JPY is specified as 5.
+    - currencyCode: Currency code compliant to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
+    
+    ```
+    {
+        actions: [{
+            action: "capturePayment",
+            amount: {
+                centAmount: <amount>,
+                currencyCode: <currecy code>
+            }
+        }]
+    } 
+    ```
+  
+- Refund Payment
+    - centAmount: Amount in the smallest indivisible unit of a currency. For example, 5 EUR is specified as 500 while 5 JPY is specified as 5.
+    - currencyCode: Currency code compliant to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
+    
+    ```
+    {
+        actions: [{
+            action: "refundPayment",
+            amount: {
+                centAmount: <amount>,
+                currencyCode: <currecy code>
+            }
+        }]
+    } 
+    ```
+
+#### Response Parameters
+```
+{
+    outcome: "approved|rejected|received"
+}
+
+```
