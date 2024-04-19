@@ -5,16 +5,16 @@ import { log } from './libs/logger/index';
 
 export class AppLogger implements Logger {
   public debug = (obj: object, message: string) => {
-    log.debug(obj ? obj : message);
+    log.debug(message, obj || undefined);
   };
   public info = (obj: object, message: string) => {
-    log.info(obj ? obj : message);
+    log.info(message, obj || undefined);
   };
   public warn = (obj: object, message: string) => {
-    log.warn(obj ? obj : message);
+    log.warn(message, obj || undefined);
   };
   public error = (obj: object, message: string) => {
-    log.error(obj ? obj : message);
+    log.error(message, obj || undefined);
   };
 }
 
