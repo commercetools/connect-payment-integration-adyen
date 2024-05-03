@@ -65,3 +65,11 @@ export type ConfirmPaymentResponseDTO = Pick<
 };
 
 export type NotificationRequestDTO = Notification;
+
+export type CreateApplePaySessionRequestDTO = {
+  validationUrl: string;
+};
+
+export type CreateApplePaySessionResponseDTO = {
+  [key: string]: any;
+};

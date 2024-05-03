@@ -47,6 +47,15 @@ deployAs:
           description: JWT Issuer for jwt validation
           required: true
           default: https://mc-api.europe-west1.gcp.commercetools.com
+        - key: ADYEN_APPLEPAY_OWN_MERCHANT_ID
+          description: Apple merchant ID. Needed when using own certificate
+          required: false
+        - key: ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN
+          description: Apple merchant domain. Needed when using own certificate
+          required: false
+        - key: ADYEN_APPLEPAY_OWN_DISPLAY_NAME
+          description: Apple display name. Needed when using own certificate
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret
@@ -57,3 +66,6 @@ deployAs:
         - key: ADYEN_NOTIFICATION_HMAC_KEY
           description: Adyen HMAC key
           required: true
+        - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
+          description: Apple Pay own certificate
+          required: false

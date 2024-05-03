@@ -6,12 +6,11 @@ import {
   PaymentComponentBuilder,
   PaymentEnabler,
 } from "./payment-enabler";
-import { ApplepayBuilder } from "../components/payment-methods/applepay";
+import { ApplePayBuilder } from "../components/payment-methods/applepay";
 import { CardBuilder } from "../components/payment-methods/card";
 import { GooglepayBuilder } from "../components/payment-methods/googlepay";
 import { IdealBuilder } from "../components/payment-methods/ideal";
 import { PaypalBuilder } from "../components/payment-methods/paypal";
-
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -67,7 +66,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       const adyenCheckout = await AdyenCheckout({
         onPaymentCompleted: (result, component) => {
           console.info(result, component);
-          window.location.href = options.processorUrl + '/confirm';
+          window.location.href = options.processorUrl + "/confirm";
         },
         onError: (error, component) => {
           console.error(error.name, error.message, error.stack, component);
@@ -77,57 +76,69 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           try {
             const reqData = {
               ...state.data,
-              channel: 'Web',
+              channel: "Web",
               paymentReference,
             };
-            const response = await fetch(options.processorUrl + '/payments', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Session-Id': options.sessionId },
+            const response = await fetch(options.processorUrl + "/payments", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": options.sessionId,
+              },
               body: JSON.stringify(reqData),
             });
             const data = await response.json();
             if (data.action) {
-              options.onActionRequired && options.onActionRequired({
-                type: data.action.type === 'redirect' 
-                  ? 'redirect' 
-                  : data.action.type === 'threeDS2' ? 'threeDS' : 'other', 
-              });
+              options.onActionRequired &&
+                options.onActionRequired({
+                  type:
+                    data.action.type === "redirect"
+                      ? "redirect"
+                      : data.action.type === "threeDS2"
+                      ? "threeDS"
+                      : "other",
+                });
               component.handleAction(data.action);
             } else {
-              if (data.resultCode === 'Authorised') {
-                component.setStatus('success');
-                options.onComplete && options.onComplete({ isSuccess: true, paymentReference });
+              if (data.resultCode === "Authorised") {
+                component.setStatus("success");
+                options.onComplete &&
+                  options.onComplete({ isSuccess: true, paymentReference });
               } else {
                 options.onComplete && options.onComplete({ isSuccess: false });
-                component.setStatus('error');
+                component.setStatus("error");
               }
             }
           } catch (e) {
-            console.log('Payment aborted by client');
-            component.setStatus('ready');
+            console.log("Payment aborted by client");
+            component.setStatus("ready");
           }
         },
         onAdditionalDetails: async (state, component) => {
-          console.log('onAdditionalDetails', state, component);
+          console.log("onAdditionalDetails", state, component);
           const requestData = {
             ...state.data,
             paymentReference,
           };
-          const url = options.processorUrl.endsWith('/') 
+          const url = options.processorUrl.endsWith("/")
             ? `${options.processorUrl}payments/details`
             : `${options.processorUrl}/payments/details`;
           const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Session-Id': options.sessionId },
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Session-Id": options.sessionId,
+            },
             body: JSON.stringify(requestData),
           });
           const data = await response.json();
-          if (data.resultCode === 'Authorised') {
-            component.setStatus('success');
-            options.onComplete && options.onComplete({ isSuccess: true, paymentReference });
+          if (data.resultCode === "Authorised") {
+            component.setStatus("success");
+            options.onComplete &&
+              options.onComplete({ isSuccess: true, paymentReference });
           } else {
             options.onComplete && options.onComplete({ isSuccess: false });
-            component.setStatus('error');
+            component.setStatus("error");
           }
         },
         analytics: {
@@ -135,7 +146,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         },
 
         ...(options.locale ? { locale: options.locale } : {}),
-        
+
         environment: configJson.environment,
         clientKey: configJson.clientKey,
         session: {
@@ -143,11 +154,16 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           sessionData: data.sessionData,
         },
       });
-  
-      return { 
+
+      return {
         baseOptions: {
-          adyenCheckout: adyenCheckout
-        }
+          adyenCheckout: adyenCheckout,
+          sessionId: options.sessionId,
+          processorUrl: options.processorUrl,
+          ...(configJson.applePayConfig && {
+            applePayConfig: configJson.applePayConfig,
+          }),
+        },
       };
     }
   };
@@ -157,10 +173,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   ): Promise<PaymentComponentBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
-      throw new Error('AdyenPaymentEnabler not initialized');
-    } 
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
     const supportedMethods = {
-      applepay: ApplepayBuilder,
+      applepay: ApplePayBuilder,
       card: CardBuilder,
       googlepay: GooglepayBuilder,
       ideal: IdealBuilder,

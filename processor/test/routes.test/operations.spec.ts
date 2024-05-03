@@ -112,6 +112,9 @@ describe('/operations APIs', () => {
       expect(responseGetConfig.json()).toEqual({
         clientKey: 'adyenClientKey',
         environment: 'TEST',
+        applePayConfig: {
+          usesOwnCertificate: false,
+        },
       });
     });
 
@@ -133,6 +136,10 @@ describe('/operations APIs', () => {
             },
             {
               name: 'Adyen Status check',
+              status: 'UP',
+            },
+            {
+              name: 'Adyen Apple Pay config check',
               status: 'UP',
             },
           ],
@@ -163,6 +170,10 @@ describe('/operations APIs', () => {
               }),
               expect.objectContaining({
                 name: 'Adyen Status check',
+                status: 'UP',
+              }),
+              expect.objectContaining({
+                name: 'Adyen Apple Pay config check',
                 status: 'UP',
               }),
             ]),

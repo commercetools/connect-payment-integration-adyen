@@ -13,6 +13,9 @@ export class PaymentComponentsConverter {
         {
           type: 'paypal',
         },
+        {
+          type: 'applepay',
+        },
       ],
     };
   }

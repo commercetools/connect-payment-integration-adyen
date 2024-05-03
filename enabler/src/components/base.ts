@@ -11,6 +11,11 @@ import {
 
 export type BaseOptions = {
   adyenCheckout: typeof Core;
+  sessionId: string;
+  processorUrl: string;
+  applePayConfig?: {
+    usesOwnCertificate: boolean;
+  };
 };
 
 /**
@@ -23,18 +28,24 @@ export abstract class AdyenBaseComponentBuilder
 
   protected paymentMethod: PaymentMethod;
   protected adyenCheckout: typeof Core;
+  protected sessionId: string;
+  protected processorUrl: string;
 
   constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
     this.paymentMethod = paymentMethod;
     this.adyenCheckout = baseOptions.adyenCheckout;
+    this.sessionId = baseOptions.sessionId;
+    this.processorUrl = baseOptions.processorUrl;
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    const component = new DefaultAdyenComponent(
-      this.paymentMethod,
-      this.adyenCheckout,
-      config
-    );
+    const component = new DefaultAdyenComponent({
+      paymentMethod: this.paymentMethod,
+      adyenCheckout: this.adyenCheckout,
+      componentOptions: config,
+      sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+    });
     component.init();
     return component;
   }
@@ -48,15 +59,21 @@ export class DefaultAdyenComponent implements PaymentComponent {
   protected paymentMethod: PaymentMethod;
   protected adyenCheckout: typeof Core;
   protected componentOptions: ComponentOptions;
+  protected sessionId: string;
+  protected processorUrl: string;
 
-  constructor(
-    paymentMethod: PaymentMethod,
-    adyenCheckout: typeof Core,
-    componentOptions: ComponentOptions
-  ) {
-    this.paymentMethod = paymentMethod;
-    this.adyenCheckout = adyenCheckout;
-    this.componentOptions = componentOptions;
+  constructor(opts: {
+    paymentMethod: PaymentMethod;
+    adyenCheckout: typeof Core;
+    componentOptions: ComponentOptions;
+    sessionId: string;
+    processorUrl: string;
+  }) {
+    this.paymentMethod = opts.paymentMethod;
+    this.adyenCheckout = opts.adyenCheckout;
+    this.componentOptions = opts.componentOptions;
+    this.sessionId = opts.sessionId;
+    this.processorUrl = opts.processorUrl;
   }
   // This is an internal method
   init() {

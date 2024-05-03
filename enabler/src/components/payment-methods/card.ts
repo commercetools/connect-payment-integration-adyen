@@ -18,13 +18,18 @@ import {
  */
 
 export class CardBuilder extends AdyenBaseComponentBuilder {
-
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.card, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    const cardComponent = new CardComponent(this.paymentMethod, this.adyenCheckout, config);
+    const cardComponent = new CardComponent({
+      paymentMethod: this.paymentMethod,
+      adyenCheckout: this.adyenCheckout,
+      componentOptions: config,
+      sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+    });
     cardComponent.init();
     return cardComponent;
   }
@@ -33,20 +38,22 @@ export class CardBuilder extends AdyenBaseComponentBuilder {
 export class CardComponent extends DefaultAdyenComponent {
   private endDigits: string;
 
-  constructor(
-    paymentMethod: PaymentMethod,
-    adyenCheckout: typeof Core,
-    componentOptions: ComponentOptions
-  ) {
-    super(paymentMethod, adyenCheckout, componentOptions);
+  constructor(opts: {
+    paymentMethod: PaymentMethod;
+    adyenCheckout: typeof Core;
+    componentOptions: ComponentOptions;
+    sessionId: string;
+    processorUrl: string;
+  }) {
+    super(opts);
   }
 
   init() {
     const that = this;
     this.component = this.adyenCheckout.create(this.paymentMethod, {
-      onFieldValid : function(data) {
+      onFieldValid: function (data) {
         const { endDigits, fieldType } = data;
-        if (endDigits && fieldType === 'encryptedCardNumber') {
+        if (endDigits && fieldType === "encryptedCardNumber") {
           that.endDigits = endDigits;
         }
       },

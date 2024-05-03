@@ -21,19 +21,27 @@ export class IdealBuilder extends AdyenBaseComponentBuilder {
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    const idealComponent = new IdealComponent(this.paymentMethod, this.adyenCheckout, config);
+    const idealComponent = new IdealComponent({
+      paymentMethod: this.paymentMethod,
+      adyenCheckout: this.adyenCheckout,
+      componentOptions: config,
+      sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+    });
     idealComponent.init();
     return idealComponent;
   }
 }
 
 export class IdealComponent extends DefaultAdyenComponent {
-  constructor(
-    paymentMethod: PaymentMethod,
-    adyenCheckout: typeof Core,
-    componentOptions: ComponentOptions
-  ) {
-    super(paymentMethod, adyenCheckout, componentOptions);
+  constructor(opts: {
+    paymentMethod: PaymentMethod;
+    adyenCheckout: typeof Core;
+    componentOptions: ComponentOptions;
+    sessionId: string;
+    processorUrl: string;
+  }) {
+    super(opts);
   }
 
   showValidation() {

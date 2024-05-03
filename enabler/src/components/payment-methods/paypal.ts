@@ -18,25 +18,33 @@ import {
  */
 export class PaypalBuilder extends AdyenBaseComponentBuilder {
   public componentHasSubmit = false;
-  
+
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.paypal, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    const paypalComponent = new PaypalComponent(this.paymentMethod, this.adyenCheckout, config);
+    const paypalComponent = new PaypalComponent({
+      paymentMethod: this.paymentMethod,
+      adyenCheckout: this.adyenCheckout,
+      componentOptions: config,
+      sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+    });
     paypalComponent.init();
     return paypalComponent;
   }
 }
 
 export class PaypalComponent extends DefaultAdyenComponent {
-  constructor(
-    paymentMethod: PaymentMethod,
-    adyenCheckout: typeof Core,
-    componentOptions: ComponentOptions
-  ) {
-    super(paymentMethod, adyenCheckout, componentOptions);
+  constructor(opts: {
+    paymentMethod: PaymentMethod;
+    adyenCheckout: typeof Core;
+    componentOptions: ComponentOptions;
+    sessionId: string;
+    processorUrl: string;
+  }) {
+    super(opts);
   }
 
   init() {
