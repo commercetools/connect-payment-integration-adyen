@@ -176,9 +176,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
           id: ctCart.customerId,
         },
       }),
-      ...(ctCart.anonymousId && {
-        anonymousId: ctCart.anonymousId,
-      }),
+      ...(!ctCart.customerId &&
+        ctCart.anonymousId && {
+          anonymousId: ctCart.anonymousId,
+        }),
     });
 
     const updatedCart = await this.ctCartService.addPayment({
@@ -240,9 +241,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
             id: ctCart.customerId,
           },
         }),
-        ...(ctCart.anonymousId && {
-          anonymousId: ctCart.anonymousId,
-        }),
+        ...(!ctCart.customerId &&
+          ctCart.anonymousId && {
+            anonymousId: ctCart.anonymousId,
+          }),
       });
 
       ctCart = await this.ctCartService.addPayment({
