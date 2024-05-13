@@ -139,6 +139,15 @@ deployAs:
           description: JWT Issuer for jwt validation
           required: true
           default: https://mc-api.europe-west1.gcp.commercetools.com
+        - key: ADYEN_APPLEPAY_OWN_MERCHANT_ID
+          description: Apple merchant ID. Needed when using own certificate
+          required: false
+        - key: ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN
+          description: Apple merchant domain. Needed when using own certificate
+          required: false
+        - key: ADYEN_APPLEPAY_OWN_DISPLAY_NAME
+          description: Apple display name. Needed when using own certificate
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret
@@ -149,6 +158,9 @@ deployAs:
         - key: ADYEN_NOTIFICATION_HMAC_KEY
           description: Adyen HMAC key
           required: true
+        - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
+          description: Apple Pay own certificate
+          required: false
 
 ```
 
@@ -168,3 +180,7 @@ Here you can see the details about various variables in configuration
 - MERCHANT_RETURN_URL: The return URL located in merchant platform.
 - ADYEN_API_KEY: It represents the API Key used for Ayden request authentication. For details, please refer to [Ayden API key authentication](https://docs.adyen.com/development-resources/api-authentication/#api-key-authentication).
 - ADYEN_NOTIFICATION_HMAC_KEY: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
+- ADYEN_APPLEPAY_OWN_CERTIFICATE: The merchant identity certificate. This is only needed if using an own certificate instead of the Adyen's Apple Pay certificate. Follow [Adyen's guide](https://docs.adyen.com/payment-methods/apple-pay/enable-apple-pay/?tab=setup-own_2) to create the certificate. 
+- ADYEN_APPLEPAY_OWN_MERCHANT_ID: The merchant identifier created in the Apple portal. Only needed if using an own certificate
+- ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN:The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
+- ADYEN_APPLEPAY_OWN_DISPLAY_NAME: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.

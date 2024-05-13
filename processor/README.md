@@ -325,3 +325,19 @@ The request payload is different based on different update operations:
 }
 
 ```
+
+### Create Apple Pay payment session
+It creates a new Apple Pay payment session. This is used when the merchants use their own Apple Pay certificates instead of the Adyen's Apple Pay certificate as part of the [validate merchant](https://developer.apple.com/documentation/apple_pay_on_the_web/applepaysession/1778021-onvalidatemerchant) process.
+
+#### Endpoint
+`POST /applepay-sessions`
+
+#### Request Parameters
+```
+{
+    "validationUrl": "The validation url provided by Adyen" 
+}
+```
+
+#### Response Parameters
+It returns an opaque Apple Pay session object as described in the [docs](https://developer.apple.com/documentation/apple_pay_on_the_web/apple_pay_js_api/requesting_an_apple_pay_payment_session#3199963)

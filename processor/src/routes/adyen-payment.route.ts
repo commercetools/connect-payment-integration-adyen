@@ -7,6 +7,8 @@ import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
+  CreateApplePaySessionRequestDTO,
+  CreateApplePaySessionResponseDTO,
   CreatePaymentRequestDTO,
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
@@ -50,6 +52,20 @@ export const adyenPaymentRoutes = async (
     },
     async (request, reply) => {
       const resp = await opts.paymentService.createSession({
+        data: request.body,
+      });
+
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.post<{ Body: CreateApplePaySessionRequestDTO; Reply: CreateApplePaySessionResponseDTO }>(
+    '/applepay-sessions',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.createApplePaySession({
         data: request.body,
       });
 

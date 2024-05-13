@@ -11,6 +11,8 @@ import {
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
+  CreateApplePaySessionRequestDTO,
+  CreateApplePaySessionResponseDTO,
   CreatePaymentRequestDTO,
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
@@ -50,7 +52,8 @@ import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/check
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { log } from '../libs/logger';
-import { UnsupportedNotificationError } from '../errors/adyen-api.error';
+import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
+import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
@@ -84,9 +87,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     this.refundPaymentConverter = new RefundPaymentConverter();
   }
   async config(): Promise<ConfigResponse> {
+    const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
     return {
       clientKey: getConfig().adyenClientKey,
       environment: getConfig().adyenEnvironment,
+      applePayConfig: {
+        usesOwnCertificate,
+      },
     };
   }
 
@@ -127,6 +134,32 @@ export class AdyenPaymentService extends AbstractPaymentService {
               },
             };
           }
+        },
+        () => {
+          const config = getConfig();
+          const usesApplePayOwnCertificate = config.adyenApplePayOwnCerticate?.length > 0;
+
+          let status: 'UP' | 'DOWN' = 'UP';
+          if (usesApplePayOwnCertificate) {
+            const { adyenApplePayOwnMerchantId, adyenApplePayOwnDisplayName, adyenApplePayOwnMerchantDomain } = config;
+            status =
+              adyenApplePayOwnMerchantId?.length > 0 &&
+              adyenApplePayOwnDisplayName?.length > 0 &&
+              adyenApplePayOwnMerchantDomain?.length > 0
+                ? 'UP'
+                : 'DOWN';
+          }
+
+          return {
+            name: 'Adyen Apple Pay config check',
+            status,
+            ...(status === 'DOWN' && {
+              details: {
+                error:
+                  'Apple Pay configuration is not complete, please fill in all the Apple Pay "own" environment variables',
+              },
+            }),
+          };
         },
       ],
       metadataFn: async () => ({
@@ -399,6 +432,71 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
     } catch (e) {
       throw wrapAdyenError(e);
+    }
+  }
+
+  async createApplePaySession(opts: {
+    data: CreateApplePaySessionRequestDTO;
+    agent?: Dispatcher;
+  }): Promise<CreateApplePaySessionResponseDTO> {
+    const certificate = getConfig().adyenApplePayOwnCerticate;
+    try {
+      const data = {
+        merchantIdentifier: getConfig().adyenApplePayOwnMerchantId,
+        displayName: getConfig().adyenApplePayOwnDisplayName,
+        initiative: 'web',
+        initiativeContext: getConfig().adyenApplePayOwnMerchantDomain,
+      };
+
+      const response = await undiciFetch(opts.data.validationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        dispatcher:
+          opts.agent ||
+          new Agent({
+            connect: {
+              cert: certificate,
+              key: certificate,
+            },
+          }),
+      });
+
+      const responseData = (await response.json()) as CreateApplePaySessionResponseDTO;
+      if (response.status !== 200) {
+        const defaultErrorMessage = 'Not able to create the Apple Pay session';
+        throw new ApplePayPaymentSessionError(
+          {
+            status: response.status,
+            message: responseData?.statusMessage || defaultErrorMessage,
+          },
+          {
+            privateFields: {
+              cart: getCartIdFromContext(),
+            },
+          },
+        );
+      }
+
+      return responseData;
+    } catch (e) {
+      if (e instanceof ApplePayPaymentSessionError) {
+        throw e;
+      }
+      throw new ApplePayPaymentSessionError(
+        {
+          status: 500,
+          message: 'Unexpected error creating the Apple Pay session',
+        },
+        {
+          cause: e,
+          privateFields: {
+            cart: getCartIdFromContext(),
+          },
+        },
+      );
     }
   }
 

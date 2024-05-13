@@ -33,3 +33,14 @@ export class UnsupportedNotificationError extends Errorx {
     });
   }
 }
+
+export class ApplePayPaymentSessionError extends Errorx {
+  constructor(errorData: { status: number; message: string }, additionalOpts?: ErrorxAdditionalOpts) {
+    super({
+      code: `ApplePayPaymentSessionError`,
+      httpErrorStatus: errorData.status,
+      message: errorData.message,
+      ...additionalOpts,
+    });
+  }
+}
