@@ -58,12 +58,15 @@
                 config: {
                   
                 },
+                onError:(error) => {
+                  console.log('onError', error)
+                },
                 onComplete: ({ isSuccess, paymentReference }) => {
                   console.log('onComplete', { isSuccess, paymentReference });
                 },
               });
         
-              enabler.createComponentBuilder('card')
+              enabler.createComponentBuilder('googlepay')
               .then(builder => {
                 const paymentElement = builder.build({
                   config: {},
