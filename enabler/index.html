@@ -58,6 +58,9 @@
                 config: {
                   
                 },
+                onError:(error) => {
+                  console.log('onError', error)
+                },
                 onComplete: ({ isSuccess, paymentReference }) => {
                   console.log('onComplete', { isSuccess, paymentReference });
                 },

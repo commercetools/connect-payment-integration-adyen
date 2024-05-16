@@ -1,5 +1,6 @@
-import { PaymentMethod } from '../../payment-enabler/payment-enabler';
-import { AdyenBaseComponentBuilder, BaseOptions } from '../base';
+import Core from "@adyen/adyen-web/dist/types/core/core";
+import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
+import { AdyenBaseComponentBuilder, BaseOptions, DefaultAdyenComponent } from '../base';
 
 /**
  * Google pay component
@@ -12,5 +13,39 @@ export class GooglepayBuilder extends AdyenBaseComponentBuilder {
 
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.googlepay, baseOptions);
+  }
+
+  build(config: ComponentOptions): GooglePayComponent {
+    const googlePayComponent = new GooglePayComponent({
+      paymentMethod: this.paymentMethod,
+      adyenCheckout: this.adyenCheckout,
+      componentOptions: config,
+      sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+    })
+    googlePayComponent.init();
+
+    return googlePayComponent
+  }
+}
+
+export class GooglePayComponent extends DefaultAdyenComponent {
+  constructor(opts: {
+    paymentMethod: PaymentMethod;
+    adyenCheckout: typeof Core;
+    componentOptions: ComponentOptions;
+    sessionId: string;
+    processorUrl: string;
+    usesOwnCertificate?: boolean;
+  }) {
+    super(opts);
+  }
+
+  init() {
+    this.component = this.adyenCheckout.create(this.paymentMethod, {
+      ...this.componentOptions,
+      buttonType: 'pay',
+      buttonSizeMode: 'fill'
+    })
   }
 }
