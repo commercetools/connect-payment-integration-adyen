@@ -9,8 +9,8 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-[a-z]+.[0-9]+'
 
 jobs:
-  release:
-    name: Release
+  publish:
+    name: Publish for commercetools Checkout 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -21,22 +21,42 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Install
+        env:
+          CKO_CLIENT_ID: ${{ secrets.CKO_CLIENT_ID }}
+          CKO_CLIENT_SECRET: ${{ secrets.CKO_CLIENT_SECRET }}
+          CKO_CONNECTOR_ID: ${{ secrets.CKO_CONNECTOR_ID }}
         run: |
-          OAUTH_RESPONSE=$(curl --location --request POST 'https://auth.europe-west1.gcp.commercetools.com/oauth/token?grant_type=client_credentials' -u $CKO_CLIENT_ID:$CKO_CLIENT_SECRET)
+          echo Creating connector for $GITHUB_REF_NAME
+          echo Authenticating with commercetools
+
+          OAUTH_RESPONSE=$(curl --silent --show-error --location --request POST 'https://auth.europe-west1.gcp.commercetools.com/oauth/token?grant_type=client_credentials' -u $CKO_CLIENT_ID:$CKO_CLIENT_SECRET)
           
           ACCESS_TOKEN=$(echo $OAUTH_RESPONSE | jq -r '.access_token')
+          echo Access token retrieved $ACCESS_TOKEN
           
-          curl --location 'https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_PROJECT_KEY' \
+          CONNECTOR_DETAILS=$(curl --silent --show-error --location "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_ID" \
+              --header 'Content-Type: application/json' \
+              --header "Authorization: Bearer $ACCESS_TOKEN")
+          
+          echo $CONNECTOR_DETAILS | jq
+          
+          VERSION=$(echo $CONNECTOR_DETAILS | jq -r '.version')
+          
+          curl --fail-with-body --silent --show-error \ 
+              --location "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_ID" \
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ACCESS_TOKEN" \
               --data-raw '{
                   "version": ,
                   "actions": [
                       {
-                      "action": "setRepository",
-                      "url": "git@github.com:commercetools/connect-payment-integration-adyen.git",
-                      "tag": "$GITHUB_REF_NAME"
+                        "action": "setRepository",
+                        "url": "git@github.com:commercetools/connect-payment-integration-adyen.git",
+                        "tag": "$GITHUB_REF_NAME"
+                      },
+                      {
+                        "action": "updatePreviewable",
                       }
                   ]
               }'
