@@ -33,7 +33,7 @@ jobs:
           OAUTH_RESPONSE=$(curl --silent --show-error --location --request POST 'https://auth.europe-west1.gcp.commercetools.com/oauth/token?grant_type=client_credentials' -u $CKO_CLIENT_ID:$CKO_CLIENT_SECRET)
           
           ACCESS_TOKEN=$(echo $OAUTH_RESPONSE | jq -r '.access_token')
-          echo Access token retrieved $ACCESS_TOKEN
+          echo Access token retrieved
           
           CONNECTOR_DETAILS=$(curl --silent --show-error --location "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_ID" \
               --header 'Content-Type: application/json' \
@@ -42,13 +42,15 @@ jobs:
           echo $CONNECTOR_DETAILS | jq
           
           VERSION=$(echo $CONNECTOR_DETAILS | jq -r '.version')
+
+          echo Updating version $VVERSION
           
-          curl --fail-with-body --silent --show-error \ 
+          curl --fail-with-body --silent \ 
               --location "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_ID" \
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ACCESS_TOKEN" \
               --data-raw '{
-                  "version": ,
+                  "version": $VERSION,
                   "actions": [
                       {
                         "action": "setRepository",
