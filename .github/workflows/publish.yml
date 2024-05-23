@@ -1,0 +1,42 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      # Release tags v1.0.0, v1.0.1, v1.0.2, etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      # Pre-release tags v1.0.0-alpha.0, v1.0.0-beta.0, etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+-[a-z]+.[0-9]+'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          OAUTH_RESPONSE=$(curl --location --request POST 'https://auth.europe-west1.gcp.commercetools.com/oauth/token?grant_type=client_credentials' -u $CKO_CLIENT_ID:$CKO_CLIENT_SECRET)
+          
+          ACCESS_TOKEN=$(echo $OAUTH_RESPONSE | jq -r '.access_token')
+          
+          curl --location 'https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_PROJECT_KEY' \
+              --header 'Content-Type: application/json' \
+              --header "Authorization: Bearer $ACCESS_TOKEN" \
+              --data-raw '{
+                  "version": ,
+                  "actions": [
+                      {
+                      "action": "setRepository",
+                      "url": "git@github.com:commercetools/connect-payment-integration-adyen.git",
+                      "tag": "$GITHUB_REF_NAME"
+                      }
+                  ]
+              }'
