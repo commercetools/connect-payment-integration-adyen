@@ -67,5 +67,5 @@ deployAs:
           description: Adyen HMAC key
           required: true
         - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
-          description: Apple Pay own certificate in bas64 format
+          description: Apple Pay own certificate in base 64 format
           required: false
