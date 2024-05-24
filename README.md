@@ -165,22 +165,22 @@ deployAs:
 ```
 
 Here you can see the details about various variables in configuration
-- CTP_PROJECT_KEY: The key of commercetools composable commerce project.
-- CTP_CLIENT_ID: The client ID of your commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK. Expected scopes are: `manage_payments` `manage_orders` `view_sessions` `view_api_clients` `manage_checkout_payment_intents` `introspect_oauth_tokens`.
-- CTP_CLIENT_SECRET: The client secret of commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK.
-- CTP_AUTH_URL: The URL for authentication in commercetools platform. It is used to generate OAuth 2.0 token which is required in every API call to commercetools composable commerce. The default value is `https://auth.europe-west1.gcp.commercetools.com`. For details, please refer to documentation [here](https://docs.commercetools.com/tutorials/api-tutorial#authentication).
-- CTP_API_URL: The URL for commercetools composable commerce API. Default value is `https://api.europe-west1.gcp.commercetools.com`.
-- CTP_SESSION_URL: The URL for session creation in commercetools platform. Connectors relies on the session created to be able to share information between enabler and processor. The default value is `https://session.europe-west1.gcp.commercetools.com`.
-- CTP_JWKS_URL: The URL which provides JSON Web Key Set. Default value is `https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json`.
-- CTP_JWT_ISSUER: The issuer inside JSON Web Token which is required in JWT validation process. Default value is `default: https://mc-api.europe-west1.gcp.commercetools.com`
-- ADYEN_ENVIRONMENT: The indicator of adyen environment.  Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
-- ADYEN_MERCHANT_ACCOUNT: The name of adyen merchant account.
-- ADYEN_CLIENT_KEY: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication).
-- ADYEN_LIVE_URL_PREFIX: It represents live endpoint prefix used by Adyen platform. It is only required for Adyen live environment. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
-- MERCHANT_RETURN_URL: The return URL located in merchant platform.
-- ADYEN_API_KEY: It represents the API Key used for Ayden request authentication. For details, please refer to [Ayden API key authentication](https://docs.adyen.com/development-resources/api-authentication/#api-key-authentication).
-- ADYEN_NOTIFICATION_HMAC_KEY: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
-- ADYEN_APPLEPAY_OWN_CERTIFICATE: The merchant identity certificate. This is only needed if using an own certificate instead of the Adyen's Apple Pay certificate. Follow [Adyen's guide](https://docs.adyen.com/payment-methods/apple-pay/enable-apple-pay/?tab=setup-own_2) to create the certificate. 
-- ADYEN_APPLEPAY_OWN_MERCHANT_ID: The merchant identifier created in the Apple portal. Only needed if using an own certificate
-- ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN:The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
-- ADYEN_APPLEPAY_OWN_DISPLAY_NAME: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
+- `CTP_PROJECT_KEY`: The key of commercetools composable commerce project.
+- `CTP_CLIENT_ID`: The client ID of your commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK. Expected scopes are: `manage_payments` `manage_orders` `view_sessions` `view_api_clients` `manage_checkout_payment_intents` `introspect_oauth_tokens`.
+- `CTP_CLIENT_SECRET`: The client secret of commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK.
+- `CTP_AUTH_URL`: The URL for authentication in commercetools platform. It is used to generate OAuth 2.0 token which is required in every API call to commercetools composable commerce. The default value is `https://auth.europe-west1.gcp.commercetools.com`. For details, please refer to documentation [here](https://docs.commercetools.com/tutorials/api-tutorial#authentication).
+- `CTP_API_URL`: The URL for commercetools composable commerce API. Default value is `https://api.europe-west1.gcp.commercetools.com`.
+- `CTP_SESSION_URL`: The URL for session creation in commercetools platform. Connectors relies on the session created to be able to share information between enabler and processor. The default value is `https://session.europe-west1.gcp.commercetools.com`.
+- `CTP_JWKS_URL`: The URL which provides JSON Web Key Set. Default value is `https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json`.
+- `CTP_JWT_ISSUER`: The issuer inside JSON Web Token which is required in JWT validation process. Default value is `default: https://mc-api.europe-west1.gcp.commercetools.com`
+- `ADYEN_ENVIRONMENT`: The indicator of adyen environment.  Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
+- `ADYEN_MERCHANT_ACCOUNT`: The name of adyen merchant account.
+- `ADYEN_CLIENT_KEY`: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication).
+- `ADYEN_LIVE_URL_PREFIX`: It represents live endpoint prefix used by Adyen platform. It is only required for Adyen live environment. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
+- `MERCHANT_RETURN_URL`: The return URL located in merchant platform.
+- `ADYEN_API_KEY`: It represents the API Key used for Ayden request authentication. For details, please refer to [Ayden API key authentication](https://docs.adyen.com/development-resources/api-authentication/#api-key-authentication).
+- `ADYEN_NOTIFICATION_HMAC_KEY`: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
+- `ADYEN_APPLEPAY_OWN_CERTIFICATE`: The merchant identity certificate. This is only needed if using an own certificate instead of the Adyen's Apple Pay certificate. Follow [Adyen's guide](https://docs.adyen.com/payment-methods/apple-pay/enable-apple-pay/?tab=setup-own_2) to create the certificate. **The value should be in base64 format**.
+- `ADYEN_APPLEPAY_OWN_MERCHANT_ID`: The merchant identifier created in the Apple portal. Only needed if using an own certificate
+- `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`:The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
+- `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
