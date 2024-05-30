@@ -40,7 +40,7 @@ const getSessionId = async(cartId) => {
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,
-    allowedPaymentMethods: ['card'], // add here your allowed methods for development purposes
+    allowedPaymentMethods: ['card', 'klarna_paynow', 'klarna', 'klarna_account'], // add here your allowed methods for development purposes
   };
 
   const url = `${__VITE_CTP_SESSION_URL__}/${projectKey}/sessions`

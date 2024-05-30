@@ -33,6 +33,9 @@ export enum PaymentMethod {
   googlepay = "googlepay",
   ideal = "ideal",
   paypal = "paypal",
+  "klarna_paynow" = "klarna_paynow", // Pay now
+  klarna = "klarna", // Pay later
+  "klarna_account" = "klarna_account" // Pay over time
 }
 
 export type PaymentResult = {

@@ -11,6 +11,9 @@ import { CardBuilder } from "../components/payment-methods/card";
 import { GooglepayBuilder } from "../components/payment-methods/googlepay";
 import { IdealBuilder } from "../components/payment-methods/ideal";
 import { PaypalBuilder } from "../components/payment-methods/paypal";
+import { KlarnaPayNowBuilder } from "../components/payment-methods/klarnaPaynow";
+import { KlarnaPayLaterBuilder } from "../components/payment-methods/klarnaPayLater";
+import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarnaPayOverTime";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -95,8 +98,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                     data.action.type === "redirect"
                       ? "redirect"
                       : data.action.type === "threeDS2"
-                      ? "threeDS"
-                      : "other",
+                        ? "threeDS"
+                        : "other",
                 });
               component.handleAction(data.action);
             } else {
@@ -181,6 +184,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       googlepay: GooglepayBuilder,
       ideal: IdealBuilder,
       paypal: PaypalBuilder,
+      "klarna_paynow": KlarnaPayNowBuilder,
+      klarna: KlarnaPayLaterBuilder,
+      "klarna_account": KlarnaPayOverTimeBuilder
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
