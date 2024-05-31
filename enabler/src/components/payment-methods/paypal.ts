@@ -49,7 +49,15 @@ export class PaypalComponent extends DefaultAdyenComponent {
 
   init() {
     this.component = this.adyenCheckout.create(this.paymentMethod, {
-      ...this.componentOptions,
+      showPayButton: this.componentOptions.showPayButton,
+      onClick: (_, {resolve, reject}) => {
+        if (this.componentOptions.onPayButtonClick) {
+          return this.componentOptions.onPayButtonClick()
+            .then(() => resolve())
+            .catch((error) => reject(error));
+        } 
+        return resolve();
+      },
       blockPayPalCreditButton: true,
       blockPayPalPayLaterButton: true,
       blockPayPalVenmoButton: true,

@@ -43,7 +43,15 @@ export class GooglePayComponent extends DefaultAdyenComponent {
 
   init() {
     this.component = this.adyenCheckout.create(this.paymentMethod, {
-      ...this.componentOptions,
+      showPayButton: this.componentOptions.showPayButton,
+      onClick: (resolve, reject) => {
+        if (this.componentOptions.onPayButtonClick) {
+          return this.componentOptions.onPayButtonClick()
+            .then(() => resolve())
+            .catch((error) => reject(error));
+        } 
+        return resolve();
+      },
       buttonType: 'pay',
       buttonSizeMode: 'fill'
     })
