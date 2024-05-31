@@ -53,7 +53,8 @@ export class GooglePayComponent extends DefaultAdyenComponent {
         return resolve();
       },
       buttonType: 'pay',
-      buttonSizeMode: 'fill'
+      buttonSizeMode: 'fill',
+      
     })
   }
 }

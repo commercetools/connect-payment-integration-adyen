@@ -16,6 +16,9 @@ export class PaymentComponentsConverter {
         {
           type: 'applepay',
         },
+        {
+          type: 'googlepay',
+        },
       ],
     };
   }
