@@ -88,17 +88,22 @@ export class DefaultAdyenComponent implements PaymentComponent {
   }
 
   mount(selector: string) {
+   this.component.mount(selector);
+  }
+
+  isAvailable() {
     if ("isAvailable" in this.component) {
-      this.component
-        .isAvailable()
-        .then(() => {
-          this.component.mount(selector);
-        })
-        .catch((e: unknown) => {
-          console.log(`${this.paymentMethod} is not available`, e);
-        });
+      return this.component.isAvailable()
+      .then(() => {
+        console.log(`${this.paymentMethod} is available`);
+        return true;
+      })
+      .catch((e: unknown) => {
+        console.log(`${this.paymentMethod} is not available`, e);
+        return false;
+      });
     } else {
-      this.component.mount(selector);
+      return Promise.resolve(true);
     }
   }
 }

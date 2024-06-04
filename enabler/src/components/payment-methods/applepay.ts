@@ -95,16 +95,4 @@ export class ApplePayComponent extends DefaultAdyenComponent {
         reject(error);
       });
   }
-
-  isAvailable() {
-    return this.component.isAvailable()
-    .then(() => {
-      console.log(`${this.paymentMethod} is available`);
-      return true;
-    })
-    .catch((e: unknown) => {
-      console.log(`${this.paymentMethod} is not available`, e);
-      return false;
-    });
-  }
 }
