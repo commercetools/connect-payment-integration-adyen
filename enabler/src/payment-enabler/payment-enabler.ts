@@ -10,6 +10,7 @@ export interface PaymentComponent {
       expiryDate?: string;
     }
   };
+  isAvailable?(): Promise<boolean>;
 }
 
 export interface PaymentComponentBuilder {
