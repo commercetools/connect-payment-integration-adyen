@@ -20,9 +20,9 @@ export const populateLineItems = (cart: Cart): LineItem[] => {
       id: lineItem.id,
       description: Object.values(lineItem.name)[0], //TODO: get proper locale
       quantity: lineItem.quantity,
-      amountExcludingTax: getAmountExcludingTax(lineItem),
-      amountIncludingTax: getAmountIncludingTax(lineItem),
-      taxAmount: getTaxAmount(lineItem),
+      amountExcludingTax: getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity),
+      amountIncludingTax: getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity),
+      taxAmount: getItemAmount(getTaxAmount(lineItem), lineItem.quantity),
       taxPercentage: convertTaxPercentageToCentAmount(lineItem.taxRate?.amount),
     });
   });
@@ -32,9 +32,9 @@ export const populateLineItems = (cart: Cart): LineItem[] => {
       id: customLineItem.id,
       description: Object.values(customLineItem.name)[0], //TODO: get proper locale
       quantity: customLineItem.quantity,
-      amountExcludingTax: getAmountExcludingTax(customLineItem),
-      amountIncludingTax: getAmountIncludingTax(customLineItem),
-      taxAmount: getTaxAmount(customLineItem),
+      amountExcludingTax: getItemAmount(getAmountExcludingTax(customLineItem), customLineItem.quantity),
+      amountIncludingTax: getItemAmount(getAmountIncludingTax(customLineItem), customLineItem.quantity),
+      taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
       taxPercentage: convertTaxPercentageToCentAmount(customLineItem.taxRate?.amount),
     });
   });
@@ -101,6 +101,10 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
   } else {
     return paymentMethod;
   }
+};
+
+const getItemAmount = (totalAmount: number, quantity: number): number => {
+  return parseFloat((totalAmount / quantity).toFixed(0));
 };
 
 export const buildReturnUrl = (paymentReference: string): string => {
