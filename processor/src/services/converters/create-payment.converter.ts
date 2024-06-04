@@ -17,7 +17,7 @@ export class CreatePaymentConverter {
       },
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
-      countryCode: opts.cart.country,
+      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
       shopperEmail: opts.cart.customerEmail,
       returnUrl: buildReturnUrl(opts.payment.id),
       ...(opts.cart.billingAddress && {

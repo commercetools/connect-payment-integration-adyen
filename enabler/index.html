@@ -79,9 +79,9 @@
               enabler.createComponentBuilder('klarna_paynow')
               .then(builder => {
                 const paymentElement = builder.build({
-                  showPayButton: true // Must be set to true for Adyen/Klarna to render the redirect button
+                  showPayButton: true // Must be set to true for Adyen/Klarna to render the redirect button in the enabler.
                 });
-                paymentElement.mount('#klarna-container')
+                paymentElement.mount('#klarna-component')
               })
             });
       
@@ -89,7 +89,7 @@
       
           <div id="card-component"></div>
           <hr>
-          <div id="klarna-container"></div>
+          <div id="klarna-component"></div>
         </div>
       </div>
 

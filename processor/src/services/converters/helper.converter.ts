@@ -17,6 +17,7 @@ export const populateLineItems = (cart: Cart): LineItem[] => {
 
   cart.lineItems.forEach((lineItem) => {
     lineItems.push({
+      id: lineItem.id,
       description: Object.values(lineItem.name)[0], //TODO: get proper locale
       quantity: lineItem.quantity,
       amountExcludingTax: getAmountExcludingTax(lineItem),
@@ -28,6 +29,7 @@ export const populateLineItems = (cart: Cart): LineItem[] => {
 
   cart.customLineItems.forEach((customLineItem) => {
     lineItems.push({
+      id: customLineItem.id,
       description: Object.values(customLineItem.name)[0], //TODO: get proper locale
       quantity: customLineItem.quantity,
       amountExcludingTax: getAmountExcludingTax(customLineItem),
@@ -35,18 +37,32 @@ export const populateLineItems = (cart: Cart): LineItem[] => {
       taxAmount: getTaxAmount(customLineItem),
       taxPercentage: convertTaxPercentageToCentAmount(customLineItem.taxRate?.amount),
     });
-
-    if (cart.shippingInfo) {
-      lineItems.push({
-        description: 'Shipping',
-        quantity: 1,
-        amountExcludingTax: cart.shippingInfo.taxedPrice?.totalNet.centAmount || 0,
-        amountIncludingTax: cart.shippingInfo.taxedPrice?.totalGross.centAmount || 0,
-        taxAmount: cart.shippingInfo.taxedPrice?.totalTax?.centAmount || 0,
-        taxPercentage: convertTaxPercentageToCentAmount(cart.shippingInfo?.taxRate?.amount),
-      });
-    }
   });
+
+  if (cart.shippingInfo) {
+    lineItems.push({
+      description: 'Shipping',
+      quantity: 1,
+      amountExcludingTax: cart.shippingInfo.taxedPrice?.totalNet.centAmount || 0,
+      amountIncludingTax: cart.shippingInfo.taxedPrice?.totalGross.centAmount || 0,
+      taxAmount: cart.shippingInfo.taxedPrice?.totalTax?.centAmount || 0,
+      taxPercentage: convertTaxPercentageToCentAmount(cart.shippingInfo?.taxRate?.amount),
+    });
+  }
+
+  if (cart.discountOnTotalPrice) {
+    const amountExcludingTax = cart.discountOnTotalPrice.discountedNetAmount?.centAmount || 0;
+    const amountIncludingTax = cart.discountOnTotalPrice.discountedGrossAmount?.centAmount || 0;
+    const taxAmount = amountIncludingTax - amountExcludingTax;
+
+    lineItems.push({
+      description: 'Discount',
+      quantity: 1,
+      amountExcludingTax: -amountExcludingTax,
+      amountIncludingTax: -amountIncludingTax,
+      taxAmount: -taxAmount,
+    });
+  }
 
   return lineItems;
 };
