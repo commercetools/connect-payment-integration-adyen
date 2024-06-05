@@ -11,7 +11,7 @@ import {
 } from "../base";
 
 /**
- * Klarna component
+ * Klarna Pay Over Time component. Key is `klarna_account`.
  *
  * Configuration options:
  * https://docs.adyen.com/payment-methods/klarna/web-component/

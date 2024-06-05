@@ -12,12 +12,18 @@ import {
   getProcessorUrlFromContext,
 } from '../../libs/fastify/context/context';
 
+/**
+ * Mapping logic is mainly based upon the Adyen `adyen-commercetools` connector.
+ *
+ * @param cart The CoCo cart to map the line items from
+ * @returns List of lineitems that Adyen will accept
+ */
 export const populateLineItems = (cart: Cart): LineItem[] => {
   const lineItems: LineItem[] = [];
 
   cart.lineItems.forEach((lineItem) => {
     lineItems.push({
-      id: lineItem.id,
+      id: lineItem.variant.sku,
       description: Object.values(lineItem.name)[0], //TODO: get proper locale
       quantity: lineItem.quantity,
       amountExcludingTax: getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity),

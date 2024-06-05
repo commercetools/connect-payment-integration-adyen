@@ -11,7 +11,7 @@ import {
 } from "../base";
 
 /**
- * Klarna component
+ * Klarna Pay Now component. Key is `klarna_paynow`.
  *
  * Configuration options:
  * https://docs.adyen.com/payment-methods/klarna/web-component/

@@ -66,7 +66,6 @@
                 },
               });
 
-              // Uncomment for easy testing of creditcard payment method
               enabler.createComponentBuilder('card')
               .then(builder => {
                 const paymentElement = builder.build({
@@ -75,7 +74,7 @@
                 paymentElement.mount('#card-component')
               })
         
-              // Uncomment for easy testing of klarna payment methods. Possible options are: `klarna_paynow` (Pay Now), `klarna` (Pay Later), `klarna_account` (Pay Over Time)
+              // Possible options are: `klarna_paynow` (Pay Now), `klarna` (Pay Later), `klarna_account` (Pay Over Time)
               enabler.createComponentBuilder('klarna_paynow')
               .then(builder => {
                 const paymentElement = builder.build({
