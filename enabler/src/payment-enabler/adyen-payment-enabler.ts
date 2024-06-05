@@ -11,9 +11,9 @@ import { CardBuilder } from "../components/payment-methods/card";
 import { GooglepayBuilder } from "../components/payment-methods/googlepay";
 import { IdealBuilder } from "../components/payment-methods/ideal";
 import { PaypalBuilder } from "../components/payment-methods/paypal";
-import { KlarnaPayNowBuilder } from "../components/payment-methods/klarnaPaynow";
-import { KlarnaPayLaterBuilder } from "../components/payment-methods/klarnaPayLater";
-import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarnaPayOverTime";
+import { KlarnaPayNowBuilder } from "../components/payment-methods/klarna-pay-now";
+import { KlarnaPayLaterBuilder } from "../components/payment-methods/klarna-pay-later";
+import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarna-pay-over-time";
 
 class AdyenInitError extends Error {
   sessionId: string;
