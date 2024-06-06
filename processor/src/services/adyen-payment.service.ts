@@ -44,7 +44,7 @@ import {
   StatusResponse,
 } from './types/operation.type';
 import { getConfig, config } from '../config/config';
-import { paymentSDK } from '../payment-sdk';
+import { appLogger, paymentSDK } from '../payment-sdk';
 import { PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
 import { AbstractPaymentService } from './abstract-payment.service';
 import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-componets.dto';
@@ -100,6 +100,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   async status(): Promise<StatusResponse> {
     const handler = await statusHandler({
       timeout: config.healthCheckTimeout,
+      log: appLogger,
       checks: [
         healthCheckCommercetoolsPermissions({
           requiredPermissions: [
