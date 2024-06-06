@@ -11,6 +11,7 @@
     "build": "rm -rf /dist && tsc",
     "dev": "ts-node src/main.ts",
     "test": "jest --detectOpenHandles",
+    "test:watch": "jest --watch --detectOpenHandles",
     "test:coverage": "jest --detectOpenHandles --coverage",
     "connector:post-deploy": "node src/connectors/post-deploy.ts",
     "connector:pre-undeploy": "node src/connectors/pre-undeploy.ts"

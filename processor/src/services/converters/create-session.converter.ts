@@ -4,7 +4,7 @@ import {
   buildReturnUrl,
   convertAllowedPaymentMethodsToAdyenFormat,
   populateCartAddress,
-  populateLineItems,
+  mapCoCoCartItemsToAdyenLineItems,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
@@ -27,7 +27,7 @@ export class CreateSessionConverter {
       returnUrl: buildReturnUrl(opts.payment.id),
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
       allowedPaymentMethods: convertAllowedPaymentMethodsToAdyenFormat(),
-      lineItems: populateLineItems(opts.cart),
+      lineItems: mapCoCoCartItemsToAdyenLineItems(opts.cart),
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),

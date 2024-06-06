@@ -5,6 +5,7 @@ import {
   LineItem as CoCoLineItem,
   CustomLineItem,
   Address as CartAddress,
+  ShippingInfo,
 } from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
@@ -12,65 +13,87 @@ import {
   getProcessorUrlFromContext,
 } from '../../libs/fastify/context/context';
 
+export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
+  return {
+    id: lineItem.variant.sku,
+    description: Object.values(lineItem.name)[0], //TODO: get proper locale
+    quantity: lineItem.quantity,
+    amountExcludingTax: getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity),
+    amountIncludingTax: getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity),
+    taxAmount: getItemAmount(getTaxAmount(lineItem), lineItem.quantity),
+    taxPercentage: convertTaxPercentageToCentAmount(lineItem.taxRate?.amount),
+  };
+};
+
+export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineItem): LineItem => {
+  return {
+    id: customLineItem.id,
+    description: Object.values(customLineItem.name)[0], //TODO: get proper locale
+    quantity: customLineItem.quantity,
+    amountExcludingTax: getItemAmount(getAmountExcludingTax(customLineItem), customLineItem.quantity),
+    amountIncludingTax: getItemAmount(getAmountIncludingTax(customLineItem), customLineItem.quantity),
+    taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
+    taxPercentage: convertTaxPercentageToCentAmount(customLineItem.taxRate?.amount),
+  };
+};
+
+export const mapCoCoShippingInfoToAdyenLineItem = (shippingInfo: ShippingInfo): LineItem => {
+  return {
+    description: 'Shipping',
+    quantity: 1,
+    amountExcludingTax: shippingInfo.taxedPrice?.totalNet.centAmount || 0,
+    amountIncludingTax: shippingInfo.taxedPrice?.totalGross.centAmount || 0,
+    taxAmount: shippingInfo.taxedPrice?.totalTax?.centAmount || 0,
+    taxPercentage: convertTaxPercentageToCentAmount(shippingInfo.taxRate?.amount),
+  };
+};
+
+export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
+  cart: Required<Pick<Cart, 'discountOnTotalPrice'>>,
+): LineItem => {
+  const amountExcludingTax = cart.discountOnTotalPrice.discountedNetAmount?.centAmount || 0;
+  const amountIncludingTax = cart.discountOnTotalPrice.discountedGrossAmount?.centAmount || 0;
+  const taxAmount = amountIncludingTax - amountExcludingTax;
+
+  return {
+    description: 'Discount',
+    quantity: 1,
+    amountExcludingTax: -amountExcludingTax,
+    amountIncludingTax: -amountIncludingTax,
+    taxAmount: -taxAmount,
+  };
+};
+
 /**
+ * Maps over a CoCo cart items (like lineItems, discounts, shipping, etc) over to the Adyen line items.
+ *
  * Mapping logic is mainly based upon the Adyen `adyen-commercetools` connector.
  *
- * @param cart The CoCo cart to map the line items from
- * @returns List of lineitems that Adyen will accept
+ * @param cart The CoCo cart to map over
+ * @returns List of lineitems to be send to Adyen
  */
-export const populateLineItems = (cart: Cart): LineItem[] => {
-  const lineItems: LineItem[] = [];
+export const mapCoCoCartItemsToAdyenLineItems = (
+  cart: Pick<Cart, 'lineItems' | 'customLineItems' | 'shippingInfo' | 'discountOnTotalPrice'>,
+): LineItem[] => {
+  const aydenLineItems: LineItem[] = [];
 
-  cart.lineItems.forEach((lineItem) => {
-    lineItems.push({
-      id: lineItem.variant.sku,
-      description: Object.values(lineItem.name)[0], //TODO: get proper locale
-      quantity: lineItem.quantity,
-      amountExcludingTax: getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity),
-      amountIncludingTax: getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity),
-      taxAmount: getItemAmount(getTaxAmount(lineItem), lineItem.quantity),
-      taxPercentage: convertTaxPercentageToCentAmount(lineItem.taxRate?.amount),
-    });
-  });
+  cart.lineItems.forEach((lineItem) => aydenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
 
-  cart.customLineItems.forEach((customLineItem) => {
-    lineItems.push({
-      id: customLineItem.id,
-      description: Object.values(customLineItem.name)[0], //TODO: get proper locale
-      quantity: customLineItem.quantity,
-      amountExcludingTax: getItemAmount(getAmountExcludingTax(customLineItem), customLineItem.quantity),
-      amountIncludingTax: getItemAmount(getAmountIncludingTax(customLineItem), customLineItem.quantity),
-      taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
-      taxPercentage: convertTaxPercentageToCentAmount(customLineItem.taxRate?.amount),
-    });
-  });
+  cart.customLineItems.forEach((customLineItem) =>
+    aydenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
+  );
 
   if (cart.shippingInfo) {
-    lineItems.push({
-      description: 'Shipping',
-      quantity: 1,
-      amountExcludingTax: cart.shippingInfo.taxedPrice?.totalNet.centAmount || 0,
-      amountIncludingTax: cart.shippingInfo.taxedPrice?.totalGross.centAmount || 0,
-      taxAmount: cart.shippingInfo.taxedPrice?.totalTax?.centAmount || 0,
-      taxPercentage: convertTaxPercentageToCentAmount(cart.shippingInfo?.taxRate?.amount),
-    });
+    aydenLineItems.push(mapCoCoShippingInfoToAdyenLineItem(cart.shippingInfo));
   }
 
   if (cart.discountOnTotalPrice) {
-    const amountExcludingTax = cart.discountOnTotalPrice.discountedNetAmount?.centAmount || 0;
-    const amountIncludingTax = cart.discountOnTotalPrice.discountedGrossAmount?.centAmount || 0;
-    const taxAmount = amountIncludingTax - amountExcludingTax;
-
-    lineItems.push({
-      description: 'Discount',
-      quantity: 1,
-      amountExcludingTax: -amountExcludingTax,
-      amountIncludingTax: -amountIncludingTax,
-      taxAmount: -taxAmount,
-    });
+    aydenLineItems.push(
+      mapCoCoDiscountOnTotalPriceToAdyenLineItem({ discountOnTotalPrice: cart.discountOnTotalPrice }),
+    );
   }
 
-  return lineItems;
+  return aydenLineItems;
 };
 
 export const populateCartAddress = (address: CartAddress): Address => {
