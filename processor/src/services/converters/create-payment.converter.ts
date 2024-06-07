@@ -2,7 +2,7 @@ import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paym
 import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
-import { buildReturnUrl, populateCartAddress, populateLineItems } from './helper.converter';
+import { buildReturnUrl, populateCartAddress, mapCoCoCartItemsToAdyenLineItems } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 
 export class CreatePaymentConverter {
@@ -17,7 +17,7 @@ export class CreatePaymentConverter {
       },
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
-      countryCode: opts.cart.country,
+      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
       shopperEmail: opts.cart.customerEmail,
       returnUrl: buildReturnUrl(opts.payment.id),
       ...(opts.cart.billingAddress && {
@@ -38,7 +38,7 @@ export class CreatePaymentConverter {
       case 'klarna_paynow':
       case 'klarna_account': {
         return {
-          lineItems: populateLineItems(cart),
+          lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
         };
       }
       default:

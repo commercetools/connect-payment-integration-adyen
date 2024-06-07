@@ -65,7 +65,7 @@
                   console.log('onComplete', { isSuccess, paymentReference });
                 },
               });
-        
+
               enabler.createComponentBuilder('card')
               .then(builder => {
                 const paymentElement = builder.build({
@@ -73,11 +73,22 @@
                 });
                 paymentElement.mount('#card-component')
               })
+        
+              // Possible options are: `klarna_paynow` (Pay Now), `klarna` (Pay Later), `klarna_account` (Pay Over Time)
+              enabler.createComponentBuilder('klarna_paynow')
+              .then(builder => {
+                const paymentElement = builder.build({
+                  showPayButton: true // Must be set to true for Adyen/Klarna to render the redirect button in the enabler.
+                });
+                paymentElement.mount('#klarna-component')
+              })
             });
       
           </script>
       
           <div id="card-component"></div>
+          <hr>
+          <div id="klarna-component"></div>
         </div>
       </div>
 
