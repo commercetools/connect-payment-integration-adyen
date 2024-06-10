@@ -8,12 +8,13 @@ on:
       # Pre-release tags v1.0.0-alpha.0, v1.0.0-beta.0, etc.
       - 'v[0-9]+.[0-9]+.[0-9]+-[a-z]+.[0-9]+'
       - latest
-
+  workflow_dispatch:
 
 jobs:
   publish:
     name: Publish for commercetools Checkout 
     runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
