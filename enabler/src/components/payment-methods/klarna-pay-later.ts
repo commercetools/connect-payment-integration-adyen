@@ -48,7 +48,7 @@ export class KlarnaPayLaterComponent extends DefaultAdyenComponent {
 
   init() {
     this.component = this.adyenCheckout.create(this.paymentMethod, {
-      ...this.componentOptions,
+      showPayButton: this.componentOptions.showPayButton,
       useKlarnaWidget: false // Set to false to initiate a redirect flow.
     });
   }
