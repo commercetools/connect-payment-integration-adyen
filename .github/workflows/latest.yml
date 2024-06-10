@@ -3,7 +3,7 @@ name: Tag Latest
 on:
   push:
     branches:
-      - ddeliziact/deploy_latest
+      - main
 
 
 jobs:
