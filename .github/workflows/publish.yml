@@ -28,7 +28,7 @@ jobs:
         env:
           CKO_CLIENT_ID: ${{ secrets.CKO_CLIENT_ID }}
           CKO_CLIENT_SECRET: ${{ secrets.CKO_CLIENT_SECRET }}
-          CKO_CONNECTOR_ID: ${{ secrets.CKO_CONNECTOR_ID }}
+          CKO_CONNECTOR_KEY: ${{ secrets.CKO_CONNECTOR_KEY }}
         run: |
           echo Updating connector to tag $GITHUB_REF_NAME
           
@@ -39,7 +39,7 @@ jobs:
           ACCESS_TOKEN=$(echo $OAUTH_RESPONSE | jq -r '.access_token')
           echo Access token retrieved
           
-          CONNECTOR_DETAILS=$(curl --silent --show-error --location "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_ID" \
+          CONNECTOR_DETAILS=$(curl --silent --show-error --location "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_KEY" \
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ACCESS_TOKEN")
           
@@ -47,7 +47,7 @@ jobs:
 
           echo Updating version $VERSION
           
-          curl --fail-with-body --silent --location POST "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_ID" \
+          curl --fail-with-body --silent --location POST "https://connect.europe-west1.gcp.commercetools.com/connectors/drafts/key=$CKO_CONNECTOR_KEY" \
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ACCESS_TOKEN" \
               --data-raw "{\"version\": $VERSION, \"actions\": [{\"action\": \"setRepository\",\"url\": \"git@github.com:commercetools/connect-payment-integration-adyen.git\",\"tag\": \"$GITHUB_REF_NAME\"},{\"action\": \"updatePreviewable\"}]}"
