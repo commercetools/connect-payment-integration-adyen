@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CTP_REGION: ${{ secrets.CTP_REGION }}
+      GH_TOKEN: ${{ github.token }}
     defaults:
       run:
         working-directory: enabler
