@@ -17,7 +17,6 @@ import {
  * https://docs.adyen.com/payment-methods/klarna/web-component/
  */
 export class KlarnaPayNowBuilder extends AdyenBaseComponentBuilder {
-  public componentHasSubmit = false;
 
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.klarna_paynow, baseOptions);
