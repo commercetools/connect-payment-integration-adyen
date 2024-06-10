@@ -1,0 +1,26 @@
+name: Tag Latest
+
+on:
+  push:
+    branches:
+      - ddeliziact/deploy_latest
+
+
+jobs:
+  tag-latest:
+    name: Tag latest version
+    runs-on: ubuntu-latest
+    env:
+      CTP_REGION: ${{ secrets.CTP_REGION }}
+    defaults:
+      run:
+        working-directory: enabler
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup git config
+        run: git config user.name "GitHub cd-deploy-dev Bot" && git config user.email "<>"
+
+      - name: Notify argo to trigger dev
+        run: git tag -f -- "latest" && git push -f origin "latest"
+
