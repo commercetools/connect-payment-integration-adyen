@@ -114,7 +114,7 @@ deployAs:
           required: true
           default: https://session.europe-west1.gcp.commercetools.com
         - key: CTP_CLIENT_ID
-          description: commercetools client ID
+          description: commercetools client ID with manage_payments, manage_orders, view_sessions, view_api_clients, manage_checkout_payment_intents & introspect_oauth_tokens scopes
           required: true
         - key: ADYEN_ENVIRONMENT
           description: Adyen environment
@@ -132,11 +132,11 @@ deployAs:
           description: Merchant return URL
           required: true
         - key: CTP_JWKS_URL
-          description: JWKs url
+          description: JWKs url (example - https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json)
           required: true
           default: https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json
         - key: CTP_JWT_ISSUER
-          description: JWT Issuer for jwt validation
+          description: JWT Issuer for jwt validation (example - https://mc-api.europe-west1.gcp.commercetools.com)
           required: true
           default: https://mc-api.europe-west1.gcp.commercetools.com
         - key: ADYEN_APPLEPAY_OWN_MERCHANT_ID
