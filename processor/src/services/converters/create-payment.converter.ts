@@ -34,13 +34,13 @@ export class CreatePaymentConverter {
     switch (data?.paymentMethod?.type) {
       case 'scheme':
         return this.populateAdditionalCardData();
-      case 'klarna':
-      case 'klarna_paynow':
-      case 'klarna_account': {
-        return {
-          lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
-        };
-      }
+      // case 'klarna':
+      // case 'klarna_paynow':
+      // case 'klarna_account': {
+      //   return {
+      //     lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
+      //   };
+      // }
       default:
         return {};
     }
