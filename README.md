@@ -184,3 +184,28 @@ Here you can see the details about various variables in configuration
 - `ADYEN_APPLEPAY_OWN_MERCHANT_ID`: The merchant identifier created in the Apple portal. Only needed if using an own certificate
 - `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`:The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
+
+## Development
+In order to get started developing this connector certain configuration are necessary, most of which involve updating environment variables in both services (enabler, processor).
+
+#### Configuration steps
+
+#### 1. Environment Variable Setup
+
+Navigate to each service directory and duplicate the .env.template file, renaming the copy to .env. Populate the newly created .env file with the appropriate values.
+
+```bash
+cp .env.template .env
+```
+
+#### 2. Spin Up Components via Docker Compose
+With the help of docker compose, you are able to spin up all necessary components required for developing the connector by running the following command from the root directory;
+
+```bash
+docker compose up
+```
+
+This command would start 3 required services, necessary for development
+1. JWT Server
+2. Enabler
+3. Processor
