@@ -22,11 +22,7 @@ import { mockGetCartResult } from '../utils/mock-cart-data';
 
 import * as Config from '../../src/config/config';
 import { AbstractPaymentService } from '../../src/services/abstract-payment.service';
-import {
-  AdyenPaymentService,
-  AdyenPaymentServiceOptions,
-  METHODS_REQUIRE_LINE_ITEMS,
-} from '../../src/services/adyen-payment.service';
+import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/handlers/status.handler';
 import { PaymentsApi } from '@adyen/api-library/lib/src/services/checkout/paymentsApi';
 import { ModificationsApi } from '@adyen/api-library/lib/src/services/checkout/modificationsApi';
@@ -160,11 +156,6 @@ describe('adyen-payment.service', () => {
 
     const result = await paymentService.modifyPayment(modifyPaymentOpts);
     expect(result?.outcome).toStrictEqual('received');
-  });
-
-  test('METHODS_REQUIRE_LINE_ITEMS', () => {
-    const expected = ['klarna', 'klarna_account', 'klarna_paynow'];
-    expect(METHODS_REQUIRE_LINE_ITEMS).toEqual(expected);
   });
 
   describe('capturePayment', () => {
