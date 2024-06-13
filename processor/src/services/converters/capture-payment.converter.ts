@@ -25,7 +25,7 @@ export class CapturePaymentConverter {
   }
 
   public async convertRequest(opts: CapturePaymentRequest): Promise<PaymentCaptureRequest> {
-    // Only process if the payment method requires it so we don't fetch order/cart unnecessary.
+    // Only process if the payment method requires it so we don't fetch order/cart unnecessarily.
     let adyenLineItems: LineItem[] | undefined = undefined;
     if (
       opts.payment.paymentMethodInfo.method &&
