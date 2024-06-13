@@ -7,6 +7,8 @@ import {
   Cart,
   Payment,
   UpdatePayment,
+  CommercetoolsOrderService,
+  ErrorReferencedResourceNotFound,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -54,11 +56,19 @@ import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
+import { mapCoCoCartItemsToAdyenLineItems, mapCoCoOrderItemsToAdyenLineItems } from './converters/helper.converter';
+import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
 const packageJSON = require('../../package.json');
+
+/**
+ * These payment methods require line items to be send to Adyen.
+ */
+export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow'];
 
 export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
   ctPaymentService: CommercetoolsPaymentService;
+  ctOrderService: CommercetoolsOrderService;
 };
 
 export class AdyenPaymentService extends AbstractPaymentService {
@@ -73,9 +83,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private refundPaymentConverter: RefundPaymentConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
-    super(opts.ctCartService, opts.ctPaymentService);
-    this.ctCartService = opts.ctCartService;
-    this.ctPaymentService = opts.ctPaymentService;
+    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService);
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
     this.createPaymentConverter = new CreatePaymentConverter();
@@ -397,11 +405,20 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
+    // Only process if the payment method requires it so we don't fetch order/cart unnecessary.
+    let adyenLineItems: LineItem[] | undefined = undefined;
+    if (
+      request.payment.paymentMethodInfo.method &&
+      METHODS_REQUIRE_LINE_ITEMS.includes(request.payment.paymentMethodInfo.method)
+    ) {
+      adyenLineItems = await this.retrievePaymentAssociatedLineItems(request.payment.id);
+    }
+
     const interfaceId = request.payment.interfaceId as string;
     try {
       const res = await AdyenApi().ModificationsApi.captureAuthorisedPayment(
         interfaceId,
-        this.capturePaymentConverter.convertRequest(request),
+        this.capturePaymentConverter.convertRequest(request, adyenLineItems),
       );
 
       return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
@@ -498,6 +515,33 @@ export class AdyenPaymentService extends AbstractPaymentService {
           },
         },
       );
+    }
+  }
+
+  private async retrievePaymentAssociatedLineItems(paymentId: string): Promise<LineItem[]> {
+    // First try fetching the order
+    try {
+      const order = await this.ctOrderService.getOrderByPaymentId({ paymentId });
+      return mapCoCoOrderItemsToAdyenLineItems(order);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Could not find order for the given paymentId';
+      log.warn(msg, {
+        cause: error,
+        paymentId,
+      });
+    }
+
+    // Fallback to the cart
+    try {
+      const cart = await this.ctCartService.getCartByPaymentId({ paymentId });
+      return mapCoCoCartItemsToAdyenLineItems(cart);
+    } catch (error) {
+      throw new ErrorReferencedResourceNotFound('cart', paymentId, {
+        cause: error,
+        fields: {
+          paymentId,
+        },
+      });
     }
   }
 

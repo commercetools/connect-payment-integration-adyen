@@ -3,6 +3,7 @@ import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/service
 import { paymentSDK } from '../../src/payment-sdk';
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
+import { DefaultOrderService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-order.service';
 import {
   mockGetPaymentResult,
   mockGetPaymentAmount,
@@ -13,22 +14,25 @@ import {
   mockAdyenCapturePaymentResponse,
   mockAdyenCreatePaymentResponse,
   mockAdyenRefundPaymentResponse,
+  mockGetPaymentResultKlarnaPayLater,
+  mockUpdatePaymentResultKlarnaPayLater,
 } from '../utils/mock-payment-data';
-
+import { mockGetOrderResult } from '../utils/mock-order-data';
 import { mockGetCartResult } from '../utils/mock-cart-data';
+
 import * as Config from '../../src/config/config';
 import { AbstractPaymentService } from '../../src/services/abstract-payment.service';
-import { AdyenPaymentService } from '../../src/services/adyen-payment.service';
+import {
+  AdyenPaymentService,
+  AdyenPaymentServiceOptions,
+  METHODS_REQUIRE_LINE_ITEMS,
+} from '../../src/services/adyen-payment.service';
 import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/handlers/status.handler';
 import { PaymentsApi } from '@adyen/api-library/lib/src/services/checkout/paymentsApi';
 import { ModificationsApi } from '@adyen/api-library/lib/src/services/checkout/modificationsApi';
-import { MockAgent, setGlobalDispatcher, Agent } from 'undici';
+import { MockAgent, setGlobalDispatcher } from 'undici';
 
-import {
-  CommercetoolsCartService,
-  CommercetoolsPaymentService,
-  HealthCheckResult,
-} from '@commercetools/connect-payments-sdk';
+import { HealthCheckResult } from '@commercetools/connect-payments-sdk';
 import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/payment-componets.dto';
 import {
   CreateApplePaySessionRequestDTO,
@@ -42,16 +46,10 @@ import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/pay
 import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
 import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDetails';
 import { ApplePayDetails } from '@adyen/api-library/lib/src/typings/checkout/applePayDetails';
-import { ApplePayPaymentSessionError } from '../../src/errors/adyen-api.error';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
 }
-
-export type AdyenPaymentServiceOptions = {
-  ctCartService: CommercetoolsCartService;
-  ctPaymentService: CommercetoolsPaymentService;
-};
 
 function setupMockConfig(keysAndValues: Record<string, string>) {
   const mockConfig: FlexibleConfig = {};
@@ -67,6 +65,7 @@ describe('adyen-payment.service', () => {
   const opts: AdyenPaymentServiceOptions = {
     ctCartService: paymentSDK.ctCartService,
     ctPaymentService: paymentSDK.ctPaymentService,
+    ctOrderService: paymentSDK.ctOrderService,
   };
 
   const paymentService: AbstractPaymentService = new AdyenPaymentService(opts);
@@ -163,31 +162,217 @@ describe('adyen-payment.service', () => {
     expect(result?.outcome).toStrictEqual('received');
   });
 
-  test('capturePayment', async () => {
-    const modifyPaymentOpts: ModifyPayment = {
-      paymentId: 'dummy-paymentId',
-      data: {
-        actions: [
-          {
-            action: 'capturePayment',
-            amount: {
-              centAmount: 150000,
-              currencyCode: 'USD',
+  test('METHODS_REQUIRE_LINE_ITEMS', () => {
+    const expected = ['klarna', 'klarna_account', 'klarna_paynow'];
+    expect(METHODS_REQUIRE_LINE_ITEMS).toEqual(expected);
+  });
+
+  describe('capturePayment', () => {
+    test('capturePayment without lineitems', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [
+            {
+              action: 'capturePayment',
+              amount: {
+                centAmount: 150000,
+                currencyCode: 'USD',
+              },
             },
+          ],
+        },
+      };
+
+      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const mockOrderService = jest.spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId');
+      const mockCartService = jest.spyOn(DefaultCartService.prototype, 'getCartByPaymentId');
+      const mockAdyenService = jest
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      const result = await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      const expectedAdyenCapturePayload = {
+        amount: { currency: 'USD', value: 150000 },
+        lineItems: undefined,
+        merchantAccount: 'adyenMerchantAccount',
+        reference: '123456',
+      };
+      expect(mockOrderService).not.toHaveBeenCalled();
+      expect(mockCartService).not.toHaveBeenCalled();
+      expect(mockAdyenService).toHaveBeenCalledWith('92C12661DS923781G', expectedAdyenCapturePayload);
+      expect(result?.outcome).toStrictEqual('received');
+    });
+
+    test('capturePayment with lineitems with a order', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [
+            {
+              action: 'capturePayment',
+              amount: {
+                centAmount: 150000,
+                currencyCode: 'USD',
+              },
+            },
+          ],
+        },
+      };
+
+      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
+      jest.spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId').mockResolvedValue(mockGetOrderResult);
+      const mockCartService = jest.spyOn(DefaultCartService.prototype, 'getCartByPaymentId');
+      const mockAdyenService = jest
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      const result = await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      const expectedAdyenCapturePayload = {
+        amount: { currency: 'USD', value: 150000 },
+        lineItems: [
+          {
+            amountExcludingTax: 7562,
+            amountIncludingTax: 8999,
+            description: 'Walnut Counter Stool',
+            id: 'WCSI-09',
+            quantity: 1,
+            taxAmount: 1437,
+            taxPercentage: 1900,
           },
         ],
-      },
-    };
+        merchantAccount: 'adyenMerchantAccount',
+        reference: '123456',
+      };
+      expect(mockCartService).not.toHaveBeenCalled();
+      expect(mockAdyenService).toHaveBeenCalledWith('92C12661DS923781G', expectedAdyenCapturePayload);
+      expect(result?.outcome).toStrictEqual('received');
+    });
 
-    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-    jest
-      .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
-      .mockResolvedValue(mockAdyenCapturePaymentResponse);
+    test('capturePayment with lineitems with a cart', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [
+            {
+              action: 'capturePayment',
+              amount: {
+                centAmount: 150000,
+                currencyCode: 'USD',
+              },
+            },
+          ],
+        },
+      };
 
-    const result = await paymentService.modifyPayment(modifyPaymentOpts);
-    expect(result?.outcome).toStrictEqual('received');
+      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
+      const mockOrderService = jest
+        .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
+        .mockRejectedValue(new Error('Could not retrieve order'));
+      jest.spyOn(DefaultCartService.prototype, 'getCartByPaymentId').mockResolvedValue(mockGetCartResult());
+      const mockAdyenService = jest
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      const result = await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      const expectedAdyenCapturePayload = {
+        amount: { currency: 'USD', value: 150000 },
+        lineItems: [
+          {
+            amountExcludingTax: 150000,
+            amountIncludingTax: 150000,
+            description: 'lineitem-name-1',
+            id: 'variant-sku-1',
+            quantity: 1,
+            taxAmount: 0,
+            taxPercentage: 0,
+          },
+          {
+            amountExcludingTax: 150000,
+            amountIncludingTax: 150000,
+            description: 'customLineItem-name-1',
+            id: 'customLineItem-id-1',
+            quantity: 1,
+            taxAmount: 0,
+            taxPercentage: 0,
+          },
+          {
+            amountExcludingTax: 0,
+            amountIncludingTax: 0,
+            description: 'Shipping',
+            quantity: 1,
+            taxAmount: 0,
+            taxPercentage: 0,
+          },
+        ],
+        merchantAccount: 'adyenMerchantAccount',
+        reference: '123456',
+      };
+
+      expect(mockOrderService).rejects.toThrow('Could not retrieve order');
+      expect(mockAdyenService).toHaveBeenCalledWith('92C12661DS923781G', expectedAdyenCapturePayload);
+      expect(result?.outcome).toStrictEqual('received');
+    });
+
+    test('capturePayment should throw an ErrorReferencedResourceNotFound if neither a order nor cart can be found', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [
+            {
+              action: 'capturePayment',
+              amount: {
+                centAmount: 150000,
+                currencyCode: 'USD',
+              },
+            },
+          ],
+        },
+      };
+
+      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
+      const mockOrderService = jest
+        .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
+        .mockRejectedValue(new Error('Could not retrieve order'));
+      const mockCartService = jest
+        .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
+        .mockRejectedValue(new Error('Could not retrieve cart'));
+      const mockAdyenService = jest.spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment');
+
+      // Act
+      const adyenModifyPaymentCall = paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      const expectedErrorMessage =
+        "The referenced object of type 'cart' '123456' was not found. It either doesn't exist, or it can't be accessed from this endpoint (e.g., if the endpoint filters by store or customer account).";
+      expect(adyenModifyPaymentCall).rejects.toThrow(expectedErrorMessage);
+      expect(mockOrderService).rejects.toThrow('Could not retrieve order');
+      expect(mockCartService).rejects.toThrow('Could not retrieve cart');
+      expect(mockAdyenService).not.toHaveBeenCalled();
+    });
   });
 
   test('refundPayment', async () => {

@@ -6,6 +6,7 @@ import {
   CustomLineItem,
   Address as CartAddress,
   ShippingInfo,
+  Order,
 } from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
@@ -62,6 +63,21 @@ export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
     amountIncludingTax: -amountIncludingTax,
     taxAmount: -taxAmount,
   };
+};
+
+/**
+ * Maps over a CoCo order items (like lineItems, discounts, shipping, etc) over to the Adyen line items.
+ *
+ * Mapping logic is mainly based upon the Adyen `adyen-commercetools` connector.
+ *
+ * @param cart The CoCo order to map over
+ * @returns List of lineitems to be send to Adyen
+ */
+export const mapCoCoOrderItemsToAdyenLineItems = (
+  order: Pick<Order, 'lineItems' | 'customLineItems' | 'shippingInfo' | 'discountOnTotalPrice'>,
+): LineItem[] => {
+  // CoCo model between these attributes is shared between a Cart and Order hence we can re-use the existing mapping logic.
+  return mapCoCoCartItemsToAdyenLineItems(order);
 };
 
 /**
