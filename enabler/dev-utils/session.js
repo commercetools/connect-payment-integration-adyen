@@ -45,9 +45,9 @@ const getSessionId = async (cartId) => {
     processorUrl: __VITE_PROCESSOR_URL__,
     allowedPaymentMethods: [
       "card",
-      "klarna_paynow",
-      "klarna",
-      "klarna_account",
+      // "klarna_paynow",
+      // "klarna",
+      // "klarna_account",
       "ideal",
       "paypal",
       "applepay",
