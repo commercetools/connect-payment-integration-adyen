@@ -1,5 +1,6 @@
 import {
   CommercetoolsCartService,
+  CommercetoolsOrderService,
   CommercetoolsPaymentService,
   ErrorInvalidJsonInput,
   ErrorInvalidOperation,
@@ -25,9 +26,16 @@ import { log } from '../libs/logger';
 export abstract class AbstractPaymentService {
   protected ctCartService: CommercetoolsCartService;
   protected ctPaymentService: CommercetoolsPaymentService;
-  constructor(ctCartService: CommercetoolsCartService, ctPaymentService: CommercetoolsPaymentService) {
+  protected ctOrderService: CommercetoolsOrderService;
+
+  constructor(
+    ctCartService: CommercetoolsCartService,
+    ctPaymentService: CommercetoolsPaymentService,
+    ctOrderService: CommercetoolsOrderService,
+  ) {
     this.ctCartService = ctCartService;
     this.ctPaymentService = ctPaymentService;
+    this.ctOrderService = ctOrderService;
   }
 
   /**

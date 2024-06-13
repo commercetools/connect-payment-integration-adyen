@@ -7,6 +7,8 @@ import {
   Cart,
   Payment,
   UpdatePayment,
+  CommercetoolsOrderService,
+  Errorx,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -59,6 +61,7 @@ const packageJSON = require('../../package.json');
 export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
   ctPaymentService: CommercetoolsPaymentService;
+  ctOrderService: CommercetoolsOrderService;
 };
 
 export class AdyenPaymentService extends AbstractPaymentService {
@@ -73,9 +76,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private refundPaymentConverter: RefundPaymentConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
-    super(opts.ctCartService, opts.ctPaymentService);
-    this.ctCartService = opts.ctCartService;
-    this.ctPaymentService = opts.ctPaymentService;
+    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService);
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
     this.createPaymentConverter = new CreatePaymentConverter();
@@ -83,7 +84,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     this.notificationConverter = new NotificationConverter();
     this.paymentComponentsConverter = new PaymentComponentsConverter();
     this.cancelPaymentConverter = new CancelPaymentConverter();
-    this.capturePaymentConverter = new CapturePaymentConverter();
+    this.capturePaymentConverter = new CapturePaymentConverter(this.ctCartService, this.ctOrderService);
     this.refundPaymentConverter = new RefundPaymentConverter();
   }
   async config(): Promise<ConfigResponse> {
@@ -401,12 +402,16 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       const res = await AdyenApi().ModificationsApi.captureAuthorisedPayment(
         interfaceId,
-        this.capturePaymentConverter.convertRequest(request),
+        await this.capturePaymentConverter.convertRequest(request),
       );
 
       return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
     } catch (e) {
-      throw wrapAdyenError(e);
+      if (e instanceof Errorx) {
+        throw e;
+      } else {
+        throw wrapAdyenError(e);
+      }
     }
   }
 
