@@ -1,70 +1,106 @@
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
-import { TransactionData, UpdatePayment, Money } from '@commercetools/connect-payments-sdk';
+import { TransactionData, Money } from '@commercetools/connect-payments-sdk';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
+import { paymentMethodConfig } from '../../config/payment-method.config';
+import { NotificationUpdatePayment } from '../types/service.type';
 
 export class NotificationConverter {
-  public convert(opts: { data: NotificationRequestDTO }): UpdatePayment {
+  public convert(opts: { data: NotificationRequestDTO }): NotificationUpdatePayment {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 
     return {
       id: item.merchantReference,
       pspReference: item.originalReference || item.pspReference,
-      transaction: this.populateTransaction(item),
+      paymentMethod: item.paymentMethod,
+      transactions: this.populateTransactions(item),
     };
   }
 
-  private populateTransaction(item: NotificationRequestItem): TransactionData {
+  private populateTransactions(item: NotificationRequestItem): TransactionData[] {
     switch (item.eventCode) {
       case NotificationRequestItem.EventCodeEnum.Authorisation:
-        return {
-          type: 'Authorization',
-          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'Authorization',
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+          ...(item.success === NotificationRequestItem.SuccessEnum.True && !this.isSeparateCaptureSupported(item)
+            ? [
+                {
+                  type: 'Charge',
+                  state: 'Success',
+                  amount: this.populateAmount(item),
+                  interactionId: item.pspReference,
+                },
+              ]
+            : []),
+        ];
+      case NotificationRequestItem.EventCodeEnum.Expire:
+        return [
+          {
+            type: 'Authorization',
+            state: 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       case NotificationRequestItem.EventCodeEnum.Capture:
-        return {
-          type: 'Charge',
-          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'Charge',
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       case NotificationRequestItem.EventCodeEnum.CaptureFailed:
-        return {
-          type: 'Charge',
-          state: 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'Charge',
+            state: 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       case NotificationRequestItem.EventCodeEnum.Cancellation:
-        return {
-          type: 'CancelAuthorization',
-          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'CancelAuthorization',
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       case NotificationRequestItem.EventCodeEnum.Refund:
-        return {
-          type: 'Refund',
-          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'Refund',
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       case NotificationRequestItem.EventCodeEnum.RefundFailed:
-        return {
-          type: 'Refund',
-          state: 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'Refund',
+            state: 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       case NotificationRequestItem.EventCodeEnum.Chargeback:
-        return {
-          type: 'Chargeback',
-          state: 'Success',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        };
+        return [
+          {
+            type: 'Chargeback',
+            state: 'Success',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       default:
         throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
     }
@@ -75,5 +111,13 @@ export class NotificationConverter {
       centAmount: item.amount.value as number,
       currencyCode: item.amount.currency as string,
     };
+  }
+
+  private isSeparateCaptureSupported(item: NotificationRequestItem): boolean {
+    if (item.paymentMethod && paymentMethodConfig[item.paymentMethod]) {
+      return paymentMethodConfig[item.paymentMethod].supportSeparateCapture;
+    }
+
+    return true;
   }
 }

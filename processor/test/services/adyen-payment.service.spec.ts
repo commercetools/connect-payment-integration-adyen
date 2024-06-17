@@ -21,7 +21,6 @@ import { mockGetOrderResult } from '../utils/mock-order-data';
 import { mockGetCartResult } from '../utils/mock-cart-data';
 
 import * as Config from '../../src/config/config';
-import { AbstractPaymentService } from '../../src/services/abstract-payment.service';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/handlers/status.handler';
 import { PaymentsApi } from '@adyen/api-library/lib/src/services/checkout/paymentsApi';
@@ -34,6 +33,7 @@ import {
   CreateApplePaySessionRequestDTO,
   CreatePaymentRequestDTO,
   CreateSessionRequestDTO,
+  NotificationRequestDTO,
   PaymentMethodsRequestDTO,
 } from '../../src/dtos/adyen-payment.dto';
 
@@ -42,6 +42,7 @@ import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/pay
 import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
 import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDetails';
 import { ApplePayDetails } from '@adyen/api-library/lib/src/typings/checkout/applePayDetails';
+import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -64,7 +65,7 @@ describe('adyen-payment.service', () => {
     ctOrderService: paymentSDK.ctOrderService,
   };
 
-  const paymentService: AbstractPaymentService = new AdyenPaymentService(opts);
+  const paymentService = new AdyenPaymentService(opts);
 
   beforeAll(() => {
     mockAgent.disableNetConnect();
@@ -588,6 +589,60 @@ describe('adyen-payment.service', () => {
 
       //Then
       await expect(resultPromise).rejects.toThrow('bad_request');
+    });
+  });
+
+  describe('processNotification', () => {
+    test('it should process the notification properly', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+
+      // When
+      await paymentService.processNotification({ data: notification });
+
+      // Then
+      expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith({
+        id: merchantReference,
+        pspReference,
+        transaction: {
+          amount: {
+            centAmount: 10000,
+            currencyCode: 'EUR',
+          },
+          interactionId: pspReference,
+          state: 'Success',
+          type: 'Authorization',
+        },
+      });
     });
   });
 });

@@ -6,7 +6,6 @@ import {
   statusHandler,
   Cart,
   Payment,
-  UpdatePayment,
   CommercetoolsOrderService,
   Errorx,
 } from '@commercetools/connect-payments-sdk';
@@ -375,10 +374,24 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
-    let updateData!: UpdatePayment;
-
     try {
-      updateData = await this.notificationConverter.convert(opts);
+      const updateData = await this.notificationConverter.convert(opts);
+
+      for (const tx of updateData.transactions) {
+        const updatedPayment = await this.ctPaymentService.updatePayment({
+          id: updateData.id,
+          pspReference: updateData.pspReference,
+          transaction: tx,
+        });
+
+        log.info('Payment updated after processing the notification', {
+          paymentId: updatedPayment.id,
+          version: updatedPayment.version,
+          pspReference: updateData.pspReference,
+          paymentMethod: updateData.paymentMethod,
+          transaction: JSON.stringify(tx),
+        });
+      }
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {
         log.info('Unsupported notification received', { notification: JSON.stringify(opts.data) });
@@ -387,14 +400,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       log.error('Error processing notification', { error: e });
       throw e;
     }
-
-    const updatedPayment = await this.ctPaymentService.updatePayment(updateData);
-    log.info('Payment updated after processing the notification', {
-      paymentId: updatedPayment.id,
-      version: updatedPayment.version,
-      pspReference: updateData.pspReference,
-      transaction: JSON.stringify(updateData.transaction),
-    });
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
