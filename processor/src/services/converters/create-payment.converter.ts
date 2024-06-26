@@ -2,7 +2,7 @@ import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paym
 import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
-import { buildReturnUrl, populateCartAddress } from './helper.converter';
+import { buildReturnUrl, mapCoCoCartItemsToAdyenLineItems, populateCartAddress } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 
 export class CreatePaymentConverter {
