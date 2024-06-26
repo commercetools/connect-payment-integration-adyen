@@ -19,15 +19,15 @@ export class PaymentComponentsConverter {
         {
           type: 'googlepay',
         },
-        // {
-        //   type: 'klarna_paynow',
-        // },
-        // {
-        //   type: 'klarna',
-        // },
-        // {
-        //   type: 'klarna_account',
-        // },
+        {
+          type: 'klarna_paynow',
+        },
+        {
+          type: 'klarna',
+        },
+        {
+          type: 'klarna_account',
+        },
       ],
     };
   }
