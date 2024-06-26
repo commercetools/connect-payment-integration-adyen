@@ -98,15 +98,15 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(5);
+    expect(result?.components).toHaveLength(8);
     expect(result?.components[0]?.type).toStrictEqual('card');
     expect(result?.components[1]?.type).toStrictEqual('ideal');
     expect(result?.components[2]?.type).toStrictEqual('paypal');
     expect(result?.components[3]?.type).toStrictEqual('applepay');
     expect(result?.components[4]?.type).toStrictEqual('googlepay');
-    // expect(result?.components[5]?.type).toStrictEqual('klarna_paynow');
-    // expect(result?.components[6]?.type).toStrictEqual('klarna');
-    // expect(result?.components[7]?.type).toStrictEqual('klarna_account');
+    expect(result?.components[5]?.type).toStrictEqual('klarna_paynow');
+    expect(result?.components[6]?.type).toStrictEqual('klarna');
+    expect(result?.components[7]?.type).toStrictEqual('klarna_account');
   });
 
   test('getStatus', async () => {
