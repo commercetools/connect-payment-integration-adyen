@@ -19,7 +19,7 @@ import {
 export class KlarnaPayOverTimeBuilder extends AdyenBaseComponentBuilder {
 
   constructor(baseOptions: BaseOptions) {
-    super(PaymentMethod.klarna_account, baseOptions);
+    super(PaymentMethod.klarna_over_time, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {

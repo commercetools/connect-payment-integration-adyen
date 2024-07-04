@@ -19,7 +19,7 @@ import {
 export class KlarnaPayLaterBuilder extends AdyenBaseComponentBuilder {
 
   constructor(baseOptions: BaseOptions) {
-    super(PaymentMethod.klarna, baseOptions);
+    super(PaymentMethod.klarna_pay_later, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {

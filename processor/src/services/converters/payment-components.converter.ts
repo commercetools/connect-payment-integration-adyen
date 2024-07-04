@@ -5,7 +5,7 @@ export class PaymentComponentsConverter {
     return {
       components: [
         {
-          type: 'card',
+          type: 'card', // scheme
         },
         {
           type: 'ideal',
@@ -20,13 +20,13 @@ export class PaymentComponentsConverter {
           type: 'googlepay',
         },
         {
-          type: 'klarna_paynow',
+          type: 'klarna_pay_now', // klarna_paynow
         },
         {
-          type: 'klarna',
+          type: 'klarna_pay_later', // klarna
         },
         {
-          type: 'klarna_account',
+          type: 'klarna_over_time', // klarna_account
         },
       ],
     };
