@@ -104,9 +104,9 @@ describe('adyen-payment.service', () => {
     expect(result?.components[2]?.type).toStrictEqual('paypal');
     expect(result?.components[3]?.type).toStrictEqual('applepay');
     expect(result?.components[4]?.type).toStrictEqual('googlepay');
-    expect(result?.components[5]?.type).toStrictEqual('klarna_paynow');
-    expect(result?.components[6]?.type).toStrictEqual('klarna');
-    expect(result?.components[7]?.type).toStrictEqual('klarna_account');
+    expect(result?.components[5]?.type).toStrictEqual('klarna_pay_now');
+    expect(result?.components[6]?.type).toStrictEqual('klarna_pay_later');
+    expect(result?.components[7]?.type).toStrictEqual('klarna_over_time');
   });
 
   test('getStatus', async () => {
