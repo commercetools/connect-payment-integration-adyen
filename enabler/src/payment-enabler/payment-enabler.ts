@@ -36,7 +36,7 @@ export enum PaymentMethod {
   paypal = "paypal",
   klarna_pay_now = "klarna_paynow", // Pay now
   klarna_pay_later = "klarna", // Pay later
-  klarna_over_time = "klarna_account", // Pay over time
+  klarna_pay_overtime = "klarna_account", // Pay over time
 }
 
 export type PaymentResult = {

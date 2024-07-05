@@ -106,7 +106,7 @@ describe('adyen-payment.service', () => {
     expect(result?.components[4]?.type).toStrictEqual('googlepay');
     expect(result?.components[5]?.type).toStrictEqual('klarna_pay_now');
     expect(result?.components[6]?.type).toStrictEqual('klarna_pay_later');
-    expect(result?.components[7]?.type).toStrictEqual('klarna_over_time');
+    expect(result?.components[7]?.type).toStrictEqual('klarna_pay_overtime');
   });
 
   test('getStatus', async () => {

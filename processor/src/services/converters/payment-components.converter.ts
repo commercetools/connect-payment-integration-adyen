@@ -26,7 +26,7 @@ export class PaymentComponentsConverter {
           type: 'klarna_pay_later', // klarna
         },
         {
-          type: 'klarna_over_time', // klarna_account
+          type: 'klarna_pay_overtime', // klarna_account
         },
       ],
     };
