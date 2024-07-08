@@ -3,7 +3,7 @@ deployAs:
     applicationType: assets
   - name: processor
     applicationType: service
-    endpoint: /
+    endpoint: /notifications
     configuration:
       standardConfiguration:
         - key: CTP_PROJECT_KEY
