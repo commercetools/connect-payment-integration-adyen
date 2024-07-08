@@ -36,12 +36,12 @@ describe('helper.converter', () => {
     const result1: string = convertPaymentMethodFromAdyenFormat(paymentMethod1);
     const result2: string = convertPaymentMethodFromAdyenFormat(paymentMethod2);
     expect(result1).toStrictEqual('card');
-    expect(result2).toStrictEqual('klarna');
+    expect(result2).toStrictEqual('klarna_pay_later');
   });
 
   test('convertPaymentMethodToAdyenFormat', async () => {
     const paymentMethod1 = 'card';
-    const paymentMethod2 = 'klarna';
+    const paymentMethod2 = 'klarna_pay_later';
     const result1: string = convertPaymentMethodToAdyenFormat(paymentMethod1);
     const result2: string = convertPaymentMethodToAdyenFormat(paymentMethod2);
     expect(result1).toStrictEqual('scheme');

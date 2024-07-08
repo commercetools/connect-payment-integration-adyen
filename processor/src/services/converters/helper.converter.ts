@@ -135,6 +135,12 @@ export const convertAllowedPaymentMethodsToAdyenFormat = (): string[] => {
 export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string => {
   if (paymentMethod === 'card') {
     return 'scheme';
+  } else if (paymentMethod === 'klarna_pay_later') {
+    return 'klarna';
+  } else if (paymentMethod === 'klarna_pay_now') {
+    return 'klarna_paynow';
+  } else if (paymentMethod === 'klarna_pay_overtime') {
+    return 'klarna_account';
   } else {
     return paymentMethod;
   }
@@ -143,6 +149,12 @@ export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string
 export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): string => {
   if (paymentMethod === 'scheme') {
     return 'card';
+  } else if (paymentMethod === 'klarna') {
+    return 'klarna_pay_later';
+  } else if (paymentMethod === 'klarna_paynow') {
+    return 'klarna_pay_now';
+  } else if (paymentMethod === 'klarna_account') {
+    return 'klarna_pay_overtime';
   } else {
     return paymentMethod;
   }
