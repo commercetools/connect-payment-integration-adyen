@@ -184,9 +184,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       googlepay: GooglepayBuilder,
       ideal: IdealBuilder,
       paypal: PaypalBuilder,
-      "klarna_paynow": KlarnaPayNowBuilder,
-      klarna: KlarnaPayLaterBuilder,
-      "klarna_account": KlarnaPayOverTimeBuilder
+      klarna_pay_now: KlarnaPayNowBuilder,
+      klarna_pay_later: KlarnaPayLaterBuilder,
+      klarna_pay_overtime: KlarnaPayOverTimeBuilder,
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
