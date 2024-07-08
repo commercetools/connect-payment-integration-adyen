@@ -127,11 +127,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
               },
             };
           } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : 'Failed to connect with Adyen';
             return {
               name: 'Adyen Status check',
               status: 'DOWN',
-              message: errorMessage,
+              message: `Not able to talk to the Adyen API`,
               details: {
                 error: e,
               },
