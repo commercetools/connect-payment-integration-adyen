@@ -115,6 +115,7 @@ describe('adyen-payment.service', () => {
         name: 'CoCo Permissions',
         status: 'DOWN',
         details: {},
+        message: 'Invalid permissions',
       };
       return result;
     };
@@ -129,6 +130,7 @@ describe('adyen-payment.service', () => {
     expect(result?.checks[0]?.name).toStrictEqual('CoCo Permissions');
     expect(result?.checks[0]?.status).toStrictEqual('DOWN');
     expect(result?.checks[0]?.details).toStrictEqual({});
+    expect(result?.checks[0]?.message).toStrictEqual('Invalid permissions');
     expect(result?.checks[1]?.name).toStrictEqual('Adyen Status check');
     expect(result?.checks[1]?.status).toStrictEqual('UP');
     expect(result?.checks[1]?.details).toBeDefined();

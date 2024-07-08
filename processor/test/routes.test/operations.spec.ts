@@ -119,69 +119,160 @@ describe('/operations APIs', () => {
         },
       });
     });
+  });
 
-    describe('GET /operations/status', () => {
-      test('it should return the status of the connector', async () => {
-        //Given
-        jest.spyOn(spiedPaymentService, 'status').mockResolvedValue({
-          metadata: {
-            name: 'payment-integration-adyen',
-            description: 'Payment integration with Adyen',
+  describe('GET /operations/status', () => {
+    test('it should return the status of the connector', async () => {
+      //Given
+      jest.spyOn(spiedPaymentService, 'status').mockResolvedValue({
+        metadata: {
+          name: 'payment-integration-adyen',
+          description: 'Payment integration with Adyen',
+        },
+        version: '1.0.0',
+        timestamp: '2024-01-01T00:00:00Z',
+        status: 'UP',
+        checks: [
+          {
+            name: 'CoCo Permissions',
+            status: 'UP',
           },
-          version: '1.0.0',
-          timestamp: '2024-01-01T00:00:00Z',
+          {
+            name: 'Adyen Status check',
+            status: 'UP',
+          },
+          {
+            name: 'Adyen Apple Pay config check',
+            status: 'UP',
+          },
+        ],
+      });
+
+      //When
+      const responseGetStatus = await app.inject({
+        method: 'GET',
+        url: `/operations/status`,
+        headers: {
+          authorization: `Bearer ${jwtToken}`,
+          'content-type': 'application/json',
+        },
+      });
+
+      //Then
+      expect(responseGetStatus.statusCode).toEqual(200);
+      expect(responseGetStatus.json()).toEqual(
+        expect.objectContaining({
+          metadata: expect.any(Object),
           status: 'UP',
-          checks: [
-            {
+          timestamp: expect.any(String),
+          version: '1.0.0',
+          checks: expect.arrayContaining([
+            expect.objectContaining({
               name: 'CoCo Permissions',
               status: 'UP',
-            },
-            {
+            }),
+            expect.objectContaining({
               name: 'Adyen Status check',
               status: 'UP',
-            },
-            {
+            }),
+            expect.objectContaining({
               name: 'Adyen Apple Pay config check',
               status: 'UP',
-            },
-          ],
-        });
+            }),
+          ]),
+        }),
+      );
+    });
 
-        //When
-        const responseGetStatus = await app.inject({
-          method: 'GET',
-          url: `/operations/status`,
-          headers: {
-            authorization: `Bearer ${jwtToken}`,
-            'content-type': 'application/json',
-          },
-        });
-
-        //Then
-        expect(responseGetStatus.statusCode).toEqual(200);
-        expect(responseGetStatus.json()).toEqual(
-          expect.objectContaining({
-            metadata: expect.any(Object),
+    test('it should return the status of the connector in case of partial availability', async () => {
+      //Given
+      jest.spyOn(spiedPaymentService, 'status').mockResolvedValue({
+        metadata: {
+          name: 'payment-integration-adyen',
+          description: 'Payment integration with Adyen',
+        },
+        version: '1.0.0',
+        timestamp: '2024-01-01T00:00:00Z',
+        status: 'Partially Available',
+        checks: [
+          {
+            name: 'Adyen Status check',
             status: 'UP',
-            timestamp: expect.any(String),
-            version: '1.0.0',
-            checks: expect.arrayContaining([
-              expect.objectContaining({
-                name: 'CoCo Permissions',
-                status: 'UP',
-              }),
-              expect.objectContaining({
-                name: 'Adyen Status check',
-                status: 'UP',
-              }),
-              expect.objectContaining({
-                name: 'Adyen Apple Pay config check',
-                status: 'UP',
-              }),
-            ]),
-          }),
-        );
+          },
+          {
+            name: 'Adyen Apple Pay config check',
+            status: 'UP',
+          },
+          {
+            name: 'CoCo Permissions',
+            status: 'DOWN',
+            message: `CoCo permissions are not correct, expected scopes: manage_payments view_sessions view_api_clients manage_orders introspect_oauth_tokens manage_checkout_payment_intents, actual scopes: manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout`,
+            details: {
+              expectedScopes: [
+                'manage_payments',
+                'view_sessions',
+                'view_api_clients',
+                'manage_orders',
+                'introspect_oauth_tokens',
+                'manage_checkout_payment_intents',
+              ],
+              actualScopes:
+                'manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout',
+              reason: 'scopes not available',
+            },
+          },
+        ],
       });
+
+      //When
+      const responseGetStatus = await app.inject({
+        method: 'GET',
+        url: `/operations/status`,
+        headers: {
+          authorization: `Bearer ${jwtToken}`,
+          'content-type': 'application/json',
+        },
+      });
+
+      //Then
+      console.log(JSON.stringify(await responseGetStatus.json()));
+      expect(responseGetStatus.statusCode).toEqual(200);
+      expect(responseGetStatus.json()).toEqual(
+        expect.objectContaining({
+          metadata: expect.any(Object),
+          status: 'Partially Available',
+          timestamp: expect.any(String),
+          version: '1.0.0',
+          checks: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'CoCo Permissions',
+              status: 'DOWN',
+              message: `CoCo permissions are not correct, expected scopes: manage_payments view_sessions view_api_clients manage_orders introspect_oauth_tokens manage_checkout_payment_intents, actual scopes: manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout`,
+              details: {
+                expectedScopes: [
+                  'manage_payments',
+                  'view_sessions',
+                  'view_api_clients',
+                  'manage_orders',
+                  'introspect_oauth_tokens',
+                  'manage_checkout_payment_intents',
+                ],
+                actualScopes:
+                  'manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout',
+                reason: 'scopes not available',
+              },
+            }),
+            expect.objectContaining({
+              name: 'Adyen Status check',
+              status: 'UP',
+            }),
+            expect.objectContaining({
+              name: 'Adyen Apple Pay config check',
+              status: 'UP',
+            }),
+          ]),
+        }),
+      );
     });
   });
 });
