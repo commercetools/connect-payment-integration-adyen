@@ -235,7 +235,6 @@ describe('/operations APIs', () => {
       });
 
       //Then
-      console.log(JSON.stringify(await responseGetStatus.json()));
       expect(responseGetStatus.statusCode).toEqual(200);
       expect(responseGetStatus.json()).toEqual(
         expect.objectContaining({
