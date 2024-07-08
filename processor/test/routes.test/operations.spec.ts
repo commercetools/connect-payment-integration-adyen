@@ -197,11 +197,14 @@ describe('/operations APIs', () => {
         checks: [
           {
             name: 'Adyen Status check',
-            status: 'UP',
+            status: 'DOWN',
+            message: 'Failed to connect with Adyen',
           },
           {
             name: 'Adyen Apple Pay config check',
-            status: 'UP',
+            status: 'DOWN',
+            message:
+              'Apple Pay configuration is not complete, please fill in all the Apple Pay "own" environment variables',
           },
           {
             name: 'CoCo Permissions',
@@ -263,11 +266,14 @@ describe('/operations APIs', () => {
             }),
             expect.objectContaining({
               name: 'Adyen Status check',
-              status: 'UP',
+              status: 'DOWN',
+              message: 'Failed to connect with Adyen',
             }),
             expect.objectContaining({
               name: 'Adyen Apple Pay config check',
-              status: 'UP',
+              status: 'DOWN',
+              message:
+                'Apple Pay configuration is not complete, please fill in all the Apple Pay "own" environment variables',
             }),
           ]),
         }),

@@ -127,9 +127,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
               },
             };
           } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'Failed to connect with Adyen';
             return {
               name: 'Adyen Status check',
               status: 'DOWN',
+              message: errorMessage,
               details: {
                 error: e,
               },
@@ -155,6 +157,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
             name: 'Adyen Apple Pay config check',
             status,
             ...(status === 'DOWN' && {
+              message:
+                'Apple Pay configuration is not complete, please fill in all the Apple Pay "own" environment variables',
               details: {
                 error:
                   'Apple Pay configuration is not complete, please fill in all the Apple Pay "own" environment variables',
