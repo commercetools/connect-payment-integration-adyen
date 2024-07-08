@@ -10,6 +10,7 @@ export const StatusResponseSchema = Type.Object({
       name: Type.String(),
       status: Type.String(),
       details: Type.Optional(Type.Any()),
+      message: Type.Optional(Type.String()),
     }),
   ),
 });
