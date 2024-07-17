@@ -16,4 +16,7 @@ export const paymentMethodConfig: PaymentMethodConfig = {
   ideal: {
     supportSeparateCapture: false,
   },
+  eps: {
+    supportSeparateCapture: false,
+  },
 };

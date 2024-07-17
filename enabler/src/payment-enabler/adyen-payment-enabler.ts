@@ -14,6 +14,7 @@ import { PaypalBuilder } from "../components/payment-methods/paypal";
 import { KlarnaPayNowBuilder } from "../components/payment-methods/klarna-pay-now";
 import { KlarnaPayLaterBuilder } from "../components/payment-methods/klarna-pay-later";
 import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarna-pay-over-time";
+import { EPSBuilder } from "../components/payment-methods/eps";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -187,6 +188,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       klarna_pay_now: KlarnaPayNowBuilder,
       klarna_pay_later: KlarnaPayLaterBuilder,
       klarna_pay_overtime: KlarnaPayOverTimeBuilder,
+      eps: EPSBuilder
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(

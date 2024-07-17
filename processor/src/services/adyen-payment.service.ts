@@ -517,7 +517,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum, isActionRequired: boolean): string {
     if (resultCode === PaymentResponse.ResultCodeEnum.Authorised) {
       return 'Success';
-    } else if (resultCode === PaymentResponse.ResultCodeEnum.Pending && !isActionRequired) {
+    } else if (
+      (resultCode === PaymentResponse.ResultCodeEnum.Pending ||
+        resultCode === PaymentResponse.ResultCodeEnum.Received) &&
+      !isActionRequired
+    ) {
       return 'Pending';
     } else if (
       resultCode === PaymentResponse.ResultCodeEnum.Refused ||

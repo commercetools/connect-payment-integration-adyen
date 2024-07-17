@@ -28,6 +28,9 @@ export class PaymentComponentsConverter {
         {
           type: 'klarna_pay_overtime', // klarna_account
         },
+        {
+          type: 'eps',
+        },
       ],
     };
   }
