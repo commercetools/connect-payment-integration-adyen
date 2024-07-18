@@ -169,7 +169,7 @@
                 });
 
                 if (builder.componentHasSubmit) {
-                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime'];
+                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime', 'bancontactcard', 'twint', 'ideal'];
                   if (methodsRequireMounting.includes(selectedValue)) {
                     component.mount("#container--external");
                   }

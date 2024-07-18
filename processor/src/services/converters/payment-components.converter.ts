@@ -31,6 +31,12 @@ export class PaymentComponentsConverter {
         {
           type: 'eps',
         },
+        {
+          type: 'bancontactcard',
+        },
+        {
+          type: 'twint',
+        },
       ],
     };
   }

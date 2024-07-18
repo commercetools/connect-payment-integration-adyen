@@ -52,7 +52,9 @@ const getSessionId = async (cartId) => {
       "paypal",
       "applepay",
       "googlepay",
-      "eps"
+      "eps",
+      "bancontactcard",
+      "twint",
     ], // add here your allowed methods for development purposes
   };
 

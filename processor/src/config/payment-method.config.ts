@@ -13,10 +13,13 @@ export type PaymentMethodConfig = {
 };
 
 export const paymentMethodConfig: PaymentMethodConfig = {
-  ideal: {
+  bancontactcard: {
     supportSeparateCapture: false,
   },
   eps: {
+    supportSeparateCapture: false,
+  },
+  ideal: {
     supportSeparateCapture: false,
   },
 };
