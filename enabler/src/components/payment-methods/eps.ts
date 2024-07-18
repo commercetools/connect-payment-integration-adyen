@@ -47,6 +47,16 @@ export class EPSComponent extends DefaultAdyenComponent {
   }
 
   init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {});
+    this.component = this.adyenCheckout.create(this.paymentMethod, {
+      showPayButton: this.componentOptions.showPayButton,
+    });
+  }
+
+  showValidation() {
+    this.component.showValidation();
+  }
+
+  isValid() {
+    return this.component.isValid;
   }
 }
