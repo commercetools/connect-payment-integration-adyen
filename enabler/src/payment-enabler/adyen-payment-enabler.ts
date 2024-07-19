@@ -15,6 +15,8 @@ import { KlarnaPayNowBuilder } from "../components/payment-methods/klarna-pay-no
 import { KlarnaPayLaterBuilder } from "../components/payment-methods/klarna-pay-later";
 import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarna-pay-over-time";
 import { EPSBuilder } from "../components/payment-methods/eps";
+import { BancontactCardBuilder } from "../components/payment-methods/bancontactcard";
+import { TwintBuilder } from "../components/payment-methods/twint";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -99,8 +101,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                     data.action.type === "redirect"
                       ? "redirect"
                       : data.action.type === "threeDS2"
-                        ? "threeDS"
-                        : "other",
+                      ? "threeDS"
+                      : "other",
                 });
               component.handleAction(data.action);
             } else {
@@ -188,7 +190,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       klarna_pay_now: KlarnaPayNowBuilder,
       klarna_pay_later: KlarnaPayLaterBuilder,
       klarna_pay_overtime: KlarnaPayOverTimeBuilder,
-      eps: EPSBuilder
+      eps: EPSBuilder,
+      bancontactcard: BancontactCardBuilder,
+      twint: TwintBuilder,
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
