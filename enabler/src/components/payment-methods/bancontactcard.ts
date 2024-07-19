@@ -52,7 +52,6 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
       showPayButton: this.componentOptions.showPayButton,
       onFieldValid: function (data) {
         const { endDigits, fieldType } = data;
-        console.log("endDigits: ", data);
         if (endDigits && fieldType === "encryptedCardNumber") {
           that.endDigits = endDigits;
         }
