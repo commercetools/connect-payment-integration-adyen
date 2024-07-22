@@ -7,8 +7,8 @@ import {
 import {
   AdyenBaseComponentBuilder,
   DefaultAdyenComponent,
-  BaseOptions,
 } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 
 /**
  * Klarna Pay Now component. Key is `klarna_paynow`.

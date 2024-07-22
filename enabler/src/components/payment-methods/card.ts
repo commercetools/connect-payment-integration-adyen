@@ -6,9 +6,9 @@ import {
 } from "../../payment-enabler/payment-enabler";
 import {
   AdyenBaseComponentBuilder,
-  BaseOptions,
   DefaultAdyenComponent,
 } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 
 /**
  * Credit card component

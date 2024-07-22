@@ -1,9 +1,10 @@
 import AdyenCheckout from "@adyen/adyen-web";
 import "@adyen/adyen-web/dist/adyen.css";
-import { BaseOptions } from "../components/base";
+import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   EnablerOptions,
   PaymentComponentBuilder,
+  PaymentDropinBuilder,
   PaymentEnabler,
 } from "./payment-enabler";
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
@@ -17,6 +18,7 @@ import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarna-p
 import { EPSBuilder } from "../components/payment-methods/eps";
 import { BancontactCardBuilder } from "../components/payment-methods/bancontactcard";
 import { TwintBuilder } from "../components/payment-methods/twint";
+import { DropinComponentsBuilder } from "../dropin/dropin-components";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -31,6 +33,16 @@ class AdyenInitError extends Error {
 type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
 };
+
+export type BaseOptions = {
+  adyenCheckout: typeof Core;
+  sessionId: string;
+  processorUrl: string;
+  applePayConfig?: {
+    usesOwnCertificate: boolean;
+  };
+};
+
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
 
@@ -70,6 +82,17 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       throw new AdyenInitError("No session data found", options.sessionId);
     } else {
       const adyenCheckout = await AdyenCheckout({
+        paymentMethodsConfiguration: {
+          paypal: {
+            blockPayPalCreditButton: true,
+            blockPayPalPayLaterButton: true,
+            blockPayPalVenmoButton: true,
+            onClick: (_, { resolve, reject }) => {
+              console.log("PayPal button clicked");
+              return resolve();
+            },
+          },
+        },
         onPaymentCompleted: (result, component) => {
           console.info(result, component);
           window.location.href = options.processorUrl + "/confirm";
@@ -201,6 +224,28 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         ).join(", ")}`
       );
     }
+    return new supportedMethods[type](setupData.baseOptions);
+  }
+
+  async createDropinBuilder(
+    type: "components" | "hpp" | "express"
+  ): Promise<PaymentDropinBuilder | never> {
+    const setupData = await this.setupData;
+    if (!setupData) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+
+    const supportedMethods = {
+      components: DropinComponentsBuilder,
+    };
+    if (!Object.keys(supportedMethods).includes(type)) {
+      throw new Error(
+        `Dropin type not supported: ${type}. Supported types: ${Object.keys(
+          supportedMethods
+        ).join(", ")}`
+      );
+    }
+
     return new supportedMethods[type](setupData.baseOptions);
   }
 }

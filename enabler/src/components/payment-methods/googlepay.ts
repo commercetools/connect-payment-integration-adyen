@@ -1,6 +1,7 @@
 import Core from "@adyen/adyen-web/dist/types/core/core";
 import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
-import { AdyenBaseComponentBuilder, BaseOptions, DefaultAdyenComponent } from '../base';
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from '../base';
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 
 /**
  * Google pay component

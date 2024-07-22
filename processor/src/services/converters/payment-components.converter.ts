@@ -3,6 +3,11 @@ import { SupportedPaymentComponentsSchemaDTO } from '../../dtos/operations/payme
 export class PaymentComponentsConverter {
   public convertResponse(): SupportedPaymentComponentsSchemaDTO {
     return {
+      dropins: [
+        {
+          type: 'components',
+        },
+      ],
       components: [
         {
           type: 'card', // scheme

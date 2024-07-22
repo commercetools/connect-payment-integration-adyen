@@ -7,15 +7,14 @@ import {
 import {
   AdyenBaseComponentBuilder,
   DefaultAdyenComponent,
-  BaseOptions,
 } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 /**
  * Ideal component
  *
  * Configuration options:
  * https://docs.adyen.com/payment-methods/ideal/web-component/
- */
-export class IdealBuilder extends AdyenBaseComponentBuilder {
+ */export class IdealBuilder extends AdyenBaseComponentBuilder {
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.ideal, baseOptions);
   }
@@ -23,7 +22,8 @@ export class IdealBuilder extends AdyenBaseComponentBuilder {
   build(config: ComponentOptions): PaymentComponent {
     const idealComponent = new IdealComponent({
       paymentMethod: this.paymentMethod,
-      adyenCheckout: this.adyenCheckout,
+ 
+     adyenCheckout: this.adyenCheckout,
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,

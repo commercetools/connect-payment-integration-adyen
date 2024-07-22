@@ -8,15 +8,8 @@ import {
   PaymentComponentBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
+import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 
-export type BaseOptions = {
-  adyenCheckout: typeof Core;
-  sessionId: string;
-  processorUrl: string;
-  applePayConfig?: {
-    usesOwnCertificate: boolean;
-  };
-};
 
 /**
  * Base Web Component
