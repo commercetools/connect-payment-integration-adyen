@@ -18,7 +18,7 @@ import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarna-p
 import { EPSBuilder } from "../components/payment-methods/eps";
 import { BancontactCardBuilder } from "../components/payment-methods/bancontactcard";
 import { TwintBuilder } from "../components/payment-methods/twint";
-import { DropinComponentsBuilder } from "../dropin/dropin-components";
+import { DropinEmbeddedBuilder } from "../dropin/dropin-embedded";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -228,7 +228,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createDropinBuilder(
-    type: "components" | "hpp" | "express"
+    type: "embedded" | "hpp" | "express"
   ): Promise<PaymentDropinBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
@@ -236,7 +236,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     }
 
     const supportedMethods = {
-      components: DropinComponentsBuilder,
+      embedded: DropinEmbeddedBuilder,
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(

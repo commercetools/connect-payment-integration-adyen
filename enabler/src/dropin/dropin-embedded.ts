@@ -7,7 +7,7 @@ import {
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 
-export class DropinComponentsBuilder implements PaymentDropinBuilder {
+export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private adyenCheckout: typeof Core;
 
   constructor(baseOptions: BaseOptions) {

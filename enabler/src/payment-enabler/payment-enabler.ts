@@ -88,6 +88,6 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createDropinBuilder: (
-    type: "components" | "hpp" | "express"
+    type: "embedded" | "hpp" | "express"
   ) => Promise<PaymentDropinBuilder | never>;
 }

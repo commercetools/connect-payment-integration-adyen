@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox';
 
 const DropinType = Type.Enum({
-  COMPONENTS: 'components',
+  EMBEDDED: 'embedded',
   HPP: 'hpp',
   EXPRESS: 'express',
 });

@@ -5,7 +5,7 @@ export class PaymentComponentsConverter {
     return {
       dropins: [
         {
-          type: 'components',
+          type: 'embedded',
         },
       ],
       components: [
