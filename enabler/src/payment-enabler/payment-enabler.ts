@@ -64,13 +64,17 @@ export type ComponentOptions = {
 };
 
 export interface DropinComponent {
+  submit(): void;
   mount(selector: string): void;
 }
 export type DropinOptions = {
   showPayButton?: boolean;
+  onDropinReady?: () => Promise<void>;
+  onPayButtonClick?: () => Promise<void>;
 };
 
 export interface PaymentDropinBuilder {
+  dropinHasSubmit: boolean;
   build(config: DropinOptions): DropinComponent;
 }
 

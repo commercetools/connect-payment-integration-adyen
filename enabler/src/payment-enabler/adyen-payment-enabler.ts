@@ -82,17 +82,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       throw new AdyenInitError("No session data found", options.sessionId);
     } else {
       const adyenCheckout = await AdyenCheckout({
-        paymentMethodsConfiguration: {
-          paypal: {
-            blockPayPalCreditButton: true,
-            blockPayPalPayLaterButton: true,
-            blockPayPalVenmoButton: true,
-            onClick: (_, { resolve, reject }) => {
-              console.log("PayPal button clicked");
-              return resolve();
-            },
-          },
-        },
         onPaymentCompleted: (result, component) => {
           console.info(result, component);
           window.location.href = options.processorUrl + "/confirm";
@@ -144,7 +133,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           }
         },
         onAdditionalDetails: async (state, component) => {
-          console.log("onAdditionalDetails", state, component);
           const requestData = {
             ...state.data,
             paymentReference,
