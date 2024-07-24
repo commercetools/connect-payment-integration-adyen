@@ -4,11 +4,8 @@ import {
   PaymentComponent,
   PaymentMethod
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  DefaultAdyenComponent,
-  BaseOptions,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 
 /**
  * EPS component
