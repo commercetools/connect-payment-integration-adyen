@@ -14,7 +14,9 @@ import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
  *
  * Configuration options:
  * https://docs.adyen.com/payment-methods/ideal/web-component/
- */export class IdealBuilder extends AdyenBaseComponentBuilder {
+ */
+
+export class IdealBuilder extends AdyenBaseComponentBuilder {
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.ideal, baseOptions);
   }
