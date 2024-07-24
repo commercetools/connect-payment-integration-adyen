@@ -39,66 +39,9 @@ export class DropinComponents implements DropinComponent {
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
-    this.adyenCheckout.options.paymentMethodsConfiguration = {
-      applepay: {
-        onClick: (resolve, reject) => {
-          if (opts.dropinOptions.onPayButtonClick) {
-            return opts.dropinOptions
-              .onPayButtonClick()
-              .then(() => resolve())
-              .catch((error) => reject(error));
-          }
-          return resolve();
-        },
-        buttonType: "pay",
-        buttonColor: "black",
-      },
-      card: {
-        hasHolderName: true,
-        holderNameRequired: true,
-      },
-      googlepay: {
-        onClick: (resolve, reject) => {
-          if (opts.dropinOptions.onPayButtonClick) {
-            return opts.dropinOptions
-              .onPayButtonClick()
-              .then(() => resolve())
-              .catch((error) => reject(error));
-          }
-          return resolve();
-        },
-        buttonType: "pay",
-        buttonSizeMode: "fill",
-      },
-      paypal: {
-        onClick: (_, { resolve, reject }) => {
-          if (opts.dropinOptions.onPayButtonClick) {
-            return opts.dropinOptions
-              .onPayButtonClick()
-              .then(() => resolve())
-              .catch((error) => reject(error));
-          }
-          return resolve();
-        },
-      },
-    };
 
-    const parentOnSubmit = this.adyenCheckout.options.onSubmit;
-    this.adyenCheckout.options.onSubmit = async (state, component) => {
-      const paymentMethod = state?.data?.paymentMethod?.type;
-      const hasOnClick =
-        this.adyenCheckout.options.paymentMethodsConfiguration[paymentMethod]
-          ?.onClick;
-      if (!hasOnClick && opts.dropinOptions.onPayButtonClick) {
-        try {
-          await opts.dropinOptions.onPayButtonClick();
-        } catch (e) {
-          component.setStatus("ready");
-          return;
-        }
-      }
-      await parentOnSubmit(state, component);
-    };
+    this.overridePaymentMethodConfiguration();
+    this.overrideOnSubmit();
   }
 
   init() {
@@ -123,5 +66,70 @@ export class DropinComponents implements DropinComponent {
 
   submit(): void {
     throw new Error("Method not available");
+  }
+
+  private overridePaymentMethodConfiguration() {
+    this.adyenCheckout.options.paymentMethodsConfiguration = {
+      applepay: {
+        onClick: (resolve, reject) => {
+          if (this.dropinOptions.onPayButtonClick) {
+            return this.dropinOptions
+              .onPayButtonClick()
+              .then(() => resolve())
+              .catch((error) => reject(error));
+          }
+          return resolve();
+        },
+        buttonType: "pay",
+        buttonColor: "black",
+      },
+      card: {
+        hasHolderName: true,
+        holderNameRequired: true,
+      },
+      googlepay: {
+        onClick: (resolve, reject) => {
+          if (this.dropinOptions.onPayButtonClick) {
+            return this.dropinOptions
+              .onPayButtonClick()
+              .then(() => resolve())
+              .catch((error) => reject(error));
+          }
+          return resolve();
+        },
+        buttonType: "pay",
+        buttonSizeMode: "fill",
+      },
+      paypal: {
+        onClick: (_, { resolve, reject }) => {
+          if (this.dropinOptions.onPayButtonClick) {
+            return this.dropinOptions
+              .onPayButtonClick()
+              .then(() => resolve())
+              .catch((error) => reject(error));
+          }
+          return resolve();
+        },
+      },
+    };
+  }
+
+  private overrideOnSubmit() {
+    const parentOnSubmit = this.adyenCheckout.options.onSubmit;
+    this.adyenCheckout.options.onSubmit = async (state, component) => {
+      const paymentMethod = state?.data?.paymentMethod?.type;
+      const hasOnClick =
+        this.adyenCheckout.options.paymentMethodsConfiguration[paymentMethod]
+          ?.onClick;
+      if (!hasOnClick && this.dropinOptions.onPayButtonClick) {
+        try {
+          await this.dropinOptions.onPayButtonClick();
+        } catch (e) {
+          component.setStatus("ready");
+          return;
+        }
+      }
+      await parentOnSubmit(state, component);
+    };
   }
 }
