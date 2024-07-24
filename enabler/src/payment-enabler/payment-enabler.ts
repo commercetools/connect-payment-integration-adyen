@@ -26,14 +26,6 @@ export type EnablerOptions = {
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
   onError?: (error: any) => void;
-  pspConfig: {
-    paymentMethodsConfig: {
-      paypal: {
-        merchantId: string;
-        
-      };
-    };
-  };
 };
 
 export enum PaymentMethod {
