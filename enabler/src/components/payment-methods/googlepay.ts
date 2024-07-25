@@ -1,7 +1,10 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
-import { ComponentOptions, PaymentMethod } from '../../payment-enabler/payment-enabler';
-import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from '../base';
+import {
+  ComponentOptions,
+  PaymentMethod,
+} from "../../payment-enabler/payment-enabler";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { GooglePay, ICore } from "@adyen/adyen-web";
 
 /**
  * Google pay component
@@ -23,17 +26,17 @@ export class GooglepayBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
-    })
+    });
     googlePayComponent.init();
 
-    return googlePayComponent
+    return googlePayComponent;
   }
 }
 
 export class GooglePayComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -42,20 +45,20 @@ export class GooglePayComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new GooglePay(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
+      buttonType: "pay",
+      buttonSizeMode: "fill",
       onClick: (resolve, reject) => {
         if (this.componentOptions.onPayButtonClick) {
-          return this.componentOptions.onPayButtonClick()
+          return this.componentOptions
+            .onPayButtonClick()
             .then(() => resolve())
             .catch((error) => reject(error));
-        } 
+        }
         return resolve();
       },
-      buttonType: 'pay',
-      buttonSizeMode: 'fill',
-      
-    })
+    });
   }
 }

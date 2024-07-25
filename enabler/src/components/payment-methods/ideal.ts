@@ -1,14 +1,11 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
   PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  DefaultAdyenComponent,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { ICore, Redirect } from "@adyen/adyen-web";
 /**
  * Ideal component
  *
@@ -24,8 +21,8 @@ export class IdealBuilder extends AdyenBaseComponentBuilder {
   build(config: ComponentOptions): PaymentComponent {
     const idealComponent = new IdealComponent({
       paymentMethod: this.paymentMethod,
- 
-     adyenCheckout: this.adyenCheckout,
+
+      adyenCheckout: this.adyenCheckout,
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
@@ -38,7 +35,7 @@ export class IdealBuilder extends AdyenBaseComponentBuilder {
 export class IdealComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -46,11 +43,10 @@ export class IdealComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  showValidation() {
-    this.component.showValidation();
-  }
-
-  isValid() {
-    return this.component.isValid;
+  init(): void {
+    this.component = new Redirect(this.adyenCheckout, {
+      paymentMethodType: this.paymentMethod,
+      showPayButton: this.componentOptions.showPayButton,
+    });
   }
 }

@@ -30,7 +30,7 @@ export type EnablerOptions = {
 
 export enum PaymentMethod {
   applepay = "applepay",
-  card = "card",
+  card = "scheme",
   dropin = "dropin",
   googlepay = "googlepay",
   ideal = "ideal",

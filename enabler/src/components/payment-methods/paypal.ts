@@ -1,11 +1,11 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
-  PaymentMethod
+  PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { ICore, PayPal } from "@adyen/adyen-web";
 
 /**
  * Paypal component
@@ -36,7 +36,7 @@ export class PaypalBuilder extends AdyenBaseComponentBuilder {
 export class PaypalComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -44,20 +44,23 @@ export class PaypalComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new PayPal(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
-      onClick: (_, {resolve, reject}) => {
-        if (this.componentOptions.onPayButtonClick) {
-          return this.componentOptions.onPayButtonClick()
-            .then(() => resolve())
-            .catch((error) => reject(error));
-        } 
-        return resolve();
-      },
       blockPayPalCreditButton: true,
       blockPayPalPayLaterButton: true,
       blockPayPalVenmoButton: true,
+      onClick: () => {
+        if (this.componentOptions.onPayButtonClick) {
+          return this.componentOptions
+            .onPayButtonClick()
+            .then(() => {})
+            .catch((_error) => {
+              return false;
+            });
+        }
+        return true;
+      },
     });
   }
 }

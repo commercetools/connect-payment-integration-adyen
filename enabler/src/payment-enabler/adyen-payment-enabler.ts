@@ -1,6 +1,16 @@
-import AdyenCheckout from "@adyen/adyen-web";
-import "@adyen/adyen-web/dist/adyen.css";
-import Core from "@adyen/adyen-web/dist/types/core/core";
+import {
+  AdditionalDetailsActions,
+  AdditionalDetailsData,
+  AdyenCheckout,
+  AdyenCheckoutError,
+  ICore,
+  PaymentCompletedData,
+  PaymentFailedData,
+  SubmitActions,
+  SubmitData,
+  UIElement,
+} from "@adyen/adyen-web";
+import "@adyen-css";
 import {
   EnablerOptions,
   PaymentComponentBuilder,
@@ -35,7 +45,7 @@ type AdyenEnablerOptions = EnablerOptions & {
 };
 
 export type BaseOptions = {
-  adyenCheckout: typeof Core;
+  adyenCheckout: ICore;
   sessionId: string;
   processorUrl: string;
   applePayConfig?: {
@@ -79,18 +89,35 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
-      throw new AdyenInitError("No session data found", options.sessionId);
+      throw new AdyenInitError(
+        "Not able to initialize Adyen, session data missing",
+        options.sessionId
+      );
     } else {
       const adyenCheckout = await AdyenCheckout({
-        onPaymentCompleted: (result, component) => {
-          console.info(result, component);
-          window.location.href = options.processorUrl + "/confirm";
+        onPaymentCompleted: (
+          result: PaymentCompletedData,
+          _component: UIElement
+        ) => {
+          console.info("payment completed", result.resultCode);
         },
-        onError: (error, component) => {
-          console.error(error.name, error.message, error.stack, component);
-          options.onError && options.onError(error);
+        onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
+          console.info("payment failed", result.resultCode);
         },
-        onSubmit: async (state, component) => {
+        onError: (error: AdyenCheckoutError, component: UIElement) => {
+          if (error.name === "CANCEL") {
+            console.info("shopper canceled the current payment");
+            component.setStatus("ready");
+          } else {
+            console.error(error.name, error.message, error.stack, component);
+            options.onError && options.onError(error);
+          }
+        },
+        onSubmit: async (
+          state: SubmitData,
+          component: UIElement,
+          actions: SubmitActions
+        ) => {
           try {
             const reqData = {
               ...state.data,
@@ -127,35 +154,53 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                 component.setStatus("error");
               }
             }
+
+            actions.resolve({
+              resultCode: data.resultCode,
+              action: data.action,
+            });
           } catch (e) {
             console.log("Payment aborted by client");
             component.setStatus("ready");
+            actions.reject(e);
           }
         },
-        onAdditionalDetails: async (state, component) => {
-          const requestData = {
-            ...state.data,
-            paymentReference,
-          };
-          const url = options.processorUrl.endsWith("/")
-            ? `${options.processorUrl}payments/details`
-            : `${options.processorUrl}/payments/details`;
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": options.sessionId,
-            },
-            body: JSON.stringify(requestData),
-          });
-          const data = await response.json();
-          if (data.resultCode === "Authorised") {
-            component.setStatus("success");
-            options.onComplete &&
-              options.onComplete({ isSuccess: true, paymentReference });
-          } else {
-            options.onComplete && options.onComplete({ isSuccess: false });
-            component.setStatus("error");
+        onAdditionalDetails: async (
+          state: AdditionalDetailsData,
+          component: UIElement,
+          actions: AdditionalDetailsActions
+        ) => {
+          try {
+            const requestData = {
+              ...state.data,
+              paymentReference,
+            };
+            const url = options.processorUrl.endsWith("/")
+              ? `${options.processorUrl}payments/details`
+              : `${options.processorUrl}/payments/details`;
+
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": options.sessionId,
+              },
+              body: JSON.stringify(requestData),
+            });
+            const data = await response.json();
+            if (data.resultCode === "Authorised") {
+              component.setStatus("success");
+              options.onComplete &&
+                options.onComplete({ isSuccess: true, paymentReference });
+            } else {
+              options.onComplete && options.onComplete({ isSuccess: false });
+              component.setStatus("error");
+            }
+            actions.resolve({ resultCode: data.resultCode });
+          } catch (e) {
+            console.error("Not able to submit the payment details", e);
+            component.setStatus("ready");
+            actions.reject();
           }
         },
         analytics: {

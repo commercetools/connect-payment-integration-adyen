@@ -1,4 +1,3 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
@@ -6,6 +5,7 @@ import {
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { ICore, Twint } from "@adyen/adyen-web";
 /**
  * TWINT component
  *
@@ -33,7 +33,7 @@ export class TwintBuilder extends AdyenBaseComponentBuilder {
 export class TwintComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -41,17 +41,9 @@ export class TwintComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new Twint(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
     });
-  }
-
-  showValidation() {
-    this.component.showValidation();
-  }
-
-  isValid() {
-    return this.component.isValid;
   }
 }

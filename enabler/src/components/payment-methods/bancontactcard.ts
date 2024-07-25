@@ -1,4 +1,3 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
@@ -6,6 +5,7 @@ import {
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { Bancontact, ICore } from "@adyen/adyen-web";
 
 /**
  * Bancontact card component
@@ -35,7 +35,7 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
   private endDigits: string;
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -43,9 +43,9 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
+  init(): void {
     const that = this;
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+    this.component = new Bancontact(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
       onFieldValid: function (data) {
         const { endDigits, fieldType } = data;
@@ -54,14 +54,6 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
         }
       },
     });
-  }
-
-  showValidation() {
-    this.component.showValidation();
-  }
-
-  isValid() {
-    return this.component.isValid;
   }
 
   getState() {

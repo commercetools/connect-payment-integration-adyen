@@ -1,11 +1,11 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
-  PaymentMethod
+  PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { ICore, Klarna } from "@adyen/adyen-web";
 
 /**
  * Klarna Pay Over Time component. Key is `klarna_account`.
@@ -14,7 +14,6 @@ import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
  * https://docs.adyen.com/payment-methods/klarna/web-component/
  */
 export class KlarnaPayOverTimeBuilder extends AdyenBaseComponentBuilder {
-
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.klarna_pay_overtime, baseOptions);
   }
@@ -35,7 +34,7 @@ export class KlarnaPayOverTimeBuilder extends AdyenBaseComponentBuilder {
 export class KlarnaPayOverTimeComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -43,10 +42,11 @@ export class KlarnaPayOverTimeComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new Klarna(this.adyenCheckout, {
+      type: this.paymentMethod,
       showPayButton: this.componentOptions.showPayButton,
-      useKlarnaWidget: false // Set to false to initiate a redirect flow.
+      useKlarnaWidget: false, // Set to false to initiate a redirect flow.
     });
   }
 }

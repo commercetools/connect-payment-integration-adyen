@@ -1,16 +1,32 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
-import Dropin from "@adyen/adyen-web/dist/types/components/Dropin";
 import {
   DropinComponent,
   DropinOptions,
   PaymentDropinBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
+import {
+  Affirm,
+  AmazonPay,
+  ApplePay,
+  Bancontact,
+  Blik,
+  Boleto,
+  Card,
+  Dropin,
+  EPS,
+  GooglePay,
+  ICore,
+  Klarna,
+  PayPal,
+  SubmitActions,
+  SubmitData,
+  Twint,
+} from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
 
-  private adyenCheckout: typeof Core;
+  private adyenCheckout: ICore;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -28,27 +44,38 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
 }
 
 export class DropinComponents implements DropinComponent {
-  private adyenPaymentMethod = "dropin";
-  protected component: typeof Dropin;
-  private adyenCheckout: typeof Core;
+  protected component: Dropin;
+  private adyenCheckout: ICore;
   private dropinOptions: DropinOptions;
 
-  constructor(opts: {
-    adyenCheckout: typeof Core;
-    dropinOptions: DropinOptions;
-  }) {
+  constructor(opts: { adyenCheckout: ICore; dropinOptions: DropinOptions }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
 
-    this.overridePaymentMethodConfiguration();
     this.overrideOnSubmit();
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.adyenPaymentMethod, {
+  init(): void {
+    this.component = new Dropin(this.adyenCheckout, {
       showPayButton: true,
+      showRadioButton: false,
       openFirstStoredPaymentMethod: false,
       showStoredPaymentMethods: false,
+      isDropin: true,
+      paymentMethodComponents: [
+        Affirm,
+        AmazonPay,
+        ApplePay,
+        Bancontact,
+        Blik,
+        Boleto,
+        Card,
+        EPS,
+        GooglePay,
+        Klarna,
+        PayPal,
+        Twint,
+      ],
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {
           this.dropinOptions
@@ -56,6 +83,53 @@ export class DropinComponents implements DropinComponent {
             .then(() => {})
             .catch((error) => console.error(error));
         }
+      },
+      paymentMethodsConfiguration: {
+        applepay: {
+          buttonType: "pay" as any, // "pay" type is not included in Adyen's types, try to force it
+          buttonColor: "black",
+          onClick: (resolve, reject) => {
+            if (this.dropinOptions.onPayButtonClick) {
+              return this.dropinOptions
+                .onPayButtonClick()
+                .then(() => resolve())
+                .catch((error) => reject(error));
+            }
+            return resolve();
+          },
+        },
+        card: {
+          hasHolderName: true,
+          holderNameRequired: true,
+        },
+        googlepay: {
+          buttonType: "pay",
+          buttonSizeMode: "fill",
+          onClick: (resolve, reject) => {
+            if (this.dropinOptions.onPayButtonClick) {
+              return this.dropinOptions
+                .onPayButtonClick()
+                .then(() => resolve())
+                .catch((error) => reject(error));
+            }
+            return resolve();
+          },
+        },
+        paypal: {
+          blockPayPalCreditButton: true,
+          blockPayPalPayLaterButton: true,
+          blockPayPalVenmoButton: true,
+          onClick: () => {
+            if (this.dropinOptions.onPayButtonClick) {
+              return this.dropinOptions
+                .onPayButtonClick()
+                .then(() => {})
+                .catch((_error) => {
+                  return false;
+                });
+            }
+          },
+        },
       },
     });
   }
@@ -65,62 +139,22 @@ export class DropinComponents implements DropinComponent {
   }
 
   submit(): void {
-    throw new Error("Method not available");
-  }
-
-  private overridePaymentMethodConfiguration() {
-    this.adyenCheckout.options.paymentMethodsConfiguration = {
-      applepay: {
-        onClick: (resolve, reject) => {
-          if (this.dropinOptions.onPayButtonClick) {
-            return this.dropinOptions
-              .onPayButtonClick()
-              .then(() => resolve())
-              .catch((error) => reject(error));
-          }
-          return resolve();
-        },
-        buttonType: "pay",
-        buttonColor: "black",
-      },
-      card: {
-        hasHolderName: true,
-        holderNameRequired: true,
-      },
-      googlepay: {
-        onClick: (resolve, reject) => {
-          if (this.dropinOptions.onPayButtonClick) {
-            return this.dropinOptions
-              .onPayButtonClick()
-              .then(() => resolve())
-              .catch((error) => reject(error));
-          }
-          return resolve();
-        },
-        buttonType: "pay",
-        buttonSizeMode: "fill",
-      },
-      paypal: {
-        onClick: (_, { resolve, reject }) => {
-          if (this.dropinOptions.onPayButtonClick) {
-            return this.dropinOptions
-              .onPayButtonClick()
-              .then(() => resolve())
-              .catch((error) => reject(error));
-          }
-          return resolve();
-        },
-      },
-    };
+    throw new Error(
+      "Method not available. Submit is managed by the Dropin component."
+    );
   }
 
   private overrideOnSubmit() {
     const parentOnSubmit = this.adyenCheckout.options.onSubmit;
-    this.adyenCheckout.options.onSubmit = async (state, component) => {
-      const paymentMethod = state?.data?.paymentMethod?.type;
+
+    this.adyenCheckout.options.onSubmit = async (
+      state: SubmitData,
+      component: Dropin,
+      actions: SubmitActions
+    ) => {
+      const paymentMethod = state.data.paymentMethod.type;
       const hasOnClick =
-        this.adyenCheckout.options.paymentMethodsConfiguration[paymentMethod]
-          ?.onClick;
+        component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
       if (!hasOnClick && this.dropinOptions.onPayButtonClick) {
         try {
           await this.dropinOptions.onPayButtonClick();
@@ -129,7 +163,7 @@ export class DropinComponents implements DropinComponent {
           return;
         }
       }
-      await parentOnSubmit(state, component);
+      return await parentOnSubmit(state, component, actions);
     };
   }
 }

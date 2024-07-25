@@ -1,14 +1,11 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
   PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  DefaultAdyenComponent,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { Card, ICore } from "@adyen/adyen-web";
 
 /**
  * Credit card component
@@ -40,7 +37,7 @@ export class CardComponent extends DefaultAdyenComponent {
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -48,9 +45,9 @@ export class CardComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
+  init(): void {
     const that = this;
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+    this.component = new Card(this.adyenCheckout, {
       onFieldValid: function (data) {
         const { endDigits, fieldType } = data;
         if (endDigits && fieldType === "encryptedCardNumber") {
@@ -61,14 +58,6 @@ export class CardComponent extends DefaultAdyenComponent {
       holderNameRequired: true,
       ...this.componentOptions,
     });
-  }
-
-  showValidation() {
-    this.component.showValidation();
-  }
-
-  isValid() {
-    return this.component.isValid;
   }
 
   getState() {
