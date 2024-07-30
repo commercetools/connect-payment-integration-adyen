@@ -153,7 +153,6 @@
                     ? {}
                     : {
                         onPayButtonClick: async () => {
-                          // to be used for validation
                           const termsChecked =
                             document.getElementById("termsCheckbox").checked;
                           if (!termsChecked) {
@@ -163,13 +162,13 @@
                             );
                             return Promise.reject("error-occurred");
                           }
-                          return Promise.resolve(); // change to true, to test payment flow
+                          return Promise.resolve();
                         },
                       }),
                 });
 
                 if (builder.componentHasSubmit) {
-                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime', 'bancontactcard', 'twint', 'ideal'];
+                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime', 'bancontactcard', 'twint', 'ideal', 'sepadirectdebit'];
                   if (methodsRequireMounting.includes(selectedValue)) {
                     component.mount("#container--external");
                   }

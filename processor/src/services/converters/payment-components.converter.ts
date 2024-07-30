@@ -37,6 +37,9 @@ export class PaymentComponentsConverter {
         {
           type: 'twint',
         },
+        {
+          type: 'sepadirectdebit',
+        },
       ],
     };
   }
