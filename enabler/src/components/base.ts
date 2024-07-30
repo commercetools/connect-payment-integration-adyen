@@ -79,14 +79,6 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     this.component.mount(selector);
   }
 
-  showValidation() {
-    this.component.showValidation();
-  }
-
-  isValid() {
-    return this.component.isValid;
-  }
-
   isAvailable(): Promise<boolean> {
     if (!this.isPaymentMethodAvailable()) {
       return Promise.resolve(false);
@@ -96,7 +88,6 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
       return this.component
         .isAvailable()
         .then(() => {
-          console.log(`${this.paymentMethod} is available`);
           return true;
         })
         .catch((e: unknown) => {

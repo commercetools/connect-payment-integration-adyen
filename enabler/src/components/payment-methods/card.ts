@@ -60,6 +60,14 @@ export class CardComponent extends DefaultAdyenComponent {
     });
   }
 
+  showValidation() {
+    this.component.showValidation();
+  }
+
+  isValid() {
+    return this.component.isValid;
+  }
+
   getState() {
     return {
       card: {

@@ -46,4 +46,12 @@ export class TwintComponent extends DefaultAdyenComponent {
       showPayButton: this.componentOptions.showPayButton,
     });
   }
+
+  showValidation() {
+    this.component.showValidation();
+  }
+
+  isValid() {
+    return this.component.isValid;
+  }
 }
