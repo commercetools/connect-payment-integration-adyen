@@ -143,6 +143,8 @@ export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string
     return 'klarna_account';
   } else if (paymentMethod === 'bancontactcard') {
     return 'bcmc';
+  } else if (paymentMethod === 'bancontactmobile') {
+    return 'bcmc_mobile';
   } else {
     return paymentMethod;
   }
@@ -159,6 +161,8 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
     return 'klarna_pay_overtime';
   } else if (paymentMethod === 'bcmc') {
     return 'bancontactcard';
+  } else if (paymentMethod === 'bcmc_mobile') {
+    return 'bancontactmobile';
   } else {
     return paymentMethod;
   }

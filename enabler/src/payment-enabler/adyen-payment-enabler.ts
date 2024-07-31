@@ -18,6 +18,7 @@ import { EPSBuilder } from "../components/payment-methods/eps";
 import { BancontactCardBuilder } from "../components/payment-methods/bancontactcard";
 import { TwintBuilder } from "../components/payment-methods/twint";
 import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
+import { BancontactMobileBuilder } from "../components/payment-methods/bancontactcard-mobile";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -102,8 +103,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                     data.action.type === "redirect"
                       ? "redirect"
                       : data.action.type === "threeDS2"
-                      ? "threeDS"
-                      : "other",
+                        ? "threeDS"
+                        : "other",
                 });
               component.handleAction(data.action);
             } else {
@@ -193,6 +194,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       klarna_pay_overtime: KlarnaPayOverTimeBuilder,
       eps: EPSBuilder,
       bancontactcard: BancontactCardBuilder,
+      bancontactmobile: BancontactMobileBuilder,
       twint: TwintBuilder,
       sepadirectdebit: SepaBuilder,
     };

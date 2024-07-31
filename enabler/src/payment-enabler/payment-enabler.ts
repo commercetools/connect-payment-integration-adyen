@@ -39,6 +39,7 @@ export enum PaymentMethod {
   klarna_pay_overtime = "klarna_account", // Pay over time
   eps = "eps",
   bancontactcard = "bcmc", // Bancontact card
+  bancontactmobile = "bcmc_mobile", // Bancontact mobile
   twint = "twint",
   sepadirectdebit = "sepadirectdebit"
 }
