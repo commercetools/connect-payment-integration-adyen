@@ -1,7 +1,6 @@
 import {
   AdditionalDetailsActions,
   AdditionalDetailsData,
-  AdyenCheckout,
   AdyenCheckoutError,
   ICore,
   PaymentCompletedData,
@@ -10,6 +9,7 @@ import {
   SubmitData,
   UIElement,
 } from "@adyen/adyen-web";
+import { AdyenCheckout } from "@adyen/adyen-web/auto";
 import "@adyen-css";
 import {
   EnablerOptions,

@@ -4,24 +4,8 @@ import {
   PaymentDropinBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
-import {
-  Affirm,
-  AmazonPay,
-  ApplePay,
-  Bancontact,
-  Blik,
-  Boleto,
-  Card,
-  Dropin,
-  EPS,
-  GooglePay,
-  ICore,
-  Klarna,
-  PayPal,
-  SubmitActions,
-  SubmitData,
-  Twint,
-} from "@adyen/adyen-web";
+import { ICore, SubmitActions, SubmitData } from "@adyen/adyen-web";
+import { Dropin } from "@adyen/adyen-web/auto";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
@@ -62,20 +46,6 @@ export class DropinComponents implements DropinComponent {
       openFirstStoredPaymentMethod: false,
       showStoredPaymentMethods: false,
       isDropin: true,
-      paymentMethodComponents: [
-        Affirm,
-        AmazonPay,
-        ApplePay,
-        Bancontact,
-        Blik,
-        Boleto,
-        Card,
-        EPS,
-        GooglePay,
-        Klarna,
-        PayPal,
-        Twint,
-      ],
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {
           this.dropinOptions

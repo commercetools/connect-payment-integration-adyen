@@ -45,7 +45,7 @@ export class IdealComponent extends DefaultAdyenComponent {
 
   init(): void {
     this.component = new Redirect(this.adyenCheckout, {
-      paymentMethodType: this.paymentMethod,
+      type: this.paymentMethod,
       showPayButton: this.componentOptions.showPayButton,
     });
   }
