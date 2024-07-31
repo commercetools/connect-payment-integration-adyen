@@ -55,6 +55,7 @@ const getSessionId = async (cartId) => {
       "eps",
       "bancontactcard",
       "twint",
+      "sepadirectdebit",
     ], // add here your allowed methods for development purposes
   };
 
