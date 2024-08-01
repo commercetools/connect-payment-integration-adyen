@@ -29,6 +29,7 @@ import { EPSBuilder } from "../components/payment-methods/eps";
 import { BancontactCardBuilder } from "../components/payment-methods/bancontactcard";
 import { TwintBuilder } from "../components/payment-methods/twint";
 import { DropinEmbeddedBuilder } from "../dropin/dropin-embedded";
+import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -249,6 +250,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       eps: EPSBuilder,
       bancontactcard: BancontactCardBuilder,
       twint: TwintBuilder,
+      sepadirectdebit: SepaBuilder
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(

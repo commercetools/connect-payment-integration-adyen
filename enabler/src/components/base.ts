@@ -8,6 +8,7 @@ import {
   Klarna,
   EPS,
   Twint,
+  SepaDirectDebit
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -25,7 +26,8 @@ type AdyenComponent =
   | Klarna
   | EPS
   | Twint
-  | Redirect;
+  | Redirect
+  | SepaDirectDebit;
 
 /**
  * Base Web Component

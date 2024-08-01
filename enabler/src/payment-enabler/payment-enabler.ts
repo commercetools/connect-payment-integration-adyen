@@ -41,6 +41,7 @@ export enum PaymentMethod {
   eps = "eps",
   bancontactcard = "bcmc", // Bancontact card
   twint = "twint",
+  sepadirectdebit = "sepadirectdebit",
 }
 
 export type PaymentResult =
