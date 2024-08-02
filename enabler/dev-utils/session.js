@@ -54,6 +54,7 @@ const getSessionId = async (cartId) => {
       "googlepay",
       "eps",
       "bancontactcard",
+      "bancontactmobile",
       "twint",
       "sepadirectdebit",
     ], // add here your allowed methods for development purposes

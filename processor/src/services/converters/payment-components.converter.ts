@@ -35,6 +35,9 @@ export class PaymentComponentsConverter {
           type: 'bancontactcard',
         },
         {
+          type: 'bancontactmobile',
+        },
+        {
           type: 'twint',
         },
         {
