@@ -108,7 +108,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                 });
               component.handleAction(data.action);
             } else {
-              if (data.resultCode === "Authorised") {
+              if (
+                data.resultCode === "Authorised" ||
+                data.resultCode === "Pending"
+              ) {
                 component.setStatus("success");
                 options.onComplete &&
                   options.onComplete({ isSuccess: true, paymentReference });
@@ -140,7 +143,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             body: JSON.stringify(requestData),
           });
           const data = await response.json();
-          if (data.resultCode === "Authorised") {
+          if (
+            data.resultCode === "Authorised" ||
+            data.resultCode === "Pending"
+          ) {
             component.setStatus("success");
             options.onComplete &&
               options.onComplete({ isSuccess: true, paymentReference });
