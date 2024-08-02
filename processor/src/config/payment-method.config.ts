@@ -1,8 +1,9 @@
 /**
  * Specific configuration for payment methods that require special handling.
  * See https://docs.adyen.com/payment-methods for more information about each payment method.
+ *
+ * The key must point to the Adyen payment-method key structure.
  */
-
 export type PaymentMethodConfig = {
   [key: string]: {
     /**
@@ -13,7 +14,10 @@ export type PaymentMethodConfig = {
 };
 
 export const paymentMethodConfig: PaymentMethodConfig = {
-  bancontactcard: {
+  bcmc: {
+    supportSeparateCapture: false,
+  },
+  bcmc_mobile: {
     supportSeparateCapture: false,
   },
   eps: {
