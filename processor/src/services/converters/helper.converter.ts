@@ -145,6 +145,8 @@ export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string
     return 'bcmc';
   } else if (paymentMethod === 'bancontactmobile') {
     return 'bcmc_mobile';
+  } else if (paymentMethod === 'klarna_billie') {
+    return 'klarna_b2b';
   } else {
     return paymentMethod;
   }
@@ -163,6 +165,8 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
     return 'bancontactcard';
   } else if (paymentMethod === 'bcmc_mobile') {
     return 'bancontactmobile';
+  } else if (paymentMethod === 'klarna_b2b') {
+    return 'klarna_billie';
   } else {
     return paymentMethod;
   }

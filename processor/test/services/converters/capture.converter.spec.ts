@@ -3,7 +3,7 @@ import { METHODS_REQUIRE_LINE_ITEMS } from '../../../src/services/converters/cap
 
 describe('capture.converter', () => {
   test('METHODS_REQUIRE_LINE_ITEMS', () => {
-    const expected = ['klarna', 'klarna_account', 'klarna_paynow'];
+    const expected = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b'];
     expect(METHODS_REQUIRE_LINE_ITEMS).toEqual(expected);
   });
 });

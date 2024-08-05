@@ -57,6 +57,7 @@ const getSessionId = async (cartId) => {
       "bancontactmobile",
       "twint",
       "sepadirectdebit",
+      "klarna_billie"
     ], // add here your allowed methods for development purposes
   };
 

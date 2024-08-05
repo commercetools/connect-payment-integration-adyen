@@ -43,6 +43,9 @@ export class PaymentComponentsConverter {
         {
           type: 'sepadirectdebit',
         },
+        {
+          type: 'klarna_billie', // klarna_b2b
+        },
       ],
     };
   }

@@ -36,6 +36,7 @@ export class CreatePaymentConverter {
         return this.populateAdditionalCardData();
       case 'klarna':
       case 'klarna_paynow':
+      case 'klarna_b2b':
       case 'klarna_account': {
         return {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
