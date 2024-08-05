@@ -13,7 +13,7 @@ import {
 /**
  * These payment methods require line items to be send to Adyen for capturing payments
  */
-export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow'];
+export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b'];
 
 export class CapturePaymentConverter {
   private ctCartService: CommercetoolsCartService;
