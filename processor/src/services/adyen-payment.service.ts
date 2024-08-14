@@ -55,6 +55,7 @@ import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
 
 export type AdyenPaymentServiceOptions = {
