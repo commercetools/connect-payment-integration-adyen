@@ -15,6 +15,7 @@ export const AdyenApi = (): CheckoutAPI => {
   return new CheckoutAPI(apiClient);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const wrapAdyenError = (e: any): Error => {
   if (e?.responseBody) {
     const errorData = JSON.parse(e.responseBody) as AdyenApiErrorData;
