@@ -109,12 +109,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         },
         onError: (error: AdyenCheckoutError, component: UIElement) => {
           if (error.name === "CANCEL") {
-            console.info("shopper canceled the current payment");
+            console.info("shopper canceled the payment attempt");
             component.setStatus("ready");
           } else {
             console.error(error.name, error.message, error.stack, component);
-            options.onError && options.onError(error);
           }
+          options.onError && options.onError(error);
         },
         onSubmit: async (
           state: SubmitData,
