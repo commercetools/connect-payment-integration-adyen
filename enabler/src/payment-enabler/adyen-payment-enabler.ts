@@ -137,15 +137,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             });
             const data = await response.json();
             if (data.action) {
-              options.onActionRequired &&
-                options.onActionRequired({
-                  type:
-                    data.action.type === "redirect"
-                      ? "redirect"
-                      : data.action.type === "threeDS2"
-                      ? "threeDS"
-                      : "other",
-                });
+              if (
+                ["threeDS2", "qrCode"].includes(data.action.type) &&
+                options.onActionRequired
+              ) {
+                options.onActionRequired({ type: "fullscreen" });
+              }
               component.handleAction(data.action);
             } else {
               if (
