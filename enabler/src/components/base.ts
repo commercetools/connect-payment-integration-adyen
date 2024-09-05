@@ -1,33 +1,42 @@
-import ApplePay from "@adyen/adyen-web/dist/types/components/ApplePay";
-import GooglePay from "@adyen/adyen-web/dist/types/components/GooglePay";
-import RedirectElement from "@adyen/adyen-web/dist/types/components/Redirect/Redirect";
-import Core from "@adyen/adyen-web/dist/types/core/core";
+import {
+  ICore,
+  ApplePay,
+  GooglePay,
+  Redirect,
+  Card,
+  PayPal,
+  Klarna,
+  EPS,
+  Twint,
+  SepaDirectDebit
+} from "@adyen/adyen-web";
 import {
   ComponentOptions,
   PaymentComponent,
   PaymentComponentBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
+import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 
-export type BaseOptions = {
-  adyenCheckout: typeof Core;
-  sessionId: string;
-  processorUrl: string;
-  applePayConfig?: {
-    usesOwnCertificate: boolean;
-  };
-};
+type AdyenComponent =
+  | Card
+  | PayPal
+  | ApplePay
+  | GooglePay
+  | Klarna
+  | EPS
+  | Twint
+  | Redirect
+  | SepaDirectDebit;
 
 /**
  * Base Web Component
  */
-export abstract class AdyenBaseComponentBuilder
-  implements PaymentComponentBuilder
-{
+export abstract class AdyenBaseComponentBuilder implements PaymentComponentBuilder {
   public componentHasSubmit = true;
 
   protected paymentMethod: PaymentMethod;
-  protected adyenCheckout: typeof Core;
+  protected adyenCheckout: ICore;
   protected sessionId: string;
   protected processorUrl: string;
 
@@ -38,33 +47,20 @@ export abstract class AdyenBaseComponentBuilder
     this.processorUrl = baseOptions.processorUrl;
   }
 
-  build(config: ComponentOptions): PaymentComponent {
-    const component = new DefaultAdyenComponent({
-      paymentMethod: this.paymentMethod,
-      adyenCheckout: this.adyenCheckout,
-      componentOptions: config,
-      sessionId: this.sessionId,
-      processorUrl: this.processorUrl,
-    });
-    component.init();
-    return component;
-  }
+  abstract build(config: ComponentOptions): PaymentComponent;
 }
 
-export class DefaultAdyenComponent implements PaymentComponent {
-  protected component:
-    | typeof ApplePay
-    | typeof GooglePay
-    | typeof RedirectElement;
+export abstract class DefaultAdyenComponent implements PaymentComponent {
+  protected component: AdyenComponent;
   protected paymentMethod: PaymentMethod;
-  protected adyenCheckout: typeof Core;
+  protected adyenCheckout: ICore;
   protected componentOptions: ComponentOptions;
   protected sessionId: string;
   protected processorUrl: string;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -75,35 +71,40 @@ export class DefaultAdyenComponent implements PaymentComponent {
     this.sessionId = opts.sessionId;
     this.processorUrl = opts.processorUrl;
   }
-  // This is an internal method
-  init() {
-    this.component = this.adyenCheckout.create(
-      this.paymentMethod,
-      this.componentOptions
-    );
-  }
+  abstract init(): void;
 
-  submit() {
+  submit(): void {
     this.component.submit();
   }
 
-  mount(selector: string) {
-   this.component.mount(selector);
+  mount(selector: string): void {
+    this.component.mount(selector);
   }
 
-  isAvailable() {
+  isAvailable(): Promise<boolean> {
+    if (!this.isPaymentMethodAllowed()) {
+      console.log(`${this.paymentMethod} is not allowed`);
+      return Promise.resolve(false);
+    }
+
     if ("isAvailable" in this.component) {
-      return this.component.isAvailable()
-      .then(() => {
-        console.log(`${this.paymentMethod} is available`);
-        return true;
-      })
-      .catch((e: unknown) => {
-        console.log(`${this.paymentMethod} is not available`, e);
-        return false;
-      });
+      return this.component
+        .isAvailable()
+        .then(() => {
+          return true;
+        })
+        .catch((e: unknown) => {
+          console.log(`${this.paymentMethod} is not available`, e);
+          return false;
+        });
     } else {
       return Promise.resolve(true);
     }
+  }
+
+  private isPaymentMethodAllowed(): boolean {
+    return this.adyenCheckout.paymentMethodsResponse.paymentMethods.some(
+      (paymentMethod) => paymentMethod.type === this.paymentMethod
+    );
   }
 }

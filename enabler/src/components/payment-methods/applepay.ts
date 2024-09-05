@@ -1,13 +1,10 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  BaseOptions,
-  DefaultAdyenComponent,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { ApplePay, ICore } from "@adyen/adyen-web";
 
 /**
  * Apple pay component
@@ -43,7 +40,7 @@ export class ApplePayComponent extends DefaultAdyenComponent {
   private usesOwnCertificate: boolean;
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -53,22 +50,23 @@ export class ApplePayComponent extends DefaultAdyenComponent {
     this.usesOwnCertificate = opts.usesOwnCertificate;
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new ApplePay(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
-      onClick: (resolve, reject) => {
-        if (this.componentOptions.onPayButtonClick) {
-          return this.componentOptions.onPayButtonClick()
-            .then(() => resolve())
-            .catch((error) => reject(error));
-        } 
-        return resolve();
-      },
-      buttonType: "pay",
+      buttonType: "pay" as any, // "pay" type is not included in Adyen's types, try to force it
       buttonColor: "black",
       ...(this.usesOwnCertificate && {
         onValidateMerchant: this.onValidateMerchant.bind(this),
       }),
+      onClick: (resolve, reject) => {
+        if (this.componentOptions.onPayButtonClick) {
+          return this.componentOptions
+            .onPayButtonClick()
+            .then(() => resolve())
+            .catch((error) => reject(error));
+        }
+        return resolve();
+      },
     });
   }
 

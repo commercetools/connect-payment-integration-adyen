@@ -1,9 +1,21 @@
-import AdyenCheckout from "@adyen/adyen-web";
-import "@adyen/adyen-web/dist/adyen.css";
-import { BaseOptions } from "../components/base";
 import {
+  AdditionalDetailsActions,
+  AdditionalDetailsData,
+  AdyenCheckoutError,
+  ICore,
+  PaymentCompletedData,
+  PaymentFailedData,
+  SubmitActions,
+  SubmitData,
+  UIElement,
+} from "@adyen/adyen-web";
+import { AdyenCheckout } from "@adyen/adyen-web/auto";
+import "@adyen-css";
+import {
+  DropinType,
   EnablerOptions,
   PaymentComponentBuilder,
+  PaymentDropinBuilder,
   PaymentEnabler,
 } from "./payment-enabler";
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
@@ -17,6 +29,7 @@ import { KlarnaPayOverTimeBuilder } from "../components/payment-methods/klarna-p
 import { EPSBuilder } from "../components/payment-methods/eps";
 import { BancontactCardBuilder } from "../components/payment-methods/bancontactcard";
 import { TwintBuilder } from "../components/payment-methods/twint";
+import { DropinEmbeddedBuilder } from "../dropin/dropin-embedded";
 import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
 import { BancontactMobileBuilder } from "../components/payment-methods/bancontactcard-mobile";
 import { KlarnaBillieBuilder } from "../components/payment-methods/klarna-billie";
@@ -34,6 +47,16 @@ class AdyenInitError extends Error {
 type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
 };
+
+export type BaseOptions = {
+  adyenCheckout: ICore;
+  sessionId: string;
+  processorUrl: string;
+  applePayConfig?: {
+    usesOwnCertificate: boolean;
+  };
+};
+
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
 
@@ -70,18 +93,35 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
-      throw new AdyenInitError("No session data found", options.sessionId);
+      throw new AdyenInitError(
+        "Not able to initialize Adyen, session data missing",
+        options.sessionId
+      );
     } else {
       const adyenCheckout = await AdyenCheckout({
-        onPaymentCompleted: (result, component) => {
-          console.info(result, component);
-          window.location.href = options.processorUrl + "/confirm";
+        onPaymentCompleted: (
+          result: PaymentCompletedData,
+          _component: UIElement
+        ) => {
+          console.info("payment completed", result.resultCode);
         },
-        onError: (error, component) => {
-          console.error(error.name, error.message, error.stack, component);
+        onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
+          console.info("payment failed", result.resultCode);
+        },
+        onError: (error: AdyenCheckoutError, component: UIElement) => {
+          if (error.name === "CANCEL") {
+            console.info("shopper canceled the payment attempt");
+            component.setStatus("ready");
+          } else {
+            console.error(error.name, error.message, error.stack, component);
+          }
           options.onError && options.onError(error);
         },
-        onSubmit: async (state, component) => {
+        onSubmit: async (
+          state: SubmitData,
+          component: UIElement,
+          actions: SubmitActions
+        ) => {
           try {
             const reqData = {
               ...state.data,
@@ -98,15 +138,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             });
             const data = await response.json();
             if (data.action) {
-              options.onActionRequired &&
-                options.onActionRequired({
-                  type:
-                    data.action.type === "redirect"
-                      ? "redirect"
-                      : data.action.type === "threeDS2"
-                        ? "threeDS"
-                        : "other",
-                });
+              if (
+                ["threeDS2", "qrCode"].includes(data.action.type) &&
+                options.onActionRequired
+              ) {
+                options.onActionRequired({ type: "fullscreen" });
+              }
               component.handleAction(data.action);
             } else {
               if (
@@ -121,39 +158,56 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                 component.setStatus("error");
               }
             }
+
+            actions.resolve({
+              resultCode: data.resultCode,
+              action: data.action,
+            });
           } catch (e) {
             console.log("Payment aborted by client");
             component.setStatus("ready");
+            actions.reject(e);
           }
         },
-        onAdditionalDetails: async (state, component) => {
-          console.log("onAdditionalDetails", state, component);
-          const requestData = {
-            ...state.data,
-            paymentReference,
-          };
-          const url = options.processorUrl.endsWith("/")
-            ? `${options.processorUrl}payments/details`
-            : `${options.processorUrl}/payments/details`;
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": options.sessionId,
-            },
-            body: JSON.stringify(requestData),
-          });
-          const data = await response.json();
-          if (
-            data.resultCode === "Authorised" ||
-            data.resultCode === "Pending"
-          ) {
-            component.setStatus("success");
-            options.onComplete &&
-              options.onComplete({ isSuccess: true, paymentReference });
-          } else {
-            options.onComplete && options.onComplete({ isSuccess: false });
-            component.setStatus("error");
+        onAdditionalDetails: async (
+          state: AdditionalDetailsData,
+          component: UIElement,
+          actions: AdditionalDetailsActions
+        ) => {
+          try {
+            const requestData = {
+              ...state.data,
+              paymentReference,
+            };
+            const url = options.processorUrl.endsWith("/")
+              ? `${options.processorUrl}payments/details`
+              : `${options.processorUrl}/payments/details`;
+
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": options.sessionId,
+              },
+              body: JSON.stringify(requestData),
+            });
+            const data = await response.json();
+            if (
+              data.resultCode === "Authorised" ||
+              data.resultCode === "Pending"
+            ) {
+              component.setStatus("success");
+              options.onComplete &&
+                options.onComplete({ isSuccess: true, paymentReference });
+            } else {
+              options.onComplete && options.onComplete({ isSuccess: false });
+              component.setStatus("error");
+            }
+            actions.resolve({ resultCode: data.resultCode });
+          } catch (e) {
+            console.error("Not able to submit the payment details", e);
+            component.setStatus("ready");
+            actions.reject();
           }
         },
         analytics: {
@@ -213,6 +267,28 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         ).join(", ")}`
       );
     }
+    return new supportedMethods[type](setupData.baseOptions);
+  }
+
+  async createDropinBuilder(
+    type: DropinType
+  ): Promise<PaymentDropinBuilder | never> {
+    const setupData = await this.setupData;
+    if (!setupData) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+
+    const supportedMethods = {
+      embedded: DropinEmbeddedBuilder,
+    };
+    if (!Object.keys(supportedMethods).includes(type)) {
+      throw new Error(
+        `Dropin type not supported: ${type}. Supported types: ${Object.keys(
+          supportedMethods
+        ).join(", ")}`
+      );
+    }
+
     return new supportedMethods[type](setupData.baseOptions);
   }
 }
