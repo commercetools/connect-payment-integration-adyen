@@ -82,7 +82,8 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
   }
 
   isAvailable(): Promise<boolean> {
-    if (!this.isPaymentMethodAvailable()) {
+    if (!this.isPaymentMethodAllowed()) {
+      console.log(`${this.paymentMethod} is not allowed`);
       return Promise.resolve(false);
     }
 
@@ -101,7 +102,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     }
   }
 
-  private isPaymentMethodAvailable(): boolean {
+  private isPaymentMethodAllowed(): boolean {
     return this.adyenCheckout.paymentMethodsResponse.paymentMethods.some(
       (paymentMethod) => paymentMethod.type === this.paymentMethod
     );
