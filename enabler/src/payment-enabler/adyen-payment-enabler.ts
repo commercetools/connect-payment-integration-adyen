@@ -12,6 +12,7 @@ import {
 import { AdyenCheckout } from "@adyen/adyen-web/auto";
 import "@adyen-css";
 import {
+  DropinType,
   EnablerOptions,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
@@ -270,7 +271,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createDropinBuilder(
-    type: "embedded" | "hpp" | "express"
+    type: DropinType
   ): Promise<PaymentDropinBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {

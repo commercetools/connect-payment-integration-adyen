@@ -58,6 +58,17 @@ export type ComponentOptions = {
   onPayButtonClick?: () => Promise<void>;
 };
 
+export enum DropinType {
+  /*
+   * The embedded drop-in type which is rendered within the page.
+   */
+  embedded = "embedded",
+  /*
+   * The hosted payment page (HPP) drop-in type which redirects the user to a hosted payment page.
+   */
+  hpp = "hpp",
+}
+
 export interface DropinComponent {
   submit(): void;
   mount(selector: string): void;
@@ -87,6 +98,6 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createDropinBuilder: (
-    type: "embedded" | "hpp" | "express"
+    type: DropinType
   ) => Promise<PaymentDropinBuilder | never>;
 }
