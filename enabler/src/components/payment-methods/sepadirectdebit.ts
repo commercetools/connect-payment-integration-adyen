@@ -1,6 +1,7 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { ComponentOptions, PaymentComponent, PaymentMethod } from "../../payment-enabler/payment-enabler";
-import { AdyenBaseComponentBuilder, BaseOptions, DefaultAdyenComponent } from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
+import { SepaDirectDebit, ICore } from "@adyen/adyen-web";
 
 export class SepaBuilder extends AdyenBaseComponentBuilder {
   constructor(baseOptions: BaseOptions) {
@@ -15,7 +16,6 @@ export class SepaBuilder extends AdyenBaseComponentBuilder {
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
     });
-
     sepaComponent.init();
     return sepaComponent;
   }
@@ -24,7 +24,7 @@ export class SepaBuilder extends AdyenBaseComponentBuilder {
 export class SepaComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -32,10 +32,10 @@ export class SepaComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new SepaDirectDebit(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
-    })
+    });
   }
 
   showValidation() {

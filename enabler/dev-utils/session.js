@@ -38,27 +38,29 @@ const fetchAdminToken = async () => {
   return token.access_token;
 };
 
-const getSessionId = async (cartId) => {
+const getSessionId = async (cartId, isDropin = false) => {
   const accessToken = await fetchAdminToken();
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,
-    allowedPaymentMethods: [
-      "card",
-      "klarna_pay_now",
-      "klarna_pay_later",
-      "klarna_pay_overtime",
-      "ideal",
-      "paypal",
-      "applepay",
-      "googlepay",
-      "eps",
-      "bancontactcard",
-      "bancontactmobile",
-      "twint",
-      "sepadirectdebit",
-      "klarna_billie"
-    ], // add here your allowed methods for development purposes
+    ...(!isDropin && {
+      allowedPaymentMethods: [
+        "card",
+        "klarna_pay_now",
+        "klarna_pay_later",
+        "klarna_pay_overtime",
+        "ideal",
+        "paypal",
+        "applepay",
+        "googlepay",
+        "eps",
+        "bancontactcard",
+        "bancontactmobile",
+        "twint",
+        "sepadirectdebit",
+        "klarna_billie"
+      ], // add here your allowed methods for development purposes
+    }),
   };
 
   const url = `${__VITE_CTP_SESSION_URL__}/${projectKey}/sessions`;

@@ -18,6 +18,7 @@ export interface PaymentComponentBuilder {
   build(config: ComponentOptions): PaymentComponent;
 }
 
+
 export type EnablerOptions = {
   processorUrl: string;
   sessionId: string;
@@ -29,7 +30,7 @@ export type EnablerOptions = {
 
 export enum PaymentMethod {
   applepay = "applepay",
-  card = "card",
+  card = "scheme",
   dropin = "dropin",
   googlepay = "googlepay",
   ideal = "ideal",
@@ -45,19 +46,58 @@ export enum PaymentMethod {
   klarna_billie = "klarna_b2b" // Billie
 }
 
-export type PaymentResult = {
-  isSuccess: true;
-  paymentReference: string;
-} | { isSuccess: false };
+export type PaymentResult =
+  | {
+      isSuccess: true;
+      paymentReference: string;
+    }
+  | { isSuccess: false };
 
 export type ComponentOptions = {
   showPayButton?: boolean;
   onPayButtonClick?: () => Promise<void>;
 };
 
+export enum DropinType {
+  /*
+   * The embedded drop-in type which is rendered within the page.
+   */
+  embedded = "embedded",
+  /*
+   * The hosted payment page (HPP) drop-in type which redirects the user to a hosted payment page.
+   */
+  hpp = "hpp",
+}
+
+export interface DropinComponent {
+  submit(): void;
+  mount(selector: string): void;
+}
+export type DropinOptions = {
+  showPayButton?: boolean;
+  onDropinReady?: () => Promise<void>;
+  onPayButtonClick?: () => Promise<void>;
+};
+
+export interface PaymentDropinBuilder {
+  dropinHasSubmit: boolean;
+  build(config: DropinOptions): DropinComponent;
+}
+
 export interface PaymentEnabler {
-  /** 
+  /**
    * @throws {Error}
    */
-  createComponentBuilder: (type: string) => Promise<PaymentComponentBuilder | never>
+  createComponentBuilder: (
+    type: string
+  ) => Promise<PaymentComponentBuilder | never>;
+
+  /**
+   *
+   * @returns {Promise<DropinComponent>}
+   * @throws {Error}
+   */
+  createDropinBuilder: (
+    type: DropinType
+  ) => Promise<PaymentDropinBuilder | never>;
 }

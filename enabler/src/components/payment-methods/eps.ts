@@ -1,14 +1,11 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
-  PaymentMethod
+  PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  DefaultAdyenComponent,
-  BaseOptions,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { EPS, ICore } from "@adyen/adyen-web";
 
 /**
  * EPS component
@@ -17,7 +14,6 @@ import {
  * https://docs.adyen.com/payment-methods/eps/web-component/
  */
 export class EPSBuilder extends AdyenBaseComponentBuilder {
-
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.eps, baseOptions);
   }
@@ -38,7 +34,7 @@ export class EPSBuilder extends AdyenBaseComponentBuilder {
 export class EPSComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -46,8 +42,8 @@ export class EPSComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new EPS(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
     });
   }

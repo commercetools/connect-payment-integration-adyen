@@ -15,6 +15,7 @@ export class CreateSessionConverter {
     cart: Cart;
     payment: Payment;
   }): CreateCheckoutSessionRequest {
+    const allowedPaymentMethods = convertAllowedPaymentMethodsToAdyenFormat();
     return {
       ...opts.data,
       amount: {
@@ -26,7 +27,7 @@ export class CreateSessionConverter {
       countryCode: opts.cart.billingAddress?.country || opts.cart.country,
       returnUrl: buildReturnUrl(opts.payment.id),
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
-      allowedPaymentMethods: convertAllowedPaymentMethodsToAdyenFormat(),
+      ...(allowedPaymentMethods.length > 0 && { allowedPaymentMethods }),
       lineItems: mapCoCoCartItemsToAdyenLineItems(opts.cart),
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),

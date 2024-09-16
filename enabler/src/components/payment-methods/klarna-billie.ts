@@ -1,23 +1,19 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
 import {
   ComponentOptions,
   PaymentComponent,
-  PaymentMethod
+  PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  DefaultAdyenComponent,
-  BaseOptions,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { ICore, Klarna } from "@adyen/adyen-web";
 
 /**
- * Klarna Billie component. Key is `klarna_b2b`.
+ * Klarna Pay Now component. Key is `klarna_paynow`.
  *
  * Configuration options:
- * https://docs.adyen.com/payment-methods/klarna/billie/
+ * https://docs.adyen.com/payment-methods/klarna/web-component/
  */
 export class KlarnaBillieBuilder extends AdyenBaseComponentBuilder {
-
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.klarna_billie, baseOptions);
   }
@@ -38,7 +34,7 @@ export class KlarnaBillieBuilder extends AdyenBaseComponentBuilder {
 export class KlarnaBillieComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -46,10 +42,11 @@ export class KlarnaBillieComponent extends DefaultAdyenComponent {
     super(opts);
   }
 
-  init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+  init(): void {
+    this.component = new Klarna(this.adyenCheckout, {
+      type: this.paymentMethod,
       showPayButton: this.componentOptions.showPayButton,
-      useKlarnaWidget: false // Set to false to initiate a redirect flow.
+      useKlarnaWidget: false, // Set to false to initiate a redirect flow.
     });
   }
 }

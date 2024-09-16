@@ -58,7 +58,7 @@
               <div class="form-group col-md-6">
                 <div>
                   <label for="cartId">Cart ID:</label>
-                  <input type="text" class="form-control" id="cartId" />
+                  <input type="text" class="form-control" id="cartId" value="" />
                 </div>
               </div>
               <div class="form-group col-md-6">
@@ -119,6 +119,12 @@
                 option.textContent = method.type;
                 paymentMethodSelect.appendChild(option);
               });
+              paymentMethods.dropins.forEach((method) => {
+                const option = document.createElement("option");
+                option.value = `${method.type}`;
+                option.textContent = `dropin-${method.type}`;
+                paymentMethodSelect.appendChild(option);
+              });
             });
 
             document
@@ -126,11 +132,15 @@
               .addEventListener("click", async (event) => {
                 event.preventDefault();
                 const cartId = document.getElementById("cartId").value;
-                const sessionId = await getSessionId(cartId);
-
+                
                 const paymentMethodSelect =
-                  document.getElementById("paymentMethod");
+                document.getElementById("paymentMethod");
                 const selectedValue = paymentMethodSelect.value;
+                const selectedText = paymentMethodSelect.options[
+                  paymentMethodSelect.selectedIndex
+                ].text;
+                const isDropin = selectedText.startsWith('dropin');
+                const sessionId = await getSessionId(cartId, isDropin);
 
                 const enabler = new Enabler({
                   processorUrl: __VITE_PROCESSOR_URL__,
@@ -144,15 +154,21 @@
                   },
                 });
 
-                const builder = await enabler.createComponentBuilder(
-                  selectedValue
-                );
+                let builder;
+
+                if(isDropin){
+                  builder = await enabler.createDropinBuilder(selectedValue);
+                } else {
+                  builder = await enabler.createComponentBuilder(selectedValue);
+                }
+
                 const component = await builder.build({
                   showPayButton: !builder.componentHasSubmit,
                   ...(builder.componentHasSubmit
                     ? {}
                     : {
                         onPayButtonClick: async () => {
+                          // to be used for validation
                           const termsChecked =
                             document.getElementById("termsCheckbox").checked;
                           if (!termsChecked) {
@@ -162,33 +178,35 @@
                             );
                             return Promise.reject("error-occurred");
                           }
-                          return Promise.resolve();
+                          return Promise.resolve(); // change to true, to test payment flow
                         },
                       }),
                 });
 
                 if (builder.componentHasSubmit) {
-                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime', 'bancontactcard', 'bancontactmobile', 'twint', 'ideal', 'sepadirectdebit', 'klarna_billie'];
-                  if (methodsRequireMounting.includes(selectedValue)) {
+                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime', 'bancontactcard', 'bancontactmobile', 'twint', 'ideal', 'sepadirectdebit', "klarna_billie"];
+                  const isAvailable = await component.isAvailable();
+                  if (isAvailable && methodsRequireMounting.includes(selectedValue)) {
                     component.mount("#container--external");
-                  }
-                  
-                  const customButton = document.createElement("button");
-                  customButton.textContent = "Pay with "+ selectedValue;
-                  customButton.className = "btn btn-lg btn-primary btn-block";
-                  customButton.addEventListener("click", () => {
-                    const termsChecked =
-                      document.getElementById("termsCheckbox").checked;
-                    if (!termsChecked) {
-                      event.preventDefault();
-                      alert("You must agree to the terms and conditions.");
-                      return;
-                    }
-                    component.submit();
-                  });
-                  document
-                    .getElementById("container--internal")
-                    .appendChild(customButton);
+                    const customButton = document.createElement("button");
+                    customButton.textContent = "Pay with "+ selectedValue;
+                    customButton.className = "btn btn-lg btn-primary btn-block";
+                    customButton.addEventListener("click", () => {
+                      const termsChecked =
+                        document.getElementById("termsCheckbox").checked;
+                      if (!termsChecked) {
+                        event.preventDefault();
+                        alert("You must agree to the terms and conditions.");
+                        return;
+                      }
+                      component.submit();
+                    });
+                    document
+                      .getElementById("container--internal")
+                      .appendChild(customButton);
+                  }else{
+                    console.error('Component not available', selectedValue);
+                  }                 
                 } else{
                   component.mount("#container--external");
                 }

@@ -1,14 +1,11 @@
-import Core from "@adyen/adyen-web/dist/types/core/core";
+import { BcmcMobile, ICore } from "@adyen/adyen-web";
+import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import {
   ComponentOptions,
   PaymentComponent,
   PaymentMethod,
 } from "../../payment-enabler/payment-enabler";
-import {
-  AdyenBaseComponentBuilder,
-  DefaultAdyenComponent,
-  BaseOptions,
-} from "../base";
+import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 
 /**
  * Bancontact card component
@@ -37,7 +34,7 @@ export class BancontactMobileBuilder extends AdyenBaseComponentBuilder {
 export class BancontactMobileComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
-    adyenCheckout: typeof Core;
+    adyenCheckout: ICore;
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
@@ -46,7 +43,7 @@ export class BancontactMobileComponent extends DefaultAdyenComponent {
   }
 
   init() {
-    this.component = this.adyenCheckout.create(this.paymentMethod, {
+    this.component = new BcmcMobile(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
     });
   }
