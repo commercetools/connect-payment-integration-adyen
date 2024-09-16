@@ -104,6 +104,7 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionQueryParamAuthHook.authenticate()],
     },
     async (request, reply) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const queryParams = request.query as any;
       const res = await opts.paymentService.confirmPayment({
         data: {
