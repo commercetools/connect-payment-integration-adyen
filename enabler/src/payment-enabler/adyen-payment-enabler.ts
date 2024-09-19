@@ -160,6 +160,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   private async initializeAdyenWithSession(): Promise<void> {
+    if (this.adyenCheckout) {
+      return;
+    }
+
     const [sessionResponse, configResponse] = await Promise.all([
       fetch(this.processorUrl + "/sessions", {
         method: "POST",
@@ -300,6 +304,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   private async initializeAdyenForExpressCheckout(): Promise<void> {
+    if (this.adyenCheckout) {
+      return;
+    }
+
     const configResponse = await fetch(this.processorUrl + "/operations/config", {
       method: "GET",
       headers: {
