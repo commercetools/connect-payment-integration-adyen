@@ -112,6 +112,10 @@ export const mapCoCoCartItemsToAdyenLineItems = (
   return aydenLineItems;
 };
 
+export const canPopulateCartAddress = (address: CartAddress): boolean => {
+  return !!address.country && !!address.city && !!address.streetName && !!address.streetNumber && !!address.postalCode;
+};
+
 export const populateCartAddress = (address: CartAddress): Address => {
   return {
     country: address?.country || '',

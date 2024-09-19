@@ -1,4 +1,5 @@
 const projectKey = __VITE_CTP_PROJECT_KEY__;
+let accessToken = null;
 
 const fetchAdminToken = async () => {
   const myHeaders = new Headers();
@@ -39,7 +40,9 @@ const fetchAdminToken = async () => {
 };
 
 const getSessionId = async (cartId, isDropin = false) => {
-  const accessToken = await fetchAdminToken();
+  if (!accessToken) {
+    accessToken = await fetchAdminToken();
+  }
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,

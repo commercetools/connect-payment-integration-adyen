@@ -43,7 +43,8 @@
       var __VITE_PROCESSOR_URL__ =
         !"%VITE_PROCESSOR_URL%".startsWith("%") && "%VITE_PROCESSOR_URL%";
     </script>
-    <script src="../dev-utils/session.js"></script>
+    <script src="dev-utils/session.js"></script>
+    <script src="dev-utils/checkout.js"></script>
   </head>
   <body>
     <main role="main">
@@ -58,7 +59,7 @@
               <div class="form-group col-md-6">
                 <div>
                   <label for="cartId">Cart ID:</label>
-                  <input type="text" class="form-control" id="cartId" value="" />
+                  <input type="text" class="form-control" id="cartId" value="3f878f7c-a029-476e-a8ba-f2393372d718" />
                 </div>
               </div>
               <div class="form-group col-md-6">
@@ -125,6 +126,12 @@
                 option.textContent = `dropin-${method.type}`;
                 paymentMethodSelect.appendChild(option);
               });
+              paymentMethods.express.forEach((method) => {
+                const option = document.createElement("option");
+                option.value = `${method.type}`;
+                option.textContent = `express-${method.type}`;
+                paymentMethodSelect.appendChild(option);
+              });
             });
 
             document
@@ -132,6 +139,7 @@
               .addEventListener("click", async (event) => {
                 event.preventDefault();
                 const cartId = document.getElementById("cartId").value;
+                ckoCartId = cartId
                 
                 const paymentMethodSelect =
                 document.getElementById("paymentMethod");
@@ -140,12 +148,14 @@
                   paymentMethodSelect.selectedIndex
                 ].text;
                 const isDropin = selectedText.startsWith('dropin');
+                const isExpress = selectedText.startsWith('express');
                 const sessionId = await getSessionId(cartId, isDropin);
 
                 const enabler = new Enabler({
                   processorUrl: __VITE_PROCESSOR_URL__,
                   sessionId: sessionId,
-                  currency: "EUR",
+                  countryCode: "GB",
+                  currencyCode: "GBP",
                   onComplete: ({ isSuccess, paymentReference }) => {
                     console.log("onComplete", { isSuccess, paymentReference });
                   },
@@ -158,7 +168,11 @@
 
                 if(isDropin){
                   builder = await enabler.createDropinBuilder(selectedValue);
-                } else {
+                } 
+                else if(isExpress){
+                  builder = await enabler.createExpressBuilder(selectedValue);
+                }
+                else {
                   builder = await enabler.createComponentBuilder(selectedValue);
                 }
 
@@ -181,6 +195,20 @@
                           return Promise.resolve(); // change to true, to test payment flow
                         },
                       }),
+                      ...(isExpress ? {
+                        onPaymentInit: async () => {
+                          console.log('onPaymentInit event received');
+                          return Promise.resolve(); 
+                        },
+                        onShippingAddressSelected: setShippingAddress,
+                        getShippingMethods: getShippingMethods,
+                        onShippingMethodSelected: setShippingMethod,
+                        onPaymentSubmit: async (opts) => {
+                          await setShippingAddress({ address: opts.shippingAddress });
+                          await setBillingAddress({ address: opts.billingAddress });
+                          return Promise.resolve();
+                        }
+                      } : {}),   
                 });
 
                 if (builder.componentHasSubmit) {

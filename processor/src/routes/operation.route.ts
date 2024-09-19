@@ -61,7 +61,7 @@ export const operationsRoute = async (fastify: FastifyInstance, opts: FastifyPlu
   fastify.get(
     '/payment-components',
     {
-      preHandler: [opts.jwtAuthHook.authenticate()],
+      // preHandler: [opts.jwtAuthHook.authenticate()],
       schema: {
         response: {
           200: SupportedPaymentComponentsSchema,
