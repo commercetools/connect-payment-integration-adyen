@@ -168,54 +168,39 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
 
       onSubmit: async (state, component, actions) => {
         try {
-          const paymentData = {
-            amount: {
-              currency: "GBP",
-              value: this.finalAmount,
-            },
-            countryCode: "GB",
-            shopperLocale: "en_US",
+          const reqData = {
+            ...state.data,
+            channel: "Web",
           };
+          const response = await fetch(this.processorUrl + "/payments", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Session-Id": this.sessionId,
+            },
+            body: JSON.stringify(reqData),
+          });
+          const data = await response.json();
 
-          console.log("## onSubmit - state", state);
-          actions.reject();
+          if (!data.resultCode) {
+            actions.reject();
+            return;
+          }
 
-          // const reqData = {
-          //   ...state.data,
-          //   channel: "Web",
-          //   ...paymentData,
-          // };
-          // const response = await fetch(this.processorUrl + "/payments", {
-          //   method: "POST",
-          //   headers: {
-          //     "Content-Type": "application/json",
-          //     "X-Session-Id": this.sessionId,
-          //   },
-          //   body: JSON.stringify(reqData),
-          // });
-          // const data = await response.json();
+          if (data.action) {
+            component.handleAction(data.action);
+          } else {
+            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
+              component.setStatus("success");
+            } else {
+              component.setStatus("error");
+            }
+          }
 
-          // console.log("## onSubmit - data", data);
-
-          // if (!data.resultCode) {
-          //   actions.reject();
-          //   return;
-          // }
-
-          // if (data.action) {
-          //   component.handleAction(data.action);
-          // } else {
-          //   if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
-          //     component.setStatus("success");
-          //   } else {
-          //     component.setStatus("error");
-          //   }
-          // }
-
-          // actions.resolve({
-          //   resultCode: data.resultCode,
-          //   action: data.action,
-          // });
+          actions.resolve({
+            resultCode: data.resultCode,
+            action: data.action,
+          });
         } catch (error) {
           console.error("## onSubmit - critical error", error);
           actions.reject();
