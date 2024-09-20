@@ -15,6 +15,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
   private sessionId: string;
   private countryCode: string;
   private currencyCode: string;
+  private paymentMethodConfig: { [key: string]: string };
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -22,6 +23,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.sessionId = baseOptions.sessionId;
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
+    this.paymentMethodConfig = baseOptions.paymentMethodConfig;
   }
 
   build(config: ExpressOptions): ExpressComponent {
@@ -32,6 +34,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
       sessionId: this.sessionId,
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
+      paymentMethodConfig: this.paymentMethodConfig,
     });
     googlePayComponent.init();
 
@@ -61,6 +64,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
     sessionId: string;
     countryCode: string;
     currencyCode: string;
+    paymentMethodConfig: { [key: string]: string };
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -68,6 +72,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       sessionId: opts.sessionId,
       countryCode: opts.countryCode,
       currencyCode: opts.currencyCode,
+      paymentMethodConfig: opts.paymentMethodConfig,
     });
     this.adyenCheckout = opts.adyenCheckout;
   }
@@ -79,6 +84,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       isExpress: true,
       buttonType: "pay",
       buttonSizeMode: "fill",
+      configuration: {
+        gatewayMerchantId: this.paymentMethodConfig.gatewayMerchantId,
+        merchantId: this.paymentMethodConfig.merchantId,
+      },
       callbackIntents: ["SHIPPING_ADDRESS", "SHIPPING_OPTION"],
       shippingAddressRequired: true,
       shippingAddressParameters: {

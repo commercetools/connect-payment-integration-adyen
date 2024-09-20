@@ -58,6 +58,7 @@ import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
+import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
 
@@ -521,7 +522,20 @@ export class AdyenPaymentService extends AbstractPaymentService {
   async updatePayPalExpressOrder(opts: {
     data: UpdatePayPalExpressPaymentRequestDTO;
   }): Promise<UpdatePayPalExpressPaymentResponseDTO> {
-    return await AdyenApi().UtilityApi.updatesOrderForPaypalExpressCheckout(opts.data);
+    console.log('updatePayPalExpressOrder');
+    const payment = await this.ctPaymentService.getPayment({
+      id: opts.data.paymentReference,
+    });
+
+    const requestData: PaypalUpdateOrderRequest = {
+      ...opts.data,
+      amount: {
+        currency: payment.amountPlanned.currencyCode,
+        value: payment.amountPlanned.centAmount,
+      },
+    };
+
+    return await AdyenApi().UtilityApi.updatesOrderForPaypalExpressCheckout(requestData);
   }
 
   async getExpressPaymentData(): Promise<GetExpressPaymentDataResponseDTO> {

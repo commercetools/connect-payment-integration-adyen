@@ -34,6 +34,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected expressOptions: ExpressOptions;
   protected component: GooglePay | ApplePay | PayPal;
   protected availableShippingMethods: ExpressShippingOptionData[];
+  protected paymentMethodConfig: { [key: string]: string };
 
   constructor(opts: {
     expressOptions: ExpressOptions;
@@ -41,12 +42,14 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     sessionId: string;
     countryCode: string;
     currencyCode: string;
+    paymentMethodConfig: { [key: string]: string };
   }) {
     this.expressOptions = opts.expressOptions;
     this.processorUrl = opts.proccessorUrl;
     this.sessionId = opts.sessionId;
     this.countryCode = opts.countryCode;
     this.currencyCode = opts.currencyCode;
+    this.paymentMethodConfig = opts.paymentMethodConfig;
   }
 
   abstract init(): void;

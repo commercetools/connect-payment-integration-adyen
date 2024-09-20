@@ -10,7 +10,7 @@ import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/che
 import { PaypalUpdateOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderResponse';
 import { Notification } from '@adyen/api-library/lib/src/typings/notification/notification';
 
-export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount' | 'countryCode'>;
+export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
 
 export type CreateSessionRequestDTO = Omit<
@@ -77,7 +77,7 @@ export type CreateApplePaySessionResponseDTO = {
   [key: string]: any;
 };
 
-export type UpdatePayPalExpressPaymentRequestDTO = PaypalUpdateOrderRequest & {
+export type UpdatePayPalExpressPaymentRequestDTO = Pick<PaypalUpdateOrderRequest, 'amount'> & {
   paymentReference: string;
 };
 

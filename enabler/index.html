@@ -27,21 +27,13 @@
       crossorigin="anonymous"
     ></script>
     <script>
-      var __VITE_CTP_AUTH_URL__ =
-        !"%VITE_CTP_AUTH_URL%".startsWith("%") && "%VITE_CTP_AUTH_URL%";
-      var __VITE_CTP_API_URL__ =
-        !"%VITE_CTP_API_URL%".startsWith("%") && "%VITE_CTP_API_URL%";
-      var __VITE_CTP_SESSION_URL__ =
-        !"%VITE_CTP_SESSION_URL%".startsWith("%") && "%VITE_CTP_SESSION_URL%";
-      var __VITE_CTP_CLIENT_ID__ =
-        !"%VITE_CTP_CLIENT_ID%".startsWith("%") && "%VITE_CTP_CLIENT_ID%";
-      var __VITE_CTP_CLIENT_SECRET__ =
-        !"%VITE_CTP_CLIENT_SECRET%".startsWith("%") &&
-        "%VITE_CTP_CLIENT_SECRET%";
-      var __VITE_CTP_PROJECT_KEY__ =
-        !"%VITE_CTP_PROJECT_KEY%".startsWith("%") && "%VITE_CTP_PROJECT_KEY%";
-      var __VITE_PROCESSOR_URL__ =
-        !"%VITE_PROCESSOR_URL%".startsWith("%") && "%VITE_PROCESSOR_URL%";
+      var __VITE_CTP_AUTH_URL__ = !"%VITE_CTP_AUTH_URL%".startsWith("%") && "%VITE_CTP_AUTH_URL%";
+      var __VITE_CTP_API_URL__ = !"%VITE_CTP_API_URL%".startsWith("%") && "%VITE_CTP_API_URL%";
+      var __VITE_CTP_SESSION_URL__ = !"%VITE_CTP_SESSION_URL%".startsWith("%") && "%VITE_CTP_SESSION_URL%";
+      var __VITE_CTP_CLIENT_ID__ = !"%VITE_CTP_CLIENT_ID%".startsWith("%") && "%VITE_CTP_CLIENT_ID%";
+      var __VITE_CTP_CLIENT_SECRET__ = !"%VITE_CTP_CLIENT_SECRET%".startsWith("%") && "%VITE_CTP_CLIENT_SECRET%";
+      var __VITE_CTP_PROJECT_KEY__ = !"%VITE_CTP_PROJECT_KEY%".startsWith("%") && "%VITE_CTP_PROJECT_KEY%";
+      var __VITE_PROCESSOR_URL__ = !"%VITE_PROCESSOR_URL%".startsWith("%") && "%VITE_PROCESSOR_URL%";
     </script>
     <script src="dev-utils/session.js"></script>
     <script src="dev-utils/checkout.js"></script>
@@ -59,25 +51,15 @@
               <div class="form-group col-md-6">
                 <div>
                   <label for="cartId">Cart ID:</label>
-                  <input type="text" class="form-control" id="cartId" value="3f878f7c-a029-476e-a8ba-f2393372d718" />
+                  <input type="text" class="form-control" id="cartId" value="c001314e-2262-4948-bde5-d4a320e3f582" />
                 </div>
               </div>
               <div class="form-group col-md-6">
                 <label for="paymentMethod">Payment Method:</label>
-                <select
-                  class="form-control"
-                  id="paymentMethod"
-                  required
-                ></select>
+                <select class="form-control" id="paymentMethod" required></select>
               </div>
             </div>
-            <button
-              id="createCheckout"
-              class="btn btn-lg btn-primary btn-block"
-              type="submit"
-            >
-              Create checkout
-            </button>
+            <button id="createCheckout" class="btn btn-lg btn-primary btn-block" type="submit">Create checkout</button>
           </form>
         </div>
       </section>
@@ -88,8 +70,7 @@
             import { Enabler } from "/src/main.ts";
 
             document.addEventListener("DOMContentLoaded", async () => {
-              const paymentMethodSelect =
-                document.getElementById("paymentMethod");
+              const paymentMethodSelect = document.getElementById("paymentMethod");
               const response = await fetch("http://localhost:9000/jwt/token", {
                 method: "POST",
                 headers: {
@@ -104,15 +85,12 @@
 
               const accessToken = await response.json();
 
-              const res = await fetch(
-                `${__VITE_PROCESSOR_URL__}/operations/payment-components`,
-                {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${accessToken.token}`,
-                  },
-                }
-              );
+              const res = await fetch(`${__VITE_PROCESSOR_URL__}/operations/payment-components`, {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${accessToken.token}`,
+                },
+              });
               const paymentMethods = await res.json();
               paymentMethods.components.forEach((method) => {
                 const option = document.createElement("option");
@@ -134,124 +112,118 @@
               });
             });
 
-            document
-              .getElementById("createCheckout")
-              .addEventListener("click", async (event) => {
-                event.preventDefault();
-                const cartId = document.getElementById("cartId").value;
-                ckoCartId = cartId
-                
-                const paymentMethodSelect =
-                document.getElementById("paymentMethod");
-                const selectedValue = paymentMethodSelect.value;
-                const selectedText = paymentMethodSelect.options[
-                  paymentMethodSelect.selectedIndex
-                ].text;
-                const isDropin = selectedText.startsWith('dropin');
-                const isExpress = selectedText.startsWith('express');
-                const sessionId = await getSessionId(cartId, isDropin);
+            document.getElementById("createCheckout").addEventListener("click", async (event) => {
+              event.preventDefault();
+              const cartId = document.getElementById("cartId").value;
+              ckoCartId = cartId;
 
-                const enabler = new Enabler({
-                  processorUrl: __VITE_PROCESSOR_URL__,
-                  sessionId: sessionId,
-                  countryCode: "GB",
-                  currencyCode: "GBP",
-                  onComplete: ({ isSuccess, paymentReference }) => {
-                    console.log("onComplete", { isSuccess, paymentReference });
-                  },
-                  onError: (err) => {
-                    console.error("onError", err);
-                  },
-                });
+              const paymentMethodSelect = document.getElementById("paymentMethod");
+              const selectedValue = paymentMethodSelect.value;
+              const selectedText = paymentMethodSelect.options[paymentMethodSelect.selectedIndex].text;
+              const isDropin = selectedText.startsWith("dropin");
+              const isExpress = selectedText.startsWith("express");
+              const sessionId = await getSessionId(cartId, isDropin);
 
-                let builder;
-
-                if(isDropin){
-                  builder = await enabler.createDropinBuilder(selectedValue);
-                } 
-                else if(isExpress){
-                  builder = await enabler.createExpressBuilder(selectedValue);
-                }
-                else {
-                  builder = await enabler.createComponentBuilder(selectedValue);
-                }
-
-                const component = await builder.build({
-                  showPayButton: !builder.componentHasSubmit,
-                  ...(builder.componentHasSubmit
-                    ? {}
-                    : {
-                        onPayButtonClick: async () => {
-                          // to be used for validation
-                          const termsChecked =
-                            document.getElementById("termsCheckbox").checked;
-                          if (!termsChecked) {
-                            event.preventDefault();
-                            alert(
-                              "You must agree to the terms and conditions."
-                            );
-                            return Promise.reject("error-occurred");
-                          }
-                          return Promise.resolve(); // change to true, to test payment flow
-                        },
-                      }),
-                      ...(isExpress ? {
-                        onPaymentInit: async () => {
-                          console.log('onPaymentInit event received');
-                          return Promise.resolve(); 
-                        },
-                        onShippingAddressSelected: setShippingAddress,
-                        getShippingMethods: getShippingMethods,
-                        onShippingMethodSelected: setShippingMethod,
-                        onPaymentSubmit: async (opts) => {
-                          await setShippingAddress({ address: opts.shippingAddress });
-                          await setBillingAddress({ address: opts.billingAddress });
-                          return Promise.resolve();
-                        }
-                      } : {}),   
-                });
-
-                if (builder.componentHasSubmit) {
-                  const methodsRequireMounting = ['eps', 'card', 'klarna_pay_now', 'klarna_pay_later', 'klarna_pay_overtime', 'bancontactcard', 'bancontactmobile', 'twint', 'ideal', 'sepadirectdebit', "klarna_billie"];
-                  const isAvailable = await component.isAvailable();
-                  if (isAvailable && methodsRequireMounting.includes(selectedValue)) {
-                    component.mount("#container--external");
-                    const customButton = document.createElement("button");
-                    customButton.textContent = "Pay with "+ selectedValue;
-                    customButton.className = "btn btn-lg btn-primary btn-block";
-                    customButton.addEventListener("click", () => {
-                      const termsChecked =
-                        document.getElementById("termsCheckbox").checked;
-                      if (!termsChecked) {
-                        event.preventDefault();
-                        alert("You must agree to the terms and conditions.");
-                        return;
-                      }
-                      component.submit();
-                    });
-                    document
-                      .getElementById("container--internal")
-                      .appendChild(customButton);
-                  }else{
-                    console.error('Component not available', selectedValue);
-                  }                 
-                } else{
-                  component.mount("#container--external");
-                }
+              const enabler = new Enabler({
+                processorUrl: __VITE_PROCESSOR_URL__,
+                sessionId: sessionId,
+                countryCode: "GB",
+                currencyCode: "GBP",
+                onComplete: ({ isSuccess, paymentReference }) => {
+                  console.log("onComplete", { isSuccess, paymentReference });
+                },
+                onError: (err) => {
+                  console.error("onError", err);
+                },
               });
+
+              let builder;
+
+              if (isDropin) {
+                builder = await enabler.createDropinBuilder(selectedValue);
+              } else if (isExpress) {
+                builder = await enabler.createExpressBuilder(selectedValue);
+              } else {
+                builder = await enabler.createComponentBuilder(selectedValue);
+              }
+
+              const component = await builder.build({
+                showPayButton: !builder.componentHasSubmit,
+                ...(builder.componentHasSubmit
+                  ? {}
+                  : {
+                      onPayButtonClick: async () => {
+                        // to be used for validation
+                        const termsChecked = document.getElementById("termsCheckbox").checked;
+                        if (!termsChecked) {
+                          event.preventDefault();
+                          alert("You must agree to the terms and conditions.");
+                          return Promise.reject("error-occurred");
+                        }
+                        return Promise.resolve(); // change to true, to test payment flow
+                      },
+                    }),
+                ...(isExpress
+                  ? {
+                      onPaymentInit: async () => {
+                        console.log("onPaymentInit event received");
+                        return Promise.resolve();
+                      },
+                      onShippingAddressSelected: setShippingAddress,
+                      getShippingMethods: getShippingMethods,
+                      onShippingMethodSelected: setShippingMethod,
+                      onPaymentSubmit: async (opts) => {
+                        await setShippingAddress({ address: opts.shippingAddress });
+                        await setBillingAddress({ address: opts.billingAddress });
+                        return Promise.resolve();
+                      },
+                    }
+                  : {}),
+              });
+
+              if (builder.componentHasSubmit) {
+                const methodsRequireMounting = [
+                  "eps",
+                  "card",
+                  "klarna_pay_now",
+                  "klarna_pay_later",
+                  "klarna_pay_overtime",
+                  "bancontactcard",
+                  "bancontactmobile",
+                  "twint",
+                  "ideal",
+                  "sepadirectdebit",
+                  "klarna_billie",
+                ];
+                const isAvailable = await component.isAvailable();
+                if (isAvailable && methodsRequireMounting.includes(selectedValue)) {
+                  component.mount("#container--external");
+                  const customButton = document.createElement("button");
+                  customButton.textContent = "Pay with " + selectedValue;
+                  customButton.className = "btn btn-lg btn-primary btn-block";
+                  customButton.addEventListener("click", () => {
+                    const termsChecked = document.getElementById("termsCheckbox").checked;
+                    if (!termsChecked) {
+                      event.preventDefault();
+                      alert("You must agree to the terms and conditions.");
+                      return;
+                    }
+                    component.submit();
+                  });
+                  document.getElementById("container--internal").appendChild(customButton);
+                } else {
+                  console.error("Component not available", selectedValue);
+                }
+              } else {
+                component.mount("#container--external");
+              }
+            });
           </script>
 
           <div id="container--external"></div>
           <div class="form-group form-check">
-            <input
-              type="checkbox"
-              class="form-check-input"
-              id="termsCheckbox"
-              required
-            />
-            <label class="form-check-label" for="termsCheckbox"
-              >I agree to the terms and conditions</label
-            >
+            <input type="checkbox" class="form-check-input" id="termsCheckbox" required />
+            <label class="form-check-label" for="termsCheckbox">I agree to the terms and conditions</label>
           </div>
           <div id="container--internal"></div>
         </div>

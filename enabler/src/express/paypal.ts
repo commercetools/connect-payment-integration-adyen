@@ -1,4 +1,4 @@
-import { ICore, PayPal, SubmitActions, SubmitData, UIElement } from "@adyen/adyen-web";
+import { ICore, Intent, PayPal, SubmitActions, SubmitData, UIElement } from "@adyen/adyen-web";
 import { ExpressOptions, PaymentExpressBuilder } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import { DefaultAdyenExpressComponent } from "./base";
@@ -26,6 +26,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
   private sessionId: string;
   private countryCode: string;
   private currencyCode: string;
+  private paymentMethodConfig: { [key: string]: string };
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -33,7 +34,9 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
     this.sessionId = baseOptions.sessionId;
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
+    this.paymentMethodConfig = baseOptions.paymentMethodConfig;
   }
+
   build(config: ExpressOptions): PayPalExpressComponent {
     const paypalComponent = new PayPalExpressComponent({
       adyenCheckout: this.adyenCheckout,
@@ -42,6 +45,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
       sessionId: this.sessionId,
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
+      paymentMethodConfig: this.paymentMethodConfig,
     });
     paypalComponent.init();
 
@@ -62,6 +66,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     sessionId: string;
     countryCode: string;
     currencyCode: string;
+    paymentMethodConfig: { [key: string]: string };
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -69,6 +74,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       sessionId: opts.sessionId,
       countryCode: opts.countryCode,
       currencyCode: opts.currencyCode,
+      paymentMethodConfig: opts.paymentMethodConfig,
     });
     this.adyenCheckout = opts.adyenCheckout;
   }
@@ -81,11 +87,17 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       blockPayPalVenmoButton: true,
       blockPayPalCreditButton: true,
       blockPayPalPayLaterButton: true,
+      countryCode: this.countryCode,
+      configuration: {
+        merchantId: this.paymentMethodConfig.merchantId,
+        intent: this.paymentMethodConfig.intent as Intent,
+      },
       onClick: () => {
         return this.expressOptions
           .onPaymentInit()
-          .then(() => {})
+          .then(() => true)
           .catch((_error) => {
+            console.error("## onPaymentInit - error", _error);
             return false;
           });
       },
@@ -138,10 +150,6 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           paymentReference: this.paymentReference,
           pspReference: this.pspReference,
           paymentData: component.paymentData,
-          amount: {
-            currency: "EUR",
-            value: "399",
-          },
           deliveryMethods: shippingOptions,
         };
 

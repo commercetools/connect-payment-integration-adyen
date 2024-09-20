@@ -60,10 +60,10 @@ export type BaseOptions = {
   applePayConfig?: {
     usesOwnCertificate: boolean;
   };
+  paymentMethodConfig?: { [key: string]: string };
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
-  setupData: Promise<{ baseOptions: BaseOptions }>;
   private initOptions: AdyenEnablerOptions;
   private sessionId: string;
   private processorUrl: string;
@@ -73,6 +73,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   private applePayConfig?: {
     usesOwnCertificate: boolean;
   };
+  private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
 
   constructor(options: AdyenEnablerOptions) {
     this.sessionId = options.sessionId;
@@ -80,6 +81,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     this.countryCode = options.countryCode;
     this.currencyCode = options.currencyCode;
     this.initOptions = options;
+    this.expressPaymentMethodsConfig = new Map();
   }
 
   async createComponentBuilder(type: string): Promise<PaymentComponentBuilder | never> {
@@ -156,6 +158,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
       applePayConfig: this.applePayConfig,
+      paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
     });
   }
 
@@ -308,15 +311,32 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       return;
     }
 
-    const configResponse = await fetch(this.processorUrl + "/operations/config", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Session-Id": this.sessionId,
-      },
-    });
+    const [paymentMethodsResponse, configResponse] = await Promise.all([
+      fetch(this.processorUrl + "/payment-methods", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-Id": this.sessionId,
+        },
+        body: JSON.stringify({
+          allowedPaymentMethods: ["paypal", "googlepay", "applepay"],
+          countryCode: this.countryCode,
+        }),
+      }),
+      fetch(this.processorUrl + "/operations/config", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-Id": this.sessionId,
+        },
+      }),
+    ]);
 
-    const configJson = await configResponse.json();
+    const [paymentMethodsJson, configJson] = await Promise.all([paymentMethodsResponse.json(), configResponse.json()]);
+
+    paymentMethodsJson.paymentMethods.forEach((method) => {
+      this.expressPaymentMethodsConfig.set(method.type, method.configuration);
+    });
 
     const adyenCheckout = await AdyenCheckout({
       onPaymentCompleted: (result: PaymentCompletedData, _component: UIElement) => {
@@ -340,7 +360,11 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       ...(this.initOptions.locale ? { locale: this.initOptions.locale } : {}),
       environment: configJson.environment,
       clientKey: configJson.clientKey,
-      countryCode: this.initOptions.countryCode ?? "DE", //TODO: obtain during instantiation
+      countryCode: this.initOptions.countryCode,
+      amount: {
+        currency: this.initOptions.currencyCode,
+        value: 1, // it is set to 1 but it will be updated later
+      },
     });
 
     this.adyenCheckout = adyenCheckout;

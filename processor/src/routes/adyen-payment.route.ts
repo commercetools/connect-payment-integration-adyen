@@ -22,6 +22,7 @@ import {
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
+import { ConfigResponseSchemaDTO } from '../dtos/operations/config.dto';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
