@@ -34,7 +34,7 @@
     "@sinclair/typebox": "0.33.11",
     "dotenv": "16.4.5",
     "fastify": "4.28.1",
-    "fastify-plugin": "4.5.1"
+    "fastify-plugin": "5.0.1"
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",
