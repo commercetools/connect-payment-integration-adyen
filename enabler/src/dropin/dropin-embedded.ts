@@ -1,11 +1,29 @@
-import {
-  DropinComponent,
-  DropinOptions,
-  PaymentDropinBuilder,
-} from "../payment-enabler/payment-enabler";
+import { DropinComponent, DropinOptions, PaymentDropinBuilder } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
-import { ICore, SubmitActions, SubmitData } from "@adyen/adyen-web";
-import { Dropin } from "@adyen/adyen-web/auto";
+import {
+  ICore,
+  SubmitActions,
+  SubmitData,
+  Dropin,
+  Card,
+  PayPal,
+  GooglePay,
+  ApplePay,
+  Redirect,
+  AmazonPay,
+  SepaDirectDebit,
+  Twint,
+  Klarna,
+  Bancontact,
+  EPS,
+  Blik,
+  RatePay,
+  WeChat,
+  OnlineBankingPL,
+  Multibanco,
+  Affirm,
+  AfterPay,
+} from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
@@ -54,6 +72,26 @@ export class DropinComponents implements DropinComponent {
             .catch((error) => console.error(error));
         }
       },
+      paymentMethodComponents: [
+        Affirm,
+        AfterPay,
+        AmazonPay,
+        ApplePay,
+        Bancontact,
+        Blik,
+        Card,
+        GooglePay,
+        EPS,
+        Klarna,
+        Multibanco,
+        OnlineBankingPL,
+        PayPal,
+        RatePay,
+        Redirect,
+        SepaDirectDebit,
+        Twint,
+        WeChat,
+      ],
       paymentMethodsConfiguration: {
         applepay: {
           buttonType: "pay" as any, // "pay" type is not included in Adyen's types, try to force it
@@ -109,22 +147,15 @@ export class DropinComponents implements DropinComponent {
   }
 
   submit(): void {
-    throw new Error(
-      "Method not available. Submit is managed by the Dropin component."
-    );
+    throw new Error("Method not available. Submit is managed by the Dropin component.");
   }
 
   private overrideOnSubmit() {
     const parentOnSubmit = this.adyenCheckout.options.onSubmit;
 
-    this.adyenCheckout.options.onSubmit = async (
-      state: SubmitData,
-      component: Dropin,
-      actions: SubmitActions
-    ) => {
+    this.adyenCheckout.options.onSubmit = async (state: SubmitData, component: Dropin, actions: SubmitActions) => {
       const paymentMethod = state.data.paymentMethod.type;
-      const hasOnClick =
-        component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
+      const hasOnClick = component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
       if (!hasOnClick && this.dropinOptions.onPayButtonClick) {
         try {
           await this.dropinOptions.onPayButtonClick();
