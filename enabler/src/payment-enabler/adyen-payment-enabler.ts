@@ -33,6 +33,7 @@ import { DropinEmbeddedBuilder } from "../dropin/dropin-embedded";
 import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
 import { BancontactMobileBuilder } from "../components/payment-methods/bancontactcard-mobile";
 import { KlarnaBillieBuilder } from "../components/payment-methods/klarna-billie";
+import { AmazonpayBuilder } from "../components/payment-methods/amazonpay";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -231,6 +232,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       twint: TwintBuilder,
       sepadirectdebit: SepaBuilder,
       klarna_billie: KlarnaBillieBuilder,
+      amazonpay: AmazonpayBuilder,
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(

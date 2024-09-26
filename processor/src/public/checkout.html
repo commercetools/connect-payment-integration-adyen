@@ -1,0 +1,79 @@
+<head>
+  <!-- Embed the Adyen Web script element above any other JavaScript in your checkout page. -->
+  <script src="https://checkoutshopper-test.cdn.adyen.com/sdk/VERSION/adyen.js"
+  integrity="JS_INTEGRITY_HASH_FOR_YOUR_VERSION"
+  crossorigin="anonymous"></script>
+
+  <!-- Embed the Adyen Web stylesheet. You can add your own styling by overriding the rules in the CSS file -->
+  <link rel="stylesheet" href="https://checkoutshopper-test.cdn.adyen.com/checkoutshopper/sdk/VERSION/adyen.css"
+  integrity="CSS_INTEGRITY_HASH_FOR_YOUR_VERSION"
+  crossorigin="anonymous">
+</head>
+
+<body>
+  <div id="amazonpay_order-container"></div>
+  
+  <script defer>
+    // Extract query parameters from the URL
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const sessionId = getQueryParam('sessionId');
+    const sessionData = getQueryParam('sessionData');
+    const amazonCheckoutSessionId = getQueryParam('amazonCheckoutSessionId');
+    const step = getQueryParam('step');
+
+    const baseUrl = window.location.origin + window.location.pathname;
+
+    if (!sessionId || !sessionData || !amazonCheckoutSessionId) {
+      console.error('Amazon Checkout Session ID or Adyen session Data is missing in the URL parameters.');
+      return null
+    }
+    
+    // Adyen configuration
+    const configuration = {
+      session: {
+        id: sessionId,
+        sessionData: sessionData,
+      },
+      environment: '{{ENVIRONMENT}}',
+      clientKey: '{{ADYEN_CLIENT_KEY}}',
+      analytics: {
+        enabled: true
+      },
+      onSubmit: () => {
+        // TODO: copy later on from the enabler
+      },
+      onPaymentCompleted: (result, component) => {
+        console.info(result, component);
+      },
+      onPaymentFailed: (result, component) => {
+        console.info(result, component);
+      },
+      onError: (error, component) => {
+        console.error(error.name, error.message, error.stack, component);
+      }
+    };
+
+    const checkout = new AdyenCheckout(configuration);
+
+    if (step === 'review') {
+      const amazonComponent = new AmazonPay(checkout, {
+        amazonCheckoutSessionId,
+        returnUrl: baseUrl+'?step=result&&sessionId='+sessionId+'&&sessionData='+sessionData, // create a function to do this manual task, to avoid errors
+        showChangePaymentDetailsButton: true,
+      }).mount('#amazonpay_order-container');
+    } else if (step === 'result') {
+      const amazonComponent = new AmazonPay(checkout, {
+        amazonCheckoutSessionId,
+        showOrderButton: false,
+      }).mount('#amazonpay_order-container');
+    }
+
+  
+    // Get sessionId and returnUrl from URL query parameters
+    console.log(amazonCheckoutSessionId)
+  </script>
+</body>

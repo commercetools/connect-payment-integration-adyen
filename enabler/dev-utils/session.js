@@ -58,7 +58,8 @@ const getSessionId = async (cartId, isDropin = false) => {
         "bancontactmobile",
         "twint",
         "sepadirectdebit",
-        "klarna_billie"
+        "klarna_billie",
+        "amazonpay"
       ], // add here your allowed methods for development purposes
     }),
   };
