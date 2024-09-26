@@ -10,7 +10,6 @@ import {
   GooglePay,
   ApplePay,
   Redirect,
-  AmazonPay,
   SepaDirectDebit,
   Twint,
   Klarna,
