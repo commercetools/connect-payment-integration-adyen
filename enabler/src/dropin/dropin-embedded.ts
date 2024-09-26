@@ -15,14 +15,8 @@ import {
   Twint,
   Klarna,
   Bancontact,
+  BcmcMobile,
   EPS,
-  Blik,
-  RatePay,
-  WeChat,
-  OnlineBankingPL,
-  Multibanco,
-  Affirm,
-  AfterPay,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -73,24 +67,17 @@ export class DropinComponents implements DropinComponent {
         }
       },
       paymentMethodComponents: [
-        Affirm,
-        AfterPay,
-        AmazonPay,
         ApplePay,
         Bancontact,
-        Blik,
+        BcmcMobile,
         Card,
         GooglePay,
         EPS,
         Klarna,
-        Multibanco,
-        OnlineBankingPL,
         PayPal,
-        RatePay,
         Redirect,
         SepaDirectDebit,
         Twint,
-        WeChat,
       ],
       paymentMethodsConfiguration: {
         applepay: {
