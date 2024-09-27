@@ -113,6 +113,9 @@ export class DropinComponents implements DropinComponent {
           blockPayPalCreditButton: true,
           blockPayPalPayLaterButton: true,
           blockPayPalVenmoButton: true,
+          style: {
+            disableMaxWidth: true,
+          },
           onClick: () => {
             if (this.dropinOptions.onPayButtonClick) {
               return this.dropinOptions
