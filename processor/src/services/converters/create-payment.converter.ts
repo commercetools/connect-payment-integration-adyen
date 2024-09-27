@@ -72,11 +72,11 @@ export class CreatePaymentConverter {
     if (hasValidBillingAddress()) {
       return {
         shopperName: {
-          firstName: firstName as string,
-          lastName: lastName as string,
+          firstName: firstName ?? '',
+          lastName: lastName ?? '',
         },
         company: {
-          name: company as string,
+          name: company  ?? '',
         },
         shopperEmail: email,
         lineItems,
