@@ -42,9 +42,7 @@ export class CreatePaymentConverter {
         };
       }
       case 'klarna_b2b': {
-        return {
-          ...this.populateKlarnaB2BData(cart),
-        };
+        return this.populateKlarnaB2BData(cart);
       }
       default:
         return {};
