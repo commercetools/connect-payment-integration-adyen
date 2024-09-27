@@ -7,10 +7,10 @@ import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { AmazonPay, ICore } from "@adyen/adyen-web";
 
 /**
- * Google pay component
+ * Amazon pay component
  *
  * Configuration options:
- * https://docs.adyen.com/payment-methods/google-pay/web-component/
+ * https://docs.adyen.com/payment-methods/amazon-pay/web-component/
  */
 export class AmazonpayBuilder extends AdyenBaseComponentBuilder {
   public componentHasSubmit = false;
