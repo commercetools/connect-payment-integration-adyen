@@ -36,10 +36,14 @@ export class CreatePaymentConverter {
         return this.populateAdditionalCardData();
       case 'klarna':
       case 'klarna_paynow':
-      case 'klarna_b2b':
       case 'klarna_account': {
         return {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
+        };
+      }
+      case 'klarna_b2b': {
+        return {
+          ...this.populateKlarnaB2BData(cart),
         };
       }
       default:
@@ -55,5 +59,34 @@ export class CreatePaymentConverter {
         },
       },
     };
+  }
+
+  private populateKlarnaB2BData(cart: Cart): Partial<PaymentRequest> {
+    const { billingAddress } = cart;
+    const { firstName, lastName, email, company } = billingAddress || {};
+
+    const hasValidBillingAddress = (): boolean => {
+      return !!(company && firstName && lastName && email);
+    };
+
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);
+
+    if (hasValidBillingAddress()) {
+      return {
+        shopperName: {
+          firstName: firstName as string,
+          lastName: lastName as string,
+        },
+        company: {
+          name: company as string,
+        },
+        shopperEmail: email,
+        lineItems,
+      };
+    } else {
+      return {
+        lineItems,
+      };
+    }
   }
 }
