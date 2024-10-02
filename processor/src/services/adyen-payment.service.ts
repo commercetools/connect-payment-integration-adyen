@@ -335,7 +335,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       ...res,
       paymentReference: updatedPayment.id,
       ...(txState === 'Success' || txState === 'Pending'
-        ? { merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id) }
+        ? { merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode) }
         : {}),
     } as CreatePaymentResponseDTO;
   }
@@ -376,7 +376,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return {
       ...res,
       paymentReference: updatedPayment.id,
-      merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id),
+      merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode),
     } as ConfirmPaymentResponseDTO;
   }
 
@@ -606,10 +606,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
     );
   }
 
-  private buildRedirectMerchantUrl(paymentReference: string): string {
+  private buildRedirectMerchantUrl(
+    paymentReference: string,
+    resultCode?: PaymentDetailsResponse.ResultCodeEnum,
+  ): string {
     const merchantReturnUrl = getMerchantReturnUrlFromContext() || config.merchantReturnUrl;
     const redirectUrl = new URL(merchantReturnUrl);
+
     redirectUrl.searchParams.append('paymentReference', paymentReference);
+    if (resultCode === PaymentDetailsResponse.ResultCodeEnum.Cancelled) {
+      redirectUrl.searchParams.append('userAction', 'cancelled');
+    }
     return redirectUrl.toString();
   }
 }

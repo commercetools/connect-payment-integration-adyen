@@ -8,8 +8,8 @@ import {
   SubmitActions,
   SubmitData,
   UIElement,
+  AdyenCheckout,
 } from "@adyen/adyen-web";
-import { AdyenCheckout } from "@adyen/adyen-web/auto";
 import "@adyen-css";
 import {
   DropinType,
@@ -186,6 +186,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     ]);
 
     const [sessionJson, configJson] = await Promise.all([sessionResponse.json(), configResponse.json()]);
+    const [sessionJson, configJson] = await Promise.all([sessionResponse.json(), configResponse.json()]);
 
     const { sessionData: data, paymentReference } = sessionJson;
 
@@ -193,6 +194,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       throw new AdyenInitError("Not able to initialize Adyen, session data missing", this.sessionId);
     } else {
       const adyenCheckout = await AdyenCheckout({
+        onPaymentCompleted: (result: PaymentCompletedData, _component: UIElement) => {
         onPaymentCompleted: (result: PaymentCompletedData, _component: UIElement) => {
           console.info("payment completed", result.resultCode);
         },
@@ -208,8 +210,11 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           }
           this.initOptions.onError && this.initOptions.onError(error);
         },
-        onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
-          console.log("## onSubmit - state", state);
+        onSubmit: async (
+          state: SubmitData,
+          component: UIElement,
+          actions: SubmitActions
+        ) => {
           try {
             const reqData = {
               ...state.data,
@@ -231,6 +236,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               }
               component.handleAction(data.action);
             } else {
+              if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
               if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
                 component.setStatus("success");
                 this.initOptions.onComplete && this.initOptions.onComplete({ isSuccess: true, paymentReference });
@@ -273,6 +279,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               body: JSON.stringify(requestData),
             });
             const data = await response.json();
+            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
             if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
               component.setStatus("success");
               this.initOptions.onComplete && this.initOptions.onComplete({ isSuccess: true, paymentReference });
