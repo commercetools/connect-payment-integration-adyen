@@ -19,6 +19,11 @@ import {
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
+import path from 'node:path';
+import fastifyStatic from '@fastify/static';
+import { getConfig } from '../config/config';
+import { promisify } from 'node:util';
+import { readFile } from 'fs';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
@@ -31,6 +36,14 @@ export const adyenPaymentRoutes = async (
   fastify: FastifyInstance,
   opts: FastifyPluginOptions & PaymentRoutesOptions,
 ) => {
+  // Serve static files (HTML, CSS, JS)
+  fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'public'),
+    prefix: '/public/',
+  });
+
+  const readFileAsync = promisify(readFile);
+
   fastify.post<{ Body: PaymentMethodsRequestDTO; Reply: PaymentMethodsResponseDTO }>(
     '/payment-methods',
     {
@@ -91,7 +104,7 @@ export const adyenPaymentRoutes = async (
   );
 
   fastify.get<{
-    Reply: ConfirmPaymentResponseDTO;
+    Reply: ConfirmPaymentResponseDTO | string;
     Querystring: {
       paymentReference: string;
       redirectResult?: string;
@@ -104,8 +117,21 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionQueryParamAuthHook.authenticate()],
     },
     async (request, reply) => {
+      //HINT: add check here for amazon session ID and return a html here
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const queryParams = request.query as any;
+
+      if (queryParams.amazonCheckoutSessionId) {
+        const filePath = path.join(__dirname, '../public/index.html');
+        const fileContent = await readFileAsync(filePath, 'utf8');
+
+        // Inject the environment variable into the HTML content
+        const htmlWithEnv = fileContent
+          .replace('{{ADYEN_CLIENT_KEY}}', getConfig().adyenClientKey)
+          .replace('{{ENVIRONMENT}}', getConfig().adyenEnvironment);
+        return reply.type('text/html').send(htmlWithEnv);
+      }
+
       const res = await opts.paymentService.confirmPayment({
         data: {
           details: {

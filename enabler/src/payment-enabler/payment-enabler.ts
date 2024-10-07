@@ -43,7 +43,8 @@ export enum PaymentMethod {
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
   twint = "twint",
   sepadirectdebit = "sepadirectdebit",
-  klarna_billie = "klarna_b2b" // Billie
+  klarna_billie = "klarna_b2b", // Billie
+  amazonpay = "amazonpay"
 }
 
 export type PaymentResult =

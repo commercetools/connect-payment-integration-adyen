@@ -51,6 +51,9 @@ export class PaymentComponentsConverter {
         {
           type: 'klarna_billie', // klarna_b2b
         },
+        {
+          type: 'amazonpay',
+        },
       ],
     };
   }
