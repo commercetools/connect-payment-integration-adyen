@@ -47,11 +47,12 @@ export class AmazonPayComponent extends DefaultAdyenComponent {
 
   init(): void {
     const returnUrl = this.processorUrl.endsWith("/")
-    ? `${this.processorUrl}payments/details?step=review`
-    : `${this.processorUrl}/payments/details?step=review`;
+    ? `${this.processorUrl}payments/amazonpay?step=review&sessionId=${this.sessionId}`
+    : `${this.processorUrl}/payments/amazonpay?step=review&sessionId=${this.sessionId}`;
 
     this.component = new AmazonPay(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
+      productType: 'PayOnly',
       // environment: 'test', // we can add an additional environment variable for the enabler for this, or add it to the baseOptions to be passed by the user of the enabler
       returnUrl,
       onClick: (resolve, reject) => {

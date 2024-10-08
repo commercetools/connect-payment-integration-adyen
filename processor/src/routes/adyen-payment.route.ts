@@ -104,7 +104,40 @@ export const adyenPaymentRoutes = async (
   );
 
   fastify.get<{
-    Reply: ConfirmPaymentResponseDTO | string;
+    Reply: string;
+    Querystring: {
+      paymentReference: string;
+      redirectResult?: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      [key: string]: any;
+    };
+  }>(
+    '/payments/amazonpay',
+    {
+      preHandler: [],
+    },
+    async (request, reply) => {
+      //HINT: add check here for amazon session ID and return a html here
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const queryParams = request.query as any;
+
+      if (queryParams.amazonCheckoutSessionId) {
+        const filePath = path.join(__dirname, '../public/checkout.html');
+        const fileContent = await readFileAsync(filePath, 'utf8');
+
+        // Inject the environment variable into the HTML content
+        const htmlWithEnv = fileContent
+          .replace('{{ADYEN_CLIENT_KEY}}', getConfig().adyenClientKey)
+          .replace('{{ENVIRONMENT}}', getConfig().adyenEnvironment);
+        return reply.type('text/html').send(htmlWithEnv);
+      }
+
+      return reply.send('missing query parameters');
+    },
+  );
+
+  fastify.get<{
+    Reply: ConfirmPaymentResponseDTO;
     Querystring: {
       paymentReference: string;
       redirectResult?: string;
@@ -120,17 +153,6 @@ export const adyenPaymentRoutes = async (
       //HINT: add check here for amazon session ID and return a html here
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const queryParams = request.query as any;
-
-      if (queryParams.amazonCheckoutSessionId) {
-        const filePath = path.join(__dirname, '../public/index.html');
-        const fileContent = await readFileAsync(filePath, 'utf8');
-
-        // Inject the environment variable into the HTML content
-        const htmlWithEnv = fileContent
-          .replace('{{ADYEN_CLIENT_KEY}}', getConfig().adyenClientKey)
-          .replace('{{ENVIRONMENT}}', getConfig().adyenEnvironment);
-        return reply.type('text/html').send(htmlWithEnv);
-      }
 
       const res = await opts.paymentService.confirmPayment({
         data: {

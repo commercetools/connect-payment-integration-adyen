@@ -37,6 +37,7 @@ export class CreatePaymentConverter {
       case 'klarna':
       case 'klarna_paynow':
       case 'klarna_b2b':
+      case 'amazonpay':
       case 'klarna_account': {
         return {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),

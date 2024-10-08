@@ -1,19 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <!-- Embed the Adyen Web script element above any other JavaScript in your checkout page. -->
-  <script src="https://checkoutshopper-test.cdn.adyen.com/sdk/VERSION/adyen.js"
-  integrity="JS_INTEGRITY_HASH_FOR_YOUR_VERSION"
-  crossorigin="anonymous"></script>
-
-  <!-- Embed the Adyen Web stylesheet. You can add your own styling by overriding the rules in the CSS file -->
-  <link rel="stylesheet" href="https://checkoutshopper-test.cdn.adyen.com/checkoutshopper/sdk/VERSION/adyen.css"
-  integrity="CSS_INTEGRITY_HASH_FOR_YOUR_VERSION"
-  crossorigin="anonymous">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Pay Checkout</title>
 </head>
 
 <body>
   <div id="amazonpay_order-container"></div>
   
-  <script defer>
+  <script>
     // Extract query parameters from the URL
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -21,60 +17,168 @@
     }
 
     const sessionId = getQueryParam('sessionId');
-    const sessionData = getQueryParam('sessionData');
     const amazonCheckoutSessionId = getQueryParam('amazonCheckoutSessionId');
     const step = getQueryParam('step');
 
     const baseUrl = window.location.origin + window.location.pathname;
 
-    if (!sessionId || !sessionData || !amazonCheckoutSessionId) {
-      console.error('Amazon Checkout Session ID or Adyen session Data is missing in the URL parameters.');
-      return null
+    if (!sessionId || !amazonCheckoutSessionId) {
+      console.error('Amazon Checkout Session ID or session id is missing in the URL parameters.');
     }
+
+    fetch(window.location.origin + "/sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Session-Id": sessionId,
+      },
+      body: JSON.stringify({}),
+    })
+    .then((res) => res.json())
+    .then(async (data) => {
+      console.log(data)
     
-    // Adyen configuration
-    const configuration = {
-      session: {
-        id: sessionId,
-        sessionData: sessionData,
-      },
-      environment: '{{ENVIRONMENT}}',
-      clientKey: '{{ADYEN_CLIENT_KEY}}',
-      analytics: {
-        enabled: true
-      },
-      onSubmit: () => {
-        // TODO: copy later on from the enabler
-        // TODO: Remember to handle decline flow
-      },
-      onPaymentCompleted: (result, component) => {
-        console.info(result, component);
-      },
-      onPaymentFailed: (result, component) => {
-        console.info(result, component);
-      },
-      onError: (error, component) => {
-        console.error(error.name, error.message, error.stack, component);
+      // Adyen configuration
+      const configuration = {
+        onPaymentCompleted: () => {
+          console.info("payment completed", result.resultCode);
+        },
+        onPaymentFailed: () => {
+          console.info("payment failed", result.resultCode);
+        },
+        onError: (error, component) => {
+          if (error.name === "CANCEL") {
+            console.info("shopper canceled the payment attempt");
+            component.setStatus("ready");
+          } else {
+            console.error(error.name, error.message, error.stack, component);
+          }
+        },
+        onSubmit: async (state, component, actions) => {
+          component.setStatus('loading')
+          console.log('clicked')
+          try {
+            component.setStatus('ready')
+            const reqData = {
+              ...state.data,
+              channel: "Web",
+              paymentReference: data.paymentReference,
+            };
+            const response = await fetch(window.location.origin + "/payments", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": sessionId,
+              },
+              body: JSON.stringify(reqData),
+            });
+            const res = await response.json();
+            if (res.action) {
+              component.handleAction(res.action);
+            } else {
+              if (res.resultCode === "Authorised" || res.resultCode === "Pending") {
+                component.setStatus("success");
+              } else {
+                component.setStatus("error");
+              }
+            }
+
+            actions.resolve({
+              resultCode: data.resultCode,
+              action: data.action,
+            });
+          } catch (e) {
+            console.log("Payment aborted by client");
+            component.setStatus("ready");
+            actions.reject(e);
+          }
+        },
+        onAdditionalDetails: async (
+          state,
+          component,
+          actions
+        ) => {
+          try {
+            const requestData = {
+              ...state.data,
+              paymentReference: data.paymentReference,
+            };
+            const url = window.location.origin.endsWith("/")
+              ? `${window.location.origin}payments/details`
+              : `${window.location.origin}/payments/details`;
+
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": sessionId,
+              },
+              body: JSON.stringify(requestData),
+            });
+            const data = await response.json();
+            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
+              component.setStatus("success");
+            } else {
+              component.setStatus("error");
+            }
+            actions.resolve({ resultCode: data.resultCode });
+          } catch (e) {
+            console.error("Not able to submit the payment details", e);
+            component.setStatus("ready");
+            actions.reject();
+          }
+        },
+        analytics: {
+          enabled: true,
+        },
+
+        session: {
+          id: data.sessionData.id,
+          sessionData: data.sessionData.sessionData,
+        },
+        environment: '{{ENVIRONMENT}}',
+        clientKey: '{{ADYEN_CLIENT_KEY}}',
+        countryCode: 'DE'
+      };
+
+      console.log(configuration)
+
+      const { AdyenCheckout, AmazonPay } = window.AdyenWeb;
+
+      const checkout = await AdyenCheckout(configuration);
+
+      if (step === 'review') {
+        // TODO; implement loader while waiting for component to mount
+        const amazonComponent = new AmazonPay(checkout, {
+          amazonCheckoutSessionId,
+          returnUrl: baseUrl+'?step=result&&sessionId='+sessionId, // create a function to do this manual task, to avoid errors
+          showChangePaymentDetailsButton: true,
+        }).mount('#amazonpay_order-container');
+
+      } else if (step === 'result') {
+        // TODO; implement loader while waiting for component to mount
+        const amazonComponent = new AmazonPay(checkout, {
+          amazonCheckoutSessionId,
+          showOrderButton: false,
+        }).mount('#amazonpay_order-container');
+
+        amazonComponent.submit()
       }
-    };
-
-    const checkout = new AdyenCheckout(configuration);
-
-    if (step === 'review') {
-      const amazonComponent = new AmazonPay(checkout, {
-        amazonCheckoutSessionId,
-        returnUrl: baseUrl+'?step=result&&sessionId='+sessionId+'&&sessionData='+sessionData, // create a function to do this manual task, to avoid errors
-        showChangePaymentDetailsButton: true,
-      }).mount('#amazonpay_order-container');
-    } else if (step === 'result') {
-      const amazonComponent = new AmazonPay(checkout, {
-        amazonCheckoutSessionId,
-        showOrderButton: false,
-      }).mount('#amazonpay_order-container');
-    }
-
+    })
+    .catch((error) => {
+      console.error('Error fetching session:', error);
+    });
   
     // Get sessionId and returnUrl from URL query parameters
     console.log(amazonCheckoutSessionId)
   </script>
+
+  <script src="https://checkoutshopper-test.cdn.adyen.com/checkoutshopper/sdk/6.0.0/adyen.js"
+  integrity="sha384-GDA6txYXS6ka6zCgDtLmgI80TQMlYST32KjDtdiyFi/k/zp9rXP64qbziIXVOI5h"
+  crossorigin="anonymous"></script>
+
+  <link rel="stylesheet"
+  href="https://checkoutshopper-test.cdn.adyen.com/checkoutshopper/sdk/6.0.0/adyen.css"
+  integrity="sha384-Gngchfiq4JxdVPMOwrUaDK70raLnMJ7IgBKi2OE0VSlbUeHysN7Mwd4aHREEvEAw"
+  crossorigin="anonymous">
 </body>
