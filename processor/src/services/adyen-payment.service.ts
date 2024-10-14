@@ -400,7 +400,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       if (e instanceof UnsupportedNotificationError) {
         log.info('Unsupported notification received', { notification: JSON.stringify(opts.data) });
         return;
-      } else if (e instanceof Errorx && e.httpErrorStatus === 404) {
+      } else if (e instanceof Errorx && e.code === 'ResourceNotFound') {
         log.info('Payment not found hence accepting the notification', { notification: JSON.stringify(opts.data) });
         return;
       }
