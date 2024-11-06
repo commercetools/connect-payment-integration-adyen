@@ -4,11 +4,13 @@ import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
 import { buildReturnUrl, mapCoCoCartItemsToAdyenLineItems, populateCartAddress } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
+import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 
 export class CreatePaymentConverter {
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { paymentReference: _, ...requestData } = opts.data;
+    const futureOrderNumber = getFutureOrderNumberFromContext();
     return {
       ...requestData,
       amount: {
@@ -26,6 +28,7 @@ export class CreatePaymentConverter {
       ...(opts.cart.shippingAddress && {
         deliveryAddress: populateCartAddress(opts.cart.shippingAddress),
       }),
+      ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
     };
   }
@@ -76,7 +79,7 @@ export class CreatePaymentConverter {
           lastName: lastName ?? '',
         },
         company: {
-          name: company  ?? '',
+          name: company ?? '',
         },
         shopperEmail: email,
         lineItems,

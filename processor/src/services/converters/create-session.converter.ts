@@ -8,6 +8,7 @@ import {
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
+import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 
 export class CreateSessionConverter {
   public convertRequest(opts: {
@@ -16,6 +17,7 @@ export class CreateSessionConverter {
     payment: Payment;
   }): CreateCheckoutSessionRequest {
     const allowedPaymentMethods = convertAllowedPaymentMethodsToAdyenFormat();
+    const futureOrderNumber = getFutureOrderNumberFromContext();
     return {
       ...opts.data,
       amount: {
@@ -36,6 +38,7 @@ export class CreateSessionConverter {
         deliveryAddress: populateCartAddress(opts.cart.shippingAddress),
       }),
       shopperEmail: opts.cart.customerEmail,
+      ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
     };
   }
 }
