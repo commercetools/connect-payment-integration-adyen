@@ -1,0 +1,507 @@
+{
+  "type": "Cart",
+  "id": "4aa39f85-faa0-4189-8aaa-6c4e09b09d6d",
+  "version": 22,
+  "versionModifiedAt": "2024-12-23T12:31:12.074Z",
+  "lastMessageSequenceNumber": 1,
+  "createdAt": "2024-12-23T12:30:18.314Z",
+  "lastModifiedAt": "2024-12-23T12:31:12.074Z",
+  "lastModifiedBy": {
+    "clientId": "QVTyPEmCgawQrrGISBorkWez",
+    "isPlatformClient": false
+  },
+  "createdBy": {
+    "clientId": "QVTyPEmCgawQrrGISBorkWez",
+    "isPlatformClient": false
+  },
+  "lineItems": [
+    {
+      "id": "f1422202-439e-4ab2-b1ac-d0c807b5f250",
+      "productId": "f743ab2d-a4ef-4466-9b2e-779c1372fe73",
+      "productKey": "willow-teapot",
+      "name": {
+        "en-US": "Willow Teapot",
+        "en-GB": "Willow Teapot",
+        "de-DE": "Teekanne >Willow<"
+      },
+      "productType": {
+        "typeId": "product-type",
+        "id": "c6446851-767c-4378-8e8a-ec0ca91eebc9",
+        "version": 1
+      },
+      "productSlug": {
+        "en-US": "willow-teapot",
+        "en-GB": "willow-teapot",
+        "de-DE": "willow-teekanne"
+      },
+      "variant": {
+        "id": 1,
+        "sku": "WTP-09",
+        "prices": [
+          {
+            "id": "8c57419c-168a-4c57-bc17-fd253844f68d",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 899,
+              "fractionDigits": 2
+            }
+          },
+          {
+            "id": "51269fd5-07eb-4d09-90dc-90c2f235d2fd",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "GBP",
+              "centAmount": 899,
+              "fractionDigits": 2
+            },
+            "country": "GB"
+          },
+          {
+            "id": "c5f445bc-d226-4cc6-8052-e2e48ee52fc0",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "USD",
+              "centAmount": 899,
+              "fractionDigits": 2
+            },
+            "country": "US"
+          },
+          {
+            "id": "ed16ed80-873c-41dd-b9a3-b498ceae4b55",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "CHF",
+              "centAmount": 899,
+              "fractionDigits": 2
+            }
+          }
+        ],
+        "images": [
+          {
+            "url": "https://storage.googleapis.com/merchant-center-europe/sample-data/goodstore/Willow_Teapot-1.1.jpeg",
+            "dimensions": {
+              "w": 6240,
+              "h": 4160
+            }
+          }
+        ],
+        "attributes": [
+          {
+            "name": "productspec",
+            "value": {
+              "en-GB": "- Hand wash only",
+              "en-US": "- Hand wash only",
+              "de-DE": "- Handwäsche nur"
+            }
+          }
+        ],
+        "assets": [],
+        "availability": {
+          "isOnStock": true,
+          "availableQuantity": 95,
+          "version": 11,
+          "id": "a1269c7b-4de8-46ea-b82f-a1d45cb80ca9"
+        }
+      },
+      "price": {
+        "id": "8c57419c-168a-4c57-bc17-fd253844f68d",
+        "value": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 899,
+          "fractionDigits": 2
+        }
+      },
+      "quantity": 1,
+      "discountedPricePerQuantity": [],
+      "perMethodTaxRate": [
+        {
+          "shippingMethodKey": "ddelizia-delivery",
+          "taxRate": {
+            "name": "Germany",
+            "amount": 0.1,
+            "includedInPrice": true,
+            "country": "DE",
+            "id": "A9myrqz8",
+            "subRates": []
+          }
+        }
+      ],
+      "addedAt": "2024-12-23T12:30:25.312Z",
+      "lastModifiedAt": "2024-12-23T12:31:12.058Z",
+      "state": [
+        {
+          "quantity": 1,
+          "state": {
+            "typeId": "state",
+            "id": "26f1f5f6-ae77-4314-a7bb-02ebf05b6203"
+          }
+        }
+      ],
+      "priceMode": "Platform",
+      "lineItemMode": "Standard",
+      "totalPrice": {
+        "type": "centPrecision",
+        "currencyCode": "EUR",
+        "centAmount": 899,
+        "fractionDigits": 2
+      },
+      "taxedPrice": {
+        "totalNet": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 817,
+          "fractionDigits": 2
+        },
+        "totalGross": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 899,
+          "fractionDigits": 2
+        },
+        "taxPortions": [
+          {
+            "rate": 0.1,
+            "amount": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 82,
+              "fractionDigits": 2
+            },
+            "name": "Germany"
+          }
+        ],
+        "totalTax": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 82,
+          "fractionDigits": 2
+        }
+      },
+      "taxedPricePortions": [
+        {
+          "shippingMethodKey": "ddelizia-delivery",
+          "taxedPrice": {
+            "totalNet": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 817,
+              "fractionDigits": 2
+            },
+            "totalGross": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 899,
+              "fractionDigits": 2
+            },
+            "taxPortions": [
+              {
+                "rate": 0.1,
+                "amount": {
+                  "type": "centPrecision",
+                  "currencyCode": "EUR",
+                  "centAmount": 82,
+                  "fractionDigits": 2
+                },
+                "name": "Germany"
+              }
+            ],
+            "totalTax": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 82,
+              "fractionDigits": 2
+            }
+          }
+        }
+      ],
+      "shippingDetails": {
+        "targets": [
+          {
+            "addressKey": "key1",
+            "quantity": 1,
+            "shippingMethodKey": "ddelizia-delivery"
+          }
+        ],
+        "valid": true
+      }
+    }
+  ],
+  "cartState": "Active",
+  "totalPrice": {
+    "type": "centPrecision",
+    "currencyCode": "EUR",
+    "centAmount": 11899,
+    "fractionDigits": 2
+  },
+  "taxedPrice": {
+    "totalNet": {
+      "type": "centPrecision",
+      "currencyCode": "EUR",
+      "centAmount": 10778,
+      "fractionDigits": 2
+    },
+    "totalGross": {
+      "type": "centPrecision",
+      "currencyCode": "EUR",
+      "centAmount": 11899,
+      "fractionDigits": 2
+    },
+    "taxPortions": [
+      {
+        "rate": 0.1,
+        "amount": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 991,
+          "fractionDigits": 2
+        },
+        "name": "Germany"
+      },
+      {
+        "rate": 0.15,
+        "amount": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 130,
+          "fractionDigits": 2
+        },
+        "name": "Germany"
+      }
+    ],
+    "totalTax": {
+      "type": "centPrecision",
+      "currencyCode": "EUR",
+      "centAmount": 1121,
+      "fractionDigits": 2
+    }
+  },
+  "taxedShippingPrice": {
+    "totalNet": {
+      "type": "centPrecision",
+      "currencyCode": "EUR",
+      "centAmount": 9961,
+      "fractionDigits": 2
+    },
+    "totalGross": {
+      "type": "centPrecision",
+      "currencyCode": "EUR",
+      "centAmount": 11000,
+      "fractionDigits": 2
+    },
+    "taxPortions": [
+      {
+        "rate": 0.15,
+        "amount": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 130,
+          "fractionDigits": 2
+        },
+        "name": "Germany"
+      },
+      {
+        "rate": 0.1,
+        "amount": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 909,
+          "fractionDigits": 2
+        },
+        "name": "Germany"
+      }
+    ],
+    "totalTax": {
+      "type": "centPrecision",
+      "currencyCode": "EUR",
+      "centAmount": 1039,
+      "fractionDigits": 2
+    }
+  },
+  "shippingMode": "Multiple",
+  "shipping": [
+    {
+      "shippingKey": "ddelizia-delivery",
+      "shippingInfo": {
+        "shippingMethodName": "ddelizia-delivery",
+        "price": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 10000,
+          "fractionDigits": 2
+        },
+        "shippingRate": {
+          "price": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 10000,
+            "fractionDigits": 2
+          },
+          "tiers": []
+        },
+        "taxRate": {
+          "name": "Germany",
+          "amount": 0.1,
+          "includedInPrice": true,
+          "country": "DE",
+          "id": "A9myrqz8",
+          "subRates": []
+        },
+        "taxCategory": {
+          "typeId": "tax-category",
+          "id": "9d31a1a3-d4ec-4acf-bae8-628fe98287ce"
+        },
+        "deliveries": [],
+        "shippingMethod": {
+          "typeId": "shipping-method",
+          "id": "e36b7100-fa45-4c7c-93dd-04e4f693856b"
+        },
+        "taxedPrice": {
+          "totalNet": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 9091,
+            "fractionDigits": 2
+          },
+          "totalGross": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 10000,
+            "fractionDigits": 2
+          },
+          "taxPortions": [
+            {
+              "rate": 0.1,
+              "amount": {
+                "type": "centPrecision",
+                "currencyCode": "EUR",
+                "centAmount": 909,
+                "fractionDigits": 2
+              },
+              "name": "Germany"
+            }
+          ],
+          "totalTax": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 909,
+            "fractionDigits": 2
+          }
+        },
+        "shippingMethodState": "MatchesCart"
+      },
+      "shippingAddress": {
+        "streetName": "Example Street",
+        "streetNumber": "4711",
+        "postalCode": "80933",
+        "city": "Exemplary City",
+        "region": "Exemplary Region",
+        "country": "DE",
+        "key": "exampleKey"
+      }
+    },
+    {
+      "shippingKey": "express-delivery",
+      "shippingInfo": {
+        "shippingMethodName": "Express Delivery",
+        "price": {
+          "type": "centPrecision",
+          "currencyCode": "EUR",
+          "centAmount": 1000,
+          "fractionDigits": 2
+        },
+        "shippingRate": {
+          "price": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 1000,
+            "fractionDigits": 2
+          },
+          "tiers": []
+        },
+        "taxRate": {
+          "name": "Germany",
+          "amount": 0.15,
+          "includedInPrice": true,
+          "country": "DE",
+          "id": "7IC1WxJS",
+          "subRates": []
+        },
+        "taxCategory": {
+          "typeId": "tax-category",
+          "id": "e95ee3b9-d3da-4e56-875e-aae55c99aab7"
+        },
+        "deliveries": [],
+        "shippingMethod": {
+          "typeId": "shipping-method",
+          "id": "72111da9-15db-4c90-aeaf-aee8499c32fc"
+        },
+        "taxedPrice": {
+          "totalNet": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 870,
+            "fractionDigits": 2
+          },
+          "totalGross": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 1000,
+            "fractionDigits": 2
+          },
+          "taxPortions": [
+            {
+              "rate": 0.15,
+              "amount": {
+                "type": "centPrecision",
+                "currencyCode": "EUR",
+                "centAmount": 130,
+                "fractionDigits": 2
+              },
+              "name": "Germany"
+            }
+          ],
+          "totalTax": {
+            "type": "centPrecision",
+            "currencyCode": "EUR",
+            "centAmount": 130,
+            "fractionDigits": 2
+          }
+        },
+        "shippingMethodState": "MatchesCart"
+      },
+      "shippingAddress": {
+        "streetName": "Example Street",
+        "streetNumber": "4711",
+        "postalCode": "80933",
+        "city": "Exemplary City",
+        "region": "Exemplary Region",
+        "country": "DE",
+        "key": "exampleKey"
+      }
+    }
+  ],
+  "customLineItems": [],
+  "discountCodes": [],
+  "directDiscounts": [],
+  "inventoryMode": "None",
+  "taxMode": "Platform",
+  "taxRoundingMode": "HalfEven",
+  "taxCalculationMode": "LineItemLevel",
+  "deleteDaysAfterLastModification": 90,
+  "refusedGifts": [],
+  "origin": "Customer",
+  "itemShippingAddresses": [
+    {
+      "streetName": "Example Street",
+      "streetNumber": "4711",
+      "postalCode": "80933",
+      "city": "Exemplary City",
+      "region": "Exemplary Region",
+      "country": "DE",
+      "key": "key1"
+    }
+  ],
+  "totalLineItemQuantity": 1
+}

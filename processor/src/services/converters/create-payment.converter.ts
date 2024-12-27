@@ -5,6 +5,7 @@ import { Cart, Payment } from '@commercetools/connect-payments-sdk';
 import { buildReturnUrl, mapCoCoCartItemsToAdyenLineItems, populateCartAddress } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
+import { paymentSDK } from '../../payment-sdk';
 
 export class CreatePaymentConverter {
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
@@ -26,7 +27,7 @@ export class CreatePaymentConverter {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),
       ...(opts.cart.shippingAddress && {
-        deliveryAddress: populateCartAddress(opts.cart.shippingAddress),
+        deliveryAddress: populateCartAddress(paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart })),
       }),
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),

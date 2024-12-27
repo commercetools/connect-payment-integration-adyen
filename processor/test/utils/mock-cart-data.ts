@@ -1,7 +1,7 @@
-import { LineItem, CustomLineItem, ShippingInfo, Cart } from '@commercetools/connect-payments-sdk';
+import { Cart, CustomLineItem, LineItem, ShippingInfo } from '@commercetools/connect-payments-sdk';
 import { randomUUID } from 'crypto';
 
-export const mockGetCartResult = () => {
+export const mockGetCartResultShippingModeSimple = () => {
   const cartId = randomUUID();
   const mockGetCartResult: Cart = {
     id: cartId,
@@ -26,7 +26,55 @@ export const mockGetCartResult = () => {
     itemShippingAddresses: [],
     inventoryMode: 'ReserveOnOrder',
     shippingMode: 'Single',
+    shippingAddress: {
+      id: 'address-id-1',
+      country: 'US',
+      state: 'CA',
+      city: 'Los Angeles',
+    },
     shippingInfo: shippingInfo,
+    createdAt: '2024-01-01T00:00:00Z',
+    lastModifiedAt: '2024-01-01T00:00:00Z',
+  };
+  return mockGetCartResult;
+};
+
+export const mockGetCartResultShippingModeMultiple = () => {
+  const cartId = randomUUID();
+  const mockGetCartResult: Cart = {
+    id: cartId,
+    version: 1,
+    lineItems: [lineItem],
+    customLineItems: [customLineItem],
+    totalPrice: {
+      type: 'centPrecision',
+      currencyCode: 'USD',
+      centAmount: 150000,
+      fractionDigits: 2,
+    },
+    cartState: 'Ordered',
+    origin: 'Customer',
+    taxMode: 'ExternalAmount',
+    taxRoundingMode: 'HalfEven',
+    taxCalculationMode: 'LineItemLevel',
+    discountCodes: [],
+    directDiscounts: [],
+    refusedGifts: [],
+    itemShippingAddresses: [],
+    inventoryMode: 'ReserveOnOrder',
+    shippingMode: 'Multiple',
+    shipping: [
+      {
+        shippingKey: 'shipping-key-1',
+        shippingAddress: {
+          id: 'address-id-1',
+          country: 'US',
+          state: 'CA',
+          city: 'Los Angeles',
+        },
+        shippingInfo: shippingInfo,
+      },
+    ],
     createdAt: '2024-01-01T00:00:00Z',
     lastModifiedAt: '2024-01-01T00:00:00Z',
   };

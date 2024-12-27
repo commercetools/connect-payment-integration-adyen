@@ -9,6 +9,7 @@ import {
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
+import { paymentSDK } from '../../payment-sdk';
 
 export class CreateSessionConverter {
   public convertRequest(opts: {
@@ -35,7 +36,7 @@ export class CreateSessionConverter {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),
       ...(opts.cart.shippingAddress && {
-        deliveryAddress: populateCartAddress(opts.cart.shippingAddress),
+        deliveryAddress: populateCartAddress(paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart })),
       }),
       shopperEmail: opts.cart.customerEmail,
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),

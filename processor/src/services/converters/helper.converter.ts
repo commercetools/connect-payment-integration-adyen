@@ -5,7 +5,6 @@ import {
   LineItem as CoCoLineItem,
   CustomLineItem,
   Address as CartAddress,
-  ShippingInfo,
   Order,
 } from '@commercetools/connect-payments-sdk';
 import {
@@ -13,6 +12,8 @@ import {
   getCtSessionIdFromContext,
   getProcessorUrlFromContext,
 } from '../../libs/fastify/context/context';
+import { NormalizedShipping } from '@commercetools/connect-payments-sdk/dist/commercetools/types/cart.type';
+import { paymentSDK } from '../../payment-sdk';
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   return {
@@ -38,15 +39,15 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
   };
 };
 
-export const mapCoCoShippingInfoToAdyenLineItem = (shippingInfo: ShippingInfo): LineItem => {
-  return {
-    description: 'Shipping',
+export const mapCoCoShippingInfoToAdyenLineItem = (shippingInfo: NormalizedShipping[]): LineItem[] => {
+  return shippingInfo.map((shipping) => ({
+    description: `Shipping - ${shipping.shippingInfo.shippingMethodName}`,
     quantity: 1,
-    amountExcludingTax: shippingInfo.taxedPrice?.totalNet.centAmount || 0,
-    amountIncludingTax: shippingInfo.taxedPrice?.totalGross.centAmount || 0,
-    taxAmount: shippingInfo.taxedPrice?.totalTax?.centAmount || 0,
-    taxPercentage: convertTaxPercentageToCentAmount(shippingInfo.taxRate?.amount),
-  };
+    amountExcludingTax: shipping.shippingInfo.taxedPrice?.totalNet.centAmount || 0,
+    amountIncludingTax: shipping.shippingInfo.taxedPrice?.totalGross.centAmount || 0,
+    taxAmount: shipping.shippingInfo.taxedPrice?.totalTax?.centAmount || 0,
+    taxPercentage: convertTaxPercentageToCentAmount(shipping.shippingInfo.taxRate?.amount),
+  }));
 };
 
 export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
@@ -74,7 +75,16 @@ export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
  * @returns List of lineitems to be send to Adyen
  */
 export const mapCoCoOrderItemsToAdyenLineItems = (
-  order: Pick<Order, 'lineItems' | 'customLineItems' | 'shippingInfo' | 'discountOnTotalPrice'>,
+  order: Pick<
+    Order,
+    | 'lineItems'
+    | 'customLineItems'
+    | 'shippingMode'
+    | 'shippingAddress'
+    | 'shippingInfo'
+    | 'shipping'
+    | 'discountOnTotalPrice'
+  >,
 ): LineItem[] => {
   // CoCo model between these attributes is shared between a Cart and Order hence we can re-use the existing mapping logic.
   return mapCoCoCartItemsToAdyenLineItems(order);
@@ -89,7 +99,16 @@ export const mapCoCoOrderItemsToAdyenLineItems = (
  * @returns List of lineitems to be send to Adyen
  */
 export const mapCoCoCartItemsToAdyenLineItems = (
-  cart: Pick<Cart, 'lineItems' | 'customLineItems' | 'shippingInfo' | 'discountOnTotalPrice'>,
+  cart: Pick<
+    Cart,
+    | 'lineItems'
+    | 'customLineItems'
+    | 'shippingMode'
+    | 'shippingAddress'
+    | 'shippingInfo'
+    | 'shipping'
+    | 'discountOnTotalPrice'
+  >,
 ): LineItem[] => {
   const aydenLineItems: LineItem[] = [];
 
@@ -99,9 +118,7 @@ export const mapCoCoCartItemsToAdyenLineItems = (
     aydenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
   );
 
-  if (cart.shippingInfo) {
-    aydenLineItems.push(mapCoCoShippingInfoToAdyenLineItem(cart.shippingInfo));
-  }
+  aydenLineItems.push(...mapCoCoShippingInfoToAdyenLineItem(paymentSDK.ctCartService.getNormalizedShipping({ cart })));
 
   if (cart.discountOnTotalPrice) {
     aydenLineItems.push(
@@ -112,7 +129,7 @@ export const mapCoCoCartItemsToAdyenLineItems = (
   return aydenLineItems;
 };
 
-export const populateCartAddress = (address: CartAddress): Address => {
+export const populateCartAddress = (address?: CartAddress): Address => {
   return {
     country: address?.country || '',
     city: address?.city || '',

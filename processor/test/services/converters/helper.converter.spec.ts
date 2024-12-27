@@ -18,7 +18,8 @@ import {
   CustomLineItem,
   ShippingInfo,
 } from '@commercetools/connect-payments-sdk';
-import CoCoCartJSON from '../../data/coco-cart.json';
+import CoCoCartSimpleJSON from '../../data/coco-cart-simple-shipping.json';
+import CoCoCartMultipleJSON from '../../data/coco-cart-multiple-shipping.json';
 
 describe('helper.converter', () => {
   beforeEach(() => {
@@ -82,7 +83,7 @@ describe('helper.converter', () => {
   });
 
   test('should map the CoCo line items to Adyen line items', () => {
-    const input = CoCoCartJSON.lineItems as CoCoLineItem[];
+    const input = CoCoCartSimpleJSON.lineItems as CoCoLineItem[];
 
     const actual = mapCoCoLineItemToAdyenLineItem(input[0]);
     const expected: LineItem = {
@@ -99,7 +100,7 @@ describe('helper.converter', () => {
   });
 
   test('should map the CoCo custom line items to Adyen line items', () => {
-    const input: CustomLineItem[] = CoCoCartJSON.customLineItems as CustomLineItem[];
+    const input: CustomLineItem[] = CoCoCartSimpleJSON.customLineItems as CustomLineItem[];
 
     const actual = mapCoCoCustomLineItemToAdyenLineItem(input[0]);
     const expected: LineItem = {
@@ -116,23 +117,60 @@ describe('helper.converter', () => {
   });
 
   test('should map CoCo shipping info to Adyen line item', () => {
-    const input: ShippingInfo = CoCoCartJSON.shippingInfo as ShippingInfo;
+    const input: ShippingInfo = CoCoCartSimpleJSON.shippingInfo as ShippingInfo;
 
-    const actual = mapCoCoShippingInfoToAdyenLineItem(input);
-    const expected: LineItem = {
-      description: 'Shipping',
-      quantity: 1,
-      amountExcludingTax: 1344,
-      amountIncludingTax: 1599,
-      taxAmount: 255,
-      taxPercentage: 1900,
-    };
+    const actual = mapCoCoShippingInfoToAdyenLineItem([
+      { shippingInfo: input, shippingAddress: CoCoCartSimpleJSON.shippingAddress },
+    ]);
+    const expected: LineItem[] = [
+      {
+        description: 'Shipping - Standard Delivery',
+        quantity: 1,
+        amountExcludingTax: 1344,
+        amountIncludingTax: 1599,
+        taxAmount: 255,
+        taxPercentage: 1900,
+      },
+    ];
+
+    expect(actual).toEqual(expected);
+  });
+
+  test('should map CoCo shipping info to Adyen line item when multiple shipping', () => {
+    const actual = mapCoCoShippingInfoToAdyenLineItem([
+      {
+        shippingInfo: CoCoCartMultipleJSON.shipping[0].shippingInfo as ShippingInfo,
+        shippingAddress: CoCoCartMultipleJSON.shipping[0].shippingAddress,
+      },
+      {
+        shippingInfo: CoCoCartMultipleJSON.shipping[1].shippingInfo as ShippingInfo,
+        shippingAddress: CoCoCartMultipleJSON.shipping[1].shippingAddress,
+      },
+    ]);
+    const expected: LineItem[] = [
+      {
+        amountExcludingTax: 9091,
+        amountIncludingTax: 10000,
+        description: 'Shipping - ddelizia-delivery',
+        quantity: 1,
+        taxAmount: 909,
+        taxPercentage: 1000,
+      },
+      {
+        amountExcludingTax: 870,
+        amountIncludingTax: 1000,
+        description: 'Shipping - Express Delivery',
+        quantity: 1,
+        taxAmount: 130,
+        taxPercentage: 1500,
+      },
+    ];
 
     expect(actual).toEqual(expected);
   });
 
   test('should map CoCo shipping info to Adyen line item', () => {
-    const input = CoCoCartJSON.discountOnTotalPrice as any;
+    const input = CoCoCartSimpleJSON.discountOnTotalPrice as any;
 
     const actual = mapCoCoDiscountOnTotalPriceToAdyenLineItem({ discountOnTotalPrice: input });
     const expected: LineItem = {
@@ -147,7 +185,7 @@ describe('helper.converter', () => {
   });
 
   test('should map a CoCo cart to Adyen line items', () => {
-    const input = CoCoCartJSON as Cart;
+    const input = CoCoCartSimpleJSON as Cart;
 
     const actual = mapCoCoCartItemsToAdyenLineItems(input);
     const expected: LineItem[] = [
@@ -170,7 +208,7 @@ describe('helper.converter', () => {
         taxPercentage: 1900,
       },
       {
-        description: 'Shipping',
+        description: 'Shipping - Standard Delivery',
         quantity: 1,
         amountExcludingTax: 1344,
         amountIncludingTax: 1599,
@@ -183,6 +221,41 @@ describe('helper.converter', () => {
         amountExcludingTax: -891,
         amountIncludingTax: -1060,
         taxAmount: -169,
+      },
+    ];
+
+    expect(actual).toEqual(expected);
+  });
+
+  test('should map a CoCo cart to Adyen line items when shipping mode is Multiple', () => {
+    const input = CoCoCartMultipleJSON as Cart;
+
+    const actual = mapCoCoCartItemsToAdyenLineItems(input);
+    const expected: LineItem[] = [
+      {
+        amountExcludingTax: 817,
+        amountIncludingTax: 899,
+        description: 'Willow Teapot',
+        id: 'WTP-09',
+        quantity: 1,
+        taxAmount: 82,
+        taxPercentage: 0,
+      },
+      {
+        amountExcludingTax: 9091,
+        amountIncludingTax: 10000,
+        description: 'Shipping - ddelizia-delivery',
+        quantity: 1,
+        taxAmount: 909,
+        taxPercentage: 1000,
+      },
+      {
+        amountExcludingTax: 870,
+        amountIncludingTax: 1000,
+        description: 'Shipping - Express Delivery',
+        quantity: 1,
+        taxAmount: 130,
+        taxPercentage: 1500,
       },
     ];
 
