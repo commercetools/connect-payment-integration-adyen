@@ -1,9 +1,10 @@
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
-import { TransactionData, Money } from '@commercetools/connect-payments-sdk';
+import { TransactionData, Money, MoneyConverters } from '@commercetools/connect-payments-sdk';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { paymentMethodConfig } from '../../config/payment-method.config';
 import { NotificationUpdatePayment } from '../types/service.type';
+import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
 
 export class NotificationConverter {
   public convert(opts: { data: NotificationRequestDTO }): NotificationUpdatePayment {
@@ -107,8 +108,14 @@ export class NotificationConverter {
   }
 
   private populateAmount(item: NotificationRequestItem): Money {
+    const isoCorrectedCentAmount = MoneyConverters.convertWithMapping(
+      CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
+      item.amount.value as number,
+      item.amount.currency as string,
+    );
+
     return {
-      centAmount: item.amount.value as number,
+      centAmount: isoCorrectedCentAmount,
       currencyCode: item.amount.currency as string,
     };
   }

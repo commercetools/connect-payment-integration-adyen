@@ -1,10 +1,11 @@
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
-import { Cart, Payment } from '@commercetools/connect-payments-sdk';
+import { Cart, MoneyConverters, Payment } from '@commercetools/connect-payments-sdk';
 import { buildReturnUrl, mapCoCoCartItemsToAdyenLineItems, populateCartAddress } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
+import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 
 export class CreatePaymentConverter {
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
@@ -14,7 +15,11 @@ export class CreatePaymentConverter {
     return {
       ...requestData,
       amount: {
-        value: opts.payment.amountPlanned.centAmount,
+        value: MoneyConverters.convertWithMapping(
+          CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          opts.payment.amountPlanned.centAmount,
+          opts.payment.amountPlanned.currencyCode,
+        ),
         currency: opts.payment.amountPlanned.currencyCode,
       },
       reference: opts.payment.id,

@@ -237,7 +237,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       const res = await AdyenApi().PaymentsApi.sessions(adyenRequestData);
       return {
-        sessionData: res,
+        sessionData: this.createSessionConverter.convertResponse({ response: res }),
         paymentReference: ctPayment.id,
       };
     } catch (e) {
@@ -379,7 +379,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     try {
-      const updateData = await this.notificationConverter.convert(opts);
+      const updateData = this.notificationConverter.convert(opts);
 
       for (const tx of updateData.transactions) {
         const updatedPayment = await this.ctPaymentService.updatePayment({

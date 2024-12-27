@@ -91,6 +91,7 @@ export const mapCoCoOrderItemsToAdyenLineItems = (
 export const mapCoCoCartItemsToAdyenLineItems = (
   cart: Pick<Cart, 'lineItems' | 'customLineItems' | 'shippingInfo' | 'discountOnTotalPrice'>,
 ): LineItem[] => {
+  // TODO: SCC-2800: fix amount parsing values
   const aydenLineItems: LineItem[] = [];
 
   cart.lineItems.forEach((lineItem) => aydenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
