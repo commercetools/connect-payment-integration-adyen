@@ -1,34 +1,33 @@
-import { describe, test, expect, afterEach, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
-import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/services/types/operation.type';
-import { paymentSDK } from '../../src/payment-sdk';
-import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
 import { DefaultOrderService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-order.service';
+import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals';
+import { paymentSDK } from '../../src/payment-sdk';
+import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/services/types/operation.type';
+import { mockGetCartResultShippingModeMultiple, mockGetCartResultShippingModeSimple } from '../utils/mock-cart-data';
+import { mockGetOrderResult } from '../utils/mock-order-data';
 import {
-  mockGetPaymentResult,
-  mockGetPaymentAmount,
-  mockUpdatePaymentResult,
-  mockAdyenCreateSessionResponse,
-  mockAdyenPaymentMethodsResponse,
   mockAdyenCancelPaymentResponse,
   mockAdyenCapturePaymentResponse,
   mockAdyenCreatePaymentResponse,
+  mockAdyenCreateSessionResponse,
+  mockAdyenPaymentMethodsResponse,
   mockAdyenRefundPaymentResponse,
+  mockGetPaymentAmount,
+  mockGetPaymentResult,
   mockGetPaymentResultKlarnaPayLater,
+  mockUpdatePaymentResult,
   mockUpdatePaymentResultKlarnaPayLater,
 } from '../utils/mock-payment-data';
-import { mockGetOrderResult } from '../utils/mock-order-data';
-import { mockGetCartResult } from '../utils/mock-cart-data';
 
+import { ModificationsApi } from '@adyen/api-library/lib/src/services/checkout/modificationsApi';
+import { PaymentsApi } from '@adyen/api-library/lib/src/services/checkout/paymentsApi';
+import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/handlers/status.handler';
+import { MockAgent, setGlobalDispatcher } from 'undici';
 import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
-import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/handlers/status.handler';
-import { PaymentsApi } from '@adyen/api-library/lib/src/services/checkout/paymentsApi';
-import { ModificationsApi } from '@adyen/api-library/lib/src/services/checkout/modificationsApi';
-import { MockAgent, setGlobalDispatcher } from 'undici';
 
 import { HealthCheckResult } from '@commercetools/connect-payments-sdk';
-import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/payment-componets.dto';
 import {
   CreateApplePaySessionRequestDTO,
   CreatePaymentRequestDTO,
@@ -36,13 +35,14 @@ import {
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
 } from '../../src/dtos/adyen-payment.dto';
+import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/payment-componets.dto';
 
-import * as FastifyContext from '../../src/libs/fastify/context/context';
-import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
-import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
-import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDetails';
 import { ApplePayDetails } from '@adyen/api-library/lib/src/typings/checkout/applePayDetails';
+import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDetails';
+import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
+import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
+import * as FastifyContext from '../../src/libs/fastify/context/context';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -285,7 +285,9 @@ describe('adyen-payment.service', () => {
       const mockOrderService = jest
         .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
         .mockRejectedValue(new Error('Could not retrieve order'));
-      jest.spyOn(DefaultCartService.prototype, 'getCartByPaymentId').mockResolvedValue(mockGetCartResult());
+      jest
+        .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
+        .mockResolvedValue(mockGetCartResultShippingModeSimple());
       const mockAdyenService = jest
         .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
         .mockResolvedValue(mockAdyenCapturePaymentResponse);
@@ -318,7 +320,81 @@ describe('adyen-payment.service', () => {
           {
             amountExcludingTax: 0,
             amountIncludingTax: 0,
-            description: 'Shipping',
+            description: 'Shipping - shippingMethodName1',
+            quantity: 1,
+            taxAmount: 0,
+            taxPercentage: 0,
+          },
+        ],
+        merchantAccount: 'adyenMerchantAccount',
+        reference: '123456',
+      };
+
+      expect(mockOrderService).rejects.toThrow('Could not retrieve order');
+      expect(mockAdyenService).toHaveBeenCalledWith('92C12661DS923781G', expectedAdyenCapturePayload);
+      expect(result?.outcome).toStrictEqual('received');
+    });
+
+    test('capturePayment with lineitems with a cart which has multiple shipments', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [
+            {
+              action: 'capturePayment',
+              amount: {
+                centAmount: 150000,
+                currencyCode: 'USD',
+              },
+            },
+          ],
+        },
+      };
+
+      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
+      const mockOrderService = jest
+        .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
+        .mockRejectedValue(new Error('Could not retrieve order'));
+      jest
+        .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
+        .mockResolvedValue(mockGetCartResultShippingModeMultiple());
+      const mockAdyenService = jest
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      const result = await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      const expectedAdyenCapturePayload = {
+        amount: { currency: 'USD', value: 150000 },
+        lineItems: [
+          {
+            amountExcludingTax: 150000,
+            amountIncludingTax: 150000,
+            description: 'lineitem-name-1',
+            id: 'variant-sku-1',
+            quantity: 1,
+            taxAmount: 0,
+            taxPercentage: 0,
+          },
+          {
+            amountExcludingTax: 150000,
+            amountIncludingTax: 150000,
+            description: 'customLineItem-name-1',
+            id: 'customLineItem-id-1',
+            quantity: 1,
+            taxAmount: 0,
+            taxPercentage: 0,
+          },
+          {
+            amountExcludingTax: 0,
+            amountIncludingTax: 0,
+            description: 'Shipping - shippingMethodName1',
             quantity: 1,
             taxAmount: 0,
             taxPercentage: 0,
@@ -411,11 +487,11 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
     jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
     jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
     jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
@@ -438,11 +514,11 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
     jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
     jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
     jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
@@ -465,11 +541,11 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
     jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
     jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
     jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
@@ -487,7 +563,7 @@ describe('adyen-payment.service', () => {
       data: {},
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
     jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
     jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['card']);
@@ -504,11 +580,11 @@ describe('adyen-payment.service', () => {
       data: {},
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
     jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResult());
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
     jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['applepay']);
 
     jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
