@@ -12,7 +12,7 @@ import {
   getCtSessionIdFromContext,
   getProcessorUrlFromContext,
 } from '../../libs/fastify/context/context';
-import { NormalizedShipping } from '@commercetools/connect-payments-sdk/dist/commercetools/types/cart.type';
+import { NormalizedShipping } from '@commercetools/connect-payments-sdk';
 import { paymentSDK } from '../../payment-sdk';
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
