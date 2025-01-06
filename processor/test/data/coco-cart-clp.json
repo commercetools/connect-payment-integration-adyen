@@ -1,0 +1,256 @@
+{
+  "type": "Cart",
+  "id": "00cdf819-8c36-46bd-a938-22c2712c6461",
+  "version": 7,
+  "versionModifiedAt": "2025-01-06T11:43:59.506Z",
+  "lastMessageSequenceNumber": 1,
+  "createdAt": "2025-01-06T11:43:48.883Z",
+  "lastModifiedAt": "2025-01-06T11:43:59.506Z",
+  "lastModifiedBy": {
+    "clientId": "1ZgJGJmwvAdOf8w8KcOOLmMX",
+    "isPlatformClient": false
+  },
+  "createdBy": {
+    "clientId": "X_zFOeNrElgLiF4yuswXQOuR",
+    "isPlatformClient": false
+  },
+  "customerEmail": "asd@asd.com",
+  "lineItems": [
+    {
+      "id": "c4700e7e-5b9c-42c6-a02e-322ea8c0fc8e",
+      "productId": "ee2fa33e-0a9e-4728-9a32-2e024a88b71d",
+      "productKey": "teak-serving-platter",
+      "name": {
+        "en-US": "Teak Serving Platter",
+        "en-GB": "Teak Serving Platter",
+        "de-DE": "Servierplatte aus Teakholz"
+      },
+      "productType": {
+        "typeId": "product-type",
+        "id": "c6446851-767c-4378-8e8a-ec0ca91eebc9",
+        "version": 1
+      },
+      "productSlug": {
+        "en-US": "teak-serving-platter",
+        "en-GB": "teak-serving-platter",
+        "de-DE": "servierplatte-aus-teakholz"
+      },
+      "variant": {
+        "id": 1,
+        "sku": "TST-02",
+        "prices": [
+          {
+            "id": "108fde77-8df6-4ac6-ba02-f482ec5794a0",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 1299,
+              "fractionDigits": 2
+            }
+          },
+          {
+            "id": "1a09ad24-6bf4-47a2-939a-72b65921cbf8",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "GBP",
+              "centAmount": 1299,
+              "fractionDigits": 2
+            },
+            "country": "GB"
+          },
+          {
+            "id": "d2862da8-cd2f-4ba9-8427-d323af3d74de",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "USD",
+              "centAmount": 1299,
+              "fractionDigits": 2
+            },
+            "country": "US"
+          },
+          {
+            "id": "d677024b-6900-4f55-af5b-8779ee6ddc50",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "CLP",
+              "centAmount": 150,
+              "fractionDigits": 0
+            },
+            "key": "clp"
+          }
+        ],
+        "images": [
+          {
+            "url": "https://storage.googleapis.com/merchant-center-europe/sample-data/goodstore/Teak_Serving_Platter-1.1.jpeg",
+            "dimensions": {
+              "w": 4331,
+              "h": 2389
+            }
+          }
+        ],
+        "attributes": [
+          {
+            "name": "productspec",
+            "value": {
+              "en-GB": "- Made of natural teak\n- Hand wash only",
+              "en-US": "- Made of natural teak\n- Hand wash only",
+              "de-DE": "- Hergestellt aus natürlichem Teakholz\n- Handwäsche nur"
+            }
+          }
+        ],
+        "assets": [],
+        "availability": {
+          "isOnStock": false,
+          "availableQuantity": 0,
+          "version": 1,
+          "id": "10f0f9ce-06c9-4d2a-812c-e5b0c266bc00"
+        }
+      },
+      "price": {
+        "id": "d677024b-6900-4f55-af5b-8779ee6ddc50",
+        "value": {
+          "type": "centPrecision",
+          "currencyCode": "CLP",
+          "centAmount": 150,
+          "fractionDigits": 0
+        },
+        "key": "clp"
+      },
+      "quantity": 1,
+      "discountedPricePerQuantity": [],
+      "taxRate": {
+        "name": "Chili",
+        "amount": 0.12,
+        "includedInPrice": true,
+        "country": "CL",
+        "id": "gxuuA8ZL",
+        "key": "chili-clp",
+        "subRates": []
+      },
+      "perMethodTaxRate": [],
+      "addedAt": "2025-01-06T11:43:48.878Z",
+      "lastModifiedAt": "2025-01-06T11:43:48.878Z",
+      "state": [
+        {
+          "quantity": 1,
+          "state": {
+            "typeId": "state",
+            "id": "26f1f5f6-ae77-4314-a7bb-02ebf05b6203"
+          }
+        }
+      ],
+      "priceMode": "Platform",
+      "lineItemMode": "Standard",
+      "totalPrice": {
+        "type": "centPrecision",
+        "currencyCode": "CLP",
+        "centAmount": 150,
+        "fractionDigits": 0
+      },
+      "taxedPrice": {
+        "totalNet": {
+          "type": "centPrecision",
+          "currencyCode": "CLP",
+          "centAmount": 134,
+          "fractionDigits": 0
+        },
+        "totalGross": {
+          "type": "centPrecision",
+          "currencyCode": "CLP",
+          "centAmount": 150,
+          "fractionDigits": 0
+        },
+        "taxPortions": [
+          {
+            "rate": 0.12,
+            "amount": {
+              "type": "centPrecision",
+              "currencyCode": "CLP",
+              "centAmount": 16,
+              "fractionDigits": 0
+            },
+            "name": "Chili"
+          }
+        ],
+        "totalTax": {
+          "type": "centPrecision",
+          "currencyCode": "CLP",
+          "centAmount": 16,
+          "fractionDigits": 0
+        }
+      },
+      "taxedPricePortions": []
+    }
+  ],
+  "cartState": "Active",
+  "totalPrice": {
+    "type": "centPrecision",
+    "currencyCode": "CLP",
+    "centAmount": 150,
+    "fractionDigits": 0
+  },
+  "taxedPrice": {
+    "totalNet": {
+      "type": "centPrecision",
+      "currencyCode": "CLP",
+      "centAmount": 134,
+      "fractionDigits": 0
+    },
+    "totalGross": {
+      "type": "centPrecision",
+      "currencyCode": "CLP",
+      "centAmount": 150,
+      "fractionDigits": 0
+    },
+    "taxPortions": [
+      {
+        "rate": 0.12,
+        "amount": {
+          "type": "centPrecision",
+          "currencyCode": "CLP",
+          "centAmount": 16,
+          "fractionDigits": 0
+        },
+        "name": "Chili"
+      }
+    ],
+    "totalTax": {
+      "type": "centPrecision",
+      "currencyCode": "CLP",
+      "centAmount": 16,
+      "fractionDigits": 0
+    }
+  },
+  "shippingMode": "Single",
+  "shippingAddress": {
+    "firstName": "asd",
+    "lastName": "asd",
+    "streetName": "asd",
+    "postalCode": "1111aa",
+    "city": "asd",
+    "country": "CL",
+    "email": "asd@asd.com"
+  },
+  "shipping": [],
+  "customLineItems": [],
+  "discountCodes": [],
+  "directDiscounts": [],
+  "inventoryMode": "None",
+  "taxMode": "Platform",
+  "taxRoundingMode": "HalfEven",
+  "taxCalculationMode": "LineItemLevel",
+  "deleteDaysAfterLastModification": 90,
+  "refusedGifts": [],
+  "origin": "Customer",
+  "billingAddress": {
+    "firstName": "asd",
+    "lastName": "asd",
+    "streetName": "asd",
+    "postalCode": "1111aa",
+    "city": "asd",
+    "country": "CL",
+    "email": "asd@asd.com"
+  },
+  "itemShippingAddresses": [],
+  "totalLineItemQuantity": 1
+}

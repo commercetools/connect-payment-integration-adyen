@@ -20,6 +20,7 @@ import {
 } from '@commercetools/connect-payments-sdk';
 import CoCoCartSimpleJSON from '../../data/coco-cart-simple-shipping.json';
 import CoCoCartMultipleJSON from '../../data/coco-cart-multiple-shipping.json';
+import CoCoCartCLPJSON from '../../data/coco-cart-clp.json';
 
 describe('helper.converter', () => {
   beforeEach(() => {
@@ -169,7 +170,7 @@ describe('helper.converter', () => {
     expect(actual).toEqual(expected);
   });
 
-  test('should map CoCo shipping info to Adyen line item', () => {
+  test('should map CoCo discount info to Adyen line item', () => {
     const input = CoCoCartSimpleJSON.discountOnTotalPrice as any;
 
     const actual = mapCoCoDiscountOnTotalPriceToAdyenLineItem({ discountOnTotalPrice: input });
@@ -258,6 +259,24 @@ describe('helper.converter', () => {
         taxPercentage: 1500,
       },
     ];
+
+    expect(actual).toEqual(expected);
+  });
+
+  test('should map the CoCo line items to Adyen line items taking into account Adyen deviations', () => {
+    // CLP currencyCode according to ISO_4217 has 0 fractionDigits but Adyen expects 2 fractionDigits
+    const input = CoCoCartCLPJSON.lineItems as CoCoLineItem[];
+
+    const actual = mapCoCoLineItemToAdyenLineItem(input[0]);
+    const expected: LineItem = {
+      id: 'TST-02',
+      description: 'Teak Serving Platter',
+      quantity: 1,
+      amountExcludingTax: 13400,
+      amountIncludingTax: 15000,
+      taxAmount: 1600,
+      taxPercentage: 1200,
+    };
 
     expect(actual).toEqual(expected);
   });
