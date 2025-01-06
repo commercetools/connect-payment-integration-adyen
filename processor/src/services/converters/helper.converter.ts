@@ -323,7 +323,7 @@ const convertTaxPercentageToAdyenMinorUnits = (
     CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
     normalizedTaxRate,
     currencyCode,
-    -fractionDigits,
+    fractionDigits,
   );
 
   return result;
