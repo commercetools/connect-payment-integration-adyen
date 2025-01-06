@@ -17,11 +17,11 @@ export class CreatePaymentConverter {
     return {
       ...requestData,
       amount: {
-        value: MoneyConverters.convertWithMapping(
-          CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-          opts.payment.amountPlanned.centAmount,
-          opts.payment.amountPlanned.currencyCode,
-        ),
+        value: MoneyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.payment.amountPlanned.centAmount,
+          currencyCode: opts.payment.amountPlanned.currencyCode,
+        }),
         currency: opts.payment.amountPlanned.currencyCode,
       },
       reference: opts.payment.id,

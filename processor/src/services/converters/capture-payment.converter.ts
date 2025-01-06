@@ -41,11 +41,11 @@ export class CapturePaymentConverter {
       reference: opts.payment.id,
       amount: {
         currency: opts.amount.currencyCode,
-        value: MoneyConverters.convertWithMapping(
-          CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-          opts.amount.centAmount,
-          opts.amount.currencyCode,
-        ),
+        value: MoneyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.amount.centAmount,
+          currencyCode: opts.amount.currencyCode,
+        }),
       },
       lineItems: adyenLineItems,
     };

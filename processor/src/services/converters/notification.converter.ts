@@ -108,11 +108,11 @@ export class NotificationConverter {
   }
 
   private populateAmount(item: NotificationRequestItem): Money {
-    const isoCorrectedCentAmount = MoneyConverters.convertWithMapping(
-      CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
-      item.amount.value as number,
-      item.amount.currency as string,
-    );
+    const isoCorrectedCentAmount = MoneyConverters.convertWithMapping({
+      mapping: CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
+      amount: item.amount.value as number,
+      currencyCode: item.amount.currency as string,
+    });
 
     return {
       centAmount: isoCorrectedCentAmount,

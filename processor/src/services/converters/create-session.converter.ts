@@ -25,11 +25,11 @@ export class CreateSessionConverter {
     return {
       ...opts.data,
       amount: {
-        value: MoneyConverters.convertWithMapping(
-          CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-          opts.payment.amountPlanned.centAmount,
-          opts.payment.amountPlanned.currencyCode,
-        ),
+        value: MoneyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.payment.amountPlanned.centAmount,
+          currencyCode: opts.payment.amountPlanned.currencyCode,
+        }),
         currency: opts.payment.amountPlanned.currencyCode,
       },
       reference: opts.payment.id,
@@ -54,11 +54,11 @@ export class CreateSessionConverter {
     return {
       ...opts.response,
       amount: {
-        value: MoneyConverters.convertWithMapping(
-          CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
-          opts.response.amount.value,
-          opts.response.amount.currency,
-        ),
+        value: MoneyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
+          amount: opts.response.amount.value,
+          currencyCode: opts.response.amount.currency,
+        }),
         currency: opts.response.amount.currency,
       },
     };

@@ -55,27 +55,27 @@ export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: Normaliz
     let amountIncludingTaxValue = 0;
 
     if (shipping.shippingInfo.taxedPrice) {
-      amountExcludingTaxValue = MoneyConverters.convertWithMapping(
-        CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-        shipping.shippingInfo.taxedPrice.totalNet.centAmount,
-        shipping.shippingInfo.taxedPrice.totalNet.currencyCode,
-      );
+      amountExcludingTaxValue = MoneyConverters.convertWithMapping({
+        mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+        amount: shipping.shippingInfo.taxedPrice.totalNet.centAmount,
+        currencyCode: shipping.shippingInfo.taxedPrice.totalNet.currencyCode,
+      });
 
-      amountIncludingTaxValue = MoneyConverters.convertWithMapping(
-        CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-        shipping.shippingInfo.taxedPrice.totalGross.centAmount,
-        shipping.shippingInfo.taxedPrice.totalGross.currencyCode,
-      );
+      amountIncludingTaxValue = MoneyConverters.convertWithMapping({
+        mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+        amount: shipping.shippingInfo.taxedPrice.totalGross.centAmount,
+        currencyCode: shipping.shippingInfo.taxedPrice.totalGross.currencyCode,
+      });
     }
 
     let taxAmountValue = 0;
 
     if (shipping.shippingInfo.taxedPrice?.totalTax?.centAmount) {
-      taxAmountValue = MoneyConverters.convertWithMapping(
-        CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-        shipping.shippingInfo.taxedPrice.totalTax.centAmount,
-        shipping.shippingInfo.taxedPrice.totalTax.currencyCode,
-      );
+      taxAmountValue = MoneyConverters.convertWithMapping({
+        mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+        amount: shipping.shippingInfo.taxedPrice.totalTax.centAmount,
+        currencyCode: shipping.shippingInfo.taxedPrice.totalTax.currencyCode,
+      });
     }
 
     return {
@@ -100,19 +100,19 @@ export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
   let amountIncludingTaxValue = 0;
 
   if (cart.discountOnTotalPrice.discountedNetAmount) {
-    amountExcludingTaxValue = MoneyConverters.convertWithMapping(
-      CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-      cart.discountOnTotalPrice.discountedNetAmount.centAmount,
-      cart.discountOnTotalPrice.discountedNetAmount.currencyCode,
-    );
+    amountExcludingTaxValue = MoneyConverters.convertWithMapping({
+      mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+      amount: cart.discountOnTotalPrice.discountedNetAmount.centAmount,
+      currencyCode: cart.discountOnTotalPrice.discountedNetAmount.currencyCode,
+    });
   }
 
   if (cart.discountOnTotalPrice.discountedGrossAmount) {
-    amountIncludingTaxValue = MoneyConverters.convertWithMapping(
-      CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-      cart.discountOnTotalPrice.discountedGrossAmount.centAmount,
-      cart.discountOnTotalPrice.discountedGrossAmount.currencyCode,
-    );
+    amountIncludingTaxValue = MoneyConverters.convertWithMapping({
+      mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+      amount: cart.discountOnTotalPrice.discountedGrossAmount.centAmount,
+      currencyCode: cart.discountOnTotalPrice.discountedGrossAmount.currencyCode,
+    });
   }
 
   const taxAmountValue = amountIncludingTaxValue - amountExcludingTaxValue;
@@ -266,7 +266,11 @@ const getAmountIncludingTax = (lineItem: CoCoLineItem | CustomLineItem): number 
     ? lineItem.taxedPrice.totalGross.currencyCode
     : lineItem.totalPrice.currencyCode;
 
-  return MoneyConverters.convertWithMapping(CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING, centAmount, currencyCode);
+  return MoneyConverters.convertWithMapping({
+    mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+    amount: centAmount,
+    currencyCode,
+  });
 };
 
 const getAmountExcludingTax = (lineItem: CoCoLineItem | CustomLineItem): number => {
@@ -275,7 +279,11 @@ const getAmountExcludingTax = (lineItem: CoCoLineItem | CustomLineItem): number 
     ? lineItem.taxedPrice.totalNet.currencyCode
     : lineItem.totalPrice.currencyCode;
 
-  return MoneyConverters.convertWithMapping(CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING, centAmount, currencyCode);
+  return MoneyConverters.convertWithMapping({
+    mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+    amount: centAmount,
+    currencyCode,
+  });
 };
 
 const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
@@ -283,11 +291,11 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
     return 0;
   }
 
-  return MoneyConverters.convertWithMapping(
-    CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-    lineItem.taxedPrice.totalTax.centAmount,
-    lineItem.taxedPrice.totalTax.currencyCode,
-  );
+  return MoneyConverters.convertWithMapping({
+    mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+    amount: lineItem.taxedPrice.totalTax.centAmount,
+    currencyCode: lineItem.taxedPrice.totalTax.currencyCode,
+  });
 };
 
 /**
@@ -319,12 +327,12 @@ const convertTaxPercentageToAdyenMinorUnits = (
   const normalizedTaxRate = decimalTaxRate * 100;
 
   // Apply the fractionDigits for the cart (i.e. currencyCode) that is in CoCo according to the ISO_4217 standard but overrule the given fractionDigits from the CoCo if Adyen requires it based on the given mapping.
-  const result = MoneyConverters.convertWithOverrulingMapping(
-    CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-    normalizedTaxRate,
+  const result = MoneyConverters.convertWithMapping({
+    mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+    amount: normalizedTaxRate,
     currencyCode,
     fractionDigits,
-  );
+  });
 
   return result;
 };

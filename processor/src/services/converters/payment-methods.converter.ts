@@ -25,11 +25,11 @@ export class PaymentMethodsConverter {
     return {
       ...opts.data,
       amount: {
-        value: MoneyConverters.convertWithMapping(
-          CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-          paymentAmount.centAmount,
-          paymentAmount.currencyCode,
-        ),
+        value: MoneyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: paymentAmount.centAmount,
+          currencyCode: paymentAmount.currencyCode,
+        }),
         currency: paymentAmount.currencyCode,
       },
       countryCode: cart.country,
