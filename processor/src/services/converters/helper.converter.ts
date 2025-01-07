@@ -7,7 +7,7 @@ import {
   Address as CartAddress,
   Order,
   NormalizedShipping,
-  MoneyConverters,
+  CurrencyConverters,
 } from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
@@ -55,13 +55,13 @@ export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: Normaliz
     let amountIncludingTaxValue = 0;
 
     if (shipping.shippingInfo.taxedPrice) {
-      amountExcludingTaxValue = MoneyConverters.convertWithMapping({
+      amountExcludingTaxValue = CurrencyConverters.convertWithMapping({
         mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
         amount: shipping.shippingInfo.taxedPrice.totalNet.centAmount,
         currencyCode: shipping.shippingInfo.taxedPrice.totalNet.currencyCode,
       });
 
-      amountIncludingTaxValue = MoneyConverters.convertWithMapping({
+      amountIncludingTaxValue = CurrencyConverters.convertWithMapping({
         mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
         amount: shipping.shippingInfo.taxedPrice.totalGross.centAmount,
         currencyCode: shipping.shippingInfo.taxedPrice.totalGross.currencyCode,
@@ -71,7 +71,7 @@ export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: Normaliz
     let taxAmountValue = 0;
 
     if (shipping.shippingInfo.taxedPrice?.totalTax?.centAmount) {
-      taxAmountValue = MoneyConverters.convertWithMapping({
+      taxAmountValue = CurrencyConverters.convertWithMapping({
         mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
         amount: shipping.shippingInfo.taxedPrice.totalTax.centAmount,
         currencyCode: shipping.shippingInfo.taxedPrice.totalTax.currencyCode,
@@ -100,7 +100,7 @@ export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
   let amountIncludingTaxValue = 0;
 
   if (cart.discountOnTotalPrice.discountedNetAmount) {
-    amountExcludingTaxValue = MoneyConverters.convertWithMapping({
+    amountExcludingTaxValue = CurrencyConverters.convertWithMapping({
       mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
       amount: cart.discountOnTotalPrice.discountedNetAmount.centAmount,
       currencyCode: cart.discountOnTotalPrice.discountedNetAmount.currencyCode,
@@ -108,7 +108,7 @@ export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
   }
 
   if (cart.discountOnTotalPrice.discountedGrossAmount) {
-    amountIncludingTaxValue = MoneyConverters.convertWithMapping({
+    amountIncludingTaxValue = CurrencyConverters.convertWithMapping({
       mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
       amount: cart.discountOnTotalPrice.discountedGrossAmount.centAmount,
       currencyCode: cart.discountOnTotalPrice.discountedGrossAmount.currencyCode,
@@ -266,7 +266,7 @@ const getAmountIncludingTax = (lineItem: CoCoLineItem | CustomLineItem): number 
     ? lineItem.taxedPrice.totalGross.currencyCode
     : lineItem.totalPrice.currencyCode;
 
-  return MoneyConverters.convertWithMapping({
+  return CurrencyConverters.convertWithMapping({
     mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
     amount: centAmount,
     currencyCode,
@@ -279,7 +279,7 @@ const getAmountExcludingTax = (lineItem: CoCoLineItem | CustomLineItem): number 
     ? lineItem.taxedPrice.totalNet.currencyCode
     : lineItem.totalPrice.currencyCode;
 
-  return MoneyConverters.convertWithMapping({
+  return CurrencyConverters.convertWithMapping({
     mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
     amount: centAmount,
     currencyCode,
@@ -291,7 +291,7 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
     return 0;
   }
 
-  return MoneyConverters.convertWithMapping({
+  return CurrencyConverters.convertWithMapping({
     mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
     amount: lineItem.taxedPrice.totalTax.centAmount,
     currencyCode: lineItem.taxedPrice.totalTax.currencyCode,
@@ -326,7 +326,7 @@ const convertTaxPercentageToAdyenMinorUnits = (
   // First go from the range of 0 - 1 (floating numbers) to value expressed as "non-decimals". I.e. 0.15% from CoCo becomes 15% tax rate value.
   const normalizedTaxRate = decimalTaxRate * 100;
 
-  const result = MoneyConverters.convertWithMapping({
+  const result = CurrencyConverters.convertWithMapping({
     mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
     amount: normalizedTaxRate,
     currencyCode,

@@ -7,7 +7,7 @@ import {
   mapCoCoCartItemsToAdyenLineItems,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
-import { Cart, MoneyConverters, Payment } from '@commercetools/connect-payments-sdk';
+import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
@@ -25,7 +25,7 @@ export class CreateSessionConverter {
     return {
       ...opts.data,
       amount: {
-        value: MoneyConverters.convertWithMapping({
+        value: CurrencyConverters.convertWithMapping({
           mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
           amount: opts.payment.amountPlanned.centAmount,
           currencyCode: opts.payment.amountPlanned.currencyCode,
@@ -54,7 +54,7 @@ export class CreateSessionConverter {
     return {
       ...opts.response,
       amount: {
-        value: MoneyConverters.convertWithMapping({
+        value: CurrencyConverters.convertWithMapping({
           mapping: CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
           amount: opts.response.amount.value,
           currencyCode: opts.response.amount.currency,

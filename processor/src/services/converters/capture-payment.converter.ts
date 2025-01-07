@@ -8,7 +8,7 @@ import {
   CommercetoolsCartService,
   CommercetoolsOrderService,
   ErrorReferencedResourceNotFound,
-  MoneyConverters,
+  CurrencyConverters,
 } from '@commercetools/connect-payments-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 
@@ -41,7 +41,7 @@ export class CapturePaymentConverter {
       reference: opts.payment.id,
       amount: {
         currency: opts.amount.currencyCode,
-        value: MoneyConverters.convertWithMapping({
+        value: CurrencyConverters.convertWithMapping({
           mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
           amount: opts.amount.centAmount,
           currencyCode: opts.amount.currencyCode,

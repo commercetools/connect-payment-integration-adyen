@@ -1,6 +1,6 @@
 import { config } from '../../config/config';
 import { PaymentMethodsRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsRequest';
-import { CommercetoolsCartService, MoneyConverters } from '@commercetools/connect-payments-sdk';
+import { CommercetoolsCartService, CurrencyConverters } from '@commercetools/connect-payments-sdk';
 import { convertPaymentMethodFromAdyenFormat } from './helper.converter';
 import { getAllowedPaymentMethodsFromContext, getCartIdFromContext } from '../../libs/fastify/context/context';
 import { PaymentMethodsRequestDTO, PaymentMethodsResponseDTO } from '../../dtos/adyen-payment.dto';
@@ -25,7 +25,7 @@ export class PaymentMethodsConverter {
     return {
       ...opts.data,
       amount: {
-        value: MoneyConverters.convertWithMapping({
+        value: CurrencyConverters.convertWithMapping({
           mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
           amount: paymentAmount.centAmount,
           currencyCode: paymentAmount.currencyCode,
