@@ -301,13 +301,13 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
 /**
  * Convert the CoCo tax percentage, which ranges from 0-1 as floating point numbers to the expected Adyen minor units.
  *
- * This function applies the given fractionDigits to get the correct minor units. This also takes into account the deviations Adyen has with regards to the fractionDigits.
+ * This function applies the given fractionDigit to get the correct minor units. This also takes into account the deviations Adyen has with regards to the fractionDigit.
  *
- * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode EUR and fractionDigits of 2 = expressed in Adyen minor units value as 2100
- * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode CLP, according to ISO standard has fractionDigits of 0 but Adyen deviats from it and so it has fractionDigits of 2 = expressed in Adyen minor units value as 2100
- * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode JPY and fractionDigits of 0 = expressed in Adyen minor units value as 21
+ * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode EUR and fractionDigit of 2 = expressed in Adyen minor units value as 2100
+ * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode CLP, according to ISO standard has fractionDigit of 0 but Adyen deviats from it and so it has fractionDigit of 2 = expressed in Adyen minor units value as 2100
+ * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode JPY and fractionDigit of 0 = expressed in Adyen minor units value as 21
  *
- * @param fractionDigits the fractionDigits that are applicable for the currencyCode according to ISO_4217
+ * @param fractionDigit the fractionDigit that are applicable for the currencyCode according to ISO_4217
  * @param currencyCode the applicable currencyCode
  * @param decimalTaxRate the tax rate expressed in decimals between 0-1 as floating point numbers taken from the CoCo taxRate (see docs below)
  *
@@ -316,7 +316,7 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
  * @see https://docs.adyen.com/development-resources/currency-codes/#minor-units
  */
 const convertTaxPercentageToAdyenMinorUnits = (
-  fractionDigits: number,
+  fractionDigit: number,
   currencyCode: string,
   decimalTaxRate?: number,
 ): number => {
@@ -326,12 +326,11 @@ const convertTaxPercentageToAdyenMinorUnits = (
   // First go from the range of 0 - 1 (floating numbers) to value expressed as "non-decimals". I.e. 0.15% from CoCo becomes 15% tax rate value.
   const normalizedTaxRate = decimalTaxRate * 100;
 
-  // Apply the fractionDigits for the cart (i.e. currencyCode) that is in CoCo according to the ISO_4217 standard but overrule the given fractionDigits from the CoCo if Adyen requires it based on the given mapping.
   const result = MoneyConverters.convertWithMapping({
     mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
     amount: normalizedTaxRate,
     currencyCode,
-    fractionDigits,
+    fractionDigit,
   });
 
   return result;
