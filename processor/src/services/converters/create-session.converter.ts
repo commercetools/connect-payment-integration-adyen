@@ -19,6 +19,7 @@ export class CreateSessionConverter {
   }): CreateCheckoutSessionRequest {
     const allowedPaymentMethods = convertAllowedPaymentMethodsToAdyenFormat();
     const futureOrderNumber = getFutureOrderNumberFromContext();
+    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     return {
       ...opts.data,
       amount: {
@@ -35,8 +36,8 @@ export class CreateSessionConverter {
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),
-      ...(opts.cart.shippingAddress && {
-        deliveryAddress: populateCartAddress(paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart })),
+      ...(deliveryAddress && {
+        deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       shopperEmail: opts.cart.customerEmail,
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),

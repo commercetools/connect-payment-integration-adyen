@@ -12,6 +12,7 @@ export class CreatePaymentConverter {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { paymentReference: _, ...requestData } = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
+    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     return {
       ...requestData,
       amount: {
@@ -26,8 +27,8 @@ export class CreatePaymentConverter {
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),
-      ...(opts.cart.shippingAddress && {
-        deliveryAddress: populateCartAddress(paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart })),
+      ...(deliveryAddress && {
+        deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
