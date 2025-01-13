@@ -7,9 +7,11 @@ import {
   mapCoCoCartItemsToAdyenLineItems,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
-import { Cart, Payment } from '@commercetools/connect-payments-sdk';
+import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
+import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
+import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
 
 export class CreateSessionConverter {
   public convertRequest(opts: {
@@ -23,7 +25,11 @@ export class CreateSessionConverter {
     return {
       ...opts.data,
       amount: {
-        value: opts.payment.amountPlanned.centAmount,
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.payment.amountPlanned.centAmount,
+          currencyCode: opts.payment.amountPlanned.currencyCode,
+        }),
         currency: opts.payment.amountPlanned.currencyCode,
       },
       reference: opts.payment.id,
@@ -41,6 +47,20 @@ export class CreateSessionConverter {
       }),
       shopperEmail: opts.cart.customerEmail,
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
+    };
+  }
+
+  public convertResponse(opts: { response: CreateCheckoutSessionResponse }): CreateCheckoutSessionResponse {
+    return {
+      ...opts.response,
+      amount: {
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING,
+          amount: opts.response.amount.value,
+          currencyCode: opts.response.amount.currency,
+        }),
+        currency: opts.response.amount.currency,
+      },
     };
   }
 }

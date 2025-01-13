@@ -143,6 +143,7 @@ export const mockAdyenRefundPaymentResponse: PaymentRefundResponse = {
 export const mockGetPaymentAmount: PaymentAmount = {
   centAmount: 150000,
   currencyCode: 'USD',
+  fractionDigits: 2,
 };
 
 export const mockAdyenCreatePaymentResponse: PaymentResponse = {
