@@ -8,7 +8,7 @@ export class RefundPaymentConverter {
   public convertRequest(opts: RefundPaymentRequest): PaymentRefundRequest {
     return {
       merchantAccount: config.adyenMerchantAccount,
-      reference: opts.payment.id,
+      reference: opts.merchantReference || opts.payment.id,
       amount: {
         currency: opts.amount.currencyCode,
         value: CurrencyConverters.convertWithMapping({

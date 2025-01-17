@@ -38,7 +38,7 @@ export class CapturePaymentConverter {
 
     return {
       merchantAccount: config.adyenMerchantAccount,
-      reference: opts.payment.id,
+      reference: opts.merchantReference || opts.payment.id,
       amount: {
         currency: opts.amount.currencyCode,
         value: CurrencyConverters.convertWithMapping({
@@ -47,7 +47,7 @@ export class CapturePaymentConverter {
           currencyCode: opts.amount.currencyCode,
         }),
       },
-      lineItems: adyenLineItems,
+      ...(adyenLineItems && { lineItems: adyenLineItems }),
     };
   }
 

@@ -23,7 +23,7 @@
   "dependencies": {
     "@adyen/api-library": "22.1.0",
     "@commercetools-backend/loggers": "22.38.1",
-    "@commercetools/connect-payments-sdk": "0.15.0",
+    "@commercetools/connect-payments-sdk": "0.16.0",
     "@fastify/autoload": "6.0.3",
     "@fastify/cors": "10.0.2",
     "@fastify/formbody": "8.0.2",
