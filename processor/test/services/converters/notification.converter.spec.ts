@@ -43,7 +43,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -92,7 +92,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -150,7 +150,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -203,7 +203,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -256,7 +256,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -309,7 +309,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -362,7 +362,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -415,7 +415,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -468,7 +468,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -521,7 +521,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -574,7 +574,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [
@@ -627,7 +627,7 @@ describe('notification.converter', () => {
 
     // Assert
     expect(result).toEqual({
-      id: merchantReference,
+      merchantReference,
       pspReference,
       paymentMethod,
       transactions: [

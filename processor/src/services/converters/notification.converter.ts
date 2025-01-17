@@ -11,7 +11,7 @@ export class NotificationConverter {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 
     return {
-      id: item.merchantReference,
+      merchantReference: item.merchantReference,
       pspReference: item.originalReference || item.pspReference,
       paymentMethod: item.paymentMethod,
       transactions: this.populateTransactions(item),

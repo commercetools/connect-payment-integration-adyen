@@ -55,6 +55,7 @@ import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
+import { NotificationUpdatePayment } from './types/service.type';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
 
@@ -380,10 +381,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     try {
       const updateData = this.notificationConverter.convert(opts);
+      const payment = await this.getPaymentFromNotification(updateData);
 
       for (const tx of updateData.transactions) {
         const updatedPayment = await this.ctPaymentService.updatePayment({
-          id: updateData.id,
+          id: payment.id,
           pspReference: updateData.pspReference,
           transaction: tx,
         });
@@ -563,5 +565,35 @@ export class AdyenPaymentService extends AbstractPaymentService {
       redirectUrl.searchParams.append('userAction', 'cancelled');
     }
     return redirectUrl.toString();
+  }
+
+  /**
+   * Retrieves a payment instance from the notification data
+   * First, it tries to find the payment by the interfaceId (PSP reference)
+   * As a fallback, it tries to find the payment by the merchantReference which unless the merchant overrides it, it's the payment ID
+   * @param data
+   * @returns A payment instance
+   */
+  private async getPaymentFromNotification(data: NotificationUpdatePayment): Promise<Payment> {
+    const interfaceId = data.pspReference;
+    let payment!: Payment;
+
+    if (interfaceId) {
+      const results = await this.ctPaymentService.findPaymentsByInterfaceId({
+        interfaceId,
+      });
+
+      if (results.length > 0) {
+        payment = results[0];
+      }
+    }
+
+    if (!payment) {
+      return await this.ctPaymentService.getPayment({
+        id: data.merchantReference,
+      });
+    }
+
+    return payment;
   }
 }

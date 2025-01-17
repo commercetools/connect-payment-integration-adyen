@@ -711,6 +711,9 @@ describe('adyen-payment.service', () => {
         ],
       };
 
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockUpdatePaymentResult]);
       jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
 
       // When
@@ -718,7 +721,7 @@ describe('adyen-payment.service', () => {
 
       // Then
       expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith({
-        id: merchantReference,
+        id: '123456',
         pspReference,
         transaction: {
           amount: {

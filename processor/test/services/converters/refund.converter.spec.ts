@@ -1,18 +1,10 @@
 import { describe, test, expect } from '@jest/globals';
-import {
-  CapturePaymentConverter,
-  METHODS_REQUIRE_LINE_ITEMS,
-} from '../../../src/services/converters/capture-payment.converter';
-import { paymentSDK } from '../../../src/payment-sdk';
 import { mockGetPaymentResult } from '../../utils/mock-payment-data';
 import { config } from '../../../src/config/config';
+import { RefundPaymentConverter } from '../../../src/services/converters/refund-payment.converter';
 
-describe('capture.converter', () => {
-  const converter = new CapturePaymentConverter(paymentSDK.ctCartService, paymentSDK.ctOrderService);
-  test('METHODS_REQUIRE_LINE_ITEMS', () => {
-    const expected = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b'];
-    expect(METHODS_REQUIRE_LINE_ITEMS).toEqual(expected);
-  });
+describe('refund.converter', () => {
+  const converter = new RefundPaymentConverter();
 
   test('convert with checkout merchant reference', async () => {
     // Arrange
@@ -23,7 +15,7 @@ describe('capture.converter', () => {
     };
 
     // Act
-    const result = await converter.convertRequest(data);
+    const result = converter.convertRequest(data);
 
     // Assert
     expect(result).toEqual({
@@ -46,7 +38,7 @@ describe('capture.converter', () => {
     };
 
     // Act
-    const result = await converter.convertRequest(data);
+    const result = converter.convertRequest(data);
 
     // Assert
     expect(result).toEqual({
