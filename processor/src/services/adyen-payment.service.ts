@@ -203,7 +203,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       id: getCartIdFromContext(),
     });
 
-    const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+    const amountPlanned = await this.ctCartService.getPlannedPaymentAmount({ cart: ctCart });
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       paymentMethodInfo: {
