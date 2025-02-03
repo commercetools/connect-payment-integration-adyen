@@ -49,6 +49,9 @@ export class PaymentComponentsConverter {
           type: 'paypal',
         },
         {
+          type: 'przelewy24', // onlineBanking_PL
+        },
+        {
           type: 'sepadirectdebit',
         },
         {

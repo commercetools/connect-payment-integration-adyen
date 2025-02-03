@@ -43,6 +43,7 @@ export enum PaymentMethod {
   klarna_pay_now = "klarna_paynow", // Pay now
   klarna_pay_overtime = "klarna_account", // Pay over time
   paypal = "paypal",
+  przelewy24 = "przelewy24",
   sepadirectdebit = "sepadirectdebit",
   twint = "twint",
 }

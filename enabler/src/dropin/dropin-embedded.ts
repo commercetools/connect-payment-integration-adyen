@@ -17,6 +17,7 @@ import {
   BcmcMobile,
   EPS,
   Blik,
+  OnlineBankingPL,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -75,6 +76,7 @@ export class DropinComponents implements DropinComponent {
         GooglePay,
         EPS,
         Klarna,
+        OnlineBankingPL,
         PayPal,
         Redirect,
         SepaDirectDebit,

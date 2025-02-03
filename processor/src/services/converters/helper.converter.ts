@@ -16,6 +16,7 @@ import {
 } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
+import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   return {
@@ -206,6 +207,7 @@ export const convertAllowedPaymentMethodsToAdyenFormat = (): string[] => {
   allowedPaymentMethods.forEach((paymentMethod) => {
     adyenAllowedPaymentMethods.push(convertPaymentMethodToAdyenFormat(paymentMethod));
   });
+
   return adyenAllowedPaymentMethods;
 };
 
@@ -224,6 +226,8 @@ export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string
     return 'bcmc_mobile';
   } else if (paymentMethod === 'klarna_billie') {
     return 'klarna_b2b';
+  } else if (paymentMethod === 'przelewy24') {
+    return GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl;
   } else {
     return paymentMethod;
   }
@@ -244,6 +248,8 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
     return 'bancontactmobile';
   } else if (paymentMethod === 'klarna_b2b') {
     return 'klarna_billie';
+  } else if (paymentMethod === GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl) {
+    return 'przelewy24';
   } else {
     return paymentMethod;
   }

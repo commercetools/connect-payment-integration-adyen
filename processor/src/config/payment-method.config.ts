@@ -1,3 +1,5 @@
+import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
+
 /**
  * Specific configuration for payment methods that require special handling.
  * See https://docs.adyen.com/payment-methods for more information about each payment method.
@@ -27,6 +29,9 @@ export const paymentMethodConfig: PaymentMethodConfig = {
     supportSeparateCapture: false,
   },
   ideal: {
+    supportSeparateCapture: false,
+  },
+  onlineBanking_PL: {
     supportSeparateCapture: false,
   },
 };
