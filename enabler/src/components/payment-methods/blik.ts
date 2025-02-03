@@ -38,7 +38,9 @@ export class BlikComponent extends DefaultAdyenComponent {
   }
 
   init(): void {
-    this.component = new Blik(this.adyenCheckout, {});
+    this.component = new Blik(this.adyenCheckout, {
+      showPayButton: this.componentOptions.showPayButton,
+    });
   }
 
   showValidation() {
