@@ -8,7 +8,8 @@ import {
   Klarna,
   EPS,
   Twint,
-  SepaDirectDebit
+  SepaDirectDebit,
+  Blik,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -18,16 +19,7 @@ import {
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 
-type AdyenComponent =
-  | Card
-  | PayPal
-  | ApplePay
-  | GooglePay
-  | Klarna
-  | EPS
-  | Twint
-  | Redirect
-  | SepaDirectDebit;
+type AdyenComponent = Card | PayPal | ApplePay | GooglePay | Klarna | EPS | Twint | Redirect | SepaDirectDebit | Blik;
 
 /**
  * Base Web Component

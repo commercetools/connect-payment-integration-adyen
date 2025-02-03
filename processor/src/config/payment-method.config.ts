@@ -20,6 +20,9 @@ export const paymentMethodConfig: PaymentMethodConfig = {
   bcmc_mobile: {
     supportSeparateCapture: false,
   },
+  blik: {
+    supportSeparateCapture: false,
+  },
   eps: {
     supportSeparateCapture: false,
   },

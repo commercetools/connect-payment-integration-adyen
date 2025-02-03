@@ -16,6 +16,7 @@ import {
   Bancontact,
   BcmcMobile,
   EPS,
+  Blik,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -69,6 +70,7 @@ export class DropinComponents implements DropinComponent {
         ApplePay,
         Bancontact,
         BcmcMobile,
+        Blik,
         Card,
         GooglePay,
         EPS,

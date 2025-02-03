@@ -45,20 +45,21 @@ const getSessionId = async (cartId, isDropin = false) => {
     processorUrl: __VITE_PROCESSOR_URL__,
     ...(!isDropin && {
       allowedPaymentMethods: [
-        "card",
-        "klarna_pay_now",
-        "klarna_pay_later",
-        "klarna_pay_overtime",
-        "ideal",
-        "paypal",
         "applepay",
-        "googlepay",
-        "eps",
         "bancontactcard",
         "bancontactmobile",
-        "twint",
+        "blik",
+        "card",
+        "eps",
+        "googlepay",
+        "ideal",
+        "klarna_billie",
+        "klarna_pay_later",
+        "klarna_pay_now",
+        "klarna_pay_overtime",
+        "paypal",
         "sepadirectdebit",
-        "klarna_billie"
+        "twint",
       ], // add here your allowed methods for development purposes
     }),
   };
