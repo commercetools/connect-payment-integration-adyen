@@ -58,6 +58,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "klarna_pay_now",
         "klarna_pay_overtime",
         "paypal",
+        "przelewy24",
         "sepadirectdebit",
         "twint",
       ], // add here your allowed methods for development purposes
