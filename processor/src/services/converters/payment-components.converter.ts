@@ -10,31 +10,7 @@ export class PaymentComponentsConverter {
       ],
       components: [
         {
-          type: 'card', // scheme
-        },
-        {
-          type: 'ideal',
-        },
-        {
-          type: 'paypal',
-        },
-        {
           type: 'applepay',
-        },
-        {
-          type: 'googlepay',
-        },
-        {
-          type: 'klarna_pay_now', // klarna_paynow
-        },
-        {
-          type: 'klarna_pay_later', // klarna
-        },
-        {
-          type: 'klarna_pay_overtime', // klarna_account
-        },
-        {
-          type: 'eps',
         },
         {
           type: 'bancontactcard',
@@ -43,13 +19,40 @@ export class PaymentComponentsConverter {
           type: 'bancontactmobile',
         },
         {
-          type: 'twint',
+          type: 'blik',
+        },
+        {
+          type: 'card', // scheme
+        },
+        {
+          type: 'eps',
+        },
+        {
+          type: 'googlepay',
+        },
+        {
+          type: 'ideal',
+        },
+        {
+          type: 'klarna_billie', // klarna_b2b
+        },
+        {
+          type: 'klarna_pay_later', // klarna
+        },
+        {
+          type: 'klarna_pay_now', // klarna_paynow
+        },
+        {
+          type: 'klarna_pay_overtime', // klarna_account
+        },
+        {
+          type: 'paypal',
         },
         {
           type: 'sepadirectdebit',
         },
         {
-          type: 'klarna_billie', // klarna_b2b
+          type: 'twint',
         },
       ],
     };

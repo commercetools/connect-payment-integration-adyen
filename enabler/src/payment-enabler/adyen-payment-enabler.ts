@@ -33,6 +33,7 @@ import { DropinEmbeddedBuilder } from "../dropin/dropin-embedded";
 import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
 import { BancontactMobileBuilder } from "../components/payment-methods/bancontactcard-mobile";
 import { KlarnaBillieBuilder } from "../components/payment-methods/klarna-billie";
+import { BlikBuilder } from "../components/payment-methods/blik";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -218,20 +219,22 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     }
     const supportedMethods = {
       applepay: ApplePayBuilder,
-      card: CardBuilder,
-      googlepay: GooglepayBuilder,
-      ideal: IdealBuilder,
-      paypal: PaypalBuilder,
-      klarna_pay_now: KlarnaPayNowBuilder,
-      klarna_pay_later: KlarnaPayLaterBuilder,
-      klarna_pay_overtime: KlarnaPayOverTimeBuilder,
-      eps: EPSBuilder,
       bancontactcard: BancontactCardBuilder,
       bancontactmobile: BancontactMobileBuilder,
-      twint: TwintBuilder,
-      sepadirectdebit: SepaBuilder,
+      blik: BlikBuilder,
+      card: CardBuilder,
+      eps: EPSBuilder,
+      googlepay: GooglepayBuilder,
+      ideal: IdealBuilder,
       klarna_billie: KlarnaBillieBuilder,
+      klarna_pay_later: KlarnaPayLaterBuilder,
+      klarna_pay_now: KlarnaPayNowBuilder,
+      klarna_pay_overtime: KlarnaPayOverTimeBuilder,
+      paypal: PaypalBuilder,
+      sepadirectdebit: SepaBuilder,
+      twint: TwintBuilder,
     };
+
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
         `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`

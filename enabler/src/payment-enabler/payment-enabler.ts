@@ -30,20 +30,21 @@ export type EnablerOptions = {
 
 export enum PaymentMethod {
   applepay = "applepay",
-  card = "scheme",
-  dropin = "dropin",
-  googlepay = "googlepay",
-  ideal = "ideal",
-  paypal = "paypal",
-  klarna_pay_now = "klarna_paynow", // Pay now
-  klarna_pay_later = "klarna", // Pay later
-  klarna_pay_overtime = "klarna_account", // Pay over time
-  eps = "eps",
   bancontactcard = "bcmc", // Bancontact card
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
-  twint = "twint",
+  blik = "blik",
+  card = "scheme",
+  dropin = "dropin",
+  eps = "eps",
+  googlepay = "googlepay",
+  ideal = "ideal",
+  klarna_billie = "klarna_b2b", // Billie
+  klarna_pay_later = "klarna", // Pay later
+  klarna_pay_now = "klarna_paynow", // Pay now
+  klarna_pay_overtime = "klarna_account", // Pay over time
+  paypal = "paypal",
   sepadirectdebit = "sepadirectdebit",
-  klarna_billie = "klarna_b2b" // Billie
+  twint = "twint",
 }
 
 export type PaymentResult =
