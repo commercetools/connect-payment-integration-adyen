@@ -55,6 +55,9 @@ export class PaymentComponentsConverter {
           type: 'sepadirectdebit',
         },
         {
+          type: 'swish',
+        },
+        {
           type: 'twint',
         },
       ],

@@ -18,6 +18,7 @@ import {
   EPS,
   Blik,
   OnlineBankingPL,
+  Swish,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -80,6 +81,7 @@ export class DropinComponents implements DropinComponent {
         PayPal,
         Redirect,
         SepaDirectDebit,
+        Swish,
         Twint,
       ],
       paymentMethodsConfiguration: {
