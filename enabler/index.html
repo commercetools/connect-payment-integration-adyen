@@ -184,7 +184,7 @@
                 });
 
                 if (builder.componentHasSubmit) {
-                  const methodsRequireMounting = ['bancontactcard', 'bancontactmobile', 'blik', 'card', 'eps', 'ideal', 'klarna_billie', 'klarna_pay_later', 'klarna_pay_now', 'klarna_pay_overtime', 'przelewy24','sepadirectdebit', 'twint'];
+                  const methodsRequireMounting = ['bancontactcard', 'bancontactmobile', 'blik', 'card', 'eps', 'ideal', 'klarna_billie', 'klarna_pay_later', 'klarna_pay_now', 'klarna_pay_overtime', 'przelewy24','sepadirectdebit', 'swish', 'twint'];
                   const isAvailable = await component.isAvailable();
                   if (isAvailable && methodsRequireMounting.includes(selectedValue)) {
                     component.mount("#container--external");

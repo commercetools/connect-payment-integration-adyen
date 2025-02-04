@@ -34,4 +34,7 @@ export const paymentMethodConfig: PaymentMethodConfig = {
   onlineBanking_PL: {
     supportSeparateCapture: false,
   },
+  swish: {
+    supportSeparateCapture: false,
+  },
 };
