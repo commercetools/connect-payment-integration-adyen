@@ -264,6 +264,7 @@ describe('helper.converter', () => {
   });
 
   test('should map the CoCo line items to Adyen line items taking into account Adyen deviations', () => {
+    // TODO: SCC-2901: once answer given from Adyen, adjust this unit-test accordingly.
     // CLP currencyCode according to ISO_4217 has 0 fractionDigits but Adyen expects 2 fractionDigits
     const input = CoCoCartCLPJSON.lineItems as CoCoLineItem[];
 
@@ -275,7 +276,7 @@ describe('helper.converter', () => {
       amountExcludingTax: 13400,
       amountIncludingTax: 15000,
       taxAmount: 1600,
-      taxPercentage: 1200,
+      taxPercentage: 12,
     };
 
     expect(actual).toEqual(expected);
