@@ -8,6 +8,7 @@ import {
   Order,
   NormalizedShipping,
   CurrencyConverters,
+  TaxRateConverter,
 } from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
@@ -26,9 +27,8 @@ export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem
     amountExcludingTax: getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity),
     amountIncludingTax: getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity),
     taxAmount: getItemAmount(getTaxAmount(lineItem), lineItem.quantity),
-    taxPercentage: convertTaxPercentageToAdyenMinorUnits(
+    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(
       lineItem.totalPrice.fractionDigits,
-      lineItem.totalPrice.currencyCode,
       lineItem.taxRate?.amount,
     ),
   };
@@ -42,9 +42,8 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
     amountExcludingTax: getItemAmount(getAmountExcludingTax(customLineItem), customLineItem.quantity),
     amountIncludingTax: getItemAmount(getAmountIncludingTax(customLineItem), customLineItem.quantity),
     taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
-    taxPercentage: convertTaxPercentageToAdyenMinorUnits(
+    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(
       customLineItem.totalPrice.fractionDigits,
-      customLineItem.totalPrice.currencyCode,
       customLineItem.taxRate?.amount,
     ),
   };
@@ -85,9 +84,8 @@ export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: Normaliz
       amountExcludingTax: amountExcludingTaxValue,
       amountIncludingTax: amountIncludingTaxValue,
       taxAmount: taxAmountValue,
-      taxPercentage: convertTaxPercentageToAdyenMinorUnits(
+      taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(
         shipping.shippingInfo.price.fractionDigits,
-        shipping.shippingInfo.price.currencyCode,
         shipping.shippingInfo.taxRate?.amount,
       ),
     };
@@ -302,42 +300,4 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
     amount: lineItem.taxedPrice.totalTax.centAmount,
     currencyCode: lineItem.taxedPrice.totalTax.currencyCode,
   });
-};
-
-/**
- * Convert the CoCo tax percentage, which ranges from 0-1 as floating point numbers to the expected Adyen minor units.
- *
- * This function applies the given fractionDigit to get the correct minor units. This also takes into account the deviations Adyen has with regards to the fractionDigit.
- *
- * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode EUR and fractionDigit of 2 = expressed in Adyen minor units value as 2100
- * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode CLP, according to ISO standard has fractionDigit of 0 but Adyen deviats from it and so it has fractionDigit of 2 = expressed in Adyen minor units value as 2100
- * @example CoCo taxRate of 0.21, normalized is 21% with currencyCode JPY and fractionDigit of 0 = expressed in Adyen minor units value as 21
- *
- * @param fractionDigit the fractionDigit that are applicable for the currencyCode according to ISO_4217
- * @param currencyCode the applicable currencyCode
- * @param decimalTaxRate the tax rate expressed in decimals between 0-1 as floating point numbers taken from the CoCo taxRate (see docs below)
- *
- * @see https://docs.commercetools.com/api/projects/taxCategories#ctp:api:type:TaxRate
- * @see https://docs.adyen.com/api-explorer/Checkout/latest/post/sessions#request-lineItems-taxPercentage
- * @see https://docs.adyen.com/development-resources/currency-codes/#minor-units
- */
-const convertTaxPercentageToAdyenMinorUnits = (
-  fractionDigit: number,
-  currencyCode: string,
-  decimalTaxRate?: number,
-): number => {
-  if (!decimalTaxRate) {
-    return 0;
-  }
-  // First go from the range of 0 - 1 (floating numbers) to value expressed as "non-decimals". I.e. 0.15% from CoCo becomes 15% tax rate value.
-  const normalizedTaxRate = decimalTaxRate * 100;
-
-  const result = CurrencyConverters.convertWithMapping({
-    mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-    amount: normalizedTaxRate,
-    currencyCode,
-    fractionDigit,
-  });
-
-  return result;
 };
