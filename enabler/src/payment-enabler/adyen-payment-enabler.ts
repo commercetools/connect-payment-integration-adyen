@@ -35,6 +35,7 @@ import { BancontactMobileBuilder } from "../components/payment-methods/bancontac
 import { KlarnaBillieBuilder } from "../components/payment-methods/klarna-billie";
 import { BlikBuilder } from "../components/payment-methods/blik";
 import { Przelewy24PLBuilder } from "../components/payment-methods/przelewy24";
+import { SwishBuilder } from "../components/payment-methods/swish";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -234,6 +235,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       przelewy24: Przelewy24PLBuilder,
       paypal: PaypalBuilder,
       sepadirectdebit: SepaBuilder,
+      swish: SwishBuilder,
       twint: TwintBuilder,
     };
 

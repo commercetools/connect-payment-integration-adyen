@@ -60,6 +60,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "paypal",
         "przelewy24",
         "sepadirectdebit",
+        "swish",
         "twint",
       ], // add here your allowed methods for development purposes
     }),

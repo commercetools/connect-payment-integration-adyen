@@ -45,6 +45,7 @@ export enum PaymentMethod {
   paypal = "paypal",
   przelewy24 = "przelewy24",
   sepadirectdebit = "sepadirectdebit",
+  swish = "swish",
   twint = "twint",
 }
 
