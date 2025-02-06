@@ -1,5 +1,3 @@
-import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
-
 /**
  * Specific configuration for payment methods that require special handling.
  * See https://docs.adyen.com/payment-methods for more information about each payment method.
