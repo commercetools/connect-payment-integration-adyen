@@ -27,10 +27,7 @@ export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem
     amountExcludingTax: getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity),
     amountIncludingTax: getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity),
     taxAmount: getItemAmount(getTaxAmount(lineItem), lineItem.quantity),
-    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(
-      lineItem.totalPrice.fractionDigits,
-      lineItem.taxRate?.amount,
-    ),
+    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(lineItem.taxRate?.amount),
   };
 };
 
@@ -42,10 +39,7 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
     amountExcludingTax: getItemAmount(getAmountExcludingTax(customLineItem), customLineItem.quantity),
     amountIncludingTax: getItemAmount(getAmountIncludingTax(customLineItem), customLineItem.quantity),
     taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
-    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(
-      customLineItem.totalPrice.fractionDigits,
-      customLineItem.taxRate?.amount,
-    ),
+    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(customLineItem.taxRate?.amount),
   };
 };
 
@@ -84,10 +78,7 @@ export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: Normaliz
       amountExcludingTax: amountExcludingTaxValue,
       amountIncludingTax: amountIncludingTaxValue,
       taxAmount: taxAmountValue,
-      taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(
-        shipping.shippingInfo.price.fractionDigits,
-        shipping.shippingInfo.taxRate?.amount,
-      ),
+      taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(shipping.shippingInfo.taxRate?.amount),
     };
   });
 };
@@ -169,23 +160,23 @@ export const mapCoCoCartItemsToAdyenLineItems = (
     | 'discountOnTotalPrice'
   >,
 ): LineItem[] => {
-  const aydenLineItems: LineItem[] = [];
+  const adyenLineItems: LineItem[] = [];
 
-  cart.lineItems.forEach((lineItem) => aydenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
+  cart.lineItems.forEach((lineItem) => adyenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
 
   cart.customLineItems.forEach((customLineItem) =>
-    aydenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
+    adyenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
   );
 
-  aydenLineItems.push(...mapCoCoShippingInfoToAdyenLineItem(paymentSDK.ctCartService.getNormalizedShipping({ cart })));
+  adyenLineItems.push(...mapCoCoShippingInfoToAdyenLineItem(paymentSDK.ctCartService.getNormalizedShipping({ cart })));
 
   if (cart.discountOnTotalPrice) {
-    aydenLineItems.push(
+    adyenLineItems.push(
       mapCoCoDiscountOnTotalPriceToAdyenLineItem({ discountOnTotalPrice: cart.discountOnTotalPrice }),
     );
   }
 
-  return aydenLineItems;
+  return adyenLineItems;
 };
 
 export const populateCartAddress = (address?: CartAddress): Address => {
