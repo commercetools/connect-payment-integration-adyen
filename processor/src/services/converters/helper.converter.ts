@@ -18,6 +18,7 @@ import {
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
+import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   return {
@@ -244,15 +245,27 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
   }
 };
 
-const getItemAmount = (totalAmount: number, quantity: number): number => {
-  return parseFloat((totalAmount / quantity).toFixed(0));
-};
-
 export const buildReturnUrl = (paymentReference: string): string => {
   const url = new URL('/payments/details', getProcessorUrlFromContext());
   url.searchParams.append('paymentReference', paymentReference);
   url.searchParams.append('ctsid', getCtSessionIdFromContext());
   return url.toString();
+};
+
+export const populateApplicationInfo = (): ApplicationInfo => {
+  return {
+    externalPlatform: {
+      name: 'commercetools-connect',
+      integrator: 'commercetools',
+    },
+    merchantApplication: {
+      name: 'adyen-commercetools',
+    },
+  };
+};
+
+const getItemAmount = (totalAmount: number, quantity: number): number => {
+  return parseFloat((totalAmount / quantity).toFixed(0));
 };
 
 const getAmountIncludingTax = (lineItem: CoCoLineItem | CustomLineItem): number => {
