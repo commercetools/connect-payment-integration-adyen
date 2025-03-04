@@ -644,6 +644,59 @@ describe('notification.converter', () => {
     });
   });
 
+  test('convert an offer closed notification', () => {
+    // Arrange
+    const merchantReference = 'some-merchant-reference';
+    const pspReference = 'some-psp-reference';
+    const paymentMethod = 'visa';
+    const notification: NotificationRequestDTO = {
+      live: 'false',
+      notificationItems: [
+        {
+          NotificationRequestItem: {
+            additionalData: {
+              expiryDate: '12/2012',
+              authCode: '1234',
+              cardSummary: '7777',
+            },
+            amount: {
+              currency: 'EUR',
+              value: 10000,
+            },
+            eventCode: NotificationRequestItem.EventCodeEnum.OfferClosed,
+            eventDate: '2024-06-17T11:37:05+02:00',
+            merchantAccountCode: 'MyMerchantAccount',
+            merchantReference,
+            paymentMethod,
+            pspReference,
+            success: NotificationRequestItem.SuccessEnum.True,
+          },
+        },
+      ],
+    };
+
+    // Act
+    const result = converter.convert({ data: notification });
+
+    // Assert
+    expect(result).toEqual({
+      merchantReference,
+      pspReference,
+      paymentMethod,
+      transactions: [
+        {
+          type: 'Authorization',
+          state: 'Failure',
+          amount: {
+            currencyCode: 'EUR',
+            centAmount: 10000,
+          },
+          interactionId: pspReference,
+        },
+      ],
+    });
+  });
+
   test('convert a non supported event notification', () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
