@@ -40,6 +40,7 @@ export class NotificationConverter {
             : []),
         ];
       case NotificationRequestItem.EventCodeEnum.Expire:
+      case NotificationRequestItem.EventCodeEnum.OfferClosed:
         return [
           {
             type: 'Authorization',
