@@ -55,7 +55,7 @@ export class GooglePayComponent extends DefaultAdyenComponent {
           return this.componentOptions
             .onPayButtonClick()
             .then(() => resolve())
-            .catch((error) => reject(error));
+            .catch(() => reject());
         }
         return resolve();
       },
