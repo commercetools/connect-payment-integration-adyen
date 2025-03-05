@@ -110,7 +110,7 @@ export class DropinComponents implements DropinComponent {
               return this.dropinOptions
                 .onPayButtonClick()
                 .then(() => resolve())
-                .catch((error) => reject(error));
+                .catch(() => reject());
             }
             return resolve();
           },
