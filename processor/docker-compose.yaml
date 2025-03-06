@@ -1,14 +1,14 @@
-version: "3.8"
+version: '3.8'
 
 services:
   jwt-server:
     image: node:alpine
     restart: always
-    command: 
+    command:
       - npx
       - --package
       - jwt-mock-server
       - -y
       - start
     ports:
-      - 9000:9000
+      - 9002:9000
