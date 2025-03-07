@@ -19,12 +19,24 @@ import {
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 
-type AdyenComponent = Card | PayPal | ApplePay | GooglePay | Klarna | EPS | Twint | Redirect | SepaDirectDebit | Blik;
+type AdyenComponent =
+  | Card
+  | PayPal
+  | ApplePay
+  | GooglePay
+  | Klarna
+  | EPS
+  | Twint
+  | Redirect
+  | SepaDirectDebit
+  | Blik;
 
 /**
  * Base Web Component
  */
-export abstract class AdyenBaseComponentBuilder implements PaymentComponentBuilder {
+export abstract class AdyenBaseComponentBuilder
+  implements PaymentComponentBuilder
+{
   public componentHasSubmit = true;
 
   protected paymentMethod: PaymentMethod;
@@ -96,7 +108,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
 
   private isPaymentMethodAllowed(): boolean {
     return this.adyenCheckout.paymentMethodsResponse.paymentMethods.some(
-      (paymentMethod) => paymentMethod.type === this.paymentMethod
+      (paymentMethod) => paymentMethod.type === this.paymentMethod,
     );
   }
 }

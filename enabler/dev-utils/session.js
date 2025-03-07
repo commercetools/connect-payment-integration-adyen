@@ -5,7 +5,7 @@ const fetchAdminToken = async () => {
 
   myHeaders.append(
     "Authorization",
-    `Basic ${btoa(`${__VITE_CTP_CLIENT_ID__}:${__VITE_CTP_CLIENT_SECRET__}`)}`
+    `Basic ${btoa(`${__VITE_CTP_CLIENT_ID__}:${__VITE_CTP_CLIENT_SECRET__}`)}`,
   );
   myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
 
@@ -63,6 +63,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "swish",
         "twint",
         "vipps",
+        "mobilepay",
       ], // add here your allowed methods for development purposes
     }),
   };
