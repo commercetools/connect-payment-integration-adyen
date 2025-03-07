@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -58,7 +58,12 @@
               <div class="form-group col-md-6">
                 <div>
                   <label for="cartId">Cart ID:</label>
-                  <input type="text" class="form-control" id="cartId" value="" />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="cartId"
+                    value=""
+                  />
                 </div>
               </div>
               <div class="form-group col-md-6">
@@ -89,7 +94,7 @@
             document.addEventListener("DOMContentLoaded", async () => {
               const paymentMethodSelect =
                 document.getElementById("paymentMethod");
-              const response = await fetch("http://localhost:9000/jwt/token", {
+              const response = await fetch("http://localhost:9002/jwt/token", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -110,7 +115,7 @@
                   headers: {
                     Authorization: `Bearer ${accessToken.token}`,
                   },
-                }
+                },
               );
               const paymentMethods = await res.json();
               paymentMethods.components.forEach((method) => {
@@ -132,14 +137,14 @@
               .addEventListener("click", async (event) => {
                 event.preventDefault();
                 const cartId = document.getElementById("cartId").value;
-                
+
                 const paymentMethodSelect =
-                document.getElementById("paymentMethod");
+                  document.getElementById("paymentMethod");
                 const selectedValue = paymentMethodSelect.value;
-                const selectedText = paymentMethodSelect.options[
-                  paymentMethodSelect.selectedIndex
-                ].text;
-                const isDropin = selectedText.startsWith('dropin');
+                const selectedText =
+                  paymentMethodSelect.options[paymentMethodSelect.selectedIndex]
+                    .text;
+                const isDropin = selectedText.startsWith("dropin");
                 const sessionId = await getSessionId(cartId, isDropin);
 
                 const enabler = new Enabler({
@@ -156,7 +161,7 @@
 
                 let builder;
 
-                if(isDropin){
+                if (isDropin) {
                   builder = await enabler.createDropinBuilder(selectedValue);
                 } else {
                   builder = await enabler.createComponentBuilder(selectedValue);
@@ -174,7 +179,7 @@
                           if (!termsChecked) {
                             event.preventDefault();
                             alert(
-                              "You must agree to the terms and conditions."
+                              "You must agree to the terms and conditions.",
                             );
                             return Promise.reject("error-occurred");
                           }
@@ -184,12 +189,30 @@
                 });
 
                 if (builder.componentHasSubmit) {
-                  const methodsRequireMounting = ['bancontactcard', 'bancontactmobile', 'blik', 'card', 'eps', 'ideal', 'klarna_billie', 'klarna_pay_later', 'klarna_pay_now', 'klarna_pay_overtime', 'przelewy24','sepadirectdebit', 'swish', 'twint'];
+                  const methodsRequireMounting = [
+                    "bancontactcard",
+                    "bancontactmobile",
+                    "blik",
+                    "card",
+                    "eps",
+                    "ideal",
+                    "klarna_billie",
+                    "klarna_pay_later",
+                    "klarna_pay_now",
+                    "klarna_pay_overtime",
+                    "przelewy24",
+                    "sepadirectdebit",
+                    "swish",
+                    "twint",
+                  ];
                   const isAvailable = await component.isAvailable();
-                  if (isAvailable && methodsRequireMounting.includes(selectedValue)) {
+                  if (
+                    isAvailable &&
+                    methodsRequireMounting.includes(selectedValue)
+                  ) {
                     component.mount("#container--external");
                     const customButton = document.createElement("button");
-                    customButton.textContent = "Pay with "+ selectedValue;
+                    customButton.textContent = "Pay with " + selectedValue;
                     customButton.className = "btn btn-lg btn-primary btn-block";
                     customButton.addEventListener("click", () => {
                       const termsChecked =
@@ -204,10 +227,10 @@
                     document
                       .getElementById("container--internal")
                       .appendChild(customButton);
-                  }else{
-                    console.error('Component not available', selectedValue);
-                  }                 
-                } else{
+                  } else {
+                    console.error("Component not available", selectedValue);
+                  }
+                } else {
                   component.mount("#container--external");
                 }
               });
