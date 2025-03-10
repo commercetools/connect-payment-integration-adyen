@@ -1,32 +1,32 @@
 import { ComponentOptions, PaymentComponent, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
-import { ICore, OnlineBankingPL } from "@adyen/adyen-web";
+import { ICore, Vipps } from "@adyen/adyen-web";
 /**
- * Przelewy24 component
+ * Vipps component
  *
  * Configuration options:
- * https://docs.adyen.com/payment-methods/online-banking-poland/web-component/
+ * https://docs.adyen.com/payment-methods/vipps/web-component/
  */
-export class Przelewy24Builder extends AdyenBaseComponentBuilder {
+export class VippsBuilder extends AdyenBaseComponentBuilder {
   constructor(baseOptions: BaseOptions) {
-    super(PaymentMethod.przelewy24, baseOptions);
+    super(PaymentMethod.vipps, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    const przelewy24 = new Przelewy24Component({
+    const vipps = new VippsComponent({
       paymentMethod: this.paymentMethod,
       adyenCheckout: this.adyenCheckout,
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
     });
-    przelewy24.init();
-    return przelewy24;
+    vipps.init();
+    return vipps;
   }
 }
 
-export class Przelewy24Component extends DefaultAdyenComponent {
+export class VippsComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
     adyenCheckout: ICore;
@@ -38,7 +38,7 @@ export class Przelewy24Component extends DefaultAdyenComponent {
   }
 
   init(): void {
-    this.component = new OnlineBankingPL(this.adyenCheckout, {
+    this.component = new Vipps(this.adyenCheckout, {
       showPayButton: this.componentOptions.showPayButton,
     });
   }

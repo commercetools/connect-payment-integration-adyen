@@ -19,6 +19,7 @@ import {
   Blik,
   OnlineBankingPL,
   Swish,
+  Vipps,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -83,6 +84,7 @@ export class DropinComponents implements DropinComponent {
         SepaDirectDebit,
         Swish,
         Twint,
+        Vipps,
       ],
       paymentMethodsConfiguration: {
         applepay: {

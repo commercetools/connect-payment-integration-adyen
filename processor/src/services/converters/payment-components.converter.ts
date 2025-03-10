@@ -60,6 +60,9 @@ export class PaymentComponentsConverter {
         {
           type: 'twint',
         },
+        {
+          type: 'vipps',
+        },
       ],
     };
   }

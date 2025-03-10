@@ -19,6 +19,7 @@ import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
 import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
+import { config } from '../../config/config';
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   return {
@@ -262,6 +263,26 @@ export const populateApplicationInfo = (): ApplicationInfo => {
       name: 'adyen-commercetools',
     },
   };
+};
+
+/**
+ * Get the shopper statement and applies rules defined in the Adyen documentation.
+ * https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement
+ *
+ * @returns The shopper statement
+ */
+export const getShopperStatement = (): string | undefined => {
+  // Allowed characters: a-z, A-Z, 0-9, spaces, and special characters . , ' _ - ? + * /.
+  const allowedCharacters = /[^a-zA-Z0-9 .,'_\-?+*/]/g;
+
+  const shopperStatement = config.adyenShopperStatement?.trim();
+  if (!shopperStatement) {
+    return undefined;
+  }
+
+  const filteredShopperStatement = shopperStatement.replace(allowedCharacters, '');
+
+  return filteredShopperStatement || undefined;
 };
 
 const getItemAmount = (totalAmount: number, quantity: number): number => {
