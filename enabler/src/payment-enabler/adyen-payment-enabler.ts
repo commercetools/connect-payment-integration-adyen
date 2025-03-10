@@ -34,8 +34,9 @@ import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
 import { BancontactMobileBuilder } from "../components/payment-methods/bancontactcard-mobile";
 import { KlarnaBillieBuilder } from "../components/payment-methods/klarna-billie";
 import { BlikBuilder } from "../components/payment-methods/blik";
-import { Przelewy24PLBuilder } from "../components/payment-methods/przelewy24";
+import { Przelewy24Builder } from "../components/payment-methods/przelewy24";
 import { SwishBuilder } from "../components/payment-methods/swish";
+import { VippsBuilder } from "../components/payment-methods/vipps";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -232,11 +233,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       klarna_pay_later: KlarnaPayLaterBuilder,
       klarna_pay_now: KlarnaPayNowBuilder,
       klarna_pay_overtime: KlarnaPayOverTimeBuilder,
-      przelewy24: Przelewy24PLBuilder,
+      przelewy24: Przelewy24Builder,
       paypal: PaypalBuilder,
       sepadirectdebit: SepaBuilder,
       swish: SwishBuilder,
       twint: TwintBuilder,
+      vipps: VippsBuilder,
     };
 
     if (!Object.keys(supportedMethods).includes(type)) {

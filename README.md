@@ -148,6 +148,9 @@ deployAs:
         - key: ADYEN_APPLEPAY_OWN_DISPLAY_NAME
           description: Apple display name. Needed when using own certificate
           required: false
+        - key: ADYEN_SHOPPER_STATEMENT
+          description: The text to be shown on the shopper's bank statement. We recommend sending a maximum of 22 characters, otherwise banks might truncate the string
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret
@@ -182,8 +185,9 @@ Here you can see the details about various variables in configuration
 - `ADYEN_NOTIFICATION_HMAC_KEY`: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
 - `ADYEN_APPLEPAY_OWN_CERTIFICATE`: The merchant identity certificate. This is only needed if using an own certificate instead of the Adyen's Apple Pay certificate. Follow [Adyen's guide](https://docs.adyen.com/payment-methods/apple-pay/enable-apple-pay/?tab=setup-own_2) to create the certificate. **The value should be in base64 format**.
 - `ADYEN_APPLEPAY_OWN_MERCHANT_ID`: The merchant identifier created in the Apple portal. Only needed if using an own certificate
-- `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`:The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
+- `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`: The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
+- `ADYEN_SHOPPER_STATEMENT`: The text to be shown on the shopper's bank statement. For more information, see [Adyen's reference](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement).
 
 ## Development
 In order to get started developing this connector certain configuration are necessary, most of which involve updating environment variables in both services (enabler, processor).

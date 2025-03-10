@@ -2,7 +2,13 @@ import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paym
 import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
-import { buildReturnUrl, mapCoCoCartItemsToAdyenLineItems, populateApplicationInfo, populateCartAddress } from './helper.converter';
+import {
+  buildReturnUrl,
+  getShopperStatement,
+  mapCoCoCartItemsToAdyenLineItems,
+  populateApplicationInfo,
+  populateCartAddress,
+} from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
@@ -14,6 +20,7 @@ export class CreatePaymentConverter {
     const { paymentReference: _, ...requestData } = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const shopperStatement = getShopperStatement();
     return {
       ...requestData,
       amount: {
@@ -38,6 +45,7 @@ export class CreatePaymentConverter {
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
+      ...(shopperStatement && { shopperStatement }),
     };
   }
 

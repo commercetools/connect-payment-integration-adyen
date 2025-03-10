@@ -6,6 +6,7 @@ import {
   populateCartAddress,
   mapCoCoCartItemsToAdyenLineItems,
   populateApplicationInfo,
+  getShopperStatement,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
@@ -23,6 +24,7 @@ export class CreateSessionConverter {
     const allowedPaymentMethods = convertAllowedPaymentMethodsToAdyenFormat();
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const shopperStatement = getShopperStatement();
     return {
       ...opts.data,
       amount: {
@@ -49,6 +51,7 @@ export class CreateSessionConverter {
       shopperEmail: opts.cart.customerEmail,
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       applicationInfo: populateApplicationInfo(),
+      ...(shopperStatement && { shopperStatement }),
     };
   }
 

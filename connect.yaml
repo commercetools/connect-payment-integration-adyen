@@ -56,6 +56,9 @@ deployAs:
         - key: ADYEN_APPLEPAY_OWN_DISPLAY_NAME
           description: Apple display name. Needed when using own certificate
           required: false
+        - key: ADYEN_SHOPPER_STATEMENT
+          description: The text to be shown on the shopper's bank statement. We recommend sending a maximum of 22 characters, otherwise banks might truncate the string
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret

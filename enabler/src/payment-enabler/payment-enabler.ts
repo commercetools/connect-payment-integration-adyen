@@ -47,6 +47,7 @@ export enum PaymentMethod {
   sepadirectdebit = "sepadirectdebit",
   swish = "swish",
   twint = "twint",
+  vipps = "vipps",
 }
 
 export type PaymentResult =
