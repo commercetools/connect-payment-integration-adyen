@@ -5,7 +5,7 @@ import {
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
-import { Swish, ICore } from "@adyen/adyen-web";
+import { Redirect, ICore } from "@adyen/adyen-web";
 /**
  * MobilePay component
  *
@@ -42,7 +42,8 @@ export class MobilePayComponent extends DefaultAdyenComponent {
   }
 
   init(): void {
-    this.component = new Swish(this.adyenCheckout, {
+    this.component = new Redirect(this.adyenCheckout, {
+      type: this.paymentMethod,
       showPayButton: this.componentOptions.showPayButton,
     });
   }
