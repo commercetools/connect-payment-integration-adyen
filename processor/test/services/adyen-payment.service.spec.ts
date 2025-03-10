@@ -98,7 +98,7 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(18);
+    expect(result?.components).toHaveLength(19);
     expect(result?.components[0]?.type).toStrictEqual('applepay');
     expect(result?.components[1]?.type).toStrictEqual('bancontactcard');
     expect(result?.components[2]?.type).toStrictEqual('bancontactmobile');
