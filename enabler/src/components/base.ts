@@ -10,6 +10,9 @@ import {
   Twint,
   SepaDirectDebit,
   Blik,
+  Swish,
+  Vipps,
+  OnlineBankingPL,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -29,7 +32,10 @@ type AdyenComponent =
   | Twint
   | Redirect
   | SepaDirectDebit
-  | Blik;
+  | Blik
+  | Vipps
+  | OnlineBankingPL
+  | Swish;
 
 /**
  * Base Web Component
