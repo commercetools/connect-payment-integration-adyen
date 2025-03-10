@@ -37,6 +37,7 @@ import { BlikBuilder } from "../components/payment-methods/blik";
 import { Przelewy24Builder } from "../components/payment-methods/przelewy24";
 import { SwishBuilder } from "../components/payment-methods/swish";
 import { VippsBuilder } from "../components/payment-methods/vipps";
+import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -68,7 +69,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     this.setupData = AdyenPaymentEnabler._Setup(options);
   }
 
-  private static _Setup = async (options: AdyenEnablerOptions): Promise<{ baseOptions: BaseOptions }> => {
+  private static _Setup = async (
+    options: AdyenEnablerOptions,
+  ): Promise<{ baseOptions: BaseOptions }> => {
     const [sessionResponse, configResponse] = await Promise.all([
       fetch(options.processorUrl + "/sessions", {
         method: "POST",
@@ -87,15 +90,24 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       }),
     ]);
 
-    const [sessionJson, configJson] = await Promise.all([sessionResponse.json(), configResponse.json()]);
+    const [sessionJson, configJson] = await Promise.all([
+      sessionResponse.json(),
+      configResponse.json(),
+    ]);
 
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
-      throw new AdyenInitError("Not able to initialize Adyen, session data missing", options.sessionId);
+      throw new AdyenInitError(
+        "Not able to initialize Adyen, session data missing",
+        options.sessionId,
+      );
     } else {
       const adyenCheckout = await AdyenCheckout({
-        onPaymentCompleted: (result: PaymentCompletedData, _component: UIElement) => {
+        onPaymentCompleted: (
+          result: PaymentCompletedData,
+          _component: UIElement,
+        ) => {
           console.info("payment completed", result.resultCode);
         },
         onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
@@ -110,7 +122,11 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           }
           options.onError && options.onError(error);
         },
-        onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
+        onSubmit: async (
+          state: SubmitData,
+          component: UIElement,
+          actions: SubmitActions,
+        ) => {
           try {
             const reqData = {
               ...state.data,
@@ -127,14 +143,21 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             });
             const data = await response.json();
             if (data.action) {
-              if (["threeDS2", "qrCode"].includes(data.action.type) && options.onActionRequired) {
+              if (
+                ["threeDS2", "qrCode"].includes(data.action.type) &&
+                options.onActionRequired
+              ) {
                 options.onActionRequired({ type: "fullscreen" });
               }
               component.handleAction(data.action);
             } else {
-              if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
+              if (
+                data.resultCode === "Authorised" ||
+                data.resultCode === "Pending"
+              ) {
                 component.setStatus("success");
-                options.onComplete && options.onComplete({ isSuccess: true, paymentReference });
+                options.onComplete &&
+                  options.onComplete({ isSuccess: true, paymentReference });
               } else {
                 options.onComplete && options.onComplete({ isSuccess: false });
                 component.setStatus("error");
@@ -154,7 +177,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         onAdditionalDetails: async (
           state: AdditionalDetailsData,
           component: UIElement,
-          actions: AdditionalDetailsActions
+          actions: AdditionalDetailsActions,
         ) => {
           try {
             const requestData = {
@@ -174,9 +197,13 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               body: JSON.stringify(requestData),
             });
             const data = await response.json();
-            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
+            if (
+              data.resultCode === "Authorised" ||
+              data.resultCode === "Pending"
+            ) {
               component.setStatus("success");
-              options.onComplete && options.onComplete({ isSuccess: true, paymentReference });
+              options.onComplete &&
+                options.onComplete({ isSuccess: true, paymentReference });
             } else {
               options.onComplete && options.onComplete({ isSuccess: false });
               component.setStatus("error");
@@ -215,7 +242,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     }
   };
 
-  async createComponentBuilder(type: string): Promise<PaymentComponentBuilder | never> {
+  async createComponentBuilder(
+    type: string,
+  ): Promise<PaymentComponentBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");
@@ -239,17 +268,20 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       swish: SwishBuilder,
       twint: TwintBuilder,
       vipps: VippsBuilder,
+      mobilepay: MobilePayBuilder,
     };
 
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
-        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
+        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
       );
     }
     return new supportedMethods[type](setupData.baseOptions);
   }
 
-  async createDropinBuilder(type: DropinType): Promise<PaymentDropinBuilder | never> {
+  async createDropinBuilder(
+    type: DropinType,
+  ): Promise<PaymentDropinBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");
@@ -260,7 +292,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
-        `Dropin type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
+        `Dropin type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
       );
     }
 

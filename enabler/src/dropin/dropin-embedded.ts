@@ -1,4 +1,8 @@
-import { DropinComponent, DropinOptions, PaymentDropinBuilder } from "../payment-enabler/payment-enabler";
+import {
+  DropinComponent,
+  DropinOptions,
+  PaymentDropinBuilder,
+} from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import {
   ICore,
@@ -144,15 +148,22 @@ export class DropinComponents implements DropinComponent {
   }
 
   submit(): void {
-    throw new Error("Method not available. Submit is managed by the Dropin component.");
+    throw new Error(
+      "Method not available. Submit is managed by the Dropin component.",
+    );
   }
 
   private overrideOnSubmit() {
     const parentOnSubmit = this.adyenCheckout.options.onSubmit;
 
-    this.adyenCheckout.options.onSubmit = async (state: SubmitData, component: Dropin, actions: SubmitActions) => {
+    this.adyenCheckout.options.onSubmit = async (
+      state: SubmitData,
+      component: Dropin,
+      actions: SubmitActions,
+    ) => {
       const paymentMethod = state.data.paymentMethod.type;
-      const hasOnClick = component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
+      const hasOnClick =
+        component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
       if (!hasOnClick && this.dropinOptions.onPayButtonClick) {
         try {
           await this.dropinOptions.onPayButtonClick();

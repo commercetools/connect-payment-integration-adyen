@@ -8,7 +8,7 @@ export interface PaymentComponent {
       endDigits?: string;
       brand?: string;
       expiryDate?: string;
-    }
+    };
   };
   isAvailable?(): Promise<boolean>;
 }
@@ -17,7 +17,6 @@ export interface PaymentComponentBuilder {
   componentHasSubmit: boolean;
   build(config: ComponentOptions): PaymentComponent;
 }
-
 
 export type EnablerOptions = {
   processorUrl: string;
@@ -48,6 +47,7 @@ export enum PaymentMethod {
   swish = "swish",
   twint = "twint",
   vipps = "vipps",
+  mobilepay = "mobilepay",
 }
 
 export type PaymentResult =
@@ -93,7 +93,7 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createComponentBuilder: (
-    type: string
+    type: string,
   ) => Promise<PaymentComponentBuilder | never>;
 
   /**
@@ -102,6 +102,6 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createDropinBuilder: (
-    type: DropinType
+    type: DropinType,
   ) => Promise<PaymentDropinBuilder | never>;
 }
