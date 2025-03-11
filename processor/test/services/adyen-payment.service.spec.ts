@@ -98,7 +98,7 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(18);
+    expect(result?.components).toHaveLength(19);
     expect(result?.components[0]?.type).toStrictEqual('applepay');
     expect(result?.components[1]?.type).toStrictEqual('bancontactcard');
     expect(result?.components[2]?.type).toStrictEqual('bancontactmobile');
@@ -111,12 +111,13 @@ describe('adyen-payment.service', () => {
     expect(result?.components[9]?.type).toStrictEqual('klarna_pay_later');
     expect(result?.components[10]?.type).toStrictEqual('klarna_pay_now');
     expect(result?.components[11]?.type).toStrictEqual('klarna_pay_overtime');
-    expect(result?.components[12]?.type).toStrictEqual('paypal');
-    expect(result?.components[13]?.type).toStrictEqual('przelewy24');
-    expect(result?.components[14]?.type).toStrictEqual('sepadirectdebit');
-    expect(result?.components[15]?.type).toStrictEqual('swish');
-    expect(result?.components[16]?.type).toStrictEqual('twint');
-    expect(result?.components[17]?.type).toStrictEqual('vipps');
+    expect(result?.components[12]?.type).toStrictEqual('mobilepay');
+    expect(result?.components[13]?.type).toStrictEqual('paypal');
+    expect(result?.components[14]?.type).toStrictEqual('przelewy24');
+    expect(result?.components[15]?.type).toStrictEqual('sepadirectdebit');
+    expect(result?.components[16]?.type).toStrictEqual('swish');
+    expect(result?.components[17]?.type).toStrictEqual('twint');
+    expect(result?.components[18]?.type).toStrictEqual('vipps');
   });
 
   test('getStatus', async () => {
