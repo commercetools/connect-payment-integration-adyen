@@ -159,19 +159,19 @@ Use the token to authenticate requests protected by JWT: `Authorization: Bearer 
 
 ## Webhooks
 
-Checkout requires a webhook to be configured in Adyen. The webhook needs to have the following types of events enabled:
+Checkout requires a webhook to be configured in Adyen. The following list of `eventCode` are required:
 
-- `Authorisation`
-- `Expire`
-- `OfferClosed`
-- `Capture`
-- `CaptureFailed`
-- `Cancellation`
-- `Refund`
-- `RefundFailed`
-- `Chargeback`
+- `AUTHORISATION`
+- `EXPIRE`
+- `OFFER_CLOSED`
+- `CAPTURE`
+- `CAPTURE_FAILED`
+- `CANCELLATION`
+- `REFUND`
+- `REFUND_FAILED`
+- `CHARGEBACK`
 
-Any other type of event will be silently ignored.
+Any other type of event will be silently ignored. For more information see the [Adyen webhook-types](https://docs.adyen.com/development-resources/webhooks/webhook-types/) documentation.
 
 ## APIs
 
