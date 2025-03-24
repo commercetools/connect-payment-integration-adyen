@@ -25,7 +25,7 @@ export type EnablerOptions = {
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
-  onError?: (error: any, payload?: { paymentReference?: string }) => void;
+  onError?: (error: any, context?: { paymentReference?: string }) => void;
 };
 
 export enum PaymentMethod {
