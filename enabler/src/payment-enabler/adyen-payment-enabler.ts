@@ -104,7 +104,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           } else {
             console.error(error.name, error.message, error.stack, component);
           }
-          options.onError && options.onError(error);
+          options.onError && options.onError(error, { paymentReference });
         },
         onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
           try {
@@ -132,7 +132,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                 component.setStatus("success");
                 options.onComplete && options.onComplete({ isSuccess: true, paymentReference });
               } else {
-                options.onComplete && options.onComplete({ isSuccess: false });
+                options.onComplete && options.onComplete({ isSuccess: false, paymentReference });
                 component.setStatus("error");
               }
             }
@@ -174,7 +174,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               component.setStatus("success");
               options.onComplete && options.onComplete({ isSuccess: true, paymentReference });
             } else {
-              options.onComplete && options.onComplete({ isSuccess: false });
+              options.onComplete && options.onComplete({ isSuccess: false, paymentReference });
               component.setStatus("error");
             }
             actions.resolve({ resultCode: data.resultCode });
