@@ -24,7 +24,7 @@ export type EnablerOptions = {
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
-  onError?: (error: any) => void;
+  onError?: (error: any, context?: { paymentReference?: string }) => void;
 };
 
 export enum PaymentMethod {
@@ -55,7 +55,7 @@ export type PaymentResult =
       isSuccess: true;
       paymentReference: string;
     }
-  | { isSuccess: false };
+  | { isSuccess: false; paymentReference?: string };
 
 export type ComponentOptions = {
   showPayButton?: boolean;
