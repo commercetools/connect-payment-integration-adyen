@@ -173,6 +173,16 @@ Checkout requires a webhook to be configured in Adyen. The following list of `ev
 
 Any other type of event will be silently ignored. For more information see the [Adyen webhook-types](https://docs.adyen.com/development-resources/webhooks/webhook-types/) documentation.
 
+### Configuring the notifications in Adyen
+
+To configure notifications in Adyen, follow this [guide](https://docs.adyen.com/development-resources/webhooks/#set-up-webhooks-in-your-customer-area).
+
+In the webhook server's url, the following value must be set:
+`{processorUrl}/notifications` 
+
+`processorUrl` is the url of the connector once it has been installed. It can be retrieved from the Merchant Center, inside the installation details of the processor.
+The url looks like `https://service-[id].[region].commercetools.app`.
+
 ## APIs
 
 The processor exposes following endpoints to execute various operations with Adyen platform:
@@ -261,6 +271,23 @@ The request body is same as [adyen checkout create payment details request](The 
 It returns following attributes in response
 
 - paymentReference: Unique identifier of payment resources updated in commercetools composable commerce.
+
+### Notifications
+
+Receives Adyen's notifications so that the commercetools payment can be updated to reflect the latest payment status.
+
+#### Endpoint
+
+`POST /notifications`
+
+#### Request Parameters
+
+The request body an [Adyen Webhook](https://docs.adyen.com/development-resources/webhooks/webhook-types/#webhook-structure).
+The requests are authenticated by validating the HMAC signature using the `ADYEN_NOTIFICATION_HMAC_KEY` environment variable.
+
+#### Response Parameters
+
+It returns a 200 `[accepted]` response to Adyen to indicate that the notification has been processed.
 
 ### Get supported payment components
 
