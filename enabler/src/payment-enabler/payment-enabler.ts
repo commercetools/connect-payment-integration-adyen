@@ -24,7 +24,7 @@ export type EnablerOptions = {
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
-  onError?: (error: any, context?: { paymentReference?: string }) => void;
+  onError?: (error: any, context?: { paymentReference?: string; method?: { type?: string } }) => void;
 };
 
 export enum PaymentMethod {
@@ -50,12 +50,26 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
 }
 
+export const getPaymentMethodType = (key: string): PaymentMethod | undefined => {
+  for (const enumKey in PaymentMethod) {
+    if (PaymentMethod[enumKey] === key) {
+      return enumKey as PaymentMethod;
+    }
+  }
+  return undefined;
+};
+
 export type PaymentResult =
   | {
       isSuccess: true;
       paymentReference: string;
+      method?: { type?: string };
     }
-  | { isSuccess: false; paymentReference?: string };
+  | { 
+      isSuccess: false; 
+      paymentReference?: string; 
+      method?: { type?: string }; 
+    };
 
 export type ComponentOptions = {
   showPayButton?: boolean;

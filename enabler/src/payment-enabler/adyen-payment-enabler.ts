@@ -14,6 +14,7 @@ import "@adyen-css";
 import {
   DropinType,
   EnablerOptions,
+  getPaymentMethodType,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
@@ -90,6 +91,24 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       }),
     ]);
 
+    const handleError = (error: any, component: UIElement) => {
+      if (options.onError) {
+        options.onError(error, { 
+          paymentReference, 
+          method: { type: getPaymentMethodType(component?.props?.type )} 
+        });
+      }
+    };
+    const handleComplete = (isSuccess: boolean, component: UIElement) => {
+      if (options.onComplete) {
+        options.onComplete({ 
+          isSuccess, 
+          paymentReference,
+          method: { type: getPaymentMethodType(component?.props?.type )} 
+        });
+      }
+    }
+
     const [sessionJson, configJson] = await Promise.all([
       sessionResponse.json(),
       configResponse.json(),
@@ -111,6 +130,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           console.info("payment completed", result.resultCode);
         },
         onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
+          handleComplete(false, _component);
           console.info("payment failed", result.resultCode);
         },
         onError: (error: AdyenCheckoutError, component: UIElement) => {
@@ -120,7 +140,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           } else {
             console.error(error.name, error.message, error.stack, component);
           }
-          options.onError && options.onError(error, { paymentReference });
+          handleError(error, component);
         },
         onSubmit: async (
           state: SubmitData,
@@ -156,10 +176,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
                 data.resultCode === "Pending"
               ) {
                 component.setStatus("success");
-                options.onComplete &&
-                  options.onComplete({ isSuccess: true, paymentReference });
+                handleComplete(true, component);
               } else {
-                options.onComplete && options.onComplete({ isSuccess: false, paymentReference });
+                handleComplete(false, component);
                 component.setStatus("error");
               }
             }
@@ -169,7 +188,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               action: data.action,
             });
           } catch (e) {
-            console.log("Payment aborted by client");
+            handleError(e, component);
             component.setStatus("ready");
             actions.reject(e);
           }
@@ -202,15 +221,15 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               data.resultCode === "Pending"
             ) {
               component.setStatus("success");
-              options.onComplete &&
-                options.onComplete({ isSuccess: true, paymentReference });
+              handleComplete(true, component);
             } else {
-              options.onComplete && options.onComplete({ isSuccess: false, paymentReference });
+              handleComplete(false, component);
               component.setStatus("error");
             }
             actions.resolve({ resultCode: data.resultCode });
           } catch (e) {
             console.error("Not able to submit the payment details", e);
+            handleError(e, component);
             component.setStatus("ready");
             actions.reject();
           }
