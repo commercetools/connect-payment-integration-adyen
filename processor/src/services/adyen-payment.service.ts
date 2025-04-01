@@ -42,11 +42,12 @@ import {
   ConfigResponse,
   PaymentProviderModificationResponse,
   RefundPaymentRequest,
+  ReversePaymentRequest,
   StatusResponse,
 } from './types/operation.type';
 import { getConfig, config } from '../config/config';
 import { appLogger, paymentSDK } from '../payment-sdk';
-import { PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
+import { AmountSchemaDTO, PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
 import { AbstractPaymentService } from './abstract-payment.service';
 import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-componets.dto';
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
@@ -56,6 +57,9 @@ import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
 import { NotificationUpdatePayment } from './types/service.type';
+import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
+import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse';
+import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
 
@@ -413,21 +417,20 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
-    const interfaceId = request.payment.interfaceId as string;
-    try {
-      const res = await AdyenApi().ModificationsApi.captureAuthorisedPayment(
-        interfaceId,
-        await this.capturePaymentConverter.convertRequest(request),
-      );
+    log.info(`Processing payment modification.`, {
+      paymentId: request.payment.id,
+      action: 'capturePayment',
+    });
 
-      return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
-    } catch (e) {
-      if (e instanceof Errorx) {
-        throw e;
-      } else {
-        throw wrapAdyenError(e);
-      }
-    }
+    const response = await this.processPaymentInternal(request, 'Charge', request.amount);
+
+    log.info(`Payment modification completed.`, {
+      paymentId: request.payment.id,
+      action: 'capturePayment',
+      result: response.outcome,
+    });
+
+    return response;
   }
 
   async cancelPayment(request: CancelPaymentRequest): Promise<PaymentProviderModificationResponse> {
@@ -453,6 +456,79 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return { outcome: PaymentModificationStatus.RECEIVED, pspReference: res.pspReference };
     } catch (e) {
       throw wrapAdyenError(e);
+    }
+  }
+
+  async reversePayment(_: ReversePaymentRequest): Promise<PaymentProviderModificationResponse> {
+    throw new Error('not implemented yet');
+  }
+
+  private async processPaymentInternal(
+    request: CapturePaymentRequest | CancelPaymentRequest,
+    type: 'Charge' | 'Refund' | 'CancelAuthorization',
+    amount: AmountSchemaDTO,
+  ): Promise<PaymentProviderModificationResponse> {
+    await this.ctPaymentService.updatePayment({
+      id: request.payment.id,
+      transaction: {
+        type,
+        amount,
+        state: 'Initial',
+      },
+    });
+
+    const interfaceId = request.payment.interfaceId as string;
+
+    const response = await this.makeCallToAdyenInternal(interfaceId, type, request);
+
+    await this.ctPaymentService.updatePayment({
+      id: request.payment.id,
+      transaction: {
+        type,
+        amount,
+        interactionId: response.pspReference,
+        state: this.convertPaymentModificationOutcomeToState(PaymentModificationStatus.RECEIVED),
+      },
+    });
+
+    return { outcome: PaymentModificationStatus.RECEIVED, pspReference: response.pspReference };
+  }
+
+  private async makeCallToAdyenInternal(
+    interfaceId: string,
+    type: 'Charge' | 'Refund' | 'CancelAuthorization',
+    request: CapturePaymentRequest | CancelPaymentRequest | RefundPaymentRequest,
+  ): Promise<PaymentCaptureResponse | PaymentCancelResponse | PaymentRefundResponse> {
+    try {
+      switch (type) {
+        case 'Charge': {
+          return await AdyenApi().ModificationsApi.captureAuthorisedPayment(
+            interfaceId,
+            await this.capturePaymentConverter.convertRequest(request as CapturePaymentRequest),
+          );
+        }
+        case 'Refund': {
+          return await AdyenApi().ModificationsApi.refundCapturedPayment(
+            interfaceId,
+            this.refundPaymentConverter.convertRequest(request as RefundPaymentRequest),
+          );
+        }
+        case 'CancelAuthorization': {
+          return await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(
+            interfaceId,
+            this.cancelPaymentConverter.convertRequest(request),
+          );
+        }
+        default: {
+          throw new ErrorInvalidOperation('someerror');
+        }
+      }
+    } catch (e) {
+      if (e instanceof Errorx) {
+        throw e;
+      } else {
+        throw wrapAdyenError(e);
+      }
     }
   }
 
