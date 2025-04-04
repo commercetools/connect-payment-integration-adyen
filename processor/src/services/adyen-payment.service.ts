@@ -492,10 +492,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
     type: 'Charge' | 'Refund' | 'CancelAuthorization' | 'Reverse',
     amount: AmountSchemaDTO,
   ): Promise<PaymentProviderModificationResponse> {
+    const transactionType = type === 'Reverse' ? 'CancelAuthorization' : type;
     await this.ctPaymentService.updatePayment({
       id: request.payment.id,
       transaction: {
-        type,
+        type: transactionType,
         amount,
         state: 'Initial',
       },
@@ -508,7 +509,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     await this.ctPaymentService.updatePayment({
       id: request.payment.id,
       transaction: {
-        type,
+        type: transactionType,
         amount,
         interactionId: response.pspReference,
         state: this.convertPaymentModificationOutcomeToState(PaymentModificationStatus.RECEIVED),
@@ -540,17 +541,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
         case 'CancelAuthorization': {
           return await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(
             interfaceId,
-            this.cancelPaymentConverter.convertRequest(request),
+            this.cancelPaymentConverter.convertRequest(request as CancelPaymentRequest),
           );
         }
         case 'Reverse': {
           return await AdyenApi().ModificationsApi.refundOrCancelPayment(
             interfaceId,
-            this.reversePaymentConverter.convertRequest(request),
+            this.reversePaymentConverter.convertRequest(request as ReversePaymentRequest),
           );
         }
         default: {
-          throw new ErrorInvalidOperation('someerror');
+          log.error(`makeCallToAdyenInternal: Operation  ${type} not supported when modifying payment.`);
+          throw new ErrorInvalidOperation(`Operation not supported.`);
         }
       }
     } catch (e) {
