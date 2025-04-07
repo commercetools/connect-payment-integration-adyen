@@ -103,7 +103,30 @@ export class NotificationConverter {
             interactionId: item.pspReference,
           },
         ];
-      case NotificationRequestItem.EventCodeEnum.CancelOrRefund:
+      case NotificationRequestItem.EventCodeEnum.CancelOrRefund: {
+        const processedModification = item.additionalData?.['modification.action'];
+
+        // HINT: This check is necessary because we add a cancel authorization request in coco, so if Adyen processes something else (refund)
+        // we need to fail the initial cancel authorization created and create a new refund transaction object, which is why in the check we return both transaction items.
+        // If the check is falsey and adyen actually performs a cancel operation, we simply update the cancel transaction we have in coco from 'pending' to 'success | failure' depending
+        // on state returned by adyen
+        if (processedModification !== 'cancel') {
+          return [
+            {
+              type: 'CancelAuthorization',
+              state: 'Failure',
+              amount: this.populateAmount(item),
+              interactionId: item.pspReference,
+            },
+            {
+              type: this.populateCancelOrRefundTransactionType(item.additionalData),
+              state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+              amount: this.populateAmount(item),
+              interactionId: item.pspReference,
+            },
+          ];
+        }
+
         return [
           {
             type: this.populateCancelOrRefundTransactionType(item.additionalData),
@@ -112,6 +135,7 @@ export class NotificationConverter {
             interactionId: item.pspReference,
           },
         ];
+      }
       default:
         throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
     }
