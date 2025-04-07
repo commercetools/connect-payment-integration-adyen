@@ -103,8 +103,28 @@ export class NotificationConverter {
             interactionId: item.pspReference,
           },
         ];
+      case NotificationRequestItem.EventCodeEnum.CancelOrRefund:
+        return [
+          {
+            type: this.populateCancelOrRefundTransactionType(item.additionalData),
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
       default:
         throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
+    }
+  }
+
+  private populateCancelOrRefundTransactionType(additionalData: Record<string, string> | undefined): string {
+    switch (additionalData?.['modification.action']) {
+      case 'cancel':
+        return 'CancelAuthorization';
+      case 'refund':
+        return 'Refund';
+      default:
+        return 'CancelAuthorization';
     }
   }
 
