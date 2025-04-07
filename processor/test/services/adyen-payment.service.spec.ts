@@ -739,5 +739,58 @@ describe('adyen-payment.service', () => {
         },
       });
     });
+
+    test('it should process the notification properly in case of a revert operation', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'modification.action': 'cancel',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.CancelOrRefund,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockUpdatePaymentResult]);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+
+      // When
+      await paymentService.processNotification({ data: notification });
+
+      // Then
+      expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith({
+        id: '123456',
+        pspReference,
+        transaction: {
+          amount: {
+            centAmount: 10000,
+            currencyCode: 'EUR',
+          },
+          interactionId: pspReference,
+          state: 'Success',
+          type: 'CancelAuthorization',
+        },
+      });
+    });
   });
 });

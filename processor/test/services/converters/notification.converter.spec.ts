@@ -736,4 +736,117 @@ describe('notification.converter', () => {
       expect(error).toBeInstanceOf(UnsupportedNotificationError);
     }
   });
+  test('convert a cancelORrefund event notification (where modification.action === refund)', () => {
+    // Arrange
+    const merchantReference = 'some-merchant-reference';
+    const pspReference = 'some-psp-reference';
+    const paymentMethod = 'visa';
+    const notification: NotificationRequestDTO = {
+      live: 'false',
+      notificationItems: [
+        {
+          NotificationRequestItem: {
+            additionalData: {
+              'modification.action': 'refund',
+            },
+            amount: {
+              currency: 'EUR',
+              value: 1000,
+            },
+            eventCode: NotificationRequestItem.EventCodeEnum.CancelOrRefund,
+            eventDate: '2021-01-01T01:00:00+01:00',
+            merchantAccountCode: 'YOUR_MERCHANT_ACCOUNT',
+            merchantReference,
+            originalReference: pspReference,
+            paymentMethod,
+            pspReference,
+            reason: '',
+            success: NotificationRequestItem.SuccessEnum.True,
+          },
+        },
+      ],
+    };
+
+    // Act
+    const result = converter.convert({ data: notification });
+
+    // Assert
+    expect(result).toEqual({
+      merchantReference,
+      pspReference,
+      paymentMethod,
+      transactions: [
+        {
+          type: 'CancelAuthorization',
+          state: 'Failure',
+          amount: {
+            currencyCode: 'EUR',
+            centAmount: 1000,
+          },
+          interactionId: pspReference,
+        },
+        {
+          type: 'Refund',
+          state: 'Success',
+          amount: {
+            currencyCode: 'EUR',
+            centAmount: 1000,
+          },
+          interactionId: pspReference,
+        },
+      ],
+    });
+  });
+  test('convert a cancelORrefund event notification (where modification.action === cancel)', () => {
+    // Arrange
+    const merchantReference = 'some-merchant-reference';
+    const pspReference = 'some-psp-reference';
+    const paymentMethod = 'visa';
+    const notification: NotificationRequestDTO = {
+      live: 'false',
+      notificationItems: [
+        {
+          NotificationRequestItem: {
+            additionalData: {
+              'modification.action': 'cancel',
+            },
+            amount: {
+              currency: 'EUR',
+              value: 1000,
+            },
+            eventCode: NotificationRequestItem.EventCodeEnum.CancelOrRefund,
+            eventDate: '2021-01-01T01:00:00+01:00',
+            merchantAccountCode: 'YOUR_MERCHANT_ACCOUNT',
+            merchantReference,
+            originalReference: pspReference,
+            paymentMethod,
+            pspReference,
+            reason: '',
+            success: NotificationRequestItem.SuccessEnum.True,
+          },
+        },
+      ],
+    };
+
+    // Act
+    const result = converter.convert({ data: notification });
+
+    // Assert
+    expect(result).toEqual({
+      merchantReference,
+      pspReference,
+      paymentMethod,
+      transactions: [
+        {
+          type: 'CancelAuthorization',
+          state: 'Success',
+          amount: {
+            currencyCode: 'EUR',
+            centAmount: 1000,
+          },
+          interactionId: pspReference,
+        },
+      ],
+    });
+  });
 });
