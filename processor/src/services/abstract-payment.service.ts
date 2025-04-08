@@ -89,17 +89,6 @@ export abstract class AbstractPaymentService {
 
     const request = opts.data.actions[0];
 
-    // log.info(`Processing payment modification.`, {
-    //   paymentId: ctPayment.id,
-    //   action: request.action,
-    // });
-
-    // log.info(`Payment modification completed.`, {
-    //   paymentId: updatedPayment.id,
-    //   action: request.action,
-    //   result: res.outcome,
-    // });
-
     switch (request.action) {
       case 'cancelPayment': {
         return await this.cancelPayment({ payment: ctPayment, merchantReference: request.merchantReference });

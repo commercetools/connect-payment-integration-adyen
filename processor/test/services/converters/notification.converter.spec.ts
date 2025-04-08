@@ -1,13 +1,16 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, jest } from '@jest/globals';
 import { NotificationConverter } from '../../../src/services/converters/notification.converter';
 import { NotificationRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.error';
+import { paymentSDK } from '../../../src/payment-sdk';
+import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
+import { mockUpdatePaymentResult, mockGetPaymentResult } from '../../utils/mock-payment-data';
 
 describe('notification.converter', () => {
-  const converter = new NotificationConverter();
+  const converter = new NotificationConverter(paymentSDK.ctPaymentService);
 
-  test('convert a successful card payment notification', () => {
+  test('convert a successful card payment notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -39,7 +42,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -60,7 +63,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a successful ideal payment notification', () => {
+  test('convert a successful ideal payment notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -88,7 +91,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -118,7 +121,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a failure ideal payment notification', () => {
+  test('convert a failure ideal payment notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -146,7 +149,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -167,7 +170,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a expired payment notification', () => {
+  test('convert a expired payment notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -199,7 +202,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -220,7 +223,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a successful card capture notification', () => {
+  test('convert a successful card capture notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -252,7 +255,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -273,7 +276,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a failed card capture notification', () => {
+  test('convert a failed card capture notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -305,7 +308,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -326,7 +329,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a successful card cancellation notification', () => {
+  test('convert a successful card cancellation notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -358,7 +361,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -379,7 +382,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a failed card cancellation notification', () => {
+  test('convert a failed card cancellation notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -411,7 +414,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -432,7 +435,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a successful card refund notification', () => {
+  test('convert a successful card refund notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -464,7 +467,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -485,7 +488,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a failed card refund notification', () => {
+  test('convert a failed card refund notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -517,7 +520,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -538,7 +541,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a refund failed notification', () => {
+  test('convert a refund failed notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -570,7 +573,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -591,7 +594,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a chargeback notification', () => {
+  test('convert a chargeback notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -623,7 +626,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -644,7 +647,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert an offer closed notification', () => {
+  test('convert an offer closed notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -676,7 +679,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -697,7 +700,7 @@ describe('notification.converter', () => {
     });
   });
 
-  test('convert a non supported event notification', () => {
+  test('convert a non supported event notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -730,13 +733,19 @@ describe('notification.converter', () => {
 
     // Act
     try {
-      converter.convert({ data: notification });
+      await converter.convert({ data: notification });
     } catch (error) {
       // Assert
       expect(error).toBeInstanceOf(UnsupportedNotificationError);
     }
   });
-  test('convert a cancelORrefund event notification (where modification.action === refund)', () => {
+  test('convert a cancelORrefund event notification (where modification.action === refund)', async () => {
+    jest
+      .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+      .mockResolvedValue([mockUpdatePaymentResult]);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -768,7 +777,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({
@@ -797,7 +806,13 @@ describe('notification.converter', () => {
       ],
     });
   });
-  test('convert a cancelORrefund event notification (where modification.action === cancel)', () => {
+  test('convert a cancelORrefund event notification (where modification.action === cancel)', async () => {
+    jest
+      .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+      .mockResolvedValue([mockUpdatePaymentResult]);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+
     // Arrange
     const merchantReference = 'some-merchant-reference';
     const pspReference = 'some-psp-reference';
@@ -829,7 +844,7 @@ describe('notification.converter', () => {
     };
 
     // Act
-    const result = converter.convert({ data: notification });
+    const result = await converter.convert({ data: notification });
 
     // Assert
     expect(result).toEqual({

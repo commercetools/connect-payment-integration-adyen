@@ -54,6 +54,7 @@ const mockCancelPaymentTransaction: Transaction = {
   id: 'dummy-transaction-id',
   timestamp: '2024-02-13T00:00:00.000Z',
   type: 'CancelAuthorization',
+  interactionId: 'some-psp-reference',
   amount: {
     type: 'centPrecision',
     centAmount: 120000,
