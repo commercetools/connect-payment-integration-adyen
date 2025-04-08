@@ -53,7 +53,7 @@ import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-
 import { PaymentDetailsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsResponse';
 import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
-import { ReversePaymentConverter } from './converters/revert-payment.converter';
+import { ReversePaymentConverter } from './converters/reverse-payment.converter';
 import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
@@ -425,7 +425,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'capturePayment',
     });
 
-    const response = await this.processPaymentInternal(request, 'Charge', request.amount);
+    const response = await this.processPaymentModificationInternal(request, 'Charge', request.amount);
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -442,7 +442,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'cancelPayment',
     });
 
-    const response = await this.processPaymentInternal(request, 'CancelAuthorization', request.payment.amountPlanned);
+    const response = await this.processPaymentModificationInternal(
+      request,
+      'CancelAuthorization',
+      request.payment.amountPlanned,
+    );
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -459,7 +463,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'refundPayment',
     });
 
-    const response = await this.processPaymentInternal(request, 'Refund', request.amount);
+    const response = await this.processPaymentModificationInternal(request, 'Refund', request.amount);
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -476,7 +480,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'reversePayment',
     });
 
-    const response = await this.processPaymentInternal(request, 'Reverse', request.payment.amountPlanned);
+    const response = await this.processPaymentModificationInternal(request, 'Reverse', request.payment.amountPlanned);
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -487,7 +491,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  private async processPaymentInternal(
+  private async processPaymentModificationInternal(
     request: CapturePaymentRequest | CancelPaymentRequest,
     type: 'Charge' | 'Refund' | 'CancelAuthorization' | 'Reverse',
     amount: AmountSchemaDTO,
