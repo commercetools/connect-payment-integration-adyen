@@ -496,7 +496,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const transactionStateChecker = (transactionType: TransactionType, states: TransactionState[]) =>
       this.ctPaymentService.hasTransactionInState({ payment: request.payment, transactionType, states });
 
-    const hasCharge = transactionStateChecker('Charge', ['Success', 'Pending']);
+    const hasCharge = transactionStateChecker('Charge', ['Success']);
     const hasAuthorization = transactionStateChecker('Authorization', ['Success']);
     const hasRefund = transactionStateChecker('Refund', ['Success', 'Pending']);
     const hasCancelAuthorization = transactionStateChecker('CancelAuthorization', ['Success', 'Pending']);
