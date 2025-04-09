@@ -498,20 +498,16 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const hasCharge = transactionStateChecker('Charge', ['Success']);
     const hasAuthorization = transactionStateChecker('Authorization', ['Success']);
-    const hasRefund = transactionStateChecker('Refund', ['Success', 'Pending']);
-    const hasCancelAuthorization = transactionStateChecker('CancelAuthorization', ['Success', 'Pending']);
-
-    const isReverted = hasRefund || hasCancelAuthorization;
 
     let response!: PaymentProviderModificationResponse;
-    if (hasCharge && !isReverted) {
+    if (hasCharge) {
       response = await this.processPaymentModificationInternal({
         request,
         transactionType: 'Refund',
         adyenOperation: 'reverse',
         amount: request.payment.amountPlanned,
       });
-    } else if (hasAuthorization && !isReverted) {
+    } else if (hasAuthorization) {
       response = await this.processPaymentModificationInternal({
         request,
         transactionType: 'CancelAuthorization',
