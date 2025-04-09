@@ -427,7 +427,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'capturePayment',
     });
 
-    const response = await this.processPaymentModificationInternal(request, 'Charge', request.amount);
+    const response = await this.processPaymentModificationInternal({
+      request,
+      transactionType: 'Charge',
+      adyenOperation: 'capture',
+      amount: request.amount,
+    });
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -444,11 +449,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'cancelPayment',
     });
 
-    const response = await this.processPaymentModificationInternal(
+    const response = await this.processPaymentModificationInternal({
       request,
-      'CancelAuthorization',
-      request.payment.amountPlanned,
-    );
+      transactionType: 'CancelAuthorization',
+      adyenOperation: 'cancel',
+      amount: request.payment.amountPlanned,
+    });
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -465,7 +471,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'refundPayment',
     });
 
-    const response = await this.processPaymentModificationInternal(request, 'Refund', request.amount);
+    const response = await this.processPaymentModificationInternal({
+      request,
+      transactionType: 'Refund',
+      adyenOperation: 'refund',
+      amount: request.amount,
+    });
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -482,7 +493,34 @@ export class AdyenPaymentService extends AbstractPaymentService {
       action: 'reversePayment',
     });
 
-    const response = await this.processPaymentModificationInternal(request, 'Reverse', request.payment.amountPlanned);
+    const transactionStateChecker = (transactionType: TransactionType, states: TransactionState[]) =>
+      this.ctPaymentService.hasTransactionInState({ payment: request.payment, transactionType, states });
+
+    const hasCharge = transactionStateChecker('Charge', ['Success', 'Pending']);
+    const hasAuthorization = transactionStateChecker('Authorization', ['Success']);
+    const hasRefund = transactionStateChecker('Refund', ['Success', 'Pending']);
+    const hasCancelAuthorization = transactionStateChecker('CancelAuthorization', ['Success', 'Pending']);
+
+    const isReverted = hasRefund || hasCancelAuthorization;
+
+    let response!: PaymentProviderModificationResponse;
+    if (hasCharge && !isReverted) {
+      response = await this.processPaymentModificationInternal({
+        request,
+        transactionType: 'Refund',
+        adyenOperation: 'reverse',
+        amount: request.payment.amountPlanned,
+      });
+    } else if (hasAuthorization && !isReverted) {
+      response = await this.processPaymentModificationInternal({
+        request,
+        transactionType: 'CancelAuthorization',
+        adyenOperation: 'reverse',
+        amount: request.payment.amountPlanned,
+      });
+    } else {
+      throw new ErrorInvalidOperation(`There is no successful payment transaction to reverse.`);
+    }
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -493,33 +531,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  private async processPaymentModificationInternal(
-    request: CapturePaymentRequest | CancelPaymentRequest,
-    type: 'Charge' | 'Refund' | 'CancelAuthorization' | 'Reverse',
-    amount: AmountSchemaDTO,
-  ): Promise<PaymentProviderModificationResponse> {
-    const { payment } = request;
-
-    const transactionStateChecker = (transactionType: TransactionType, states: TransactionState[]) =>
-      this.ctPaymentService.hasTransactionInState({ payment, transactionType, states });
-
-    const hasCharge = transactionStateChecker('Charge', ['Success', 'Pending']);
-    const hasAuthorization = transactionStateChecker('Authorization', ['Success']);
-    const hasRefund = transactionStateChecker('Refund', ['Success', 'Pending']);
-    const hasCancelAuthorization = transactionStateChecker('CancelAuthorization', ['Success', 'Pending']);
-
-    const isReverted = hasRefund || hasCancelAuthorization;
-
-    const resolvedType = this.resolveTransactionType(type, {
-      hasCharge,
-      hasAuthorization,
-      isReverted,
-    });
-
+  private async processPaymentModificationInternal(opts: {
+    request: CapturePaymentRequest | CancelPaymentRequest | RefundPaymentRequest | ReversePaymentRequest;
+    transactionType: 'Charge' | 'Refund' | 'CancelAuthorization';
+    adyenOperation: 'capture' | 'refund' | 'cancel' | 'reverse';
+    amount: AmountSchemaDTO;
+  }): Promise<PaymentProviderModificationResponse> {
+    const { request, transactionType, adyenOperation, amount } = opts;
     await this.ctPaymentService.updatePayment({
       id: request.payment.id,
       transaction: {
-        type: resolvedType,
+        type: transactionType,
         amount,
         state: 'Initial',
       },
@@ -527,12 +549,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const interfaceId = request.payment.interfaceId as string;
 
-    const response = await this.makeCallToAdyenInternal(interfaceId, type, request);
+    const response = await this.makeCallToAdyenInternal(interfaceId, adyenOperation, request);
 
     await this.ctPaymentService.updatePayment({
       id: request.payment.id,
       transaction: {
-        type: resolvedType,
+        type: transactionType,
         amount,
         interactionId: response.pspReference,
         state: this.convertPaymentModificationOutcomeToState(PaymentModificationStatus.RECEIVED),
@@ -544,37 +566,37 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   private async makeCallToAdyenInternal(
     interfaceId: string,
-    type: 'Charge' | 'Refund' | 'CancelAuthorization' | 'Reverse',
-    request: CapturePaymentRequest | CancelPaymentRequest | RefundPaymentRequest,
+    adyenOperation: 'capture' | 'refund' | 'cancel' | 'reverse',
+    request: CapturePaymentRequest | CancelPaymentRequest | RefundPaymentRequest | ReversePaymentRequest,
   ): Promise<PaymentCaptureResponse | PaymentCancelResponse | PaymentRefundResponse> {
     try {
-      switch (type) {
-        case 'Charge': {
+      switch (adyenOperation) {
+        case 'capture': {
           return await AdyenApi().ModificationsApi.captureAuthorisedPayment(
             interfaceId,
             await this.capturePaymentConverter.convertRequest(request as CapturePaymentRequest),
           );
         }
-        case 'Refund': {
+        case 'refund': {
           return await AdyenApi().ModificationsApi.refundCapturedPayment(
             interfaceId,
             this.refundPaymentConverter.convertRequest(request as RefundPaymentRequest),
           );
         }
-        case 'CancelAuthorization': {
+        case 'cancel': {
           return await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(
             interfaceId,
             this.cancelPaymentConverter.convertRequest(request as CancelPaymentRequest),
           );
         }
-        case 'Reverse': {
+        case 'reverse': {
           return await AdyenApi().ModificationsApi.refundOrCancelPayment(
             interfaceId,
             this.reversePaymentConverter.convertRequest(request as ReversePaymentRequest),
           );
         }
         default: {
-          log.error(`makeCallToAdyenInternal: Operation  ${type} not supported when modifying payment.`);
+          log.error(`makeCallToAdyenInternal: Operation  ${adyenOperation} not supported when modifying payment.`);
           throw new ErrorInvalidOperation(`Operation not supported.`);
         }
       }
@@ -726,23 +748,5 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     return payment;
-  }
-
-  private resolveTransactionType(
-    type: 'Charge' | 'Refund' | 'CancelAuthorization' | 'Reverse',
-    context: {
-      hasCharge: boolean;
-      hasAuthorization: boolean;
-      isReverted: boolean;
-    },
-  ): TransactionType {
-    const { hasCharge, hasAuthorization, isReverted } = context;
-    if (type !== 'Reverse') return type;
-
-    if (hasCharge && !isReverted) return 'Refund';
-
-    if (hasAuthorization && !isReverted) return 'CancelAuthorization';
-
-    throw new ErrorInvalidOperation(`There is no successful payment transaction to reverse.`);
   }
 }
