@@ -39,6 +39,7 @@ import { Przelewy24Builder } from "../components/payment-methods/przelewy24";
 import { SwishBuilder } from "../components/payment-methods/swish";
 import { VippsBuilder } from "../components/payment-methods/vipps";
 import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
+import { convertToAdyenLocale } from "../converters/locale.converter";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -70,9 +71,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     this.setupData = AdyenPaymentEnabler._Setup(options);
   }
 
-  private static _Setup = async (
-    options: AdyenEnablerOptions,
-  ): Promise<{ baseOptions: BaseOptions }> => {
+  private static _Setup = async (options: AdyenEnablerOptions): Promise<{ baseOptions: BaseOptions }> => {
+    const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
+
     const [sessionResponse, configResponse] = await Promise.all([
       fetch(options.processorUrl + "/sessions", {
         method: "POST",
@@ -80,7 +81,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           "Content-Type": "application/json",
           "X-Session-Id": options.sessionId,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          shopperLocale: adyenLocale,
+        }),
       }),
       fetch(options.processorUrl + "/operations/config", {
         method: "GET",
@@ -142,14 +145,11 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           }
           handleError(error, component);
         },
-        onSubmit: async (
-          state: SubmitData,
-          component: UIElement,
-          actions: SubmitActions,
-        ) => {
+        onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
           try {
             const reqData = {
               ...state.data,
+              shopperLocale: adyenLocale,
               channel: "Web",
               paymentReference,
             };
@@ -238,8 +238,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           enabled: true,
         },
 
-        ...(options.locale ? { locale: options.locale } : {}),
-
+        locale: adyenLocale,
         environment: configJson.environment,
         clientKey: configJson.clientKey,
         session: {
