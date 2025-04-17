@@ -7,6 +7,7 @@ import { join } from 'path';
 import { config } from '../config/config';
 import { requestContextPlugin } from '../libs/fastify/context/context';
 import { errorHandler } from '../libs/fastify/error-handler';
+import { requestIpPlugin } from '../libs/fastify/ip/ip';
 
 // const __filename = fileURLToPath(import.meta.url)
 // const __dirname = dirname(__filename)
@@ -24,6 +25,7 @@ export const setupFastify = async () => {
     genReqId: () => randomUUID().toString(),
     requestIdLogLabel: 'requestId',
     requestIdHeader: 'x-request-id',
+    trustProxy: true,
   });
 
   // Setup error handler
@@ -37,6 +39,9 @@ export const setupFastify = async () => {
 
   // Add content type parser for the content type application/x-www-form-urlencoded
   await server.register(fastifyFormBody);
+
+  // Register IP plugin
+  await server.register(requestIpPlugin);
 
   // Register context plugin
   await server.register(requestContextPlugin);
