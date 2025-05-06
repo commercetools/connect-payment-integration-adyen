@@ -55,7 +55,8 @@ export class CreatePaymentConverter {
         return this.populateAdditionalCardData();
       case 'klarna':
       case 'klarna_paynow':
-      case 'klarna_account': {
+      case 'klarna_account':
+      case 'paypal': {
         return {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
         };
