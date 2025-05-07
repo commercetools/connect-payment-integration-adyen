@@ -51,8 +51,12 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
+      const data: CreateSessionRequestDTO = {
+        ...request.body,
+        ...(request.clientIp && { shopperIP: request.clientIp }),
+      };
       const resp = await opts.paymentService.createSession({
-        data: request.body,
+        data,
       });
 
       return reply.status(200).send(resp);
@@ -79,7 +83,10 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
-      const data = request.body as CreatePaymentRequestDTO;
+      const data: CreatePaymentRequestDTO = {
+        ...request.body,
+        ...(request.clientIp && { shopperIP: request.clientIp }),
+      };
       validateCardData(data);
 
       const resp = await opts.paymentService.createPayment({
