@@ -69,7 +69,7 @@ const getSessionId = async (cartId, isDropin = false) => {
   };
 
   const url = `${__VITE_CTP_SESSION_URL__}/${projectKey}/sessions`;
-
+  console.log("Creating session with url:", url);
   const res = await fetch(url, {
     method: "POST",
     headers: {
