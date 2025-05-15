@@ -40,6 +40,7 @@ import { SwishBuilder } from "../components/payment-methods/swish";
 import { VippsBuilder } from "../components/payment-methods/vipps";
 import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 import { convertToAdyenLocale } from "../converters/locale.converter";
+import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -71,7 +72,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     this.setupData = AdyenPaymentEnabler._Setup(options);
   }
 
-  private static _Setup = async (options: AdyenEnablerOptions): Promise<{ baseOptions: BaseOptions }> => {
+  private static _Setup = async (
+    options: AdyenEnablerOptions,
+  ): Promise<{ baseOptions: BaseOptions }> => {
     const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
 
     const [sessionResponse, configResponse] = await Promise.all([
@@ -96,21 +99,21 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     const handleError = (error: any, component: UIElement) => {
       if (options.onError) {
-        options.onError(error, { 
-          paymentReference, 
-          method: { type: getPaymentMethodType(component?.props?.type )} 
+        options.onError(error, {
+          paymentReference,
+          method: { type: getPaymentMethodType(component?.props?.type) },
         });
       }
     };
     const handleComplete = (isSuccess: boolean, component: UIElement) => {
       if (options.onComplete) {
-        options.onComplete({ 
-          isSuccess, 
+        options.onComplete({
+          isSuccess,
           paymentReference,
-          method: { type: getPaymentMethodType(component?.props?.type )} 
+          method: { type: getPaymentMethodType(component?.props?.type) },
         });
       }
-    }
+    };
 
     const [sessionJson, configJson] = await Promise.all([
       sessionResponse.json(),
@@ -145,7 +148,11 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           }
           handleError(error, component);
         },
-        onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
+        onSubmit: async (
+          state: SubmitData,
+          component: UIElement,
+          actions: SubmitActions,
+        ) => {
           try {
             const reqData = {
               ...state.data,
@@ -287,6 +294,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       twint: TwintBuilder,
       vipps: VippsBuilder,
       mobilepay: MobilePayBuilder,
+      afterpay: AfterPayBuilder,
     };
 
     if (!Object.keys(supportedMethods).includes(type)) {

@@ -24,7 +24,10 @@ export type EnablerOptions = {
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
-  onError?: (error: any, context?: { paymentReference?: string; method?: { type?: string } }) => void;
+  onError?: (
+    error: any,
+    context?: { paymentReference?: string; method?: { type?: string } },
+  ) => void;
 };
 
 export enum PaymentMethod {
@@ -48,9 +51,12 @@ export enum PaymentMethod {
   twint = "twint",
   vipps = "vipps",
   mobilepay = "mobilepay",
+  afterpay = "afterpaytouch", // Afterpay
 }
 
-export const getPaymentMethodType = (key: string): PaymentMethod | undefined => {
+export const getPaymentMethodType = (
+  key: string,
+): PaymentMethod | undefined => {
   for (const enumKey in PaymentMethod) {
     if (PaymentMethod[enumKey] === key) {
       return enumKey as PaymentMethod;
@@ -65,10 +71,10 @@ export type PaymentResult =
       paymentReference: string;
       method?: { type?: string };
     }
-  | { 
-      isSuccess: false; 
-      paymentReference?: string; 
-      method?: { type?: string }; 
+  | {
+      isSuccess: false;
+      paymentReference?: string;
+      method?: { type?: string };
     };
 
 export type ComponentOptions = {

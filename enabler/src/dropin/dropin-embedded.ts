@@ -24,6 +24,7 @@ import {
   OnlineBankingPL,
   Swish,
   Vipps,
+  AfterPay,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -89,6 +90,7 @@ export class DropinComponents implements DropinComponent {
         Swish,
         Twint,
         Vipps,
+        AfterPay,
       ],
       paymentMethodsConfiguration: {
         applepay: {
