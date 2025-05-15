@@ -10,7 +10,7 @@ import { config } from '../../../src/config/config';
 describe('capture.converter', () => {
   const converter = new CapturePaymentConverter(paymentSDK.ctCartService, paymentSDK.ctOrderService);
   test('METHODS_REQUIRE_LINE_ITEMS', () => {
-    const expected = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b'];
+    const expected = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b', 'afterpay'];
     expect(METHODS_REQUIRE_LINE_ITEMS).toEqual(expected);
   });
 

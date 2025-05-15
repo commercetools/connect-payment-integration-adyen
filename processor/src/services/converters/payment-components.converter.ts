@@ -66,6 +66,9 @@ export class PaymentComponentsConverter {
         {
           type: 'vipps',
         },
+        {
+          type: 'afterpay',
+        },
       ],
     };
   }

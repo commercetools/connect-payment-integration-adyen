@@ -21,6 +21,7 @@ import {
 import CoCoCartSimpleJSON from '../../data/coco-cart-simple-shipping.json';
 import CoCoCartMultipleJSON from '../../data/coco-cart-multiple-shipping.json';
 import CoCoCartCLPJSON from '../../data/coco-cart-clp.json';
+import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
 
 describe('helper.converter', () => {
   beforeEach(() => {
@@ -33,21 +34,51 @@ describe('helper.converter', () => {
   });
 
   test('convertPaymentMethodFromAdyenFormat', async () => {
-    const paymentMethod1 = 'scheme';
-    const paymentMethod2 = 'klarna';
-    const result1: string = convertPaymentMethodFromAdyenFormat(paymentMethod1);
-    const result2: string = convertPaymentMethodFromAdyenFormat(paymentMethod2);
-    expect(result1).toStrictEqual('card');
-    expect(result2).toStrictEqual('klarna_pay_later');
+    const inputTable = [
+      ['scheme', 'card'],
+      ['klarna', 'klarna_pay_later'],
+      ['klarna_paynow', 'klarna_pay_now'],
+      ['klarna_account', 'klarna_pay_overtime'],
+      ['bcmc', 'bancontactcard'],
+      ['bcmc_mobile', 'bancontactmobile'],
+      ['klarna_b2b', 'klarna_billie'],
+      [GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl, 'przelewy24'],
+      ['afterpaytouch', 'afterpay'],
+      ['unknown_method_should_return_this_value', 'unknown_method_should_return_this_value'],
+    ];
+
+    for (const testData of inputTable) {
+      const adyenName = testData[0];
+      const checkoutName = testData[1];
+
+      const result = convertPaymentMethodFromAdyenFormat(adyenName);
+
+      expect(result).toEqual(checkoutName);
+    }
   });
 
   test('convertPaymentMethodToAdyenFormat', async () => {
-    const paymentMethod1 = 'card';
-    const paymentMethod2 = 'klarna_pay_later';
-    const result1: string = convertPaymentMethodToAdyenFormat(paymentMethod1);
-    const result2: string = convertPaymentMethodToAdyenFormat(paymentMethod2);
-    expect(result1).toStrictEqual('scheme');
-    expect(result2).toStrictEqual('klarna');
+    const inputTable = [
+      ['card', 'scheme'],
+      ['klarna_pay_later', 'klarna'],
+      ['klarna_pay_now', 'klarna_paynow'],
+      ['klarna_pay_overtime', 'klarna_account'],
+      ['bancontactcard', 'bcmc'],
+      ['bancontactmobile', 'bcmc_mobile'],
+      ['klarna_billie', 'klarna_b2b'],
+      ['przelewy24', GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl],
+      ['afterpay', 'afterpaytouch'],
+      ['unknown_method_should_return_this_value', 'unknown_method_should_return_this_value'],
+    ];
+
+    for (const testData of inputTable) {
+      const adyenName = testData[0];
+      const checkoutName = testData[1];
+
+      const result = convertPaymentMethodToAdyenFormat(adyenName);
+
+      expect(result).toEqual(checkoutName);
+    }
   });
 
   test('populateCartAddress', async () => {

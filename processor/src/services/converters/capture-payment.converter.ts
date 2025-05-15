@@ -15,7 +15,7 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 /**
  * These payment methods require line items to be send to Adyen for capturing payments
  */
-export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b'];
+export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b', 'afterpay'];
 
 export class CapturePaymentConverter {
   private ctCartService: CommercetoolsCartService;

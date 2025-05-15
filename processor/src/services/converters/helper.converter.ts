@@ -21,7 +21,10 @@ import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/ty
 import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
 import { config } from '../../config/config';
 
+// TODO: SCC-3189: ask Adyen support about A) shopperReference mandatory or not, B) account creation (shopper and merchant), C) unexpected error when enabling afterpay in adyen merchant account, D) clarify the discount handeling
+
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
+  // TODO: SCC-3189: validate the "discounts" are handled properly for the Afterpay scenario as described by the docs
   return {
     id: lineItem.variant.sku,
     description: Object.values(lineItem.name)[0], //TODO: get proper locale
@@ -34,6 +37,7 @@ export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem
 };
 
 export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineItem): LineItem => {
+  // TODO: SCC-3189: validate the "discounts" are handled properly for the Afterpay scenario as described by the docs
   return {
     id: customLineItem.id,
     description: Object.values(customLineItem.name)[0], //TODO: get proper locale
@@ -46,6 +50,7 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
 };
 
 export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: NormalizedShipping[]): LineItem[] => {
+  // TODO: SCC-3189: validate the "discounts" are handled properly for the Afterpay scenario as described by the docs
   return normalizedShippings.map((shipping) => {
     let amountExcludingTaxValue = 0;
     let amountIncludingTaxValue = 0;
@@ -219,6 +224,8 @@ export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string
     return 'klarna_b2b';
   } else if (paymentMethod === 'przelewy24') {
     return GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl;
+  } else if (paymentMethod === 'afterpay') {
+    return 'afterpaytouch';
   } else {
     return paymentMethod;
   }
@@ -241,6 +248,8 @@ export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): stri
     return 'klarna_billie';
   } else if (paymentMethod === GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl) {
     return 'przelewy24';
+  } else if (paymentMethod === 'afterpaytouch') {
+    return 'afterpay';
   } else {
     return paymentMethod;
   }
