@@ -21,7 +21,9 @@ import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/ty
 import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
 import { config } from '../../config/config';
 
-// TODO: SCC-3189: ask Adyen support about A) shopperReference mandatory or not, B) account creation (shopper and merchant), C) unexpected error when enabling afterpay in adyen merchant account, D) clarify the discount handeling
+// TODO: SCC-3189: implement shopperReference based on support response
+// TODO: SCC-3189: account creation (shopper and merchant) so we can test
+// TODO: SCC-3189: enable Afterpay in Adyen test accounts for all merchants
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   // TODO: SCC-3189: validate the "discounts" are handled properly for the Afterpay scenario as described by the docs
