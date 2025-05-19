@@ -2,17 +2,13 @@ import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paym
 import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
-import {
-  buildReturnUrl,
-  getShopperStatement,
-  mapCoCoCartItemsToAdyenLineItems,
-  populateApplicationInfo,
-  populateCartAddress,
-} from './helper.converter';
+import { buildReturnUrl, getShopperStatement, populateApplicationInfo, populateCartAddress } from './helper.converter';
+import { mapCoCoCartItemsToAdyenLineItems } from './lineitem.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
+import { AfterpayDetails } from '@adyen/api-library/lib/src/typings/checkout/afterpayDetails';
 
 export class CreatePaymentConverter {
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
@@ -61,6 +57,9 @@ export class CreatePaymentConverter {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
         };
       }
+      case AfterpayDetails.TypeEnum.Afterpaytouch: {
+        return this.populateAfterpayData(cart);
+      }
       case 'klarna_b2b': {
         return this.populateKlarnaB2BData(cart);
       }
@@ -76,6 +75,24 @@ export class CreatePaymentConverter {
           nativeThreeDS: ThreeDSRequestData.NativeThreeDSEnum.Preferred,
         },
       },
+    };
+  }
+
+  private populateAfterpayData(cart: Cart): Partial<PaymentRequest> {
+    const { billingAddress } = cart;
+
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);
+
+    return {
+      shopperReference: cart.customerId, // TODO: SCC-3189: validate if the cart.customerId is correct or we should send a different value
+      // TODO: SCC-3189: the shoppername is mandatory but on cart not, how to deal with that here?
+      // TODO: SCC-3189: should we only try and extract from the billingAddress but never the shippingAddress?
+      shopperName: {
+        firstName: billingAddress?.firstName ?? '',
+        lastName: billingAddress?.lastName ?? '',
+      },
+      telephoneNumber: cart.billingAddress?.phone || cart.shippingAddress?.phone, // TODO: SCC-3189: validate if this is correct
+      lineItems,
     };
   }
 

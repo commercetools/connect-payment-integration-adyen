@@ -2,7 +2,7 @@ import { config } from '../../config/config';
 import { PaymentCaptureRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureRequest';
 import { CapturePaymentRequest } from '../types/operation.type';
 import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
-import { mapCoCoCartItemsToAdyenLineItems, mapCoCoOrderItemsToAdyenLineItems } from './helper.converter';
+import { mapCoCoCartItemsToAdyenLineItems, mapCoCoOrderItemsToAdyenLineItems } from './lineitem.converter';
 import { log } from '../../libs/logger';
 import {
   CommercetoolsCartService,

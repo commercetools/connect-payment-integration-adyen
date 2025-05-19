@@ -4,10 +4,11 @@ import {
   buildReturnUrl,
   convertAllowedPaymentMethodsToAdyenFormat,
   populateCartAddress,
-  mapCoCoCartItemsToAdyenLineItems,
   populateApplicationInfo,
   getShopperStatement,
 } from './helper.converter';
+import { mapCoCoCartItemsToAdyenLineItems } from './lineitem.converter';
+
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
@@ -15,6 +16,7 @@ import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
 
+// TODO: SCC-3189: with the changes in the create-payments.converter.ts with relation to the Afterpay stuff, should we also apply them here?
 export class CreateSessionConverter {
   public convertRequest(opts: {
     data: CreateSessionRequestDTO;
