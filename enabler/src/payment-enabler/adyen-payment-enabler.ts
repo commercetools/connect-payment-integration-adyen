@@ -66,9 +66,24 @@ export type BaseOptions = {
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
-
+  options: AdyenEnablerOptions
   constructor(options: AdyenEnablerOptions) {
+    this
     this.setupData = AdyenPaymentEnabler._Setup(options);
+  }
+
+  async call() {
+    const adyenLocale = convertToAdyenLocale(this.options.locale || "en-US");
+    fetch(this.options.processorUrl + "/sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Session-Id": this.options.sessionId,
+      },
+      body: JSON.stringify({
+        shopperLocale: adyenLocale,
+      }),
+    })
   }
 
   private static _Setup = async (options: AdyenEnablerOptions): Promise<{ baseOptions: BaseOptions }> => {
