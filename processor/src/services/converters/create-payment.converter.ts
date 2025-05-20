@@ -57,6 +57,7 @@ export class CreatePaymentConverter {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
         };
       }
+      // TODO: SCC-3189: the data?.paymentMethod?.type for afterpay suddenly is "afterpay_default". What kind of further impact has this? The docs do not talk about this.
       case AfterpayDetails.TypeEnum.Afterpaytouch: {
         return this.populateAfterpayData(cart);
       }
@@ -79,6 +80,7 @@ export class CreatePaymentConverter {
   }
 
   private populateAfterpayData(cart: Cart): Partial<PaymentRequest> {
+    // TODO: SCC-3189: for web-components type at least on the test environment a form is shown which we need to fill in. It has it's own billing/shipping information. What do with that?
     const { billingAddress } = cart;
 
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);

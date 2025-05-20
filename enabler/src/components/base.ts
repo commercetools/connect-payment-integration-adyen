@@ -13,6 +13,7 @@ import {
   Swish,
   Vipps,
   OnlineBankingPL,
+  AfterPay,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -35,7 +36,8 @@ type AdyenComponent =
   | Blik
   | Vipps
   | OnlineBankingPL
-  | Swish;
+  | Swish
+  | AfterPay;
 
 /**
  * Base Web Component

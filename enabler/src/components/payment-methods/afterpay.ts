@@ -13,6 +13,8 @@ import { AfterPay, ICore } from "@adyen/adyen-web";
  * https://docs.adyen.com/payment-methods/afterpaytouch/web-component/
  */
 export class AfterPayBuilder extends AdyenBaseComponentBuilder {
+  // TODO: SCC-3189: validate the form that is shown for web-components and the impact it has. (drop-in redirects to a specific page)
+
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.afterpay, baseOptions);
   }
