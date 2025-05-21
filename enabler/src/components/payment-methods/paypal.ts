@@ -1,9 +1,4 @@
-import {
-  ComponentOptions,
-  getPaymentMethodType,
-  PaymentComponent,
-  PaymentMethod,
-} from "../../payment-enabler/payment-enabler";
+import { ComponentOptions, PaymentComponent, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { ICore, PayPal } from "@adyen/adyen-web";
