@@ -26,6 +26,7 @@ export class IdealBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.ideal),
     });
     idealComponent.init();
     return idealComponent;
@@ -39,12 +40,16 @@ export class IdealComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
 
   init(): void {
     this.component = new Redirect(this.adyenCheckout, {
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
       type: this.paymentMethod,
       showPayButton: this.componentOptions.showPayButton,
     });

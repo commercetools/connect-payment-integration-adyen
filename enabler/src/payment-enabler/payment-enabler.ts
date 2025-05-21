@@ -50,9 +50,9 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
 }
 
-export const getPaymentMethodType = (key: string): PaymentMethod | undefined => {
+export const getPaymentMethodType = (adyenPaymentMethod: string): PaymentMethod | undefined => {
   for (const enumKey in PaymentMethod) {
-    if (PaymentMethod[enumKey] === key) {
+    if (PaymentMethod[enumKey] === adyenPaymentMethod) {
       return enumKey as PaymentMethod;
     }
   }

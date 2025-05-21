@@ -1,7 +1,4 @@
-import {
-  ComponentOptions,
-  PaymentMethod,
-} from "../../payment-enabler/payment-enabler";
+import { ComponentOptions, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { GooglePay, ICore } from "@adyen/adyen-web";
@@ -26,6 +23,7 @@ export class GooglepayBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.googlepay),
     });
     googlePayComponent.init();
 
@@ -40,6 +38,7 @@ export class GooglePayComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
     usesOwnCertificate?: boolean;
   }) {
     super(opts);
@@ -47,9 +46,12 @@ export class GooglePayComponent extends DefaultAdyenComponent {
 
   init(): void {
     this.component = new GooglePay(this.adyenCheckout, {
-      showPayButton: this.componentOptions.showPayButton,
       buttonType: "pay",
       buttonSizeMode: "fill",
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
+      showPayButton: this.componentOptions.showPayButton,
       onClick: (resolve, reject) => {
         if (this.componentOptions.onPayButtonClick) {
           return this.componentOptions

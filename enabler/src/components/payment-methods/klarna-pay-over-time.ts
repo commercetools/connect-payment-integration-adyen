@@ -1,8 +1,4 @@
-import {
-  ComponentOptions,
-  PaymentComponent,
-  PaymentMethod,
-} from "../../payment-enabler/payment-enabler";
+import { ComponentOptions, PaymentComponent, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { ICore, Klarna } from "@adyen/adyen-web";
@@ -25,6 +21,7 @@ export class KlarnaPayOverTimeBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.klarna_pay_overtime),
     });
     klarnaComponent.init();
     return klarnaComponent;
@@ -38,12 +35,16 @@ export class KlarnaPayOverTimeComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
 
   init(): void {
     this.component = new Klarna(this.adyenCheckout, {
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
       type: this.paymentMethod,
       showPayButton: this.componentOptions.showPayButton,
       useKlarnaWidget: false, // Set to false to initiate a redirect flow.

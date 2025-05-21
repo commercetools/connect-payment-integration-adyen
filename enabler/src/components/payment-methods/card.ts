@@ -26,6 +26,7 @@ export class CardBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride("card"),
     });
     cardComponent.init();
     return cardComponent;
@@ -41,6 +42,7 @@ export class CardComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
@@ -48,14 +50,17 @@ export class CardComponent extends DefaultAdyenComponent {
   init(): void {
     const that = this;
     this.component = new Card(this.adyenCheckout, {
+      hasHolderName: true,
+      holderNameRequired: true,
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
       onFieldValid: function (data) {
         const { endDigits, fieldType } = data;
         if (endDigits && fieldType === "encryptedCardNumber") {
           that.endDigits = endDigits;
         }
       },
-      hasHolderName: true,
-      holderNameRequired: true,
       ...this.componentOptions,
     });
   }
