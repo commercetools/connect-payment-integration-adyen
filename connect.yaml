@@ -59,6 +59,9 @@ deployAs:
         - key: ADYEN_SHOPPER_STATEMENT
           description: The text to be shown on the shopper's bank statement. We recommend sending a maximum of 22 characters, otherwise banks might truncate the string
           required: false
+        - key: ADYEN_PAYMENT_COMPONENTS_CONFIG
+          description: 'Adyen payment components configuration in JSON String format. For example: {"paypal":{"blockPayPalVenmoButton":false}}. Please refer to the Adyen documentation for more details.'
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret

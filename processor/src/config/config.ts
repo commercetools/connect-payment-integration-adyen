@@ -27,6 +27,7 @@ export const config = {
   adyenApplePayOwnMerchantDomain: process.env.ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN || '',
   adyenApplePayOwnDisplayName: process.env.ADYEN_APPLEPAY_OWN_DISPLAY_NAME || '',
   adyenShopperStatement: process.env.ADYEN_SHOPPER_STATEMENT || '',
+  adyenPaymentComponentsConfig: process.env.ADYEN_PAYMENT_COMPONENTS_CONFIG || '',
   merchantReturnUrl: process.env.MERCHANT_RETURN_URL || '',
 };
 export const getConfig = () => {

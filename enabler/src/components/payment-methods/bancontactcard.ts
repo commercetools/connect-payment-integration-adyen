@@ -25,6 +25,7 @@ export class BancontactCardBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.bancontactcard),
     });
     bancontactcardComponent.init();
     return bancontactcardComponent;
@@ -39,6 +40,7 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
@@ -46,6 +48,9 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
   init(): void {
     const that = this;
     this.component = new Bancontact(this.adyenCheckout, {
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
       showPayButton: this.componentOptions.showPayButton,
       onFieldValid: function (data) {
         const { endDigits, fieldType } = data;

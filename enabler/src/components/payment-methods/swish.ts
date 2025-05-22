@@ -20,6 +20,7 @@ export class SwishBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.swish),
     });
     swishComponent.init();
     return swishComponent;
@@ -33,12 +34,16 @@ export class SwishComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
 
   init(): void {
     this.component = new Swish(this.adyenCheckout, {
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
       showPayButton: this.componentOptions.showPayButton,
     });
   }

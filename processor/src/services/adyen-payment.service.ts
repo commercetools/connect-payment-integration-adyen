@@ -99,12 +99,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
+
     return {
       clientKey: getConfig().adyenClientKey,
       environment: getConfig().adyenEnvironment,
       applePayConfig: {
         usesOwnCertificate,
       },
+      paymentComponentsConfig: this.getPaymentComponentsConfig(),
     };
   }
 
@@ -744,5 +746,15 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     return payment;
+  }
+
+  private getPaymentComponentsConfig(): unknown | undefined {
+    try {
+      const paymentComponentsConfigStr = getConfig().adyenPaymentComponentsConfig;
+      return paymentComponentsConfigStr ? JSON.parse(paymentComponentsConfigStr) : undefined;
+    } catch (e) {
+      log.error('Error parsing payment components config', { error: e });
+      return undefined;
+    }
   }
 }

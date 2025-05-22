@@ -8,6 +8,7 @@ export const ConfigResponseSchema = Type.Object({
       usesOwnCertificate: Type.Boolean(),
     }),
   ),
+  paymentComponentsConfig: Type.Optional(Type.Any()),
 });
 
 export type ConfigResponseSchemaDTO = Static<typeof ConfigResponseSchema>;

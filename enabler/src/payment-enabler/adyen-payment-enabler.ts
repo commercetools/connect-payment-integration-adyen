@@ -62,6 +62,7 @@ export type BaseOptions = {
   applePayConfig?: {
     usesOwnCertificate: boolean;
   };
+  paymentComponentsConfigOverride?: Record<string, any>;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
@@ -255,14 +256,15 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           ...(configJson.applePayConfig && {
             applePayConfig: configJson.applePayConfig,
           }),
+          ...(configJson.paymentComponentsConfig && {
+            paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
+          }),
         },
       };
     }
   };
 
-  async createComponentBuilder(
-    type: string,
-  ): Promise<PaymentComponentBuilder | never> {
+  async createComponentBuilder(type: string): Promise<PaymentComponentBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");

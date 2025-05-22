@@ -1,8 +1,4 @@
-import {
-  ComponentOptions,
-  PaymentComponent,
-  PaymentMethod,
-} from "../../payment-enabler/payment-enabler";
+import { ComponentOptions, PaymentComponent, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { ICore, PayPal } from "@adyen/adyen-web";
@@ -27,6 +23,7 @@ export class PaypalBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.paypal),
     });
     paypalComponent.init();
     return paypalComponent;
@@ -40,16 +37,20 @@ export class PaypalComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
 
   init(): void {
     this.component = new PayPal(this.adyenCheckout, {
-      showPayButton: this.componentOptions.showPayButton,
       blockPayPalCreditButton: true,
       blockPayPalPayLaterButton: true,
-      blockPayPalVenmoButton: true,
+      blockPayPalVenmoButton: false,
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
+      showPayButton: this.componentOptions.showPayButton,
       onClick: () => {
         if (this.componentOptions.onPayButtonClick) {
           return this.componentOptions
