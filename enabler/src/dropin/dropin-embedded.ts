@@ -51,7 +51,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   }
 
   private resolveDropinComponentConfigOverride(): Record<string, any> {
-    return this.paymentComponentsConfigOverride[DropinType.embedded] ?? {};
+    return this.paymentComponentsConfigOverride?.[DropinType.embedded] ?? {};
   }
 }
 
