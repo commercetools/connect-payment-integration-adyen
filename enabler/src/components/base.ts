@@ -60,7 +60,7 @@ export abstract class AdyenBaseComponentBuilder implements PaymentComponentBuild
   abstract build(config: ComponentOptions): PaymentComponent;
 
   protected resolvePaymentComponentConfigOverride(paymentMethod: string): Record<string, any> {
-    return this.paymentComponentsConfigOverride[paymentMethod] ?? {};
+    return this.paymentComponentsConfigOverride?.[paymentMethod] ?? {};
   }
 }
 
