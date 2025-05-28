@@ -20,6 +20,9 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval"
+  },
   "include": [
     "src", "decs.d.ts"]
 }
