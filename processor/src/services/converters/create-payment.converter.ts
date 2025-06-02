@@ -8,7 +8,7 @@ import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
-import { AfterpayDetails } from '@adyen/api-library/lib/src/typings/checkout/afterpayDetails';
+import { randomUUID } from 'node:crypto';
 
 export class CreatePaymentConverter {
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
@@ -57,7 +57,7 @@ export class CreatePaymentConverter {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
         };
       }
-      case AfterpayDetails.TypeEnum.Afterpaytouch: {
+      case 'afterpaytouch': {
         return this.populateAfterpayData(cart);
       }
       case 'klarna_b2b': {
@@ -79,20 +79,17 @@ export class CreatePaymentConverter {
   }
 
   private populateAfterpayData(cart: Cart): Partial<PaymentRequest> {
-    // TODO: SCC-3189: for web-components type at least on the test environment a form is shown which we need to fill in. It has it's own billing/shipping information. What do with that?
-    const { billingAddress } = cart;
+    const { billingAddress, shippingAddress } = cart;
 
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);
 
     return {
-      shopperReference: cart.customerId, // TODO: SCC-3189: validate if the cart.customerId is correct or we should send a different value
-      // TODO: SCC-3189: the shoppername is mandatory but on cart not, how to deal with that here?
-      // TODO: SCC-3189: should we only try and extract from the billingAddress but never the shippingAddress?
+      shopperReference: cart.customerId ?? cart.anonymousId ?? randomUUID(),
       shopperName: {
-        firstName: billingAddress?.firstName ?? '',
-        lastName: billingAddress?.lastName ?? '',
+        firstName: billingAddress?.firstName ?? shippingAddress?.firstName ?? '',
+        lastName: billingAddress?.lastName ?? shippingAddress?.lastName ?? '',
       },
-      telephoneNumber: cart.billingAddress?.phone || cart.shippingAddress?.phone, // TODO: SCC-3189: validate if this is correct
+      telephoneNumber: (billingAddress?.phone || shippingAddress?.phone) ?? undefined,
       lineItems,
     };
   }

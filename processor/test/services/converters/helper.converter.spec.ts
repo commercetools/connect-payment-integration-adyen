@@ -3,12 +3,14 @@ import {
   convertPaymentMethodFromAdyenFormat,
   convertPaymentMethodToAdyenFormat,
   populateCartAddress,
+} from '../../../src/services/converters/helper.converter';
+import {
   mapCoCoCartItemsToAdyenLineItems,
   mapCoCoLineItemToAdyenLineItem,
   mapCoCoCustomLineItemToAdyenLineItem,
   mapCoCoShippingInfoToAdyenLineItem,
   mapCoCoDiscountOnTotalPriceToAdyenLineItem,
-} from '../../../src/services/converters/helper.converter';
+} from '../../../src/services/converters/lineitem.converter';
 import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
 import { Address as AdyenAddress } from '@adyen/api-library/lib/src/typings/checkout/address';
 import {
