@@ -5,7 +5,7 @@ import {
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
-import { AfterPay, ICore } from "@adyen/adyen-web";
+import { ICore, Redirect } from "@adyen/adyen-web";
 /**
  * AfterPay component
  *
@@ -13,8 +13,6 @@ import { AfterPay, ICore } from "@adyen/adyen-web";
  * https://docs.adyen.com/payment-methods/afterpaytouch/web-component/
  */
 export class AfterPayBuilder extends AdyenBaseComponentBuilder {
-  // TODO: SCC-3189: validate the form that is shown for web-components and the impact it has. (drop-in redirects to a specific page)
-
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.afterpay, baseOptions);
   }
@@ -44,7 +42,8 @@ export class AfterPayComponent extends DefaultAdyenComponent {
   }
 
   init(): void {
-    this.component = new AfterPay(this.adyenCheckout, {
+    this.component = new Redirect(this.adyenCheckout, {
+      type: "afterpaytouch",
       showPayButton: this.componentOptions.showPayButton,
     });
   }

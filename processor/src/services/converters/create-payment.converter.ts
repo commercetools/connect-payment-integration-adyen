@@ -57,7 +57,6 @@ export class CreatePaymentConverter {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
         };
       }
-      // TODO: SCC-3189: the data?.paymentMethod?.type for afterpay suddenly is "afterpay_default". What kind of further impact has this? The docs do not talk about this.
       case AfterpayDetails.TypeEnum.Afterpaytouch: {
         return this.populateAfterpayData(cart);
       }
