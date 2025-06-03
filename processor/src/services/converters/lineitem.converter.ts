@@ -53,8 +53,10 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
   });
 };
 
-export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
-  return {
+export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem[] => {
+  const lineItems: LineItem[] = [];
+
+  const lineItemMapped: LineItem = {
     id: lineItem.variant.sku,
     description: Object.values(lineItem.name)[0], //TODO: get proper locale
     quantity: lineItem.quantity,
@@ -63,10 +65,30 @@ export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem
     taxAmount: getItemAmount(getTaxAmount(lineItem), lineItem.quantity),
     taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(lineItem.taxRate?.amount),
   };
+
+  lineItems.push(lineItemMapped);
+
+  const discountedAmount = lineItem.price.value.centAmount - lineItem.totalPrice.centAmount;
+  const hasLineItemBeenDiscounted = discountedAmount !== 0;
+
+  if (hasLineItemBeenDiscounted) {
+    const discountedLineItem: LineItem = {
+      id: `${lineItem.variant.sku}-discount`,
+      description: `${Object.values(lineItem.name)[0]} discount`, //TODO: get proper locale
+      quantity: lineItem.quantity,
+      amountIncludingTax: -discountedAmount,
+    };
+
+    lineItems.push(discountedLineItem);
+  }
+
+  return lineItems;
 };
 
-export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineItem): LineItem => {
-  return {
+export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineItem): LineItem[] => {
+  const lineItems: LineItem[] = [];
+
+  const lineItemMapped = {
     id: customLineItem.id,
     description: Object.values(customLineItem.name)[0], //TODO: get proper locale
     quantity: customLineItem.quantity,
@@ -75,6 +97,24 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
     taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
     taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(customLineItem.taxRate?.amount),
   };
+
+  lineItems.push(lineItemMapped);
+
+  const discountedAmount = customLineItem.money.centAmount - customLineItem.totalPrice.centAmount;
+  const hasLineItemBeenDiscounted = discountedAmount !== 0;
+
+  if (hasLineItemBeenDiscounted) {
+    const discountedLineItem: LineItem = {
+      id: `${customLineItem.id}-discount`,
+      description: `${Object.values(customLineItem.name)[0]} discount`, //TODO: get proper locale
+      quantity: customLineItem.quantity,
+      amountIncludingTax: -discountedAmount,
+    };
+
+    lineItems.push(discountedLineItem);
+  }
+
+  return lineItems;
 };
 
 export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: NormalizedShipping[]): LineItem[] => {
@@ -105,6 +145,8 @@ export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: Normaliz
         currencyCode: shipping.shippingInfo.taxedPrice.totalTax.currencyCode,
       });
     }
+
+    // TODO: SCC-3189: should we do anything specific for shipping discounts?
 
     return {
       description: `Shipping - ${shipping.shippingInfo.shippingMethodName}`,
@@ -138,6 +180,8 @@ export const mapCoCoDiscountOnTotalPriceToAdyenLineItem = (
       currencyCode: cart.discountOnTotalPrice.discountedGrossAmount.currencyCode,
     });
   }
+
+  // TODO: SCC-3189: do we need to anything else for cart discounts on total price?
 
   const taxAmountValue = amountIncludingTaxValue - amountExcludingTaxValue;
 
@@ -194,18 +238,13 @@ export const mapCoCoCartItemsToAdyenLineItems = (
     | 'discountOnTotalPrice'
   >,
 ): LineItem[] => {
-  // TODO: SCC-3189: support multiple types of types of discounts. Maybe based on the payment-method?
-  // - send single line item with discount included
-  // - send two line items for a discounted line item, one with original price one with (negative) discounted value
-  //
-  // Take into account the discount on cart/order level
-
+  // TODO: SCC-3189: limit sending of discounted line items to only afterpaytouch
   const adyenLineItems: LineItem[] = [];
 
-  cart.lineItems.forEach((lineItem) => adyenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
+  cart.lineItems.forEach((lineItem) => adyenLineItems.push(...mapCoCoLineItemToAdyenLineItem(lineItem)));
 
   cart.customLineItems.forEach((customLineItem) =>
-    adyenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
+    adyenLineItems.push(...mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
   );
 
   adyenLineItems.push(...mapCoCoShippingInfoToAdyenLineItem(paymentSDK.ctCartService.getNormalizedShipping({ cart })));
@@ -215,6 +254,8 @@ export const mapCoCoCartItemsToAdyenLineItems = (
       mapCoCoDiscountOnTotalPriceToAdyenLineItem({ discountOnTotalPrice: cart.discountOnTotalPrice }),
     );
   }
+
+  console.log('lineItem.converter result', adyenLineItems);
 
   return adyenLineItems;
 };
