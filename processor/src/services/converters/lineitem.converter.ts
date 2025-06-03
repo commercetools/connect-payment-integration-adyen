@@ -255,7 +255,5 @@ export const mapCoCoCartItemsToAdyenLineItems = (
     );
   }
 
-  console.log('lineItem.converter result', adyenLineItems);
-
   return adyenLineItems;
 };

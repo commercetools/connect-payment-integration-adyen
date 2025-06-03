@@ -11,6 +11,7 @@ import { Cart, LineItem as CoCoLineItem, CustomLineItem, ShippingInfo } from '@c
 import CoCoCartSimpleJSON from '../../data/coco-cart-simple-shipping.json';
 import CoCoCartMultipleJSON from '../../data/coco-cart-multiple-shipping.json';
 import CoCoCartCLPJSON from '../../data/coco-cart-clp.json';
+import CartDiscounts from '../../data/cart-discounts.json';
 
 describe('helper.converter', () => {
   beforeEach(() => {
@@ -218,5 +219,51 @@ describe('helper.converter', () => {
     };
 
     expect(actual).toEqual(expected);
+  });
+
+  test('should map a CoCo cart which contains product-discounts and cart-discounts-which-target-products and cart-discounts on totalPrice to Adyen line items', () => {
+    const input = CartDiscounts as Cart;
+
+    const actual = mapCoCoCartItemsToAdyenLineItems(input);
+    const expected: LineItem[] = [
+      {
+        id: 'MTSS-01',
+        description: 'Modern Three Seater Sofa',
+        quantity: 1,
+        amountExcludingTax: 142500,
+        amountIncludingTax: 171000,
+        taxAmount: 28500,
+        taxPercentage: 2000,
+      },
+      {
+        id: 'MTSS-01-discount',
+        description: 'Modern Three Seater Sofa discount',
+        quantity: 1,
+        amountIncludingTax: -29000,
+      },
+      {
+        description: 'Discount',
+        quantity: 1,
+        amountExcludingTax: -34200,
+        amountIncludingTax: -41040,
+        taxAmount: -6840,
+      },
+    ];
+
+    expect(actual).toEqual(expected);
+
+    //  41040 is the total discountOnTotalPrice (cart-discounts)
+    //  29000 is the total productDiscounts (including direct product-discounts + cart-discounts which target products)
+    //      +
+    //  70040 is the total centAmount discount from everything
+    //      +
+    // 129960 cart.totalPrice (user has to pay)
+    // 200000 equals the single line item original price without any discounts
+
+    const totalDiscounts = Math.abs(actual[1].amountIncludingTax ?? 0) + Math.abs(actual[2].amountIncludingTax ?? 0);
+    const totalValue = input.totalPrice.centAmount + totalDiscounts;
+
+    expect(input.lineItems).toHaveLength(1);
+    expect(totalValue).toEqual(input.lineItems[0].price.value.centAmount);
   });
 });
