@@ -1,6 +1,6 @@
 const projectKey = __VITE_CTP_PROJECT_KEY__;
 
-const fetchAdminToken = async () => {
+const fetchCoCoOAuthToken = async () => {
   const myHeaders = new Headers();
 
   myHeaders.append(
@@ -39,7 +39,7 @@ const fetchAdminToken = async () => {
 };
 
 const getSessionId = async (cartId, isDropin = false) => {
-  const accessToken = await fetchAdminToken();
+  const oAuthToken = await fetchCoCoOAuthToken();
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,
@@ -74,7 +74,7 @@ const getSessionId = async (cartId, isDropin = false) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${oAuthToken}`,
     },
     body: JSON.stringify({
       cart: {
