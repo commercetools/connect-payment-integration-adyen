@@ -27,15 +27,17 @@ describe('helper.converter', () => {
     const input = CoCoCartSimpleJSON.lineItems as CoCoLineItem[];
 
     const actual = mapCoCoLineItemToAdyenLineItem(input[0]);
-    const expected: LineItem = {
-      id: 'WCSI-09',
-      description: 'Walnut Counter Stool',
-      quantity: 1,
-      amountExcludingTax: 7562,
-      amountIncludingTax: 8999,
-      taxAmount: 1437,
-      taxPercentage: 1900,
-    };
+    const expected: LineItem[] = [
+      {
+        id: 'WCSI-09',
+        description: 'Walnut Counter Stool',
+        quantity: 1,
+        amountExcludingTax: 7562,
+        amountIncludingTax: 8999,
+        taxAmount: 1437,
+        taxPercentage: 1900,
+      },
+    ];
 
     expect(actual).toEqual(expected);
   });
@@ -44,15 +46,17 @@ describe('helper.converter', () => {
     const input: CustomLineItem[] = CoCoCartSimpleJSON.customLineItems as CustomLineItem[];
 
     const actual = mapCoCoCustomLineItemToAdyenLineItem(input[0]);
-    const expected: LineItem = {
-      id: 'fbb6ea54-e96b-4ebe-b4c9-ccad345bd5d6',
-      description: 'Walnut Counter Stool',
-      quantity: 1,
-      amountExcludingTax: 7562,
-      amountIncludingTax: 8999,
-      taxAmount: 1437,
-      taxPercentage: 1900,
-    };
+    const expected: LineItem[] = [
+      {
+        id: 'fbb6ea54-e96b-4ebe-b4c9-ccad345bd5d6',
+        description: 'Walnut Counter Stool',
+        quantity: 1,
+        amountExcludingTax: 7562,
+        amountIncludingTax: 8999,
+        taxAmount: 1437,
+        taxPercentage: 1900,
+      },
+    ];
 
     expect(actual).toEqual(expected);
   });
@@ -208,15 +212,17 @@ describe('helper.converter', () => {
     const input = CoCoCartCLPJSON.lineItems as CoCoLineItem[];
 
     const actual = mapCoCoLineItemToAdyenLineItem(input[0]);
-    const expected: LineItem = {
-      id: 'TST-02',
-      description: 'Teak Serving Platter',
-      quantity: 1,
-      amountExcludingTax: 13400,
-      amountIncludingTax: 15000,
-      taxAmount: 1600,
-      taxPercentage: 1200,
-    };
+    const expected: LineItem[] = [
+      {
+        id: 'TST-02',
+        description: 'Teak Serving Platter',
+        quantity: 1,
+        amountExcludingTax: 13400,
+        amountIncludingTax: 15000,
+        taxAmount: 1600,
+        taxPercentage: 1200,
+      },
+    ];
 
     expect(actual).toEqual(expected);
   });
