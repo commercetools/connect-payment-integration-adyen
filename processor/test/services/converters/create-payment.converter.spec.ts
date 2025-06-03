@@ -1,8 +1,8 @@
 import { CreatePaymentConverter } from '../../../src/services/converters/create-payment.converter';
 import { describe, test, expect } from '@jest/globals';
 import * as Helpers from '../../../src/services/converters/helper.converter';
-import { CartRest, type TCartRest } from '@commercetools-test-data/cart';
-import { Payment, type TPaymentRest } from '@commercetools-test-data/payment';
+import { Payment, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
+import { CartRest, type TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 
 jest.spyOn(Helpers, 'buildReturnUrl').mockReturnValue('https://commercetools.com');
