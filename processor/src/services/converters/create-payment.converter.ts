@@ -54,14 +54,14 @@ export class CreatePaymentConverter {
       case 'klarna_account':
       case 'paypal': {
         return {
-          lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
+          lineItems: mapCoCoCartItemsToAdyenLineItems(cart, data.paymentMethod.type),
         };
       }
       case 'afterpaytouch': {
-        return this.populateAfterpayData(cart);
+        return this.populateAfterpayData(cart, data.paymentMethod.type);
       }
       case 'klarna_b2b': {
-        return this.populateKlarnaB2BData(cart);
+        return this.populateKlarnaB2BData(cart, data.paymentMethod.type);
       }
       default:
         return {};
@@ -78,10 +78,10 @@ export class CreatePaymentConverter {
     };
   }
 
-  private populateAfterpayData(cart: Cart): Partial<PaymentRequest> {
+  private populateAfterpayData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
     const { billingAddress, shippingAddress } = cart;
 
-    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
 
     return {
       shopperReference: cart.customerId ?? cart.anonymousId ?? randomUUID(),
@@ -94,7 +94,7 @@ export class CreatePaymentConverter {
     };
   }
 
-  private populateKlarnaB2BData(cart: Cart): Partial<PaymentRequest> {
+  private populateKlarnaB2BData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
     const { billingAddress } = cart;
     const { firstName, lastName, email, company } = billingAddress || {};
 
@@ -102,7 +102,7 @@ export class CreatePaymentConverter {
       return !!(company && firstName && lastName && email);
     };
 
-    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
 
     if (hasValidBillingAddress()) {
       return {

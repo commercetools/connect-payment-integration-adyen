@@ -11,6 +11,11 @@ import {
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 
+/**
+ * These payment methods require product line item discounts to be send seperately as a new (negative value) line item
+ */
+export const PAYMENT_METHODS_REQUIRE_SEPERATE_DISCOUNT = ['afterpaytouch'];
+
 const getItemAmount = (totalAmount: number, quantity: number): number => {
   return parseFloat((totalAmount / quantity).toFixed(0));
 };
@@ -75,6 +80,63 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
     taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
     taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(customLineItem.taxRate?.amount),
   };
+};
+
+const mapOverAmountsOfLineItemToSingleQuantityPricing = (lineItem: CoCoLineItem | CustomLineItem) => {
+  const amountExcludingTaxForOneQuantity = getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity);
+  const amountIncludingTaxForOneQuantity = getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity);
+  const taxAmountForOneQuantity = getItemAmount(getTaxAmount(lineItem), lineItem.quantity);
+
+  const isLineItem = 'price' in lineItem;
+
+  const productPriceWithoutProductDiscounts = isLineItem ? lineItem.price.value.centAmount : lineItem.money.centAmount;
+
+  const discountedAmountForOneQuantity = productPriceWithoutProductDiscounts - amountIncludingTaxForOneQuantity;
+  const hasLineItemBeenDiscounted = discountedAmountForOneQuantity !== 0;
+
+  return {
+    amountExcludingTaxForOneQuantity,
+    amountIncludingTaxForOneQuantity,
+    taxAmountForOneQuantity,
+    discountedAmountForOneQuantity,
+    hasLineItemBeenDiscounted,
+  };
+};
+
+const mapCoCoLineItemToAdyenLineItemSeperateProductDiscounts = (
+  lineItem: CoCoLineItem | CustomLineItem,
+): LineItem[] => {
+  const lineItems: LineItem[] = [];
+
+  const amounts = mapOverAmountsOfLineItemToSingleQuantityPricing(lineItem);
+
+  const isLineItem = 'price' in lineItem;
+  const id = isLineItem ? lineItem.variant.sku : lineItem.id;
+
+  const lineItemMapped = {
+    id: id,
+    description: Object.values(lineItem.name)[0], //TODO: get proper locale
+    quantity: lineItem.quantity,
+    amountExcludingTax: amounts.amountExcludingTaxForOneQuantity + amounts.discountedAmountForOneQuantity,
+    amountIncludingTax: amounts.amountIncludingTaxForOneQuantity + amounts.discountedAmountForOneQuantity,
+    taxAmount: amounts.taxAmountForOneQuantity,
+    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(lineItem.taxRate?.amount),
+  };
+
+  lineItems.push(lineItemMapped);
+
+  if (amounts.hasLineItemBeenDiscounted) {
+    const discountedLineItem: LineItem = {
+      id: `${id}-discount`,
+      description: `${Object.values(lineItem.name)[0]} discount`, //TODO: get proper locale
+      quantity: lineItem.quantity,
+      amountIncludingTax: -amounts.discountedAmountForOneQuantity,
+    };
+
+    lineItems.push(discountedLineItem);
+  }
+
+  return lineItems;
 };
 
 export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: NormalizedShipping[]): LineItem[] => {
@@ -169,9 +231,10 @@ export const mapCoCoOrderItemsToAdyenLineItems = (
     | 'shipping'
     | 'discountOnTotalPrice'
   >,
+  paymentMethod?: string,
 ): LineItem[] => {
   // CoCo model between these attributes is shared between a Cart and Order hence we can re-use the existing mapping logic.
-  return mapCoCoCartItemsToAdyenLineItems(order);
+  return mapCoCoCartItemsToAdyenLineItems(order, paymentMethod);
 };
 
 /**
@@ -193,20 +256,27 @@ export const mapCoCoCartItemsToAdyenLineItems = (
     | 'shipping'
     | 'discountOnTotalPrice'
   >,
+  paymentMethod?: string,
 ): LineItem[] => {
-  // TODO: SCC-3189: support multiple types of types of discounts. Maybe based on the payment-method?
-  // - send single line item with discount included
-  // - send two line items for a discounted line item, one with original price one with (negative) discounted value
-  //
-  // Take into account the discount on cart/order level
+  const seperateProductDiscounts = paymentMethod && PAYMENT_METHODS_REQUIRE_SEPERATE_DISCOUNT.includes(paymentMethod);
 
   const adyenLineItems: LineItem[] = [];
 
-  cart.lineItems.forEach((lineItem) => adyenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
+  for (const lineItem of cart.lineItems) {
+    if (seperateProductDiscounts) {
+      adyenLineItems.push(...mapCoCoLineItemToAdyenLineItemSeperateProductDiscounts(lineItem));
+    } else {
+      adyenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem));
+    }
+  }
 
-  cart.customLineItems.forEach((customLineItem) =>
-    adyenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
-  );
+  for (const customLineItem of cart.customLineItems) {
+    if (seperateProductDiscounts) {
+      adyenLineItems.push(...mapCoCoLineItemToAdyenLineItemSeperateProductDiscounts(customLineItem));
+    } else {
+      adyenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem));
+    }
+  }
 
   adyenLineItems.push(...mapCoCoShippingInfoToAdyenLineItem(paymentSDK.ctCartService.getNormalizedShipping({ cart })));
 

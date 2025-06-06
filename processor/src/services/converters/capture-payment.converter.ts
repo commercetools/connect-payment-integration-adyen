@@ -15,7 +15,7 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 /**
  * These payment methods require line items to be send to Adyen for capturing payments
  */
-export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b', 'afterpay'];
+export const METHODS_REQUIRE_LINE_ITEMS = ['klarna', 'klarna_account', 'klarna_paynow', 'klarna_b2b'];
 
 export class CapturePaymentConverter {
   private ctCartService: CommercetoolsCartService;
@@ -33,7 +33,10 @@ export class CapturePaymentConverter {
       opts.payment.paymentMethodInfo.method &&
       METHODS_REQUIRE_LINE_ITEMS.includes(opts.payment.paymentMethodInfo.method)
     ) {
-      adyenLineItems = await this.retrievePaymentAssociatedLineItems(opts.payment.id);
+      adyenLineItems = await this.retrievePaymentAssociatedLineItems(
+        opts.payment.id,
+        opts.payment.paymentMethodInfo.method,
+      );
     }
 
     return {
@@ -51,11 +54,11 @@ export class CapturePaymentConverter {
     };
   }
 
-  private async retrievePaymentAssociatedLineItems(paymentId: string): Promise<LineItem[]> {
+  private async retrievePaymentAssociatedLineItems(paymentId: string, paymentMethodType: string): Promise<LineItem[]> {
     // First try fetching the order
     try {
       const order = await this.ctOrderService.getOrderByPaymentId({ paymentId });
-      return mapCoCoOrderItemsToAdyenLineItems(order);
+      return mapCoCoOrderItemsToAdyenLineItems(order, paymentMethodType);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Could not find order for the given paymentId';
       log.warn(msg, {
@@ -67,7 +70,7 @@ export class CapturePaymentConverter {
     // Fallback to the cart
     try {
       const cart = await this.ctCartService.getCartByPaymentId({ paymentId });
-      return mapCoCoCartItemsToAdyenLineItems(cart);
+      return mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
     } catch (error) {
       throw new ErrorReferencedResourceNotFound('cart', paymentId, {
         cause: error,
