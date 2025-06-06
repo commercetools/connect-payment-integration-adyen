@@ -7,7 +7,7 @@ import {
   populateApplicationInfo,
   getShopperStatement,
 } from './helper.converter';
-import { mapCoCoCartItemsToAdyenLineItems } from './lineitem.converter';
+import { mapCoCoCartItemsToAdyenLineItems } from './helper.converter';
 
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
