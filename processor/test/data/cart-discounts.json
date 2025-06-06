@@ -1,11 +1,11 @@
 {
   "type": "Cart",
-  "id": "31fe62f4-5853-45ba-89c8-f461e6cf46ef",
+  "id": "65620022-1b20-4a73-9f66-29dd414f4c08",
   "version": 4,
-  "versionModifiedAt": "2025-06-02T14:49:51.537Z",
+  "versionModifiedAt": "2025-06-06T12:42:16.748Z",
   "lastMessageSequenceNumber": 1,
-  "createdAt": "2025-06-02T14:49:51.537Z",
-  "lastModifiedAt": "2025-06-02T14:49:51.537Z",
+  "createdAt": "2025-06-06T12:42:16.748Z",
+  "lastModifiedAt": "2025-06-06T12:42:16.748Z",
   "lastModifiedBy": {
     "isPlatformClient": true,
     "user": {
@@ -22,7 +22,7 @@
   },
   "lineItems": [
     {
-      "id": "8a2a7b61-3a22-480e-9606-995ea80c2006",
+      "id": "48884a78-9f8f-4485-b4e8-90a16af2b385",
       "productId": "efb82ccb-e179-4820-9b69-e1ad3693a62f",
       "productKey": "modern-three-seater-sofa",
       "name": {
@@ -44,6 +44,72 @@
         "id": 1,
         "sku": "MTSS-01",
         "prices": [
+          {
+            "id": "bbbe5849-d2ce-48a0-b21a-a984e6d1b1bb",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 200000,
+              "fractionDigits": 2
+            },
+            "country": "DE",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "EUR",
+                "centAmount": 180000,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          },
+          {
+            "id": "45399e13-9aa8-45b7-9a5d-98c48ec1dd0c",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "GBP",
+              "centAmount": 249900,
+              "fractionDigits": 2
+            },
+            "country": "GB",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "GBP",
+                "centAmount": 224910,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          },
+          {
+            "id": "03c33377-e2ea-4f70-8000-235d9a7cc7f8",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "USD",
+              "centAmount": 249900,
+              "fractionDigits": 2
+            },
+            "country": "US",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "USD",
+                "centAmount": 224910,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          },
           {
             "id": "85517956-faa5-4e56-9d6b-304b33af9136",
             "value": {
@@ -180,7 +246,7 @@
           }
         }
       },
-      "quantity": 1,
+      "quantity": 2,
       "discountedPrice": {
         "value": {
           "type": "centPrecision",
@@ -205,7 +271,7 @@
       },
       "discountedPricePerQuantity": [
         {
-          "quantity": 1,
+          "quantity": 2,
           "discountedPrice": {
             "value": {
               "type": "centPrecision",
@@ -239,11 +305,11 @@
         "subRates": []
       },
       "perMethodTaxRate": [],
-      "addedAt": "2025-06-02T14:49:51.525Z",
-      "lastModifiedAt": "2025-06-02T14:49:51.525Z",
+      "addedAt": "2025-06-06T12:42:16.736Z",
+      "lastModifiedAt": "2025-06-06T12:42:16.736Z",
       "state": [
         {
-          "quantity": 1,
+          "quantity": 2,
           "state": {
             "typeId": "state",
             "id": "26f1f5f6-ae77-4314-a7bb-02ebf05b6203"
@@ -255,20 +321,20 @@
       "totalPrice": {
         "type": "centPrecision",
         "currencyCode": "AUD",
-        "centAmount": 171000,
+        "centAmount": 342000,
         "fractionDigits": 2
       },
       "taxedPrice": {
         "totalNet": {
           "type": "centPrecision",
           "currencyCode": "AUD",
-          "centAmount": 142500,
+          "centAmount": 285000,
           "fractionDigits": 2
         },
         "totalGross": {
           "type": "centPrecision",
           "currencyCode": "AUD",
-          "centAmount": 171000,
+          "centAmount": 342000,
           "fractionDigits": 2
         },
         "taxPortions": [
@@ -277,7 +343,7 @@
             "amount": {
               "type": "centPrecision",
               "currencyCode": "AUD",
-              "centAmount": 28500,
+              "centAmount": 57000,
               "fractionDigits": 2
             },
             "name": "Australia"
@@ -286,7 +352,7 @@
         "totalTax": {
           "type": "centPrecision",
           "currencyCode": "AUD",
-          "centAmount": 28500,
+          "centAmount": 57000,
           "fractionDigits": 2
         }
       },
@@ -297,20 +363,20 @@
   "totalPrice": {
     "type": "centPrecision",
     "currencyCode": "AUD",
-    "centAmount": 129960,
+    "centAmount": 307800,
     "fractionDigits": 2
   },
   "taxedPrice": {
     "totalNet": {
       "type": "centPrecision",
       "currencyCode": "AUD",
-      "centAmount": 108300,
+      "centAmount": 256500,
       "fractionDigits": 2
     },
     "totalGross": {
       "type": "centPrecision",
       "currencyCode": "AUD",
-      "centAmount": 129960,
+      "centAmount": 307800,
       "fractionDigits": 2
     },
     "taxPortions": [
@@ -319,7 +385,7 @@
         "amount": {
           "type": "centPrecision",
           "currencyCode": "AUD",
-          "centAmount": 28500,
+          "centAmount": 57000,
           "fractionDigits": 2
         },
         "name": "Australia"
@@ -328,7 +394,7 @@
     "totalTax": {
       "type": "centPrecision",
       "currencyCode": "AUD",
-      "centAmount": 21660,
+      "centAmount": 51300,
       "fractionDigits": 2
     }
   },
@@ -337,14 +403,14 @@
     "discountedAmount": {
       "type": "centPrecision",
       "currencyCode": "AUD",
-      "centAmount": 41040,
+      "centAmount": 34200,
       "fractionDigits": 2
     },
     "includedDiscounts": [
       {
         "discount": {
           "typeId": "cart-discount",
-          "id": "222d784d-4e3b-4c1f-90e0-408bc407d605"
+          "id": "08044323-882a-4f0c-a74f-b692ca5bc645"
         },
         "discountedAmount": {
           "type": "centPrecision",
@@ -352,30 +418,18 @@
           "centAmount": 34200,
           "fractionDigits": 2
         }
-      },
-      {
-        "discount": {
-          "typeId": "cart-discount",
-          "id": "672305d0-57ba-478c-9a3b-6e6f8df05e5f"
-        },
-        "discountedAmount": {
-          "type": "centPrecision",
-          "currencyCode": "AUD",
-          "centAmount": 6840,
-          "fractionDigits": 2
-        }
       }
     ],
     "discountedNetAmount": {
       "type": "centPrecision",
       "currencyCode": "AUD",
-      "centAmount": 34200,
+      "centAmount": 28500,
       "fractionDigits": 2
     },
     "discountedGrossAmount": {
       "type": "centPrecision",
       "currencyCode": "AUD",
-      "centAmount": 41040,
+      "centAmount": 34200,
       "fractionDigits": 2
     }
   },
@@ -383,7 +437,7 @@
   "shippingAddress": {
     "title": "My Address",
     "salutation": "Mr.",
-    "firstName": "Example",
+    "firstName": "joey",
     "lastName": "Person",
     "streetName": "Example Street",
     "streetNumber": "4711",
@@ -409,8 +463,8 @@
   "billingAddress": {
     "title": "My Address",
     "salutation": "Mr.",
-    "firstName": "Example",
-    "lastName": "Person",
+    "firstName": "joey-cart-product-5-off",
+    "lastName": "joey-total-price-10-off",
     "streetName": "Example Street",
     "streetNumber": "4711",
     "postalCode": "80933",
@@ -425,5 +479,5 @@
   "discountTypeCombination": {
     "type": "Stacking"
   },
-  "totalLineItemQuantity": 1
+  "totalLineItemQuantity": 2
 }
