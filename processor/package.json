@@ -22,7 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@adyen/api-library": "27.0.0",
-    "@commercetools-backend/loggers": "23.3.0",
+    "@commercetools-backend/loggers": "24.1.0",
     "@commercetools/connect-payments-sdk": "0.23.0",
     "@fastify/autoload": "6.3.1",
     "@fastify/cors": "11.0.1",
