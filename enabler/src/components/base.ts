@@ -90,15 +90,15 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
   }
   abstract init(): void;
 
-  submit(): void {
+  async submit(): Promise<void> {
     this.component.submit();
   }
 
-  mount(selector: string): void {
+  async mount(selector: string): Promise<void> {
     this.component.mount(selector);
   }
 
-  isAvailable(): Promise<boolean> {
+  async isAvailable(): Promise<boolean> {
     if (!this.isPaymentMethodAllowed()) {
       console.log(`${this.paymentMethod} is not allowed`);
       return Promise.resolve(false);
