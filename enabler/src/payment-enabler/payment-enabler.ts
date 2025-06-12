@@ -1,15 +1,17 @@
-export interface PaymentComponent {
-  submit(): void;
-  mount(selector: string): void;
-  showValidation?(): void;
-  isValid?(): boolean;
-  getState?(): {
-    card?: {
-      endDigits?: string;
-      brand?: string;
-      expiryDate?: string;
-    };
+type CardPaymentState = {
+  card?: {
+    endDigits?: string;
+    brand?: string;
+    expiryDate?: string;
   };
+}
+
+export interface PaymentComponent {
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
+  showValidation?(): Promise<void>;
+  isValid?(): Promise<boolean>;
+  getState?(): Promise<CardPaymentState>;
   isAvailable?(): Promise<boolean>;
 }
 
@@ -61,15 +63,15 @@ export const getPaymentMethodType = (adyenPaymentMethod: string): PaymentMethod 
 
 export type PaymentResult =
   | {
-      isSuccess: true;
-      paymentReference: string;
-      method?: { type?: string };
-    }
-  | { 
-      isSuccess: false; 
-      paymentReference?: string; 
-      method?: { type?: string }; 
-    };
+    isSuccess: true;
+    paymentReference: string;
+    method?: { type?: string };
+  }
+  | {
+    isSuccess: false;
+    paymentReference?: string;
+    method?: { type?: string };
+  };
 
 export type ComponentOptions = {
   showPayButton?: boolean;
@@ -88,8 +90,8 @@ export enum DropinType {
 }
 
 export interface DropinComponent {
-  submit(): void;
-  mount(selector: string): void;
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
 }
 export type DropinOptions = {
   showPayButton?: boolean;
