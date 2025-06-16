@@ -1,9 +1,10 @@
 import { CreatePaymentConverter } from '../../../src/services/converters/create-payment.converter';
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, jest } from '@jest/globals';
 import * as Helpers from '../../../src/services/converters/helper.converter';
 import { Payment, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, type TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
+import { Cart } from '@commercetools/connect-payments-sdk';
 
 jest.spyOn(Helpers, 'buildReturnUrl').mockReturnValue('https://commercetools.com');
 
@@ -16,7 +17,7 @@ describe('create-payment.converter', () => {
       .customLineItems([])
       .buildRest<TCartRest>({
         omitFields: ['billingAddress', 'shippingAddress'],
-      });
+      }) as Cart;
     const paymentRandom = Payment.random().buildRest<TPaymentRest>();
     const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
 
@@ -51,7 +52,7 @@ describe('create-payment.converter', () => {
   });
 
   test('should set the additional data for afterpaytouch', () => {
-    const cartRandom = CartRest.random().customLineItems([]).buildRest<TCartRest>({});
+    const cartRandom = CartRest.random().customLineItems([]).buildRest<TCartRest>({}) as Cart;
     const paymentRandom = Payment.random().buildRest<TPaymentRest>();
     const paymentRequestDTO: CreatePaymentRequestDTO = {
       paymentMethod: { type: 'afterpaytouch' },
