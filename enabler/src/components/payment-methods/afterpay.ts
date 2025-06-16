@@ -1,8 +1,4 @@
-import {
-  ComponentOptions,
-  PaymentComponent,
-  PaymentMethod,
-} from "../../payment-enabler/payment-enabler";
+import { ComponentOptions, PaymentComponent, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { ICore, Redirect } from "@adyen/adyen-web";
@@ -24,6 +20,7 @@ export class AfterPayBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.afterpay),
     });
     afterpayComponent.init();
     return afterpayComponent;
@@ -37,6 +34,7 @@ export class AfterPayComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
@@ -48,11 +46,11 @@ export class AfterPayComponent extends DefaultAdyenComponent {
     });
   }
 
-  showValidation() {
+  async showValidation() {
     this.component.showValidation();
   }
 
-  isValid() {
+  async isValid() {
     return this.component.isValid;
   }
 }

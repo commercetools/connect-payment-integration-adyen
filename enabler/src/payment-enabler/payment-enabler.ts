@@ -1,15 +1,17 @@
-export interface PaymentComponent {
-  submit(): void;
-  mount(selector: string): void;
-  showValidation?(): void;
-  isValid?(): boolean;
-  getState?(): {
-    card?: {
-      endDigits?: string;
-      brand?: string;
-      expiryDate?: string;
-    };
+type CardPaymentState = {
+  card?: {
+    endDigits?: string;
+    brand?: string;
+    expiryDate?: string;
   };
+};
+
+export interface PaymentComponent {
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
+  showValidation?(): Promise<void>;
+  isValid?(): Promise<boolean>;
+  getState?(): Promise<CardPaymentState>;
   isAvailable?(): Promise<boolean>;
 }
 
@@ -24,10 +26,7 @@ export type EnablerOptions = {
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
-  onError?: (
-    error: any,
-    context?: { paymentReference?: string; method?: { type?: string } },
-  ) => void;
+  onError?: (error: any, context?: { paymentReference?: string; method?: { type?: string } }) => void;
 };
 
 export enum PaymentMethod {
@@ -54,11 +53,9 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
 }
 
-export const getPaymentMethodType = (
-  key: string,
-): PaymentMethod | undefined => {
+export const getPaymentMethodType = (adyenPaymentMethod: string): PaymentMethod | undefined => {
   for (const enumKey in PaymentMethod) {
-    if (PaymentMethod[enumKey] === key) {
+    if (PaymentMethod[enumKey] === adyenPaymentMethod) {
       return enumKey as PaymentMethod;
     }
   }
@@ -94,8 +91,8 @@ export enum DropinType {
 }
 
 export interface DropinComponent {
-  submit(): void;
-  mount(selector: string): void;
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
 }
 export type DropinOptions = {
   showPayButton?: boolean;
@@ -112,16 +109,12 @@ export interface PaymentEnabler {
   /**
    * @throws {Error}
    */
-  createComponentBuilder: (
-    type: string,
-  ) => Promise<PaymentComponentBuilder | never>;
+  createComponentBuilder: (type: string) => Promise<PaymentComponentBuilder | never>;
 
   /**
    *
    * @returns {Promise<DropinComponent>}
    * @throws {Error}
    */
-  createDropinBuilder: (
-    type: DropinType,
-  ) => Promise<PaymentDropinBuilder | never>;
+  createDropinBuilder: (type: DropinType) => Promise<PaymentDropinBuilder | never>;
 }

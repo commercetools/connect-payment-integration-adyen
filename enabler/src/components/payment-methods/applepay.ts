@@ -1,7 +1,4 @@
-import {
-  ComponentOptions,
-  PaymentMethod,
-} from "../../payment-enabler/payment-enabler";
+import { ComponentOptions, PaymentMethod } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { ApplePay, ICore } from "@adyen/adyen-web";
@@ -17,8 +14,7 @@ export class ApplePayBuilder extends AdyenBaseComponentBuilder {
   public componentHasSubmit = false;
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.applepay, baseOptions);
-    this.usesOwnCertificate =
-      baseOptions.applePayConfig?.usesOwnCertificate || false;
+    this.usesOwnCertificate = baseOptions.applePayConfig?.usesOwnCertificate || false;
   }
 
   build(config: ComponentOptions): ApplePayComponent {
@@ -28,6 +24,7 @@ export class ApplePayBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.applepay),
       usesOwnCertificate: this.usesOwnCertificate,
     });
     applePayComponent.init();
@@ -44,6 +41,7 @@ export class ApplePayComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
     usesOwnCertificate?: boolean;
   }) {
     super(opts);
@@ -52,9 +50,12 @@ export class ApplePayComponent extends DefaultAdyenComponent {
 
   init(): void {
     this.component = new ApplePay(this.adyenCheckout, {
-      showPayButton: this.componentOptions.showPayButton,
       buttonType: "pay" as any, // "pay" type is not included in Adyen's types, try to force it
       buttonColor: "black",
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
+      showPayButton: this.componentOptions.showPayButton,
       ...(this.usesOwnCertificate && {
         onValidateMerchant: this.onValidateMerchant.bind(this),
       }),
@@ -70,11 +71,7 @@ export class ApplePayComponent extends DefaultAdyenComponent {
     });
   }
 
-  private onValidateMerchant(
-    resolve: Function,
-    reject: Function,
-    validationUrl: string
-  ) {
+  private onValidateMerchant(resolve: Function, reject: Function, validationUrl: string) {
     fetch(`${this.processorUrl}/applepay-sessions`, {
       method: "POST",
       headers: {

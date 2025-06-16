@@ -42,24 +42,28 @@ type AdyenComponent =
 /**
  * Base Web Component
  */
-export abstract class AdyenBaseComponentBuilder
-  implements PaymentComponentBuilder
-{
+export abstract class AdyenBaseComponentBuilder implements PaymentComponentBuilder {
   public componentHasSubmit = true;
 
   protected paymentMethod: PaymentMethod;
   protected adyenCheckout: ICore;
   protected sessionId: string;
   protected processorUrl: string;
+  protected paymentComponentsConfigOverride: Record<string, any>;
 
   constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
     this.paymentMethod = paymentMethod;
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.sessionId = baseOptions.sessionId;
     this.processorUrl = baseOptions.processorUrl;
+    this.paymentComponentsConfigOverride = baseOptions.paymentComponentsConfigOverride;
   }
 
   abstract build(config: ComponentOptions): PaymentComponent;
+
+  protected resolvePaymentComponentConfigOverride(paymentMethod: string): Record<string, any> {
+    return this.paymentComponentsConfigOverride?.[paymentMethod] ?? {};
+  }
 }
 
 export abstract class DefaultAdyenComponent implements PaymentComponent {
@@ -69,6 +73,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
   protected componentOptions: ComponentOptions;
   protected sessionId: string;
   protected processorUrl: string;
+  protected paymentComponentConfigOverride: Record<string, any>;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
@@ -76,24 +81,26 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     this.paymentMethod = opts.paymentMethod;
     this.adyenCheckout = opts.adyenCheckout;
     this.componentOptions = opts.componentOptions;
     this.sessionId = opts.sessionId;
     this.processorUrl = opts.processorUrl;
+    this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
   }
   abstract init(): void;
 
-  submit(): void {
+  async submit(): Promise<void> {
     this.component.submit();
   }
 
-  mount(selector: string): void {
+  async mount(selector: string): Promise<void> {
     this.component.mount(selector);
   }
 
-  isAvailable(): Promise<boolean> {
+  async isAvailable(): Promise<boolean> {
     if (!this.isPaymentMethodAllowed()) {
       console.log(`${this.paymentMethod} is not allowed`);
       return Promise.resolve(false);
@@ -116,7 +123,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
 
   private isPaymentMethodAllowed(): boolean {
     return this.adyenCheckout.paymentMethodsResponse.paymentMethods.some(
-      (paymentMethod) => paymentMethod.type === this.paymentMethod,
+      (paymentMethod) => paymentMethod.type === this.paymentMethod
     );
   }
 }

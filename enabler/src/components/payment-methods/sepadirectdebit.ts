@@ -15,6 +15,7 @@ export class SepaBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.sepadirectdebit),
     });
     sepaComponent.init();
     return sepaComponent;
@@ -28,21 +29,25 @@ export class SepaComponent extends DefaultAdyenComponent {
     componentOptions: ComponentOptions;
     sessionId: string;
     processorUrl: string;
+    paymentComponentConfigOverride: Record<string, any>;
   }) {
     super(opts);
   }
 
   init(): void {
     this.component = new SepaDirectDebit(this.adyenCheckout, {
+      // Override the default config with the one provided by the user
+      ...this.paymentComponentConfigOverride,
+      // Configuration that can not be overridden
       showPayButton: this.componentOptions.showPayButton,
     });
   }
 
-  showValidation() {
+  async showValidation() {
     this.component.showValidation();
   }
 
-  isValid() {
+  async isValid() {
     return this.component.isValid;
   }
 }
