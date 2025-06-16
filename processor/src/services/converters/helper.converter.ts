@@ -278,52 +278,32 @@ export const convertAllowedPaymentMethodsToAdyenFormat = (): string[] => {
   return adyenAllowedPaymentMethods;
 };
 
+const PAYMENT_METHOD_TO_ADYEN_MAPPING: Record<string, string> = {
+  afterpay: 'afterpaytouch',
+  bancontactcard: 'bcmc',
+  bancontactmobile: 'bcmc_mobile',
+  card: 'scheme',
+  klarna_billie: 'klarna_b2b',
+  klarna_pay_later: 'klarna',
+  klarna_pay_now: 'klarna_paynow',
+  klarna_pay_overtime: 'klarna_account',
+  przelewy24: GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl,
+};
+
+const ADYEN_TO_PAYMENT_METHOD_MAPPING: Record<string, string> = Object.entries(PAYMENT_METHOD_TO_ADYEN_MAPPING).reduce(
+  (acc, [key, value]) => {
+    acc[value] = key;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
 export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string => {
-  if (paymentMethod === 'card') {
-    return 'scheme';
-  } else if (paymentMethod === 'klarna_pay_later') {
-    return 'klarna';
-  } else if (paymentMethod === 'klarna_pay_now') {
-    return 'klarna_paynow';
-  } else if (paymentMethod === 'klarna_pay_overtime') {
-    return 'klarna_account';
-  } else if (paymentMethod === 'bancontactcard') {
-    return 'bcmc';
-  } else if (paymentMethod === 'bancontactmobile') {
-    return 'bcmc_mobile';
-  } else if (paymentMethod === 'klarna_billie') {
-    return 'klarna_b2b';
-  } else if (paymentMethod === 'przelewy24') {
-    return GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl;
-  } else if (paymentMethod === 'afterpay') {
-    return 'afterpaytouch';
-  } else {
-    return paymentMethod;
-  }
+  return PAYMENT_METHOD_TO_ADYEN_MAPPING[paymentMethod] ?? paymentMethod;
 };
 
 export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): string => {
-  if (paymentMethod === 'scheme') {
-    return 'card';
-  } else if (paymentMethod === 'klarna') {
-    return 'klarna_pay_later';
-  } else if (paymentMethod === 'klarna_paynow') {
-    return 'klarna_pay_now';
-  } else if (paymentMethod === 'klarna_account') {
-    return 'klarna_pay_overtime';
-  } else if (paymentMethod === 'bcmc') {
-    return 'bancontactcard';
-  } else if (paymentMethod === 'bcmc_mobile') {
-    return 'bancontactmobile';
-  } else if (paymentMethod === 'klarna_b2b') {
-    return 'klarna_billie';
-  } else if (paymentMethod === GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl) {
-    return 'przelewy24';
-  } else if (paymentMethod === 'afterpaytouch') {
-    return 'afterpay';
-  } else {
-    return paymentMethod;
-  }
+  return ADYEN_TO_PAYMENT_METHOD_MAPPING[paymentMethod] ?? paymentMethod;
 };
 
 export const buildReturnUrl = (paymentReference: string): string => {
