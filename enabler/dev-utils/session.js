@@ -45,7 +45,7 @@ const getSessionId = async (cartId, isDropin = false) => {
     processorUrl: __VITE_PROCESSOR_URL__,
     ...(!isDropin && {
       allowedPaymentMethods: [
-        "afterpaytouch",
+        "afterpay",
         "applepay",
         "bancontactcard",
         "bancontactmobile",
