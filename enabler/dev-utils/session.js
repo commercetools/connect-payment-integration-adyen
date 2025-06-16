@@ -45,6 +45,7 @@ const getSessionId = async (cartId, isDropin = false) => {
     processorUrl: __VITE_PROCESSOR_URL__,
     ...(!isDropin && {
       allowedPaymentMethods: [
+        "afterpay",
         "applepay",
         "bancontactcard",
         "bancontactmobile",
@@ -57,13 +58,13 @@ const getSessionId = async (cartId, isDropin = false) => {
         "klarna_pay_later",
         "klarna_pay_now",
         "klarna_pay_overtime",
+        "mobilepay",
         "paypal",
         "przelewy24",
         "sepadirectdebit",
         "swish",
         "twint",
         "vipps",
-        "mobilepay",
       ], // add here your allowed methods for development purposes
     }),
   };

@@ -4,7 +4,7 @@ type CardPaymentState = {
     brand?: string;
     expiryDate?: string;
   };
-}
+};
 
 export interface PaymentComponent {
   submit(): Promise<void>;
@@ -30,6 +30,7 @@ export type EnablerOptions = {
 };
 
 export enum PaymentMethod {
+  afterpay = "afterpaytouch", // Afterpay
   applepay = "applepay",
   bancontactcard = "bcmc", // Bancontact card
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
@@ -63,15 +64,15 @@ export const getPaymentMethodType = (adyenPaymentMethod: string): PaymentMethod 
 
 export type PaymentResult =
   | {
-    isSuccess: true;
-    paymentReference: string;
-    method?: { type?: string };
-  }
+      isSuccess: true;
+      paymentReference: string;
+      method?: { type?: string };
+    }
   | {
-    isSuccess: false;
-    paymentReference?: string;
-    method?: { type?: string };
-  };
+      isSuccess: false;
+      paymentReference?: string;
+      method?: { type?: string };
+    };
 
 export type ComponentOptions = {
   showPayButton?: boolean;
@@ -108,16 +109,12 @@ export interface PaymentEnabler {
   /**
    * @throws {Error}
    */
-  createComponentBuilder: (
-    type: string,
-  ) => Promise<PaymentComponentBuilder | never>;
+  createComponentBuilder: (type: string) => Promise<PaymentComponentBuilder | never>;
 
   /**
    *
    * @returns {Promise<DropinComponent>}
    * @throws {Error}
    */
-  createDropinBuilder: (
-    type: DropinType,
-  ) => Promise<PaymentDropinBuilder | never>;
+  createDropinBuilder: (type: DropinType) => Promise<PaymentDropinBuilder | never>;
 }

@@ -9,18 +9,15 @@ import {
   mapCoCoShippingInfoToAdyenLineItem,
   mapCoCoDiscountOnTotalPriceToAdyenLineItem,
 } from '../../../src/services/converters/helper.converter';
-import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
 import { Address as AdyenAddress } from '@adyen/api-library/lib/src/typings/checkout/address';
-import {
-  Address,
-  Cart,
-  LineItem as CoCoLineItem,
-  CustomLineItem,
-  ShippingInfo,
-} from '@commercetools/connect-payments-sdk';
+import { Address } from '@commercetools/connect-payments-sdk';
+import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
+import { LineItem } from '@adyen/api-library/lib/src/typings/checkout/lineItem';
+import { Cart, LineItem as CoCoLineItem, CustomLineItem, ShippingInfo } from '@commercetools/connect-payments-sdk';
 import CoCoCartSimpleJSON from '../../data/coco-cart-simple-shipping.json';
 import CoCoCartMultipleJSON from '../../data/coco-cart-multiple-shipping.json';
 import CoCoCartCLPJSON from '../../data/coco-cart-clp.json';
+import CartDiscounts from '../../data/cart-discounts.json';
 
 describe('helper.converter', () => {
   beforeEach(() => {
@@ -33,21 +30,51 @@ describe('helper.converter', () => {
   });
 
   test('convertPaymentMethodFromAdyenFormat', async () => {
-    const paymentMethod1 = 'scheme';
-    const paymentMethod2 = 'klarna';
-    const result1: string = convertPaymentMethodFromAdyenFormat(paymentMethod1);
-    const result2: string = convertPaymentMethodFromAdyenFormat(paymentMethod2);
-    expect(result1).toStrictEqual('card');
-    expect(result2).toStrictEqual('klarna_pay_later');
+    const inputTable = [
+      ['scheme', 'card'],
+      ['klarna', 'klarna_pay_later'],
+      ['klarna_paynow', 'klarna_pay_now'],
+      ['klarna_account', 'klarna_pay_overtime'],
+      ['bcmc', 'bancontactcard'],
+      ['bcmc_mobile', 'bancontactmobile'],
+      ['klarna_b2b', 'klarna_billie'],
+      [GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl, 'przelewy24'],
+      ['afterpaytouch', 'afterpay'],
+      ['unknown_method_should_return_this_value', 'unknown_method_should_return_this_value'],
+    ];
+
+    for (const testData of inputTable) {
+      const adyenName = testData[0];
+      const checkoutName = testData[1];
+
+      const result = convertPaymentMethodFromAdyenFormat(adyenName);
+
+      expect(result).toEqual(checkoutName);
+    }
   });
 
   test('convertPaymentMethodToAdyenFormat', async () => {
-    const paymentMethod1 = 'card';
-    const paymentMethod2 = 'klarna_pay_later';
-    const result1: string = convertPaymentMethodToAdyenFormat(paymentMethod1);
-    const result2: string = convertPaymentMethodToAdyenFormat(paymentMethod2);
-    expect(result1).toStrictEqual('scheme');
-    expect(result2).toStrictEqual('klarna');
+    const inputTable = [
+      ['card', 'scheme'],
+      ['klarna_pay_later', 'klarna'],
+      ['klarna_pay_now', 'klarna_paynow'],
+      ['klarna_pay_overtime', 'klarna_account'],
+      ['bancontactcard', 'bcmc'],
+      ['bancontactmobile', 'bcmc_mobile'],
+      ['klarna_billie', 'klarna_b2b'],
+      ['przelewy24', GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl],
+      ['afterpay', 'afterpaytouch'],
+      ['unknown_method_should_return_this_value', 'unknown_method_should_return_this_value'],
+    ];
+
+    for (const testData of inputTable) {
+      const adyenName = testData[0];
+      const checkoutName = testData[1];
+
+      const result = convertPaymentMethodToAdyenFormat(adyenName);
+
+      expect(result).toEqual(checkoutName);
+    }
   });
 
   test('populateCartAddress', async () => {
@@ -113,7 +140,6 @@ describe('helper.converter', () => {
       taxAmount: 1437,
       taxPercentage: 1900,
     };
-
     expect(actual).toEqual(expected);
   });
 
@@ -277,7 +303,76 @@ describe('helper.converter', () => {
       taxAmount: 1600,
       taxPercentage: 1200,
     };
+    expect(actual).toEqual(expected);
+  });
+
+  /**
+   * cart has the following discounts applied:
+   * - direct product-discount with 10% off
+   * - cart-discount which target the product with 5% off
+   * - cart-discount which targets the total price with 10% off
+   *
+   * cart has single product with a quantity of 2
+   * 200000 is the product price per one unit
+   * 400000 is total product price without any discounts (200000 * 2 = 400000)
+   *
+   * Product discounts:
+   *  20000 is the total product discounts (10% off, 200000 * 0.1 = 20000). Then on the remaining price, 180000 is the following cart-discount applied:
+   *   9000 is the total cart-discount which targets the product (5% off, 180000 * 0.05 = 9000)
+   *      +
+   *  29000 is the total product related discounts on this cart, per one unit
+   *
+   * 342000 (lineItem.totalPrice, includes all product related discounts and multiplied by quantity) (400000 - 29000 * 2)
+   *
+   * Cart discount on totalPrice:
+   *  34200 is the total discountOnTotalPrice (cart-discounts, 10% off on the total price of everything, 342000 * 0.1)
+   *
+   *  Final result:
+   *  400000
+   *   58000 (product-discount * quantity)
+   *   34200 (total price discount)
+   *       -
+   * 307800 (cart.totalPrice user has to pay)
+   */
+  test('should map a CoCo cart which contains product-discounts and cart-discounts-which-target-products and cart-discounts on totalPrice to Adyen line items', () => {
+    const cocoCartWithDiscountsApplied = CartDiscounts as Cart;
+
+    const actual = mapCoCoCartItemsToAdyenLineItems(cocoCartWithDiscountsApplied, 'afterpaytouch');
+    const expected: LineItem[] = [
+      {
+        id: 'MTSS-01',
+        description: 'Modern Three Seater Sofa',
+        quantity: 2,
+        amountExcludingTax: 171500,
+        amountIncludingTax: 200000,
+        taxAmount: 28500,
+        taxPercentage: 2000,
+      },
+      {
+        id: 'MTSS-01-discount',
+        description: 'Modern Three Seater Sofa discount',
+        quantity: 2,
+        amountIncludingTax: -29000,
+      },
+      {
+        description: 'Discount',
+        quantity: 1,
+        amountExcludingTax: -28500,
+        amountIncludingTax: -34200,
+        taxAmount: -5700,
+      },
+    ];
 
     expect(actual).toEqual(expected);
+
+    const totalPriceOfLineItem = actual[0]!.amountIncludingTax! * actual[0]!.quantity!;
+    const totalProductDiscount = actual[1]!.amountIncludingTax! * actual[1]!.quantity!;
+    const totalPriceDiscount = actual[2]!.amountIncludingTax!;
+
+    const sum = totalPriceOfLineItem + totalProductDiscount + totalPriceDiscount;
+    const cartTotalPrice = cocoCartWithDiscountsApplied.totalPrice.centAmount;
+
+    expect(cocoCartWithDiscountsApplied.lineItems).toHaveLength(1);
+    expect(sum).toEqual(cartTotalPrice);
   });
 });

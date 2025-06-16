@@ -1,0 +1,483 @@
+{
+  "type": "Cart",
+  "id": "65620022-1b20-4a73-9f66-29dd414f4c08",
+  "version": 4,
+  "versionModifiedAt": "2025-06-06T12:42:16.748Z",
+  "lastMessageSequenceNumber": 1,
+  "createdAt": "2025-06-06T12:42:16.748Z",
+  "lastModifiedAt": "2025-06-06T12:42:16.748Z",
+  "lastModifiedBy": {
+    "isPlatformClient": true,
+    "user": {
+      "typeId": "user",
+      "id": "4e20a38e-d586-4bb6-ae17-581a422dd1ea"
+    }
+  },
+  "createdBy": {
+    "isPlatformClient": true,
+    "user": {
+      "typeId": "user",
+      "id": "4e20a38e-d586-4bb6-ae17-581a422dd1ea"
+    }
+  },
+  "lineItems": [
+    {
+      "id": "48884a78-9f8f-4485-b4e8-90a16af2b385",
+      "productId": "efb82ccb-e179-4820-9b69-e1ad3693a62f",
+      "productKey": "modern-three-seater-sofa",
+      "name": {
+        "en-GB": "Modern Three Seater Sofa",
+        "de-DE": "Modernes Dreisitzer-Sofa",
+        "en-US": "Modern Three Seater Sofa"
+      },
+      "productType": {
+        "typeId": "product-type",
+        "id": "c6446851-767c-4378-8e8a-ec0ca91eebc9",
+        "version": 1
+      },
+      "productSlug": {
+        "en-GB": "modern-three-seater-sofa",
+        "de-DE": "modernes-dreisitzer-sofa",
+        "en-US": "modern-three-seater-sofa"
+      },
+      "variant": {
+        "id": 1,
+        "sku": "MTSS-01",
+        "prices": [
+          {
+            "id": "bbbe5849-d2ce-48a0-b21a-a984e6d1b1bb",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "EUR",
+              "centAmount": 200000,
+              "fractionDigits": 2
+            },
+            "country": "DE",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "EUR",
+                "centAmount": 180000,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          },
+          {
+            "id": "45399e13-9aa8-45b7-9a5d-98c48ec1dd0c",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "GBP",
+              "centAmount": 249900,
+              "fractionDigits": 2
+            },
+            "country": "GB",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "GBP",
+                "centAmount": 224910,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          },
+          {
+            "id": "03c33377-e2ea-4f70-8000-235d9a7cc7f8",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "USD",
+              "centAmount": 249900,
+              "fractionDigits": 2
+            },
+            "country": "US",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "USD",
+                "centAmount": 224910,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          },
+          {
+            "id": "85517956-faa5-4e56-9d6b-304b33af9136",
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "AUD",
+              "centAmount": 200000,
+              "fractionDigits": 2
+            },
+            "country": "AU",
+            "discounted": {
+              "value": {
+                "type": "centPrecision",
+                "currencyCode": "AUD",
+                "centAmount": 180000,
+                "fractionDigits": 2
+              },
+              "discount": {
+                "typeId": "product-discount",
+                "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+              }
+            }
+          }
+        ],
+        "images": [
+          {
+            "url": "https://storage.googleapis.com/merchant-center-europe/sample-data/goodstore/Modern_Three_Seater_Sofa-1.2.jpeg",
+            "dimensions": {
+              "w": 2500,
+              "h": 2500
+            }
+          },
+          {
+            "url": "https://storage.googleapis.com/merchant-center-europe/sample-data/goodstore/Modern_Three_Seater_Sofa-1.1.jpeg",
+            "dimensions": {
+              "w": 2500,
+              "h": 2500
+            }
+          },
+          {
+            "url": "https://storage.googleapis.com/merchant-center-europe/sample-data/goodstore/Modern_Three_Seater_Sofa-1.4.jpeg",
+            "dimensions": {
+              "w": 2500,
+              "h": 2500
+            }
+          },
+          {
+            "url": "https://storage.googleapis.com/merchant-center-europe/sample-data/goodstore/Modern_Three_Seater_Sofa-1.3.jpeg",
+            "dimensions": {
+              "w": 5760,
+              "h": 3840
+            }
+          }
+        ],
+        "attributes": [
+          {
+            "name": "color",
+            "value": {
+              "en-US": "#292828",
+              "en-GB": "#292828",
+              "de-DE": "#292828"
+            }
+          },
+          {
+            "name": "colorlabel",
+            "value": {
+              "en-US": "Charcoal",
+              "en-GB": "Charcoal",
+              "de-DE": "Charcoal"
+            }
+          },
+          {
+            "name": "finishlabel",
+            "value": {
+              "en-US": "Briarsmoke",
+              "en-GB": "Briarsmoke",
+              "de-DE": "Briarsmoke"
+            }
+          },
+          {
+            "name": "finish",
+            "value": {
+              "en-US": "#5c513d",
+              "en-GB": "#5c513d",
+              "de-DE": "#5c513d"
+            }
+          },
+          {
+            "name": "productspec",
+            "value": {
+              "en-US": "- Velvet upholstery\n- 3-seater sofa\n- Assembled on site",
+              "en-GB": "- Velvet upholstery\n- 3-seater sofa\n- Assembled on site",
+              "de-DE": "- Velvet upholstery\n- 3-seater sofa\n- Assembled on site"
+            }
+          },
+          {
+            "name": "color-filter",
+            "value": {
+              "key": "#808080",
+              "label": {
+                "de-DE": "Grau",
+                "en-GB": "Gray",
+                "en-US": "Gray"
+              }
+            }
+          }
+        ],
+        "assets": [],
+        "availability": {
+          "isOnStock": true,
+          "availableQuantity": 94,
+          "version": 1,
+          "id": "a889ab57-14de-4f60-be41-e1fd2675f3d4"
+        }
+      },
+      "price": {
+        "id": "85517956-faa5-4e56-9d6b-304b33af9136",
+        "value": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 200000,
+          "fractionDigits": 2
+        },
+        "country": "AU",
+        "discounted": {
+          "value": {
+            "type": "centPrecision",
+            "currencyCode": "AUD",
+            "centAmount": 180000,
+            "fractionDigits": 2
+          },
+          "discount": {
+            "typeId": "product-discount",
+            "id": "997a58cd-53a3-49b6-8bc0-920eb5874fda"
+          }
+        }
+      },
+      "quantity": 2,
+      "discountedPrice": {
+        "value": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 171000,
+          "fractionDigits": 2
+        },
+        "includedDiscounts": [
+          {
+            "discount": {
+              "typeId": "cart-discount",
+              "id": "43fe456a-d35a-439f-8d5c-e120220fa190"
+            },
+            "discountedAmount": {
+              "type": "centPrecision",
+              "currencyCode": "AUD",
+              "centAmount": 9000,
+              "fractionDigits": 2
+            }
+          }
+        ]
+      },
+      "discountedPricePerQuantity": [
+        {
+          "quantity": 2,
+          "discountedPrice": {
+            "value": {
+              "type": "centPrecision",
+              "currencyCode": "AUD",
+              "centAmount": 171000,
+              "fractionDigits": 2
+            },
+            "includedDiscounts": [
+              {
+                "discount": {
+                  "typeId": "cart-discount",
+                  "id": "43fe456a-d35a-439f-8d5c-e120220fa190"
+                },
+                "discountedAmount": {
+                  "type": "centPrecision",
+                  "currencyCode": "AUD",
+                  "centAmount": 9000,
+                  "fractionDigits": 2
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "taxRate": {
+        "name": "Australia",
+        "amount": 0.2,
+        "includedInPrice": true,
+        "country": "AU",
+        "id": "SsmaXPQU",
+        "subRates": []
+      },
+      "perMethodTaxRate": [],
+      "addedAt": "2025-06-06T12:42:16.736Z",
+      "lastModifiedAt": "2025-06-06T12:42:16.736Z",
+      "state": [
+        {
+          "quantity": 2,
+          "state": {
+            "typeId": "state",
+            "id": "26f1f5f6-ae77-4314-a7bb-02ebf05b6203"
+          }
+        }
+      ],
+      "priceMode": "Platform",
+      "lineItemMode": "Standard",
+      "totalPrice": {
+        "type": "centPrecision",
+        "currencyCode": "AUD",
+        "centAmount": 342000,
+        "fractionDigits": 2
+      },
+      "taxedPrice": {
+        "totalNet": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 285000,
+          "fractionDigits": 2
+        },
+        "totalGross": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 342000,
+          "fractionDigits": 2
+        },
+        "taxPortions": [
+          {
+            "rate": 0.2,
+            "amount": {
+              "type": "centPrecision",
+              "currencyCode": "AUD",
+              "centAmount": 57000,
+              "fractionDigits": 2
+            },
+            "name": "Australia"
+          }
+        ],
+        "totalTax": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 57000,
+          "fractionDigits": 2
+        }
+      },
+      "taxedPricePortions": []
+    }
+  ],
+  "cartState": "Active",
+  "totalPrice": {
+    "type": "centPrecision",
+    "currencyCode": "AUD",
+    "centAmount": 307800,
+    "fractionDigits": 2
+  },
+  "taxedPrice": {
+    "totalNet": {
+      "type": "centPrecision",
+      "currencyCode": "AUD",
+      "centAmount": 256500,
+      "fractionDigits": 2
+    },
+    "totalGross": {
+      "type": "centPrecision",
+      "currencyCode": "AUD",
+      "centAmount": 307800,
+      "fractionDigits": 2
+    },
+    "taxPortions": [
+      {
+        "rate": 0.2,
+        "amount": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 57000,
+          "fractionDigits": 2
+        },
+        "name": "Australia"
+      }
+    ],
+    "totalTax": {
+      "type": "centPrecision",
+      "currencyCode": "AUD",
+      "centAmount": 51300,
+      "fractionDigits": 2
+    }
+  },
+  "country": "AU",
+  "discountOnTotalPrice": {
+    "discountedAmount": {
+      "type": "centPrecision",
+      "currencyCode": "AUD",
+      "centAmount": 34200,
+      "fractionDigits": 2
+    },
+    "includedDiscounts": [
+      {
+        "discount": {
+          "typeId": "cart-discount",
+          "id": "08044323-882a-4f0c-a74f-b692ca5bc645"
+        },
+        "discountedAmount": {
+          "type": "centPrecision",
+          "currencyCode": "AUD",
+          "centAmount": 34200,
+          "fractionDigits": 2
+        }
+      }
+    ],
+    "discountedNetAmount": {
+      "type": "centPrecision",
+      "currencyCode": "AUD",
+      "centAmount": 28500,
+      "fractionDigits": 2
+    },
+    "discountedGrossAmount": {
+      "type": "centPrecision",
+      "currencyCode": "AUD",
+      "centAmount": 34200,
+      "fractionDigits": 2
+    }
+  },
+  "shippingMode": "Single",
+  "shippingAddress": {
+    "title": "My Address",
+    "salutation": "Mr.",
+    "firstName": "joey",
+    "lastName": "Person",
+    "streetName": "Example Street",
+    "streetNumber": "4711",
+    "postalCode": "80933",
+    "city": "Exemplary City",
+    "region": "Exemplary Region",
+    "country": "AU",
+    "phone": "+49 89 12345678",
+    "mobile": "+49 171 2345678",
+    "email": "email@example.com"
+  },
+  "shipping": [],
+  "customLineItems": [],
+  "discountCodes": [],
+  "directDiscounts": [],
+  "inventoryMode": "None",
+  "taxMode": "Platform",
+  "taxRoundingMode": "HalfEven",
+  "taxCalculationMode": "LineItemLevel",
+  "deleteDaysAfterLastModification": 90,
+  "refusedGifts": [],
+  "origin": "Customer",
+  "billingAddress": {
+    "title": "My Address",
+    "salutation": "Mr.",
+    "firstName": "joey-cart-product-5-off",
+    "lastName": "joey-total-price-10-off",
+    "streetName": "Example Street",
+    "streetNumber": "4711",
+    "postalCode": "80933",
+    "city": "Exemplary City",
+    "region": "Exemplary Region",
+    "country": "AU",
+    "phone": "+49 89 12345678",
+    "mobile": "+49 171 2345678",
+    "email": "email@example.com"
+  },
+  "itemShippingAddresses": [],
+  "discountTypeCombination": {
+    "type": "Stacking"
+  },
+  "totalLineItemQuantity": 2
+}

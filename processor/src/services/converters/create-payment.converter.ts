@@ -5,14 +5,15 @@ import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-paymen
 import {
   buildReturnUrl,
   getShopperStatement,
-  mapCoCoCartItemsToAdyenLineItems,
   populateApplicationInfo,
   populateCartAddress,
+  mapCoCoCartItemsToAdyenLineItems,
 } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
+import { randomUUID } from 'node:crypto';
 
 export class CreatePaymentConverter {
   public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
@@ -58,11 +59,14 @@ export class CreatePaymentConverter {
       case 'klarna_account':
       case 'paypal': {
         return {
-          lineItems: mapCoCoCartItemsToAdyenLineItems(cart),
+          lineItems: mapCoCoCartItemsToAdyenLineItems(cart, data.paymentMethod.type),
         };
       }
+      case 'afterpaytouch': {
+        return this.populateAfterpayData(cart, data.paymentMethod.type);
+      }
       case 'klarna_b2b': {
-        return this.populateKlarnaB2BData(cart);
+        return this.populateKlarnaB2BData(cart, data.paymentMethod.type);
       }
       default:
         return {};
@@ -79,7 +83,23 @@ export class CreatePaymentConverter {
     };
   }
 
-  private populateKlarnaB2BData(cart: Cart): Partial<PaymentRequest> {
+  private populateAfterpayData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
+    const { billingAddress, shippingAddress } = cart;
+
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
+
+    return {
+      shopperReference: cart.customerId ?? cart.anonymousId ?? randomUUID(),
+      shopperName: {
+        firstName: billingAddress?.firstName ?? shippingAddress?.firstName ?? '',
+        lastName: billingAddress?.lastName ?? shippingAddress?.lastName ?? '',
+      },
+      telephoneNumber: (billingAddress?.phone || shippingAddress?.phone) ?? undefined,
+      lineItems,
+    };
+  }
+
+  private populateKlarnaB2BData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
     const { billingAddress } = cart;
     const { firstName, lastName, email, company } = billingAddress || {};
 
@@ -87,7 +107,7 @@ export class CreatePaymentConverter {
       return !!(company && firstName && lastName && email);
     };
 
-    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart);
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
 
     if (hasValidBillingAddress()) {
       return {

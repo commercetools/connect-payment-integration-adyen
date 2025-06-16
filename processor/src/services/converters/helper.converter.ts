@@ -21,6 +21,11 @@ import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/ty
 import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
 import { config } from '../../config/config';
 
+/**
+ * These payment methods require product line item discounts to be send seperately as a new (negative value) line item
+ */
+export const PAYMENT_METHODS_REQUIRE_SEPERATE_DISCOUNT = ['afterpaytouch'];
+
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   return {
     id: lineItem.variant.sku,
@@ -43,6 +48,63 @@ export const mapCoCoCustomLineItemToAdyenLineItem = (customLineItem: CustomLineI
     taxAmount: getItemAmount(getTaxAmount(customLineItem), customLineItem.quantity),
     taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(customLineItem.taxRate?.amount),
   };
+};
+
+const mapOverAmountsOfLineItemToSingleQuantityPricing = (lineItem: CoCoLineItem | CustomLineItem) => {
+  const amountExcludingTaxForOneQuantity = getItemAmount(getAmountExcludingTax(lineItem), lineItem.quantity);
+  const amountIncludingTaxForOneQuantity = getItemAmount(getAmountIncludingTax(lineItem), lineItem.quantity);
+  const taxAmountForOneQuantity = getItemAmount(getTaxAmount(lineItem), lineItem.quantity);
+
+  const isLineItem = 'price' in lineItem;
+
+  const productPriceWithoutProductDiscounts = isLineItem ? lineItem.price.value.centAmount : lineItem.money.centAmount;
+
+  const discountedAmountForOneQuantity = productPriceWithoutProductDiscounts - amountIncludingTaxForOneQuantity;
+  const hasLineItemBeenDiscounted = discountedAmountForOneQuantity !== 0;
+
+  return {
+    amountExcludingTaxForOneQuantity,
+    amountIncludingTaxForOneQuantity,
+    taxAmountForOneQuantity,
+    discountedAmountForOneQuantity,
+    hasLineItemBeenDiscounted,
+  };
+};
+
+const mapCoCoLineItemToAdyenLineItemSeperateProductDiscounts = (
+  lineItem: CoCoLineItem | CustomLineItem,
+): LineItem[] => {
+  const lineItems: LineItem[] = [];
+
+  const amounts = mapOverAmountsOfLineItemToSingleQuantityPricing(lineItem);
+
+  const isLineItem = 'price' in lineItem;
+  const id = isLineItem ? lineItem.variant.sku : lineItem.id;
+
+  const lineItemMapped = {
+    id: id,
+    description: Object.values(lineItem.name)[0], //TODO: get proper locale
+    quantity: lineItem.quantity,
+    amountExcludingTax: amounts.amountExcludingTaxForOneQuantity + amounts.discountedAmountForOneQuantity,
+    amountIncludingTax: amounts.amountIncludingTaxForOneQuantity + amounts.discountedAmountForOneQuantity,
+    taxAmount: amounts.taxAmountForOneQuantity,
+    taxPercentage: TaxRateConverter.convertCoCoTaxPercentage(lineItem.taxRate?.amount),
+  };
+
+  lineItems.push(lineItemMapped);
+
+  if (amounts.hasLineItemBeenDiscounted) {
+    const discountedLineItem: LineItem = {
+      id: `${id}-discount`,
+      description: `${Object.values(lineItem.name)[0]} discount`, //TODO: get proper locale
+      quantity: lineItem.quantity,
+      amountIncludingTax: -amounts.discountedAmountForOneQuantity,
+    };
+
+    lineItems.push(discountedLineItem);
+  }
+
+  return lineItems;
 };
 
 export const mapCoCoShippingInfoToAdyenLineItem = (normalizedShippings: NormalizedShipping[]): LineItem[] => {
@@ -137,9 +199,10 @@ export const mapCoCoOrderItemsToAdyenLineItems = (
     | 'shipping'
     | 'discountOnTotalPrice'
   >,
+  paymentMethod?: string,
 ): LineItem[] => {
   // CoCo model between these attributes is shared between a Cart and Order hence we can re-use the existing mapping logic.
-  return mapCoCoCartItemsToAdyenLineItems(order);
+  return mapCoCoCartItemsToAdyenLineItems(order, paymentMethod);
 };
 
 /**
@@ -161,14 +224,27 @@ export const mapCoCoCartItemsToAdyenLineItems = (
     | 'shipping'
     | 'discountOnTotalPrice'
   >,
+  paymentMethod?: string,
 ): LineItem[] => {
+  const seperateProductDiscounts = paymentMethod && PAYMENT_METHODS_REQUIRE_SEPERATE_DISCOUNT.includes(paymentMethod);
+
   const adyenLineItems: LineItem[] = [];
 
-  cart.lineItems.forEach((lineItem) => adyenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem)));
+  for (const lineItem of cart.lineItems) {
+    if (seperateProductDiscounts) {
+      adyenLineItems.push(...mapCoCoLineItemToAdyenLineItemSeperateProductDiscounts(lineItem));
+    } else {
+      adyenLineItems.push(mapCoCoLineItemToAdyenLineItem(lineItem));
+    }
+  }
 
-  cart.customLineItems.forEach((customLineItem) =>
-    adyenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem)),
-  );
+  for (const customLineItem of cart.customLineItems) {
+    if (seperateProductDiscounts) {
+      adyenLineItems.push(...mapCoCoLineItemToAdyenLineItemSeperateProductDiscounts(customLineItem));
+    } else {
+      adyenLineItems.push(mapCoCoCustomLineItemToAdyenLineItem(customLineItem));
+    }
+  }
 
   adyenLineItems.push(...mapCoCoShippingInfoToAdyenLineItem(paymentSDK.ctCartService.getNormalizedShipping({ cart })));
 
@@ -202,48 +278,32 @@ export const convertAllowedPaymentMethodsToAdyenFormat = (): string[] => {
   return adyenAllowedPaymentMethods;
 };
 
+const PAYMENT_METHOD_TO_ADYEN_MAPPING: Record<string, string> = {
+  afterpay: 'afterpaytouch',
+  bancontactcard: 'bcmc',
+  bancontactmobile: 'bcmc_mobile',
+  card: 'scheme',
+  klarna_billie: 'klarna_b2b',
+  klarna_pay_later: 'klarna',
+  klarna_pay_now: 'klarna_paynow',
+  klarna_pay_overtime: 'klarna_account',
+  przelewy24: GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl,
+};
+
+const ADYEN_TO_PAYMENT_METHOD_MAPPING: Record<string, string> = Object.entries(PAYMENT_METHOD_TO_ADYEN_MAPPING).reduce(
+  (acc, [key, value]) => {
+    acc[value] = key;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
 export const convertPaymentMethodToAdyenFormat = (paymentMethod: string): string => {
-  if (paymentMethod === 'card') {
-    return 'scheme';
-  } else if (paymentMethod === 'klarna_pay_later') {
-    return 'klarna';
-  } else if (paymentMethod === 'klarna_pay_now') {
-    return 'klarna_paynow';
-  } else if (paymentMethod === 'klarna_pay_overtime') {
-    return 'klarna_account';
-  } else if (paymentMethod === 'bancontactcard') {
-    return 'bcmc';
-  } else if (paymentMethod === 'bancontactmobile') {
-    return 'bcmc_mobile';
-  } else if (paymentMethod === 'klarna_billie') {
-    return 'klarna_b2b';
-  } else if (paymentMethod === 'przelewy24') {
-    return GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl;
-  } else {
-    return paymentMethod;
-  }
+  return PAYMENT_METHOD_TO_ADYEN_MAPPING[paymentMethod] ?? paymentMethod;
 };
 
 export const convertPaymentMethodFromAdyenFormat = (paymentMethod: string): string => {
-  if (paymentMethod === 'scheme') {
-    return 'card';
-  } else if (paymentMethod === 'klarna') {
-    return 'klarna_pay_later';
-  } else if (paymentMethod === 'klarna_paynow') {
-    return 'klarna_pay_now';
-  } else if (paymentMethod === 'klarna_account') {
-    return 'klarna_pay_overtime';
-  } else if (paymentMethod === 'bcmc') {
-    return 'bancontactcard';
-  } else if (paymentMethod === 'bcmc_mobile') {
-    return 'bancontactmobile';
-  } else if (paymentMethod === 'klarna_b2b') {
-    return 'klarna_billie';
-  } else if (paymentMethod === GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl) {
-    return 'przelewy24';
-  } else {
-    return paymentMethod;
-  }
+  return ADYEN_TO_PAYMENT_METHOD_MAPPING[paymentMethod] ?? paymentMethod;
 };
 
 export const buildReturnUrl = (paymentReference: string): string => {
