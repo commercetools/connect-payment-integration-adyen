@@ -31,6 +31,7 @@ export type EnablerOptions = {
 };
 
 export enum PaymentMethod {
+  afterpay = "afterpaytouch", // Afterpay
   applepay = "applepay",
   bancontactcard = "bcmc", // Bancontact card
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
@@ -51,7 +52,6 @@ export enum PaymentMethod {
   twint = "twint",
   vipps = "vipps",
   mobilepay = "mobilepay",
-  afterpay = "afterpaytouch", // Afterpay
 }
 
 export const getPaymentMethodType = (

@@ -10,6 +10,9 @@ export class PaymentComponentsConverter {
       ],
       components: [
         {
+          type: 'afterpay',
+        },
+        {
           type: 'applepay',
         },
         {
@@ -65,9 +68,6 @@ export class PaymentComponentsConverter {
         },
         {
           type: 'vipps',
-        },
-        {
-          type: 'afterpay',
         },
       ],
     };
