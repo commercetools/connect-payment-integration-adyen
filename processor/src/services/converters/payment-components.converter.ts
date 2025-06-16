@@ -10,7 +10,7 @@ export class PaymentComponentsConverter {
       ],
       components: [
         {
-          type: 'afterpay',
+          type: 'afterpay', // afterpaytouch
         },
         {
           type: 'applepay',
