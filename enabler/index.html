@@ -213,11 +213,11 @@
                     isAvailable &&
                     methodsRequireMounting.includes(selectedValue)
                   ) {
-                    component.mount("#container--external");
+                    await component.mount("#container--external");
                     const customButton = document.createElement("button");
                     customButton.textContent = "Pay with " + selectedValue;
                     customButton.className = "btn btn-lg btn-primary btn-block";
-                    customButton.addEventListener("click", () => {
+                    customButton.addEventListener("click", async () => {
                       const termsChecked =
                         document.getElementById("termsCheckbox").checked;
                       if (!termsChecked) {
@@ -225,7 +225,7 @@
                         alert("You must agree to the terms and conditions.");
                         return;
                       }
-                      component.submit();
+                      await component.submit();
                     });
                     document
                       .getElementById("container--internal")
@@ -234,7 +234,7 @@
                     console.error("Component not available", selectedValue);
                   }
                 } else {
-                  component.mount("#container--external");
+                  await component.mount("#container--external");
                 }
               });
           </script>
