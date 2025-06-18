@@ -7,11 +7,11 @@ type CardPaymentState = {
 };
 
 export interface PaymentComponent {
-  submit(): Promise<void>;
-  mount(selector: string): Promise<void>;
-  showValidation?(): Promise<void>;
-  isValid?(): Promise<boolean>;
-  getState?(): Promise<CardPaymentState>;
+  submit(): void;
+  mount(selector: string): void;
+  showValidation?(): void;
+  isValid?(): boolean;
+  getState?(): CardPaymentState;
   isAvailable?(): Promise<boolean>;
 }
 
@@ -91,8 +91,8 @@ export enum DropinType {
 }
 
 export interface DropinComponent {
-  submit(): Promise<void>;
-  mount(selector: string): Promise<void>;
+  submit(): void;
+  mount(selector: string): void;
 }
 export type DropinOptions = {
   showPayButton?: boolean;

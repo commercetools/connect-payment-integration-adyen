@@ -48,11 +48,11 @@ export class VippsComponent extends DefaultAdyenComponent {
     });
   }
 
-  async showValidation() {
+  showValidation() {
     this.component.showValidation();
   }
 
-  async isValid() {
+  isValid() {
     return this.component.isValid;
   }
 }

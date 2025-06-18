@@ -48,11 +48,11 @@ export class Przelewy24Component extends DefaultAdyenComponent {
     });
   }
 
-  async showValidation() {
+  showValidation() {
     this.component.showValidation();
   }
 
-  async isValid() {
+  isValid() {
     return this.component.isValid;
   }
 }
