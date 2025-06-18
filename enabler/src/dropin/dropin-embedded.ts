@@ -75,7 +75,12 @@ export class DropinComponents implements DropinComponent {
       showPayButton: true,
       showRadioButton: false,
       openFirstStoredPaymentMethod: false,
-      showStoredPaymentMethods: false,
+      showStoredPaymentMethods: true,
+      showRemovePaymentMethodButton: true,
+
+      onDisableStoredPaymentMethod: (resolve, reject) => {
+        return resolve();
+      },
       isDropin: true,
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {
@@ -136,6 +141,8 @@ export class DropinComponents implements DropinComponent {
           holderNameRequired: true,
           // Override the default config with the one provided by the user
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)],
+          enableStoreDetails: true,
+          showStoreDetailsCheckbox: true,
           // Configuration that can not be overridden
         },
         googlepay: {

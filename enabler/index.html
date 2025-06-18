@@ -62,7 +62,7 @@
                     type="text"
                     class="form-control"
                     id="cartId"
-                    value=""
+                    value="6c43fa27-57de-43d0-9cc3-313d10d5bd8a"
                   />
                 </div>
               </div>
@@ -94,27 +94,27 @@
             document.addEventListener("DOMContentLoaded", async () => {
               const paymentMethodSelect =
                 document.getElementById("paymentMethod");
-              const response = await fetch("http://localhost:9002/jwt/token", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  iss: "https://issuer.com",
-                  sub: "test-sub",
-                  "https://issuer.com/claims/project_key": `${__VITE_CTP_PROJECT_KEY__}`,
-                }),
-              });
+              // const response = await fetch("http://localhost:9002/jwt/token", {
+              //   method: "POST",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //   },
+              //   body: JSON.stringify({
+              //     iss: "https://issuer.com",
+              //     sub: "test-sub",
+              //     "https://issuer.com/claims/project_key": `${__VITE_CTP_PROJECT_KEY__}`,
+              //   }),
+              // });
 
-              const jsonWebToken = await response.json();
+              // const accessToken = await response.json();
 
               const res = await fetch(
                 `${__VITE_PROCESSOR_URL__}/operations/payment-components`,
                 {
                   method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${jsonWebToken.token}`,
-                  },
+                  // headers: {
+                  //   Authorization: `Bearer ${accessToken.token}`,
+                  // },
                 },
               );
               const paymentMethods = await res.json();
@@ -206,7 +206,6 @@
                     "twint",
                     "vipps",
                     "mobilepay",
-                    "afterpay",
                   ];
                   const isAvailable = await component.isAvailable();
                   if (
@@ -240,6 +239,7 @@
           </script>
 
           <div id="container--external"></div>
+          <div id="container--external2"></div>
           <div class="form-group form-check">
             <input
               type="checkbox"

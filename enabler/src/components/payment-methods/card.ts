@@ -34,6 +34,7 @@ export class CardBuilder extends AdyenBaseComponentBuilder {
 }
 
 export class CardComponent extends DefaultAdyenComponent {
+  private cmp: any;
   private endDigits: string;
 
   constructor(opts: {
@@ -50,23 +51,55 @@ export class CardComponent extends DefaultAdyenComponent {
   init(): void {
     const that = this;
     this.component = new Card(this.adyenCheckout, {
-      hasHolderName: true,
-      holderNameRequired: true,
+      // hasHolderName: true,
+      // holderNameRequired: true,
       // Override the default config with the one provided by the user
-      ...this.paymentComponentConfigOverride,
+      // ...this.paymentComponentConfigOverride,
+      // isStoredPaymentMethod: true,
+      // enableStoreDetails: true,
+      // showStoreDetailsCheckbox: true,
+      storedPaymentMethodId: "QV5P9PGRCB9V3575",
+      isStoredPaymentMethod: true,
+      supportedShopperInteractions: ["Ecommerce"], // Supported shopper interactions
       // Configuration that can not be overridden
-      onFieldValid: function (data) {
-        const { endDigits, fieldType } = data;
-        if (endDigits && fieldType === "encryptedCardNumber") {
-          that.endDigits = endDigits;
-        }
-      },
-      ...this.componentOptions,
+      // onFieldValid: function (data) {
+      //   const { endDigits, fieldType } = data;
+      //   if (endDigits && fieldType === "encryptedCardNumber") {
+      //     that.endDigits = endDigits;
+      //   }
+      // },
+      // ...this.componentOptions,
+    });
+
+    this.cmp = new Card(this.adyenCheckout, {
+      // hasHolderName: true,
+      // holderNameRequired: true,
+      // Override the default config with the one provided by the user
+      // ...this.paymentComponentConfigOverride,
+      // isStoredPaymentMethod: true,
+      // enableStoreDetails: true,
+      // showStoreDetailsCheckbox: true,
+      storedPaymentMethodId: "KNF9S4ZT5QQC7Z65",
+      isStoredPaymentMethod: true,
+      supportedShopperInteractions: ["Ecommerce"], // Supported shopper interactions
+      // Configuration that can not be overridden
+      // onFieldValid: function (data) {
+      //   const { endDigits, fieldType } = data;
+      //   if (endDigits && fieldType === "encryptedCardNumber") {
+      //     that.endDigits = endDigits;
+      //   }
+      // },
+      // ...this.componentOptions,
     });
   }
 
   showValidation() {
     this.component.showValidation();
+  }
+
+  mount(selector: string): void {
+    this.component.mount(selector);
+    this.cmp.mount("#container--external2");
   }
 
   isValid() {

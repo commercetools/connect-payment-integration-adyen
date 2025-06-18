@@ -47,6 +47,10 @@ export class CreatePaymentConverter {
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
+      shopperReference: 'david-test-123',
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.Ecommerce,
+      storePaymentMethod: true,
     };
   }
 

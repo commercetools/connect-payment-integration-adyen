@@ -1,17 +1,15 @@
-type CardPaymentState = {
-  card?: {
-    endDigits?: string;
-    brand?: string;
-    expiryDate?: string;
-  };
-};
-
 export interface PaymentComponent {
   submit(): void;
   mount(selector: string): void;
   showValidation?(): void;
   isValid?(): boolean;
-  getState?(): CardPaymentState;
+  getState?(): {
+    card?: {
+      endDigits?: string;
+      brand?: string;
+      expiryDate?: string;
+    };
+  };
   isAvailable?(): Promise<boolean>;
 }
 
@@ -30,7 +28,6 @@ export type EnablerOptions = {
 };
 
 export enum PaymentMethod {
-  afterpay = "afterpaytouch", // Afterpay
   applepay = "applepay",
   bancontactcard = "bcmc", // Bancontact card
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
@@ -117,4 +114,19 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createDropinBuilder: (type: DropinType) => Promise<PaymentDropinBuilder | never>;
+
+  getStoredPaymentMethods: () => Promise<{
+    paymentMethods:
+      | {
+          id: string; // ID: CoCo payment method ID or PSP payment method ID
+          type: string;
+          name: string; // Name of the payment method
+          icon?: string; // URL to the payment method icon
+          displayOptions?: {
+            isExpandable?: boolean; // Whether the payment method can be expanded
+          },
+          remove: () => Promise<void>;
+        }[]
+      | undefined;
+  }>;
 }

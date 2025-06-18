@@ -116,24 +116,15 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       }
     };
 
-    const [sessionJson, configJson] = await Promise.all([
-      sessionResponse.json(),
-      configResponse.json(),
-    ]);
+    const [sessionJson, configJson] = await Promise.all([sessionResponse.json(), configResponse.json()]);
 
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
-      throw new AdyenInitError(
-        "Not able to initialize Adyen, session data missing",
-        options.sessionId,
-      );
+      throw new AdyenInitError("Not able to initialize Adyen, session data missing", options.sessionId);
     } else {
       const adyenCheckout = await AdyenCheckout({
-        onPaymentCompleted: (
-          result: PaymentCompletedData,
-          _component: UIElement,
-        ) => {
+        onPaymentCompleted: (result: PaymentCompletedData, _component: UIElement) => {
           console.info("payment completed", result.resultCode);
         },
         onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
@@ -171,18 +162,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             });
             const data = await response.json();
             if (data.action) {
-              if (
-                ["threeDS2", "qrCode"].includes(data.action.type) &&
-                options.onActionRequired
-              ) {
+              if (["threeDS2", "qrCode"].includes(data.action.type) && options.onActionRequired) {
                 options.onActionRequired({ type: "fullscreen" });
               }
               component.handleAction(data.action);
             } else {
-              if (
-                data.resultCode === "Authorised" ||
-                data.resultCode === "Pending"
-              ) {
+              if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
                 component.setStatus("success");
                 handleComplete(true, component);
               } else {
@@ -204,7 +189,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         onAdditionalDetails: async (
           state: AdditionalDetailsData,
           component: UIElement,
-          actions: AdditionalDetailsActions,
+          actions: AdditionalDetailsActions
         ) => {
           try {
             const requestData = {
@@ -224,10 +209,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               body: JSON.stringify(requestData),
             });
             const data = await response.json();
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
+            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
               component.setStatus("success");
               handleComplete(true, component);
             } else {
@@ -252,6 +234,107 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         session: {
           id: data.id,
           sessionData: data.sessionData,
+        },
+        paymentMethodsResponse: {
+          paymentMethods: [
+            {
+              configuration: {
+                merchantId: "9RYZHSVKBVD9U",
+                intent: "authorize",
+              },
+              name: "PayPal",
+              type: "paypal",
+            },
+            {
+              brands: ["visa", "mc", "amex", "maestro", "cup", "diners", "discover", "jcb"],
+              name: "Cards",
+              type: "scheme",
+            },
+            {
+              name: "SEPA Direct Debit",
+              type: "sepadirectdebit",
+            },
+            {
+              name: "Pay later with Klarna.",
+              type: "klarna",
+            },
+            {
+              name: "Pay over time with Klarna.",
+              type: "klarna_account",
+            },
+            {
+              brands: ["amex", "discover", "jcb", "maestro", "mc", "visa"],
+              configuration: {
+                merchantId: "merchant.com.adyen.checkout.commercetools429deveu",
+                merchantName: "Commercetools429_DEV_EU_GCP_TEST",
+              },
+              name: "Apple Pay",
+              type: "applepay",
+            },
+            {
+              configuration: {
+                merchantId: "50",
+                gatewayMerchantId: "Commercetools429_DEV_EU_GCP_TEST",
+              },
+              name: "Google Pay",
+              type: "googlepay",
+            },
+            {
+              name: "Pay by Invoice for Businesses",
+              type: "klarna_b2b",
+            },
+            {
+              name: "Pay now with Klarna.",
+              type: "klarna_paynow",
+            },
+          ],
+          storedPaymentMethods: [
+            {
+              brand: "visa",
+              expiryMonth: "03",
+              expiryYear: "30",
+              holderName: "david",
+              id: "QV5P9PGRCB9V3575",
+              lastFour: "1111",
+              name: "VISA",
+              supportedRecurringProcessingModels: ["CardOnFile", "Subscription", "UnscheduledCardOnFile"],
+              supportedShopperInteractions: ["Ecommerce", "ContAuth"],
+              type: "scheme",
+            },
+            {
+              brand: "mc",
+              expiryMonth: "03",
+              expiryYear: "30",
+              holderName: "david",
+              id: "KNF9S4ZT5QQC7Z65",
+              lastFour: "5454",
+              name: "MasterCard",
+              supportedRecurringProcessingModels: ["CardOnFile", "Subscription", "UnscheduledCardOnFile"],
+              supportedShopperInteractions: ["Ecommerce", "ContAuth"],
+              type: "scheme",
+            },
+            {
+              iban: "DE14123456780023456789",
+              id: "NP2B7V24QKNLZK75",
+              name: "SEPA Direct Debit",
+              ownerName: "C. Schneider",
+              supportedRecurringProcessingModels: ["CardOnFile", "Subscription", "UnscheduledCardOnFile"],
+              supportedShopperInteractions: ["Ecommerce", "ContAuth"],
+              type: "sepadirectdebit",
+            },
+            {
+              brand: "visa",
+              expiryMonth: "03",
+              expiryYear: "30",
+              holderName: "david",
+              id: "BXTFL42RCB9V3575",
+              lastFour: "1111",
+              name: "VISA",
+              supportedRecurringProcessingModels: ["CardOnFile", "Subscription", "UnscheduledCardOnFile"],
+              supportedShopperInteractions: ["Ecommerce", "ContAuth"],
+              type: "scheme",
+            },
+          ],
         },
       });
 
@@ -301,15 +384,13 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
-        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
       );
     }
     return new supportedMethods[type](setupData.baseOptions);
   }
 
-  async createDropinBuilder(
-    type: DropinType,
-  ): Promise<PaymentDropinBuilder | never> {
+  async createDropinBuilder(type: DropinType): Promise<PaymentDropinBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");
@@ -320,7 +401,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     };
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
-        `Dropin type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+        `Dropin type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
       );
     }
 
