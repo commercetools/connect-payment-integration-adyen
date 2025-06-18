@@ -204,11 +204,11 @@ export class DropinComponents implements DropinComponent {
     });
   }
 
-  async mount(selector: string) {
+  mount(selector: string) {
     this.component.mount(selector);
   }
 
-  async submit(): Promise<void> {
+  submit(): void {
     throw new Error("Method not available. Submit is managed by the Dropin component.");
   }
 
