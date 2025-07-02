@@ -46,11 +46,11 @@ export class AfterPayComponent extends DefaultAdyenComponent {
     });
   }
 
-  showValidation() {
+  async showValidation() {
     this.component.showValidation();
   }
 
-  isValid() {
+  async isValid() {
     return this.component.isValid;
   }
 }
