@@ -37,7 +37,7 @@
     "fastify-plugin": "5.0.1"
   },
   "devDependencies": {
-    "@commercetools/composable-commerce-test-data": "11.6.0",
+    "@commercetools/composable-commerce-test-data": "12.0.0",
     "@jest/globals": "30.0.2",
     "@types/jest": "30.0.0",
     "@types/node": "24.0.3",
