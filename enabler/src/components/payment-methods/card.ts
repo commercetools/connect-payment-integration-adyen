@@ -65,15 +65,15 @@ export class CardComponent extends DefaultAdyenComponent {
     });
   }
 
-  showValidation() {
+  async showValidation() {
     this.component.showValidation();
   }
 
-  isValid() {
+  async isValid() {
     return this.component.isValid;
   }
 
-  getState() {
+  async getState() {
     return {
       card: {
         endDigits: this.endDigits,
