@@ -14,7 +14,12 @@ import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
-  private POPULATE_TRANSACTIONS_MAPPER: Partial<Record<NotificationRequestItem.EventCodeEnum, (item: NotificationRequestItem) => Promise<TransactionData[]> | TransactionData[]>> = {
+  private POPULATE_TRANSACTIONS_MAPPER: Partial<
+    Record<
+      NotificationRequestItem.EventCodeEnum,
+      (item: NotificationRequestItem) => Promise<TransactionData[]> | TransactionData[]
+    >
+  > = {
     [NotificationRequestItem.EventCodeEnum.Authorisation]: (item) => [
       {
         type: 'Authorization',
@@ -24,13 +29,13 @@ export class NotificationConverter {
       },
       ...(item.success === NotificationRequestItem.SuccessEnum.True && !this.isSeparateCaptureSupported(item)
         ? [
-          {
-            type: 'Charge',
-            state: 'Success',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ]
+            {
+              type: 'Charge',
+              state: 'Success',
+              amount: this.populateAmount(item),
+              interactionId: item.pspReference,
+            },
+          ]
         : []),
     ],
     [NotificationRequestItem.EventCodeEnum.Expire]: (item) => [
@@ -133,8 +138,8 @@ export class NotificationConverter {
           interactionId: item.pspReference,
         },
       ];
-    }
-  }
+    },
+  };
 
   constructor(ctPaymentService: CommercetoolsPaymentService) {
     this.ctPaymentService = ctPaymentService;
