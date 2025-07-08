@@ -14,6 +14,127 @@ import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
+  private POPULATE_TRANSACTIONS_MAPPER: Partial<Record<NotificationRequestItem.EventCodeEnum, (item: NotificationRequestItem) => Promise<TransactionData[]> | TransactionData[]>> = {
+    [NotificationRequestItem.EventCodeEnum.Authorisation]: (item) => [
+      {
+        type: 'Authorization',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+      ...(item.success === NotificationRequestItem.SuccessEnum.True && !this.isSeparateCaptureSupported(item)
+        ? [
+          {
+            type: 'Charge',
+            state: 'Success',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ]
+        : []),
+    ],
+    [NotificationRequestItem.EventCodeEnum.Expire]: (item) => [
+      {
+        type: 'Authorization',
+        state: 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.OfferClosed]: (item) => [
+      {
+        type: 'Authorization',
+        state: 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.Capture]: (item) => [
+      {
+        type: 'Charge',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.CaptureFailed]: (item) => [
+      {
+        type: 'Charge',
+        state: 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.Cancellation]: (item) => [
+      {
+        type: 'CancelAuthorization',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.Refund]: (item) => [
+      {
+        type: 'Refund',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.RefundFailed]: (item) => [
+      {
+        type: 'Refund',
+        state: 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.Chargeback]: (item) => [
+      {
+        type: 'Chargeback',
+        state: 'Success',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ],
+    [NotificationRequestItem.EventCodeEnum.CancelOrRefund]: async (item) => {
+      const action = item.additionalData?.['modification.action'];
+      const interfaceId = item.originalReference || item.pspReference;
+      const payment = await this.findPayment(interfaceId, item.merchantReference);
+      if (!payment) return [];
+      const transactionType = this.mapAdyenActionToCoCoTransactionType(action);
+      const existingReverseTransaction = payment.transactions.find((tx) => tx.interactionId === item.pspReference);
+      const isMismatchedType = transactionType !== existingReverseTransaction?.type;
+      // HINT: This check is necessary because we add a transaction in coco depending on if the payment was authorized or captured previously, so if Adyen processes something else (refund)
+      // we need to fail the initial transaction created and create a new transaction reflecting the operation taken by adyen.
+      // If the check is falsey and adyen actually performs a cancel operation, we simply update the cancel transaction we have in coco from 'pending' to 'success | failure' depending
+      // on state returned by adyen
+      if (isMismatchedType) {
+        return [
+          {
+            type: existingReverseTransaction?.type || 'CancelAuthorization',
+            state: 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+          {
+            type: transactionType,
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
+      }
+      return [
+        {
+          type: transactionType,
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
+          amount: this.populateAmount(item),
+          interactionId: item.pspReference,
+        },
+      ];
+    }
+  }
 
   constructor(ctPaymentService: CommercetoolsPaymentService) {
     this.ctPaymentService = ctPaymentService;
@@ -31,135 +152,11 @@ export class NotificationConverter {
   }
 
   private async populateTransactions(item: NotificationRequestItem): Promise<TransactionData[]> {
-    switch (item.eventCode) {
-      case NotificationRequestItem.EventCodeEnum.Authorisation:
-        return [
-          {
-            type: 'Authorization',
-            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-          ...(item.success === NotificationRequestItem.SuccessEnum.True && !this.isSeparateCaptureSupported(item)
-            ? [
-                {
-                  type: 'Charge',
-                  state: 'Success',
-                  amount: this.populateAmount(item),
-                  interactionId: item.pspReference,
-                },
-              ]
-            : []),
-        ];
-      case NotificationRequestItem.EventCodeEnum.Expire:
-      case NotificationRequestItem.EventCodeEnum.OfferClosed:
-        return [
-          {
-            type: 'Authorization',
-            state: 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.Capture:
-        return [
-          {
-            type: 'Charge',
-            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.CaptureFailed:
-        return [
-          {
-            type: 'Charge',
-            state: 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.Cancellation:
-        return [
-          {
-            type: 'CancelAuthorization',
-            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.Refund:
-        return [
-          {
-            type: 'Refund',
-            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.RefundFailed:
-        return [
-          {
-            type: 'Refund',
-            state: 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.Chargeback:
-        return [
-          {
-            type: 'Chargeback',
-            state: 'Success',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      case NotificationRequestItem.EventCodeEnum.CancelOrRefund: {
-        const action = item.additionalData?.['modification.action'];
-        const interfaceId = item.originalReference || item.pspReference;
-
-        const payment = await this.findPayment(interfaceId, item.merchantReference);
-        if (!payment) return [];
-
-        const transactionType = this.mapAdyenActionToCoCoTransactionType(action);
-        const existingReverseTransaction = payment.transactions.find((tx) => tx.interactionId === item.pspReference);
-
-        const isMismatchedType = transactionType !== existingReverseTransaction?.type;
-
-        // HINT: This check is necessary because we add a transaction in coco depending on if the payment was authorized or captured previously, so if Adyen processes something else (refund)
-        // we need to fail the initial transaction created and create a new transaction reflecting the operation taken by adyen.
-        // If the check is falsey and adyen actually performs a cancel operation, we simply update the cancel transaction we have in coco from 'pending' to 'success | failure' depending
-        // on state returned by adyen
-        if (isMismatchedType) {
-          return [
-            {
-              type: existingReverseTransaction?.type || 'CancelAuthorization',
-              state: 'Failure',
-              amount: this.populateAmount(item),
-              interactionId: item.pspReference,
-            },
-            {
-              type: transactionType,
-              state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-              amount: this.populateAmount(item),
-              interactionId: item.pspReference,
-            },
-          ];
-        }
-
-        return [
-          {
-            type: transactionType,
-            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ];
-      }
-      default:
-        throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
+    const transactionsMapper = this.POPULATE_TRANSACTIONS_MAPPER[item.eventCode];
+    if (!transactionsMapper) {
+      throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });
     }
+    return transactionsMapper(item);
   }
 
   private async findPayment(interfaceId: string, merchantReference: string): Promise<Payment | null> {
