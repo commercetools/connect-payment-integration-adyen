@@ -37,7 +37,8 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
-    this.paymentComponentsConfigOverride = baseOptions.paymentComponentsConfigOverride;
+    this.paymentComponentsConfigOverride =
+      baseOptions.paymentComponentsConfigOverride;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -62,7 +63,11 @@ export class DropinComponents implements DropinComponent {
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
 
-  constructor(opts: { adyenCheckout: ICore; dropinOptions: DropinOptions; dropinConfigOverride: Record<string, any> }) {
+  constructor(opts: {
+    adyenCheckout: ICore;
+    dropinOptions: DropinOptions;
+    dropinConfigOverride: Record<string, any>;
+  }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
@@ -108,7 +113,9 @@ export class DropinComponents implements DropinComponent {
           buttonType: "pay" as any, // "pay" type is not included in Adyen's types, try to force it
           buttonColor: "black",
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.applepay)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.applepay)
+          ],
           // Configuration that can not be overridden
           onClick: (resolve, reject) => {
             if (this.dropinOptions.onPayButtonClick) {
@@ -122,12 +129,16 @@ export class DropinComponents implements DropinComponent {
         },
         bcmc: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.bancontactcard)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.bancontactcard)
+          ],
           // Configuration that can not be overridden
         },
         bcmc_mobile: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.bancontactmobile)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.bancontactmobile)
+          ],
           // Configuration that can not be overridden
         },
 
@@ -135,14 +146,18 @@ export class DropinComponents implements DropinComponent {
           hasHolderName: true,
           holderNameRequired: true,
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.card)
+          ],
           // Configuration that can not be overridden
         },
         googlepay: {
           buttonType: "pay",
           buttonSizeMode: "fill",
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.googlepay)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.googlepay)
+          ],
           // Configuration that can not be overridden
           onClick: (resolve, reject) => {
             if (this.dropinOptions.onPayButtonClick) {
@@ -156,27 +171,37 @@ export class DropinComponents implements DropinComponent {
         },
         klarna_b2b: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_billie)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.klarna_billie)
+          ],
           // Configuration that can not be overridden
         },
         klarna: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_pay_later)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.klarna_pay_later)
+          ],
           // Configuration that can not be overridden
         },
         klarna_paynow: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_pay_now)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.klarna_pay_now)
+          ],
           // Configuration that can not be overridden
         },
         klarna_account: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_pay_overtime)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.klarna_pay_overtime)
+          ],
           // Configuration that can not be overridden
         },
         onlineBanking_PL: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.przelewy24)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.przelewy24)
+          ],
           // Configuration that can not be overridden
         },
         paypal: {
@@ -184,7 +209,9 @@ export class DropinComponents implements DropinComponent {
           blockPayPalPayLaterButton: true,
           blockPayPalVenmoButton: true,
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.paypal)],
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.paypal)
+          ],
           // Configuration that can not be overridden
           style: {
             disableMaxWidth: true,
@@ -209,15 +236,22 @@ export class DropinComponents implements DropinComponent {
   }
 
   async submit(): Promise<void> {
-    throw new Error("Method not available. Submit is managed by the Dropin component.");
+    throw new Error(
+      "Method not available. Submit is managed by the Dropin component.",
+    );
   }
 
   private overrideOnSubmit() {
     const parentOnSubmit = this.adyenCheckout.options.onSubmit;
 
-    this.adyenCheckout.options.onSubmit = async (state: SubmitData, component: Dropin, actions: SubmitActions) => {
+    this.adyenCheckout.options.onSubmit = async (
+      state: SubmitData,
+      component: Dropin,
+      actions: SubmitActions,
+    ) => {
       const paymentMethod = state.data.paymentMethod.type;
-      const hasOnClick = component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
+      const hasOnClick =
+        component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
       if (!hasOnClick && this.dropinOptions.onPayButtonClick) {
         try {
           await this.dropinOptions.onPayButtonClick();

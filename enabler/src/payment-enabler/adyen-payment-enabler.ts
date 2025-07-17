@@ -41,6 +41,7 @@ import { VippsBuilder } from "../components/payment-methods/vipps";
 import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
+import { ClearpayBuilder } from "../components/payment-methods/clearpay";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -271,7 +272,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     }
   };
 
-  async createComponentBuilder(type: string): Promise<PaymentComponentBuilder | never> {
+  async createComponentBuilder(
+    type: string,
+  ): Promise<PaymentComponentBuilder | never> {
     const setupData = await this.setupData;
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");
@@ -297,6 +300,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       vipps: VippsBuilder,
       mobilepay: MobilePayBuilder,
       afterpay: AfterPayBuilder,
+      clearpay: ClearpayBuilder,
     };
 
     if (!Object.keys(supportedMethods).includes(type)) {

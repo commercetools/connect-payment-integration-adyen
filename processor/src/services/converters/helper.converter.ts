@@ -24,7 +24,7 @@ import { config } from '../../config/config';
 /**
  * These payment methods require product line item discounts to be send seperately as a new (negative value) line item
  */
-export const PAYMENT_METHODS_REQUIRE_SEPERATE_DISCOUNT = ['afterpaytouch'];
+export const PAYMENT_METHODS_REQUIRE_SEPERATE_DISCOUNT = ['afterpaytouch', 'clearpay'];
 
 export const mapCoCoLineItemToAdyenLineItem = (lineItem: CoCoLineItem): LineItem => {
   return {
