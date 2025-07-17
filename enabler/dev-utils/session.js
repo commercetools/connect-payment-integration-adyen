@@ -65,6 +65,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "swish",
         "twint",
         "vipps",
+        "clearpay",
       ], // add here your allowed methods for development purposes
     }),
   };
