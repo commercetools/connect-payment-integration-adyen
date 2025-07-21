@@ -62,6 +62,8 @@ export class CreatePaymentConverter {
           lineItems: mapCoCoCartItemsToAdyenLineItems(cart, data.paymentMethod.type),
         };
       }
+      // clearpay is the same as afterpaytouch
+      case 'clearpay':
       case 'afterpaytouch': {
         return this.populateAfterpayData(cart, data.paymentMethod.type);
       }

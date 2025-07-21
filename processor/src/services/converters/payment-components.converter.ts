@@ -69,6 +69,9 @@ export class PaymentComponentsConverter {
         {
           type: 'vipps',
         },
+        {
+          type: 'clearpay',
+        },
       ],
     };
   }

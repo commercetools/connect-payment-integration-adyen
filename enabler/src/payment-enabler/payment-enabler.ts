@@ -26,7 +26,10 @@ export type EnablerOptions = {
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
-  onError?: (error: any, context?: { paymentReference?: string; method?: { type?: string } }) => void;
+  onError?: (
+    error: any,
+    context?: { paymentReference?: string; method?: { type?: string } },
+  ) => void;
 };
 
 export enum PaymentMethod {
@@ -36,6 +39,7 @@ export enum PaymentMethod {
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
   blik = "blik",
   card = "scheme",
+  clearpay = "clearpay",
   dropin = "dropin",
   eps = "eps",
   googlepay = "googlepay",
@@ -53,7 +57,9 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
 }
 
-export const getPaymentMethodType = (adyenPaymentMethod: string): PaymentMethod | undefined => {
+export const getPaymentMethodType = (
+  adyenPaymentMethod: string,
+): PaymentMethod | undefined => {
   for (const enumKey in PaymentMethod) {
     if (PaymentMethod[enumKey] === adyenPaymentMethod) {
       return enumKey as PaymentMethod;
@@ -109,12 +115,16 @@ export interface PaymentEnabler {
   /**
    * @throws {Error}
    */
-  createComponentBuilder: (type: string) => Promise<PaymentComponentBuilder | never>;
+  createComponentBuilder: (
+    type: string,
+  ) => Promise<PaymentComponentBuilder | never>;
 
   /**
    *
    * @returns {Promise<DropinComponent>}
    * @throws {Error}
    */
-  createDropinBuilder: (type: DropinType) => Promise<PaymentDropinBuilder | never>;
+  createDropinBuilder: (
+    type: DropinType,
+  ) => Promise<PaymentDropinBuilder | never>;
 }
