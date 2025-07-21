@@ -105,6 +105,7 @@ export abstract class AbstractPaymentService {
           amount: request.amount,
           payment: ctPayment,
           merchantReference: request.merchantReference,
+          transactionId: request.transactionId,
         });
       }
       case 'reversePayment': {

@@ -21,7 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@adyen/api-library": "27.0.1",
+    "@adyen/api-library": "28.0.0",
     "@commercetools-backend/loggers": "24.2.1",
     "@commercetools/connect-payments-sdk": "0.23.1",
     "@fastify/autoload": "6.3.1",
@@ -37,7 +37,7 @@
     "fastify-plugin": "5.0.1"
   },
   "devDependencies": {
-    "@commercetools/composable-commerce-test-data": "12.0.0",
+    "@commercetools/composable-commerce-test-data": "12.2.0",
     "@jest/globals": "30.0.4",
     "@types/jest": "30.0.0",
     "@types/node": "24.0.12",
