@@ -54,7 +54,7 @@ export class NotificationConverter {
   private manageCaptureTransactionData = async (item: NotificationRequestItem) => [
     {
       type: 'Charge',
-      state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
+      state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
       amount: this.populateAmount(item),
       interactionId: item.pspReference,
     },
