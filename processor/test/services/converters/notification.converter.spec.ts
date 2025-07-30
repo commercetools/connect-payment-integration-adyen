@@ -276,6 +276,59 @@ describe('notification.converter', () => {
     });
   });
 
+  test('convert a capture notification with success=false', async () => {
+    // Arrange
+    const merchantReference = 'some-merchant-reference';
+    const pspReference = 'some-psp-reference';
+    const paymentMethod = 'visa';
+    const notification: NotificationRequestDTO = {
+      live: 'false',
+      notificationItems: [
+        {
+          NotificationRequestItem: {
+            additionalData: {
+              expiryDate: '12/2012',
+              authCode: '1234',
+              cardSummary: '7777',
+            },
+            amount: {
+              currency: 'EUR',
+              value: 10000,
+            },
+            eventCode: NotificationRequestItem.EventCodeEnum.Capture,
+            eventDate: '2024-06-17T11:37:05+02:00',
+            merchantAccountCode: 'MyMerchantAccount',
+            merchantReference,
+            paymentMethod,
+            pspReference,
+            success: NotificationRequestItem.SuccessEnum.False,
+          },
+        },
+      ],
+    };
+
+    // Act
+    const result = await converter.convert({ data: notification });
+
+    // Assert
+    expect(result).toEqual({
+      merchantReference,
+      pspReference,
+      paymentMethod,
+      transactions: [
+        {
+          type: 'Charge',
+          state: 'Failure',
+          amount: {
+            currencyCode: 'EUR',
+            centAmount: 10000,
+          },
+          interactionId: pspReference,
+        },
+      ],
+    });
+  });
+
   test('convert a failed card capture notification', async () => {
     // Arrange
     const merchantReference = 'some-merchant-reference';
