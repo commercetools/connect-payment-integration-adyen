@@ -52,6 +52,11 @@ export class CreateSessionConverter {
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
+      shopperReference: 'david-test-123',
+      recurringProcessingModel: CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
+      shopperInteraction: CreateCheckoutSessionRequest.ShopperInteractionEnum.Ecommerce,
+      storePaymentMethod: true,
+      storePaymentMethodMode: CreateCheckoutSessionRequest.StorePaymentMethodModeEnum.AskForConsent,
     };
   }
 

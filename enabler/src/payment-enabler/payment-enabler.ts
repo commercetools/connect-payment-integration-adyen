@@ -85,6 +85,26 @@ export type ComponentOptions = {
   onPayButtonClick?: () => Promise<void>;
 };
 
+export interface StoredComponent {
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
+  showValidation?(): Promise<void>;
+  isValid?(): Promise<boolean>;
+  isAvailable?(): Promise<boolean>;
+  remove(): Promise<void>;
+}
+
+export interface StoredComponentBuilder {
+  componentHasSubmit: boolean;
+  build(config: StoredComponentOptions): StoredComponent;
+}
+
+export type StoredComponentOptions = {
+  showPayButton?: boolean;
+  onPayButtonClick?: () => Promise<void>;
+  id: string;
+};
+
 export enum DropinType {
   /*
    * The embedded drop-in type which is rendered within the page.
@@ -111,6 +131,28 @@ export interface PaymentDropinBuilder {
   build(config: DropinOptions): DropinComponent;
 }
 
+type BaseStoredDisplayOptions = {
+  name: string;
+  logoUrl?: string;
+  [key: string]: unknown;
+}
+
+type BaseStoredPaymentMethod = {
+  id: string;
+  type: string;
+  displayOptions: BaseStoredDisplayOptions;
+}
+
+type StoredCardPaymentMethod = BaseStoredPaymentMethod & {
+  type: "card";
+  displayOptions: BaseStoredDisplayOptions & {
+    brand: string;
+    endDigits: string;
+    expiryDate?: string;
+  }
+}
+
+export type StoredPaymentMethod = BaseStoredPaymentMethod | StoredCardPaymentMethod;
 export interface PaymentEnabler {
   /**
    * @throws {Error}
@@ -127,4 +169,15 @@ export interface PaymentEnabler {
   createDropinBuilder: (
     type: DropinType,
   ) => Promise<PaymentDropinBuilder | never>;
+
+  createStoredPaymentMethodBuilder: (type: string) => Promise<PaymentComponentBuilder | never>;
+
+  getStoredPaymentMethods: ({
+    allowedMethodTypes,
+  }: {
+    allowedMethodTypes: string[];
+  }) => Promise<{
+    paymentMethods?: StoredPaymentMethod[]
+  }>;
 }
+

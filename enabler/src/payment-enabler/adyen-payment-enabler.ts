@@ -42,6 +42,8 @@ import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
+import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
+import { storedPaymentMethods } from "./payment-methods-data.tmp";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -305,7 +307,24 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
-        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
+      );
+    }
+    return new supportedMethods[type](setupData.baseOptions);
+  }
+
+  async createStoredPaymentMethodBuilder(type: string): Promise<PaymentComponentBuilder | never> {
+      const setupData = await this.setupData;
+    if (!setupData) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+    const supportedMethods = {
+      card: StoredCardBuilder,
+    };
+
+    if (!Object.keys(supportedMethods).includes(type)) {
+      throw new Error(
+        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
       );
     }
     return new supportedMethods[type](setupData.baseOptions);
@@ -329,5 +348,14 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     }
 
     return new supportedMethods[type](setupData.baseOptions);
+  }
+
+  async getStoredPaymentMethods({
+    allowedMethodTypes
+  }) {
+    console.log("AdyenPaymentEnabler.getStoredPaymentMethods called with allowedMethodTypes:", allowedMethodTypes);
+    return {
+        paymentMethods: storedPaymentMethods.filter(method => allowedMethodTypes.includes(method.type))
+    };
   }
 }

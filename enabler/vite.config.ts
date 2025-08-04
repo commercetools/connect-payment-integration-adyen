@@ -7,19 +7,13 @@ export default defineConfig({
   server: { watch: { usePolling: true } },
   plugins: [
     cssInjectedByJsPlugin({
-      injectCodeFunction: function injectCodeCustomRunTimeFunction(
-        cssCode: string,
-        options
-      ) {
+      injectCodeFunction: function injectCodeCustomRunTimeFunction(cssCode: string, options) {
         try {
           if (typeof document != "undefined") {
             var elementStyle = document.createElement("style");
             elementStyle.setAttribute("data-ctc-connector-styles", "");
             for (const attribute in options.attributes) {
-              elementStyle.setAttribute(
-                attribute,
-                options.attributes[attribute]
-              );
+              elementStyle.setAttribute(attribute, options.attributes[attribute]);
             }
             elementStyle.appendChild(document.createTextNode(cssCode));
             document.head.appendChild(elementStyle);
@@ -32,14 +26,13 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@adyen-css": path.resolve(
-        __dirname,
-        "node_modules/@adyen/adyen-web/dist/es/adyen.css"
-      ),
+      "@adyen-css": path.resolve(__dirname, "node_modules/@adyen/adyen-web/dist/es/adyen.css"),
     },
   },
   build: {
     outDir: resolve(__dirname, "public"),
+    minify: false,
+    sourcemap: true,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, "src/main.ts"),
