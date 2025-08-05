@@ -23,13 +23,15 @@ export abstract class AdyenBaseStoredComponentBuilder implements StoredComponent
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentsConfigOverride: Record<string, any>;
+  protected storedPaymentMethodsTokens: Record<string, string>;
 
-  constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
+  constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions, storedPaymentMethodsTokens: Record<string, string>) {
     this.paymentMethod = paymentMethod;
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.sessionId = baseOptions.sessionId;
     this.processorUrl = baseOptions.processorUrl;
     this.paymentComponentsConfigOverride = baseOptions.paymentComponentsConfigOverride;
+    this.storedPaymentMethodsTokens = storedPaymentMethodsTokens;
   }
 
   abstract build(config: StoredComponentOptions): StoredComponent;
@@ -47,6 +49,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentConfigOverride: Record<string, any>;
+  protected storedPaymentMethodsTokens: Record<string, string>;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
@@ -55,6 +58,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
+    storedPaymentMethodsTokens: Record<string, string>;
   }) {
     this.paymentMethod = opts.paymentMethod;
     this.adyenCheckout = opts.adyenCheckout;
@@ -62,6 +66,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
     this.sessionId = opts.sessionId;
     this.processorUrl = opts.processorUrl;
     this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
+    this.storedPaymentMethodsTokens = opts.storedPaymentMethodsTokens;
   }
   abstract init(options: {
     id: string;

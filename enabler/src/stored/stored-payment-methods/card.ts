@@ -6,7 +6,6 @@ import {
 import { AdyenBaseStoredComponentBuilder, DefaultAdyenStoredComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
 import { Card, ICore } from "@adyen/adyen-web";
-import { getAdyenIdFromCocoId } from "../../payment-enabler/payment-methods-data.tmp";
 
 /**
  * Stored Credit card component
@@ -16,8 +15,8 @@ import { getAdyenIdFromCocoId } from "../../payment-enabler/payment-methods-data
  */
 
 export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
-  constructor(baseOptions: BaseOptions) {
-    super(PaymentMethod.card, baseOptions);
+  constructor(baseOptions: BaseOptions, storedPaymentMethodsTokens: Record<string, string>) {
+    super(PaymentMethod.card, baseOptions, storedPaymentMethodsTokens);
   }
 
   build(config: StoredComponentOptions): StoredComponent {
@@ -28,6 +27,7 @@ export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
       paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride("card"),
+      storedPaymentMethodsTokens: this.storedPaymentMethodsTokens,
     });
     cardComponent.init({
       id: config.id,
@@ -45,12 +45,13 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
+    storedPaymentMethodsTokens: Record<string, string>;
   }) {
     super(opts);
   }
 
   init({id}: {id: string}): void {
-    const adyenId = getAdyenIdFromCocoId(id);
+    const adyenId = this.storedPaymentMethodsTokens[id];
     this.component = new Card(this.adyenCheckout, {
       // Override the default config with the one provided by the user
       ...this.paymentComponentConfigOverride,

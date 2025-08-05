@@ -43,7 +43,6 @@ import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
 import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
-import { storedPaymentMethods } from "./payment-methods-data.tmp";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -69,8 +68,27 @@ export type BaseOptions = {
   paymentComponentsConfigOverride?: Record<string, any>;
 };
 
+type CocoStoredPaymentMethod = {
+  id: string;
+  type: string;
+  token: string;
+  isDefault: boolean;
+  creationDate: string;
+  displayOptions: {
+    name: string;
+    endDigits?: string;
+    brand?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    logoUrl?: string;
+  };
+};
+
+type StoredPaymentMethod = Omit<CocoStoredPaymentMethod, "token">;
+
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
+  storedPaymentMethodsTokens: Record<string, string> = {};
 
   constructor(options: AdyenEnablerOptions) {
     this.setupData = AdyenPaymentEnabler._Setup(options);
@@ -327,7 +345,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`
       );
     }
-    return new supportedMethods[type](setupData.baseOptions);
+    return new supportedMethods[type](setupData.baseOptions, this.storedPaymentMethodsTokens);
   }
 
   async createDropinBuilder(
@@ -353,9 +371,22 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   async getStoredPaymentMethods({
     allowedMethodTypes
   }) {
-    console.log("AdyenPaymentEnabler.getStoredPaymentMethods called with allowedMethodTypes:", allowedMethodTypes);
-    return {
-        paymentMethods: storedPaymentMethods.filter(method => allowedMethodTypes.includes(method.type))
-    };
+    const setupData = await this.setupData;
+    const { processorUrl, sessionId } = setupData.baseOptions;
+    const response = await fetch(processorUrl + "/stored-payment-methods", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Session-Id": sessionId,
+      },
+    });
+    const {storedPaymentMethods}: {storedPaymentMethods: CocoStoredPaymentMethod[]} = await response.json();
+    this.storedPaymentMethodsTokens = Object.fromEntries(storedPaymentMethods.map(method => [method.id, method.token]));
+    const paymentMethods = storedPaymentMethods.map((method) => {
+      const { token, ...rest } = method;
+      return rest;
+    }).filter(method => allowedMethodTypes.includes(method.type));
+
+    return { paymentMethods };
   }
 }
