@@ -92,6 +92,7 @@ export interface StoredComponent {
   isValid?(): Promise<boolean>;
   isAvailable?(): Promise<boolean>;
   remove(): Promise<void>;
+    // setStoreDetailsEnabled?(enabled: boolean): void;
 }
 
 export interface StoredComponentBuilder {
@@ -140,19 +141,27 @@ type BaseStoredDisplayOptions = {
 type BaseStoredPaymentMethod = {
   id: string;
   type: string;
+  createdAt: string; // ISO date string
+  isDefault: boolean;
   displayOptions: BaseStoredDisplayOptions;
 }
 
 type StoredCardPaymentMethod = BaseStoredPaymentMethod & {
   type: "card";
   displayOptions: BaseStoredDisplayOptions & {
-    brand: string;
-    endDigits: string;
-    expiryDate?: string;
+    endDigits?: string;
+    brand?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
   }
 }
 
 export type StoredPaymentMethod = BaseStoredPaymentMethod | StoredCardPaymentMethod;
+
+export type CocoStoredPaymentMethod = StoredPaymentMethod & {
+  token: string;
+}
+
 export interface PaymentEnabler {
   /**
    * @throws {Error}
@@ -170,14 +179,14 @@ export interface PaymentEnabler {
     type: DropinType,
   ) => Promise<PaymentDropinBuilder | never>;
 
-  createStoredPaymentMethodBuilder: (type: string) => Promise<PaymentComponentBuilder | never>;
+  createStoredPaymentMethodBuilder: (type: string) => Promise<StoredComponentBuilder | never>;
 
   getStoredPaymentMethods: ({
     allowedMethodTypes,
   }: {
     allowedMethodTypes: string[];
   }) => Promise<{
-    paymentMethods?: StoredPaymentMethod[]
+    storedPaymentMethods?: StoredPaymentMethod[]
   }>;
 }
 

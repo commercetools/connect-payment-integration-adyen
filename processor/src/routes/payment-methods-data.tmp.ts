@@ -5,7 +5,7 @@ export const StoredPaymentMethodSchema = Type.Object({
   type: Type.String(),
   token: Type.String(),
   isDefault: Type.Boolean(),
-  creationDate: Type.String({ format: 'date-time' }),
+  createdAt: Type.String({ format: 'date-time' }),
   displayOptions: Type.Object({
     name: Type.String(),
     endDigits: Type.Optional(Type.String()),
@@ -27,7 +27,7 @@ export const storedPaymentMethods: StoredPaymentMethod[] = [
     id: 's1',
     token: 'QV5P9PGRCB9V3575',
     isDefault: true,
-    creationDate: '2023-10-01T12:00:00Z',
+    createdAt: '2023-10-01T11:00:00Z',
     type: 'card',
     displayOptions: {
       name: '**** 1111',
@@ -41,13 +41,13 @@ export const storedPaymentMethods: StoredPaymentMethod[] = [
     id: 's2',
     token: 'KNF9S4ZT5QQC7Z65',
     isDefault: false,
-    creationDate: '2023-10-02T12:00:00Z',
+    createdAt: '2023-10-02T12:00:00Z',
     type: 'card',
     displayOptions: {
       name: '**** 5454',
       endDigits: '5454',
       brand: 'mc',
-      expiryMonth: '12',
+      expiryMonth: '07',
       expiryYear: '2025',
     },
   },
@@ -55,7 +55,7 @@ export const storedPaymentMethods: StoredPaymentMethod[] = [
     id: 's3',
     token: 'BXTFL42RCB9V3575',
     isDefault: false,
-    creationDate: '2023-10-03T12:00:00Z',
+    createdAt: '2023-09-01T17:00:00Z',
     type: 'card',
     displayOptions: {
       name: '**** 1111 (2)',
@@ -69,7 +69,7 @@ export const storedPaymentMethods: StoredPaymentMethod[] = [
     id: 's4',
     token: 'xtz',
     isDefault: false,
-    creationDate: '2023-10-04T12:00:00Z',
+    createdAt: '2023-10-04T12:00:00Z',
     type: 'sepadirectdebit',
     displayOptions: {
       name: 'SEPA Direct Debit',

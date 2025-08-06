@@ -12,6 +12,7 @@ import {
 } from "@adyen/adyen-web";
 import "@adyen-css";
 import {
+  CocoStoredPaymentMethod,
   DropinType,
   EnablerOptions,
   getPaymentMethodType,
@@ -67,24 +68,6 @@ export type BaseOptions = {
   };
   paymentComponentsConfigOverride?: Record<string, any>;
 };
-
-type CocoStoredPaymentMethod = {
-  id: string;
-  type: string;
-  token: string;
-  isDefault: boolean;
-  creationDate: string;
-  displayOptions: {
-    name: string;
-    endDigits?: string;
-    brand?: string;
-    expiryMonth?: string;
-    expiryYear?: string;
-    logoUrl?: string;
-  };
-};
-
-type StoredPaymentMethod = Omit<CocoStoredPaymentMethod, "token">;
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
@@ -380,13 +363,13 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         "X-Session-Id": sessionId,
       },
     });
-    const {storedPaymentMethods}: {storedPaymentMethods: CocoStoredPaymentMethod[]} = await response.json();
-    this.storedPaymentMethodsTokens = Object.fromEntries(storedPaymentMethods.map(method => [method.id, method.token]));
-    const paymentMethods = storedPaymentMethods.map((method) => {
-      const { token, ...rest } = method;
-      return rest;
-    }).filter(method => allowedMethodTypes.includes(method.type));
+    const {storedPaymentMethods: cocoStoredPaymentMethods }: {storedPaymentMethods: CocoStoredPaymentMethod[]} = await response.json();
+    this.storedPaymentMethodsTokens = Object.fromEntries(cocoStoredPaymentMethods.map(method => [method.id, method.token]));
+    const storedPaymentMethods = cocoStoredPaymentMethods
+      .map(({ token, ...storedPaymentMethod } ) => storedPaymentMethod)
+      .filter(method => allowedMethodTypes.includes(method.type));
 
-    return { paymentMethods };
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { storedPaymentMethods };
   }
 }
