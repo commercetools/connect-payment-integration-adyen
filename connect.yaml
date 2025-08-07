@@ -62,6 +62,16 @@ deployAs:
         - key: ADYEN_PAYMENT_COMPONENTS_CONFIG
           description: 'Adyen payment components configuration in JSON String format. For example: {"paypal":{"blockPayPalVenmoButton":false}}. Please refer to the Adyen documentation for more details.'
           required: false
+        - key: ADYEN_SAVED_PAYMENT_METHOD_ENABLED
+          description: If set to "true" then the saved payment methods feature is enabled. Default value is "false".
+          required: false
+        - key: ADYEN_SAVED_PAYMENT_METHOD_PAYMENT_INTERFACE
+          description: The payment method payment interface value used in the commerceotools payment methods. Default value is "adyen".
+          required: false
+        - key: ADYEN_SAVED_PAYMENT_METHOD_INTERFACE_ACCOUNT
+          description: The payment method interface account value used in the commerceotools payment methods.
+          required: false
+
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret

@@ -19,6 +19,7 @@ import {
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
+import { StoredPaymentMethodsResponseSchema } from '../dtos/saved-payment-methods.dto';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
@@ -150,6 +151,22 @@ export const adyenPaymentRoutes = async (
       });
 
       return reply.status(200).send('[accepted]');
+    },
+  );
+
+  fastify.get(
+    '/stored-payment-methods',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+      schema: {
+        response: {
+          200: StoredPaymentMethodsResponseSchema,
+        },
+      },
+    },
+    async (_, reply) => {
+      const res = await opts.paymentService.getSavedPaymentMethods();
+      reply.code(200).send(res);
     },
   );
 };

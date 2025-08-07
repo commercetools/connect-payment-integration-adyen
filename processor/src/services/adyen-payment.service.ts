@@ -10,6 +10,8 @@ import {
   Errorx,
   TransactionType,
   TransactionState,
+  CommercetoolsPaymentMethodService,
+  ErrorRequiredField,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -63,6 +65,9 @@ import { NotificationUpdatePayment } from './types/service.type';
 import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
 import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse';
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
+import { getSavedPaymentsConfig } from '../config/saved-payment-method.config';
+import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/saved-payment-methods.dto';
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
 
@@ -70,6 +75,7 @@ export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
   ctPaymentService: CommercetoolsPaymentService;
   ctOrderService: CommercetoolsOrderService;
+  ctPaymentMethodService: CommercetoolsPaymentMethodService;
 };
 
 export class AdyenPaymentService extends AbstractPaymentService {
@@ -85,10 +91,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private reversePaymentConverter: ReversePaymentConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
-    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService);
+    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService, opts.ctPaymentMethodService);
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
-    this.createPaymentConverter = new CreatePaymentConverter();
+    this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService);
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
     this.notificationConverter = new NotificationConverter(this.ctPaymentService);
     this.paymentComponentsConverter = new PaymentComponentsConverter();
@@ -107,23 +113,30 @@ export class AdyenPaymentService extends AbstractPaymentService {
         usesOwnCertificate,
       },
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
+      isSavedPaymentMethodsEnabled: getSavedPaymentsConfig().enabled,
     };
   }
 
   async status(): Promise<StatusResponse> {
+    const requiredPermissions = [
+      'manage_payments',
+      'view_sessions',
+      'view_api_clients',
+      'manage_orders',
+      'introspect_oauth_tokens',
+      'manage_checkout_payment_intents',
+    ];
+
+    if (getSavedPaymentsConfig().enabled) {
+      requiredPermissions.push('manage_payment_methods');
+    }
+
     const handler = await statusHandler({
       timeout: config.healthCheckTimeout,
       log: appLogger,
       checks: [
         healthCheckCommercetoolsPermissions({
-          requiredPermissions: [
-            'manage_payments',
-            'view_sessions',
-            'view_api_clients',
-            'manage_orders',
-            'introspect_oauth_tokens',
-            'manage_checkout_payment_intents',
-          ],
+          requiredPermissions: requiredPermissions,
           ctAuthorizationService: paymentSDK.ctAuthorizationService,
           projectKey: config.projectKey,
         }),
@@ -305,7 +318,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentId: ctPayment.id,
       });
     }
-    const data = this.createPaymentConverter.convertRequest({
+    const data = await this.createPaymentConverter.convertRequest({
       data: opts.data,
       cart: ctCart,
       payment: ctPayment,
@@ -322,6 +335,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       res.resultCode as PaymentResponse.ResultCodeEnum,
       this.isActionRequired(res),
     );
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -527,6 +541,55 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     return response;
+  }
+
+  async getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    const customerId = ctCart.customerId;
+
+    if (!customerId) {
+      throw new ErrorRequiredField('customerId', {
+        privateMessage: 'Cannot retrieve the saved payment methods if the customerId is not set on the cart',
+        privateFields: {
+          cart: {
+            id: ctCart.id,
+          },
+        },
+      });
+    }
+
+    const savedPaymentMethods = await this.ctPaymentMethodService.find({
+      customerId: ctCart.customerId,
+      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
+      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+    });
+
+    // TODO: SCC-3447: fix the mapping of the storedPaymentMethods api once the custom type is in place
+    const resList = savedPaymentMethods.results.map((spm) => {
+      const res: StoredPaymentMethod = {
+        id: spm.id,
+        createdAt: spm.createdAt,
+        isDefault: spm.default,
+        token: spm.token?.value || '',
+        type: 'card/scheme',
+        displayOptions: {
+          name: '',
+          brand: '',
+          endDigits: '',
+          expiryMonth: '',
+          expiryYear: '',
+          logoUrl: '',
+        },
+      };
+      return res;
+    });
+
+    return {
+      storedPaymentMethods: resList,
+    };
   }
 
   private async processPaymentModificationInternal(opts: {
