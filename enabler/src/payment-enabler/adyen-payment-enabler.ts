@@ -19,6 +19,7 @@ import {
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
+  StoredComponentBuilder,
 } from "./payment-enabler";
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
 import { CardBuilder } from "../components/payment-methods/card";
@@ -67,18 +68,30 @@ export type BaseOptions = {
     usesOwnCertificate: boolean;
   };
   paymentComponentsConfigOverride?: Record<string, any>;
+  setStorePaymentDetails: (enabled: boolean) => void;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
   storedPaymentMethodsTokens: Record<string, string> = {};
+  private storePaymentDetails = false;
 
   constructor(options: AdyenEnablerOptions) {
-    this.setupData = AdyenPaymentEnabler._Setup(options);
+    this.setupData = AdyenPaymentEnabler._Setup(options, this.getStorePaymentDetails, this.setStorePaymentDetails);
+  }
+
+  setStorePaymentDetails = (enabled: boolean): void => {
+    this.storePaymentDetails = enabled;
+  }
+
+  getStorePaymentDetails = (): boolean => {
+    return this.storePaymentDetails;
   }
 
   private static _Setup = async (
     options: AdyenEnablerOptions,
+    getStorePaymentDetails: () => boolean,
+    setStorePaymentDetails: (enabled: boolean) => void,
   ): Promise<{ baseOptions: BaseOptions }> => {
     const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
 
@@ -164,6 +177,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               shopperLocale: adyenLocale,
               channel: "Web",
               paymentReference,
+              ...getStorePaymentDetails() ? { storePaymentDetails: true } : {},
             };
             const response = await fetch(options.processorUrl + "/payments", {
               method: "POST",
@@ -270,6 +284,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           ...(configJson.paymentComponentsConfig && {
             paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
           }),
+          setStorePaymentDetails,
         },
       };
     }
@@ -314,7 +329,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     return new supportedMethods[type](setupData.baseOptions);
   }
 
-  async createStoredPaymentMethodBuilder(type: string): Promise<PaymentComponentBuilder | never> {
+  async createStoredPaymentMethodBuilder(type: string): Promise<StoredComponentBuilder | never> {
       const setupData = await this.setupData;
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");

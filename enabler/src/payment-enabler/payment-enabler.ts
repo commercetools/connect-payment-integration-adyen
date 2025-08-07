@@ -7,7 +7,11 @@ type CardPaymentState = {
 };
 
 export interface PaymentComponent {
-  submit(): Promise<void>;
+  submit({
+    storePaymentDetails,
+  }: {
+    storePaymentDetails?: boolean;
+  }): Promise<void>;
   mount(selector: string): Promise<void>;
   showValidation?(): Promise<void>;
   isValid?(): Promise<boolean>;
@@ -188,5 +192,7 @@ export interface PaymentEnabler {
   }) => Promise<{
     storedPaymentMethods?: StoredPaymentMethod[]
   }>;
+
+  setStorePaymentDetails(enabled: boolean): void;
 }
 

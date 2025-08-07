@@ -50,6 +50,7 @@ export abstract class AdyenBaseComponentBuilder implements PaymentComponentBuild
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentsConfigOverride: Record<string, any>;
+  protected setStorePaymentDetails?: (enabled: boolean) => void;
 
   constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
     this.paymentMethod = paymentMethod;
@@ -57,6 +58,7 @@ export abstract class AdyenBaseComponentBuilder implements PaymentComponentBuild
     this.sessionId = baseOptions.sessionId;
     this.processorUrl = baseOptions.processorUrl;
     this.paymentComponentsConfigOverride = baseOptions.paymentComponentsConfigOverride;
+    this.setStorePaymentDetails = baseOptions.setStorePaymentDetails;
   }
 
   abstract build(config: ComponentOptions): PaymentComponent;
@@ -74,6 +76,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentConfigOverride: Record<string, any>;
+  protected setStorePaymentDetails?: (enabled: boolean) => void;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
@@ -82,6 +85,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
+    setStorePaymentDetails?: (enabled: boolean) => void;
   }) {
     this.paymentMethod = opts.paymentMethod;
     this.adyenCheckout = opts.adyenCheckout;
@@ -89,10 +93,15 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     this.sessionId = opts.sessionId;
     this.processorUrl = opts.processorUrl;
     this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
+    this.setStorePaymentDetails = opts.setStorePaymentDetails;
   }
   abstract init(): void;
 
-  async submit(): Promise<void> {
+  async submit({
+    storePaymentDetails = false,
+  }: {storePaymentDetails?: boolean
+  }): Promise<void> {
+    this.setStorePaymentDetails?.(storePaymentDetails);
     this.component.submit();
   }
 
