@@ -47,7 +47,7 @@ export class CreatePaymentConverter {
     // const cocoSavedPaymentMethod = undefined;
 
     // TODO: SCC-3447: this boolean value is given as a new parameter to this function by the SPA/enabler if the customer wants to save the pm. Could this differ between web-component and drop-in?
-    const shouldUseOrStorePaymentMethod = true; // opts.data.storePaymentMethod ? true : false; // for testing right now use the value from the adyen build-in component. (web-component or drop-in)
+    const shouldUseOrStorePaymentMethod = opts.data.storePaymentMethod ? true : false; // for testing right now use the value from the adyen build-in component. (web-component or drop-in)
 
     const savedPaymentMethodData = await this.populateSavedPaymentMethodData(
       opts.data,
