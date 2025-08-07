@@ -336,6 +336,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
+    // TODO: SCC-3447: if the user payed with a spm, then the token and the rest of the payment details must be stored in the commercetools Payment entity.
+    // (copied over via the payment update action "setMethodInfo") Does that happen here or in the webhook? (take into account timing between the /payments request vs receiving the notification)
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
