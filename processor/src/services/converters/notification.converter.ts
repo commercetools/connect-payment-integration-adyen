@@ -173,6 +173,10 @@ export class NotificationConverter {
   }
 
   private async populateTransactions(item: NotificationRequestItem): Promise<TransactionData[]> {
+    // TODO: SCC-3447: add support for the recurring.token.created event. This is part of a new webhook called "Recurring tokens life cycle events". Which is different from the standard one.
+    // TODO: SCC-3447: The token and the rest of the payment details must be stored in the commercetools Payment entity. This must be copied over from the CoCo payment-method using the update action "setMethodInfo"
+    // TODO: SCC-3447: during the handeling of the recurring.token.created event retrieve the displayable information and store it as a custom type. Specifically: name, endDigits, brand, expireMonth, expireYear and logoUrl
+
     const transactionsMapper = this.POPULATE_TRANSACTIONS_MAPPER[item.eventCode];
     if (!transactionsMapper) {
       throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });

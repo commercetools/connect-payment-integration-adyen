@@ -36,3 +36,19 @@ export const paymentMethodConfig: PaymentMethodConfig = {
     supportSeparateCapture: false,
   },
 };
+
+// TODO: SCC-3447: do we need to pass this info to the enabler in order to allow/disallow certain stored web-components to be loaded?
+export type SupportedSavedPaymentMethodTypes = {
+  [key: string]: {
+    oneOffPayments: boolean;
+  };
+};
+
+/**
+ * Represents which payment methods are supported for tokenization. The key represents the type value of the payment method as defined by Adyen.
+ */
+export const supportedSavedPaymentMethodTypes: SupportedSavedPaymentMethodTypes = {
+  scheme: {
+    oneOffPayments: true,
+  },
+};

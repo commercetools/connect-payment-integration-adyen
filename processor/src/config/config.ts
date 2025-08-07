@@ -29,7 +29,11 @@ export const config = {
   adyenShopperStatement: process.env.ADYEN_SHOPPER_STATEMENT || '',
   adyenPaymentComponentsConfig: process.env.ADYEN_PAYMENT_COMPONENTS_CONFIG || '',
   merchantReturnUrl: process.env.MERCHANT_RETURN_URL || '',
+  adyenSavedPaymentMethodsEnabled: process.env.ADYEN_SAVED_PAYMENT_METHOD_ENABLED || 'false',
+  adyenSavedPaymentMethodsPaymentInterface: process.env.ADYEN_SAVED_PAYMENT_METHOD_PAYMENT_INTERFACE || 'adyen',
+  adyenSavedPaymentMethodsInterfaceAccount: process.env.ADYEN_SAVED_PAYMENT_METHOD_INTERFACE_ACCOUNT || undefined,
 };
+
 export const getConfig = () => {
   return config;
 };

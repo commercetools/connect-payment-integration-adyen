@@ -6,6 +6,7 @@ const paymentService = new AdyenPaymentService({
   ctCartService: paymentSDK.ctCartService,
   ctPaymentService: paymentSDK.ctPaymentService,
   ctOrderService: paymentSDK.ctOrderService,
+  ctPaymentMethodService: paymentSDK.ctPaymentMethodService,
 });
 
 export const app = {

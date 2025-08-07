@@ -34,11 +34,14 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
   private paymentComponentsConfigOverride: Record<string, any>;
   private adyenCheckout: ICore;
+  private isSavedPaymentMethodsEnabled: boolean;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
+    this.isSavedPaymentMethodsEnabled =
+      baseOptions.isSavedPaymentMethodsEnabled;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -46,6 +49,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       adyenCheckout: this.adyenCheckout,
       dropinOptions: config,
       dropinConfigOverride: this.resolveDropinComponentConfigOverride(),
+      isSavedPaymentMethodsEnabled: this.isSavedPaymentMethodsEnabled,
     });
 
     dropin.init();
@@ -62,15 +66,18 @@ export class DropinComponents implements DropinComponent {
   private adyenCheckout: ICore;
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
+  private isSavedPaymentMethodsEnabled: boolean;
 
   constructor(opts: {
     adyenCheckout: ICore;
     dropinOptions: DropinOptions;
     dropinConfigOverride: Record<string, any>;
+    isSavedPaymentMethodsEnabled: boolean;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
+    this.isSavedPaymentMethodsEnabled = opts.isSavedPaymentMethodsEnabled;
 
     this.overrideOnSubmit();
   }
@@ -80,8 +87,13 @@ export class DropinComponents implements DropinComponent {
       showPayButton: true,
       showRadioButton: false,
       openFirstStoredPaymentMethod: false,
-      showStoredPaymentMethods: false,
+      showStoredPaymentMethods: this.isSavedPaymentMethodsEnabled,
+      showRemovePaymentMethodButton: this.isSavedPaymentMethodsEnabled,
       isDropin: true,
+      onDisableStoredPaymentMethod: (resolve) => {
+        // TODO: SCC-3447: implement disable (i.e. remove button functionality) for drop-in component
+        return resolve();
+      },
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {
           this.dropinOptions
@@ -141,7 +153,6 @@ export class DropinComponents implements DropinComponent {
           ],
           // Configuration that can not be overridden
         },
-
         card: {
           hasHolderName: true,
           holderNameRequired: true,
@@ -150,6 +161,7 @@ export class DropinComponents implements DropinComponent {
             getPaymentMethodType(PaymentMethod.card)
           ],
           // Configuration that can not be overridden
+          enableStoreDetails: this.isSavedPaymentMethodsEnabled,
         },
         googlepay: {
           buttonType: "pay",

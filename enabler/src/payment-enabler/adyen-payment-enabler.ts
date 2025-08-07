@@ -65,6 +65,7 @@ export type BaseOptions = {
     usesOwnCertificate: boolean;
   };
   paymentComponentsConfigOverride?: Record<string, any>;
+  isSavedPaymentMethodsEnabled: boolean;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
@@ -267,6 +268,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           ...(configJson.paymentComponentsConfig && {
             paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
           }),
+          isSavedPaymentMethodsEnabled: configJson.isSavedPaymentMethodsEnabled,
         },
       };
     }

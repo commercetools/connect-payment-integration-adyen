@@ -1,6 +1,7 @@
 import {
   CommercetoolsCartService,
   CommercetoolsOrderService,
+  CommercetoolsPaymentMethodService,
   CommercetoolsPaymentService,
   ErrorInvalidOperation,
 } from '@commercetools/connect-payments-sdk';
@@ -17,20 +18,24 @@ import {
 import { PaymentIntentResponseSchemaDTO, PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
 import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-componets.dto';
 import { log } from '../libs/logger';
+import { StoredPaymentMethodsResponse } from '../dtos/saved-payment-methods.dto';
 
 export abstract class AbstractPaymentService {
   protected ctCartService: CommercetoolsCartService;
   protected ctPaymentService: CommercetoolsPaymentService;
   protected ctOrderService: CommercetoolsOrderService;
+  protected ctPaymentMethodService: CommercetoolsPaymentMethodService;
 
   constructor(
     ctCartService: CommercetoolsCartService,
     ctPaymentService: CommercetoolsPaymentService,
     ctOrderService: CommercetoolsOrderService,
+    ctPaymentMethodService: CommercetoolsPaymentMethodService,
   ) {
     this.ctCartService = ctCartService;
     this.ctPaymentService = ctPaymentService;
     this.ctOrderService = ctOrderService;
+    this.ctPaymentMethodService = ctPaymentMethodService;
   }
 
   /**
@@ -81,6 +86,11 @@ export abstract class AbstractPaymentService {
    * @returns Promise with outcome containing operation status and PSP reference
    */
   abstract reversePayment(request: ReversePaymentRequest): Promise<PaymentProviderModificationResponse>;
+
+  /**
+   * Get list of stored payment methods
+   */
+  abstract getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse>;
 
   public async modifyPayment(opts: ModifyPayment): Promise<PaymentIntentResponseSchemaDTO> {
     const ctPayment = await this.ctPaymentService.getPayment({
