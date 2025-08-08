@@ -24,6 +24,7 @@ export class PaypalBuilder extends AdyenBaseComponentBuilder {
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
       paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.paypal),
+      setStorePaymentDetails: this.setStorePaymentDetails,
     });
     paypalComponent.init();
     return paypalComponent;
@@ -38,6 +39,7 @@ export class PaypalComponent extends DefaultAdyenComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
+    setStorePaymentDetails: (enabled: boolean) => void;
   }) {
     super(opts);
   }
@@ -55,7 +57,13 @@ export class PaypalComponent extends DefaultAdyenComponent {
         if (this.componentOptions.onPayButtonClick) {
           return this.componentOptions
             .onPayButtonClick()
-            .then(() => {})
+            .then(({
+              storePaymentDetails
+            }: {
+              storePaymentDetails?: boolean;
+            }) => {
+              this.setStorePaymentDetails?.(storePaymentDetails);
+            })
             .catch((_error) => {
               return false;
             });

@@ -86,7 +86,7 @@ export type PaymentResult =
 
 export type ComponentOptions = {
   showPayButton?: boolean;
-  onPayButtonClick?: () => Promise<void>;
+  onPayButtonClick?: () => Promise<{ storePaymentDetails?: boolean }>;
 };
 
 export interface StoredComponent {
@@ -96,7 +96,6 @@ export interface StoredComponent {
   isValid?(): Promise<boolean>;
   isAvailable?(): Promise<boolean>;
   remove(): Promise<void>;
-    // setStoreDetailsEnabled?(enabled: boolean): void;
 }
 
 export interface StoredComponentBuilder {

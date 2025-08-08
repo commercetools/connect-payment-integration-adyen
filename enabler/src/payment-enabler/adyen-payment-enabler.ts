@@ -177,7 +177,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               shopperLocale: adyenLocale,
               channel: "Web",
               paymentReference,
-              ...getStorePaymentDetails() ? { storePaymentDetails: true } : {},
+              ...getStorePaymentDetails() ? { storePaymentMethod: true } : {},
             };
             const response = await fetch(options.processorUrl + "/payments", {
               method: "POST",
