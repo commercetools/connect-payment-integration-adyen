@@ -42,19 +42,7 @@ export class CreatePaymentConverter {
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
 
-    // TODO: SCC-3447: this optional string value is given as a new parameter to this function by the SPA/enabler. Change this around. (undefined means no existing payment method will be used). Could this differ between web-component and drop-in?
-    const cocoSavedPaymentMethod = '5cb63117-e92c-4891-94dc-6349d1600649';
-    // const cocoSavedPaymentMethod = undefined;
-
-    // TODO: SCC-3447: this boolean value is given as a new parameter to this function by the SPA/enabler if the customer wants to save the pm. Could this differ between web-component and drop-in?
-    const shouldUseOrStorePaymentMethod = opts.data.storePaymentMethod ? true : false; // for testing right now use the value from the adyen build-in component. (web-component or drop-in)
-
-    const savedPaymentMethodData = await this.populateSavedPaymentMethodData(
-      opts.data,
-      opts.cart,
-      shouldUseOrStorePaymentMethod,
-      cocoSavedPaymentMethod,
-    );
+    const savedPaymentMethodData = await this.populateSavedPaymentMethodData(opts.data, opts.cart);
 
     return {
       ...requestData,
@@ -85,12 +73,7 @@ export class CreatePaymentConverter {
     };
   }
 
-  private async populateSavedPaymentMethodData(
-    data: CreatePaymentRequestDTO,
-    cart: Cart,
-    shouldUseOrStorePaymentMethod: boolean,
-    cocoPaymentMethodId?: string,
-  ) {
+  private async populateSavedPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
     if (!getSavedPaymentsConfig().enabled) {
       return;
     }
@@ -100,11 +83,6 @@ export class CreatePaymentConverter {
       typeof paymentMethodType !== 'string' ||
       !Object.keys(supportedSavedPaymentMethodTypes).includes(paymentMethodType)
     ) {
-      return;
-    }
-
-    if (!shouldUseOrStorePaymentMethod) {
-      // Customer does not want to save payment method
       return;
     }
 
@@ -122,61 +100,88 @@ export class CreatePaymentConverter {
       });
     }
 
-    // Customer wants to pay with an already saved payment method
-    if (cocoPaymentMethodId) {
-      const paymentMethodFromCoCo = await this.ctPaymentMethodService.get({
-        customerId: customerReference,
-        id: cocoPaymentMethodId,
-        paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-        interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
-      });
+    // TODO: SCC-3447: talk with Juan to see if we can use the same attributes for storePaymentMethod and storedPaymentMethodId (and thus NOT receive the cocoSavedPaymentMethodId)
 
-      const token = paymentMethodFromCoCo.token;
+    // drop-in provide it via "storePaymentMethod" and non-dropin provides via "storePaymentDetails"
+    const userWantsToStorePaymentDetails = data.storePaymentMethod || data.storePaymentDetails ? true : false;
 
-      if (!token) {
-        throw new ErrorRequiredField('token', {
-          privateMessage:
-            'The token attribute is not set on the CT payment method yet the user wants to pay with the payment method',
-          privateFields: {
-            cart: {
-              id: cart.id,
-              typeId: 'cart',
-            },
-            paymentMethod: {
-              id: paymentMethodFromCoCo.id,
-              typeId: 'payment-method',
-            },
-            customer: {
-              id: customerReference,
-              typeId: 'customer',
-            },
-          },
-        });
-      }
+    // In the case of drop-in component the token is already provided ootb as the "storedPaymentMethodId"
+    const includesStoredPaymentMethodId = Object.keys(data.paymentMethod).includes('storedPaymentMethodId');
 
-      return {
-        recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
-        shopperInteraction: PaymentRequest.ShopperInteractionEnum.ContAuth,
-        shopperReference: customerReference,
-        paymentMethod: {
-          // TODO: SCC-3447: all explicit and implicit data that is required should be added here. The Adyen web-component and drop-in provide this in the incoming request but the token is retrieved from Coco saved pm. Do we need to combine anything?
-          ...data.paymentMethod,
-          storedPaymentMethodId: token.value,
-        },
-      };
+    const payWithExistingToken = includesStoredPaymentMethodId || data.cocoSavedPaymentMethodId !== undefined;
+
+    if (includesStoredPaymentMethodId && data.cocoSavedPaymentMethodId) {
+      return;
     }
 
-    // Customer wants to store the payment method
-    return {
+    // In case user does not want to store token nor pay with existing one return nothing
+    if (!userWantsToStorePaymentDetails && !payWithExistingToken) {
+      console.log('not storing nor paying with existing');
+      return;
+    }
+
+    const shopperInteraction = payWithExistingToken
+      ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
+      : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
+
+    const res = {
       recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
-      shopperInteraction: PaymentRequest.ShopperInteractionEnum.Ecommerce,
+      shopperInteraction,
       shopperReference: customerReference,
-      storePaymentMethod: true,
+      ...(userWantsToStorePaymentDetails ? { storePaymentMethod: userWantsToStorePaymentDetails } : {}), // only applicable when user wants to tokenise payment details for the first time
       paymentMethod: {
-        // TODO: SCC-3447: all explicit and implicit data that is required should be added here. The Adyen web-component and drop-in provide this in the incoming request. Is this always the case?
-        ...data.paymentMethod,
+        ...data.paymentMethod, // for drop-in the "storedPaymentMethodId" is provided ootb and thus only required to expand
+        ...(data.cocoSavedPaymentMethodId
+          ? {
+              storedPaymentMethodId: await this.getStoredTokenIdFromCoCo(
+                cart.id,
+                customerReference,
+                data.cocoSavedPaymentMethodId,
+              ),
+            }
+          : {}), // for non-dropin get the token from CoCo payment-methods
       },
     };
+
+    return res;
+  }
+
+  private async getStoredTokenIdFromCoCo(
+    cartId: string,
+    customerReference: string,
+    cocoPaymentMethodId: string,
+  ): Promise<string> {
+    const paymentMethodFromCoCo = await this.ctPaymentMethodService.get({
+      customerId: customerReference,
+      id: cocoPaymentMethodId,
+      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
+      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+    });
+
+    const token = paymentMethodFromCoCo.token;
+
+    if (!token) {
+      throw new ErrorRequiredField('token', {
+        privateMessage:
+          'The token attribute is not set on the CT payment method yet the user wants to pay with the payment method',
+        privateFields: {
+          cart: {
+            id: cartId,
+            typeId: 'cart',
+          },
+          paymentMethod: {
+            id: paymentMethodFromCoCo.id,
+            typeId: 'payment-method',
+          },
+          customer: {
+            id: customerReference,
+            typeId: 'customer',
+          },
+        },
+      });
+    }
+
+    return token.value;
   }
 
   private populateAddionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {

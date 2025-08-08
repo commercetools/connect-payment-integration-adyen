@@ -42,6 +42,8 @@ export type CreatePaymentRequestDTO = Omit<
   | 'recurringProcessingModel'
 > & {
   paymentReference?: string;
+  storePaymentDetails?: boolean;
+  cocoSavedPaymentMethodId?: string;
 };
 
 export type CreatePaymentResponseDTO = Pick<
