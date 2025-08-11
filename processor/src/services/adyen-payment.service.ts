@@ -340,8 +340,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    // TODO: SCC-3447: if the user payed with a spm, then the token and the rest of the payment details must be stored in the commercetools Payment entity.
-    // (copied over via the payment update action "setMethodInfo") Does that happen here or in the webhook? (take into account timing between the /payments request vs receiving the notification)
+    // TODO: SCC-3447: if the user payed with a spm, then the token (and the rest of the payment details --> this is already done) must be stored in the commercetools Payment entity.
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -445,7 +444,35 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   public async processNotificationTokenization(opts: { data: NotificationTokenizationDTO }): Promise<void> {
-    await this.notificationTokenizationConverter.convert(opts);
+    log.info('Processing notification tokenization', { notification: JSON.stringify(opts.data) });
+
+    try {
+      const result = await this.notificationTokenizationConverter.convert(opts);
+
+      if (result.draft) {
+        const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(result.draft);
+
+        log.info('Created new payment method used for tokenization', {
+          notification: JSON.stringify(opts.data),
+          paymentMethod: {
+            id: newlyCreatedPaymentMethod.id,
+            customer: newlyCreatedPaymentMethod.customer,
+            paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
+            interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
+            method: newlyCreatedPaymentMethod.method,
+            token: newlyCreatedPaymentMethod.token,
+          },
+        });
+      }
+    } catch (e) {
+      if (e instanceof UnsupportedNotificationError) {
+        log.info('Unsupported notification received', { notification: JSON.stringify(opts.data) });
+        return;
+      }
+
+      log.error('Error processing notification', { error: e });
+      throw e;
+    }
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {
@@ -578,7 +605,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
     });
 
-    // TODO: SCC-3447: fix the mapping of the storedPaymentMethods api once the custom type is in place
+    // TODO: SCC-3447: if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions
+    // TODO: SCC-3447: if the .env toggle is ENABLED then use that information to show the displayOptions
     const resList = savedPaymentMethods.results.map((spm) => {
       const res: StoredPaymentMethod = {
         id: spm.id,
