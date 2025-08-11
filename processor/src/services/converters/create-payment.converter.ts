@@ -100,23 +100,10 @@ export class CreatePaymentConverter {
       });
     }
 
-    // TODO: SCC-3447: talk with Juan to see if we can use the same attributes for storePaymentMethod and storedPaymentMethodId (and thus NOT receive the cocoSavedPaymentMethodId)
+    const payWithExistingToken = Object.keys(data.paymentMethod).includes('storedPaymentMethodId');
 
-    // drop-in provide it via "storePaymentMethod" and non-dropin provides via "storePaymentDetails"
-    const userWantsToStorePaymentDetails = data.storePaymentMethod || data.storePaymentDetails ? true : false;
-
-    // In the case of drop-in component the token is already provided ootb as the "storedPaymentMethodId"
-    const includesStoredPaymentMethodId = Object.keys(data.paymentMethod).includes('storedPaymentMethodId');
-
-    const payWithExistingToken = includesStoredPaymentMethodId || data.cocoSavedPaymentMethodId !== undefined;
-
-    if (includesStoredPaymentMethodId && data.cocoSavedPaymentMethodId) {
-      return;
-    }
-
-    // In case user does not want to store token nor pay with existing one return nothing
-    if (!userWantsToStorePaymentDetails && !payWithExistingToken) {
-      console.log('not storing nor paying with existing');
+    // User does not want to store token for the first time nor pay with existing one
+    if (!data.storePaymentMethod && !payWithExistingToken) {
       return;
     }
 
@@ -128,60 +115,11 @@ export class CreatePaymentConverter {
       recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
       shopperInteraction,
       shopperReference: customerReference,
-      ...(userWantsToStorePaymentDetails ? { storePaymentMethod: userWantsToStorePaymentDetails } : {}), // only applicable when user wants to tokenise payment details for the first time
-      paymentMethod: {
-        ...data.paymentMethod, // for drop-in the "storedPaymentMethodId" is provided ootb and thus only required to expand
-        ...(data.cocoSavedPaymentMethodId
-          ? {
-              storedPaymentMethodId: await this.getStoredTokenIdFromCoCo(
-                cart.id,
-                customerReference,
-                data.cocoSavedPaymentMethodId,
-              ),
-            }
-          : {}), // for non-dropin get the token from CoCo payment-methods
-      },
+      ...(data.storePaymentMethod ? { storePaymentMethod: data.storePaymentMethod } : {}), // only applicable when user wants to tokenise payment details for the first time
+      paymentMethod: data.paymentMethod,
     };
 
     return res;
-  }
-
-  private async getStoredTokenIdFromCoCo(
-    cartId: string,
-    customerReference: string,
-    cocoPaymentMethodId: string,
-  ): Promise<string> {
-    const paymentMethodFromCoCo = await this.ctPaymentMethodService.get({
-      customerId: customerReference,
-      id: cocoPaymentMethodId,
-      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
-    });
-
-    const token = paymentMethodFromCoCo.token;
-
-    if (!token) {
-      throw new ErrorRequiredField('token', {
-        privateMessage:
-          'The token attribute is not set on the CT payment method yet the user wants to pay with the payment method',
-        privateFields: {
-          cart: {
-            id: cartId,
-            typeId: 'cart',
-          },
-          paymentMethod: {
-            id: paymentMethodFromCoCo.id,
-            typeId: 'payment-method',
-          },
-          customer: {
-            id: customerReference,
-            typeId: 'customer',
-          },
-        },
-      });
-    }
-
-    return token.value;
   }
 
   private populateAddionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {

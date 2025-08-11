@@ -162,7 +162,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               shopperLocale: adyenLocale,
               channel: "Web",
               paymentReference,
-              // cocoSavedPaymentMethodId: "5cb63117-e92c-4891-94dc-6349d1600649",
             };
 
             const response = await fetch(options.processorUrl + "/payments", {
