@@ -102,6 +102,8 @@ export class CreatePaymentConverter {
 
     const payWithExistingToken = Object.keys(data.paymentMethod).includes('storedPaymentMethodId');
 
+    // TODO: SCC-3447: if payWithExistingToken === true make sure to explicitly validate that the given storedPaymentMethodId belongs to the customerId on the cart via fetching the PM from CoCO and checking if the token.value matches with the storedPaymentMethodId
+
     // User does not want to store token for the first time nor pay with existing one
     if (!data.storePaymentMethod && !payWithExistingToken) {
       return;
