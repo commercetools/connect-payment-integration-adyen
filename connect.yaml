@@ -82,6 +82,9 @@ deployAs:
         - key: ADYEN_NOTIFICATION_HMAC_KEY
           description: Adyen HMAC key (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
           required: true
+        - key: ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY
+          description: Adyen HMAC tokenization webhooks key. This will be used if provided, otherwise the ADYEN_NOTIFICATION_HMAC_KEY will be used. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
+          required: false
         - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
           description: Apple Pay own certificate in base 64 format
           required: false

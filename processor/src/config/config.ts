@@ -18,6 +18,8 @@ export const config = {
   adyenClientKey: process.env.ADYEN_CLIENT_KEY || 'adyenClientKey',
   adyenApiKey: process.env.ADYEN_API_KEY || 'adyenApiKey',
   adyenHMACKey: process.env.ADYEN_NOTIFICATION_HMAC_KEY || 'adyenHMACKey',
+  adyenHMACTokenizationWebHooksKey:
+    process.env.ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY || 'adyenHMACTokenizationWebHooksKey',
   adyenLiveUrlPrefix: process.env.ADYEN_LIVE_URL_PREFIX || '',
   adyenMerchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT || 'adyenMerchantAccount',
   adyenApplePayOwnCerticate: process.env.ADYEN_APPLEPAY_OWN_CERTIFICATE

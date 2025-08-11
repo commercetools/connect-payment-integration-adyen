@@ -91,7 +91,7 @@ export class DropinComponents implements DropinComponent {
       showRemovePaymentMethodButton: this.isSavedPaymentMethodsEnabled,
       isDropin: true,
       onDisableStoredPaymentMethod: (resolve) => {
-        // TODO: SCC-3447: implement disable (i.e. remove button functionality) for drop-in component
+        // TODO: SCC-3447: implement disable (i.e. remove button functionality) for drop-in component. It should call a HTTP DELETE /stored-payment-methods/{uuid} endpoint. Which should remove it from Adyen and COCO
         return resolve();
       },
       onReady: () => {

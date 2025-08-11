@@ -22,6 +22,7 @@ import {
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
   CreateSessionResponseDTO,
+  NotificationTokenizationDTO,
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
@@ -67,6 +68,7 @@ import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checko
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
 import { getSavedPaymentsConfig } from '../config/saved-payment-method.config';
 import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/saved-payment-methods.dto';
+import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -84,6 +86,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private createPaymentConverter: CreatePaymentConverter;
   private confirmPaymentConverter: ConfirmPaymentConverter;
   private notificationConverter: NotificationConverter;
+  private notificationTokenizationConverter: NotificationTokenizationConverter;
   private paymentComponentsConverter: PaymentComponentsConverter;
   private cancelPaymentConverter: CancelPaymentConverter;
   private capturePaymentConverter: CapturePaymentConverter;
@@ -97,6 +100,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService);
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
     this.notificationConverter = new NotificationConverter(this.ctPaymentService);
+    this.notificationTokenizationConverter = new NotificationTokenizationConverter();
     this.paymentComponentsConverter = new PaymentComponentsConverter();
     this.cancelPaymentConverter = new CancelPaymentConverter();
     this.capturePaymentConverter = new CapturePaymentConverter(this.ctCartService, this.ctOrderService);
@@ -438,6 +442,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       log.error('Error processing notification', { error: e });
       throw e;
     }
+  }
+
+  public async processNotificationTokenization(opts: { data: NotificationTokenizationDTO }): Promise<void> {
+    await this.notificationTokenizationConverter.convert(opts);
   }
 
   async capturePayment(request: CapturePaymentRequest): Promise<PaymentProviderModificationResponse> {

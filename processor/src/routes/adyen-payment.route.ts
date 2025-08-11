@@ -13,6 +13,7 @@ import {
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
   CreateSessionResponseDTO,
+  NotificationTokenizationDTO,
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
@@ -20,12 +21,14 @@ import {
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 import { StoredPaymentMethodsResponseSchema } from '../dtos/saved-payment-methods.dto';
+import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
   sessionHeaderAuthHook: SessionHeaderAuthenticationHook;
   sessionQueryParamAuthHook: SessionQueryParamAuthenticationHook;
   hmacAuthHook: HmacAuthHook;
+  hmacHeaderAuthHook: HmacHeaderAuthHook;
 };
 
 export const adyenPaymentRoutes = async (
@@ -147,6 +150,20 @@ export const adyenPaymentRoutes = async (
     },
     async (request, reply) => {
       await opts.paymentService.processNotification({
+        data: request.body,
+      });
+
+      return reply.status(200).send('[accepted]');
+    },
+  );
+
+  fastify.post<{ Body: NotificationTokenizationDTO }>(
+    '/notifications/tokenization',
+    {
+      preHandler: [opts.hmacHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      await opts.paymentService.processNotificationTokenization({
         data: request.body,
       });
 

@@ -1,4 +1,5 @@
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
+import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
 import { paymentSDK } from '../payment-sdk';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 
@@ -15,5 +16,6 @@ export const app = {
   },
   hooks: {
     hmacAuthHook: new HmacAuthHook(),
+    hmacHeaderAuthHook: new HmacHeaderAuthHook(),
   },
 };
