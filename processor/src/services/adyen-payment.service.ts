@@ -447,10 +447,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
     log.info('Processing notification tokenization', { notification: JSON.stringify(opts.data) });
 
     try {
-      const result = await this.notificationTokenizationConverter.convert(opts);
+      const actions = await this.notificationTokenizationConverter.convert(opts);
 
-      if (result.draft) {
-        const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(result.draft);
+      if (actions.draft) {
+        const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
 
         log.info('Created new payment method used for tokenization', {
           notification: JSON.stringify(opts.data),
@@ -460,7 +460,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
             paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
             interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
             method: newlyCreatedPaymentMethod.method,
-            token: newlyCreatedPaymentMethod.token,
           },
         });
       }
