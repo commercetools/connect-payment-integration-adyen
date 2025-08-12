@@ -590,7 +590,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     if (!customerId) {
       throw new ErrorRequiredField('customerId', {
-        privateMessage: 'Cannot retrieve the saved payment methods if the customerId is not set on the cart',
+        privateMessage: 'customerId is not set on the cart',
         privateFields: {
           cart: {
             id: ctCart.id,
@@ -629,6 +629,49 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return {
       storedPaymentMethods: resList,
     };
+  }
+
+  async deleteSavedPaymentMethod(id: string): Promise<void> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    const customerId = ctCart.customerId;
+
+    if (!customerId) {
+      throw new ErrorRequiredField('customerId', {
+        privateMessage: 'customerId is not set on the cart',
+        privateFields: {
+          cart: {
+            id: ctCart.id,
+          },
+        },
+      });
+    }
+
+    const paymentMethod = await this.ctPaymentMethodService.getByTokenValue({
+      customerId: customerId,
+      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
+      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+      tokenValue: id,
+    });
+
+    const result = await Promise.allSettled([
+      this.ctPaymentMethodService.delete({
+        customerId: customerId,
+        id: paymentMethod.id,
+        version: paymentMethod.version,
+      }),
+      AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(id, customerId, getConfig().adyenMerchantAccount),
+    ]);
+
+    for (const res of result) {
+      if (res.status === 'rejected') {
+        log.error('An error occured when deleting saved payment methods', {
+          reason: res.reason,
+        });
+      }
+    }
   }
 
   private async processPaymentModificationInternal(opts: {
