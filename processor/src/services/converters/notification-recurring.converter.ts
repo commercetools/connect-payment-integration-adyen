@@ -1,13 +1,13 @@
 import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
 
-import { PaymentMethodDraft } from '@commercetools/connect-payments-sdk';
+import { CommercetoolsPaymentMethodTypes } from '@commercetools/connect-payments-sdk';
 
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { getSavedPaymentsConfig } from '../../config/saved-payment-method.config';
 
 export type NotificationTokenizationConverterResponse = {
-  draft?: PaymentMethodDraft;
+  draft?: CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft;
 };
 
 export class NotificationTokenizationConverter {
@@ -27,20 +27,13 @@ export class NotificationTokenizationConverter {
 
   private async processRecurringTokenCreated(
     data: TokenizationCreatedDetailsNotificationRequest,
-  ): Promise<PaymentMethodDraft> {
+  ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
     return {
-      customer: {
-        id: data.data.shopperReference,
-        typeId: 'customer',
-      },
+      customerId: data.data.shopperReference,
+      method: data.data.type,
       paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
       interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
-      method: data.data.type,
-      default: false,
-      paymentMethodStatus: 'Active',
-      token: {
-        value: data.data.storedPaymentMethodId,
-      },
+      token: data.data.storedPaymentMethodId,
     };
   }
 }
