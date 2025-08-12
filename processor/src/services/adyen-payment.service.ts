@@ -655,6 +655,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       tokenValue: id,
     });
 
+    // TODO: SCC-3447: what type of error processing do we want here?
     const result = await Promise.allSettled([
       this.ctPaymentMethodService.delete({
         customerId: customerId,
