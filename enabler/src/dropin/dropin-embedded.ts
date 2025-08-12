@@ -35,6 +35,8 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private paymentComponentsConfigOverride: Record<string, any>;
   private adyenCheckout: ICore;
   private isSavedPaymentMethodsEnabled: boolean;
+  private processorUrl: string;
+  private sessionId: string;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -42,6 +44,8 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       baseOptions.paymentComponentsConfigOverride;
     this.isSavedPaymentMethodsEnabled =
       baseOptions.isSavedPaymentMethodsEnabled;
+    this.processorUrl = baseOptions.processorUrl;
+    this.sessionId = baseOptions.sessionId;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -50,6 +54,8 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       dropinOptions: config,
       dropinConfigOverride: this.resolveDropinComponentConfigOverride(),
       isSavedPaymentMethodsEnabled: this.isSavedPaymentMethodsEnabled,
+      processorUrl: this.processorUrl,
+      sessionId: this.sessionId,
     });
 
     dropin.init();
@@ -67,17 +73,23 @@ export class DropinComponents implements DropinComponent {
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
   private isSavedPaymentMethodsEnabled: boolean;
+  private processorUrl: string;
+  private sessionId: string;
 
   constructor(opts: {
     adyenCheckout: ICore;
     dropinOptions: DropinOptions;
     dropinConfigOverride: Record<string, any>;
     isSavedPaymentMethodsEnabled: boolean;
+    processorUrl: string;
+    sessionId: string;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
     this.isSavedPaymentMethodsEnabled = opts.isSavedPaymentMethodsEnabled;
+    this.processorUrl = opts.processorUrl;
+    this.sessionId = opts.sessionId;
 
     this.overrideOnSubmit();
   }
@@ -90,9 +102,27 @@ export class DropinComponents implements DropinComponent {
       showStoredPaymentMethods: this.isSavedPaymentMethodsEnabled,
       showRemovePaymentMethodButton: this.isSavedPaymentMethodsEnabled,
       isDropin: true,
-      onDisableStoredPaymentMethod: (resolve) => {
-        // TODO: SCC-3447: implement disable (i.e. remove button functionality) for drop-in component. It should call a HTTP DELETE /stored-payment-methods/{uuid} endpoint. Which should remove it from Adyen and COCO
-        return resolve();
+      onDisableStoredPaymentMethod: async (
+        storedPaymentMethod,
+        resolve,
+        reject,
+      ) => {
+        const url = this.processorUrl.endsWith("/")
+          ? `${this.processorUrl}stored-payment-methods/${storedPaymentMethod}`
+          : `${this.processorUrl}/stored-payment-methods/${storedPaymentMethod}`;
+
+        const response = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            "X-Session-Id": this.sessionId,
+          },
+        });
+
+        if (response.ok) {
+          return resolve();
+        } else {
+          return reject();
+        }
       },
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {

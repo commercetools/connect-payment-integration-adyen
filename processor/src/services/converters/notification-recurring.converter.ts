@@ -14,7 +14,7 @@ export class NotificationTokenizationConverter {
   public async convert(opts: {
     data: NotificationTokenizationDTO;
   }): Promise<NotificationTokenizationConverterResponse> {
-    let response: NotificationTokenizationConverterResponse = {};
+    const response: NotificationTokenizationConverterResponse = {};
 
     if (opts.data.type === TokenizationCreatedDetailsNotificationRequest.TypeEnum.RecurringTokenCreated) {
       response.draft = await this.processRecurringTokenCreated(opts.data);

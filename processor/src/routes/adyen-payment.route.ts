@@ -22,6 +22,7 @@ import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 import { StoredPaymentMethodsResponseSchema } from '../dtos/saved-payment-methods.dto';
 import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
+import { Type } from '@sinclair/typebox';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
@@ -184,6 +185,35 @@ export const adyenPaymentRoutes = async (
     async (_, reply) => {
       const res = await opts.paymentService.getSavedPaymentMethods();
       reply.code(200).send(res);
+    },
+  );
+
+  fastify.delete<{
+    Params: { id: string };
+  }>(
+    '/stored-payment-methods/:id',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+      schema: {
+        params: {
+          $id: 'paramsSchema',
+          type: 'object',
+          properties: {
+            id: Type.String(),
+          },
+          required: ['id'],
+        },
+        response: {
+          200: {},
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      await opts.paymentService.deleteSavedPaymentMethod(id);
+
+      return reply.status(200).send();
     },
   );
 };
