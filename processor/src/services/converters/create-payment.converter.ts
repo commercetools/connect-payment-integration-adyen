@@ -8,6 +8,7 @@ import {
   Payment,
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
+  ErrorInternalConstraintViolated,
 } from '@commercetools/connect-payments-sdk';
 import {
   buildReturnUrl,
@@ -100,28 +101,57 @@ export class CreatePaymentConverter {
       });
     }
 
-    const payWithExistingToken = Object.keys(data.paymentMethod).includes('storedPaymentMethodId');
+    const storedPaymentMethodIdKeyValuePair = Object.entries(data.paymentMethod).find(
+      (keyValuePair) => keyValuePair[0] === 'storedPaymentMethodId',
+    );
 
-    // TODO: SCC-3447: if payWithExistingToken === true make sure to explicitly validate that the given storedPaymentMethodId belongs to the customerId on the cart via fetching the PM from CoCO and checking if the token.value matches with the storedPaymentMethodId
+    const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
+    const tokeniseForFirstTime = data.storePaymentMethod;
 
     // User does not want to store token for the first time nor pay with existing one
-    if (!data.storePaymentMethod && !payWithExistingToken) {
+    if (!tokeniseForFirstTime && !payWithExistingToken) {
       return;
+    }
+
+    if (payWithExistingToken) {
+      const storedPaymentMethodId = storedPaymentMethodIdKeyValuePair[1];
+      const doesTokenBelongsToCustomer = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
+        customerId: customerReference,
+        paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
+        interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+        tokenValue: storedPaymentMethodId,
+      });
+
+      if (!doesTokenBelongsToCustomer) {
+        throw new ErrorInternalConstraintViolated(
+          'The provided token does not belong to the given customer for any payment method currently stored.',
+          {
+            privateFields: {
+              cart: {
+                id: cart.id,
+                typeId: 'cart',
+              },
+              customerId: customerReference,
+              paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
+              interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+              token: storedPaymentMethodId,
+            },
+          },
+        );
+      }
     }
 
     const shopperInteraction = payWithExistingToken
       ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
       : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
 
-    const res = {
-      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
+    return {
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile, // always the same static value
       shopperInteraction,
       shopperReference: customerReference,
-      ...(data.storePaymentMethod ? { storePaymentMethod: data.storePaymentMethod } : {}), // only applicable when user wants to tokenise payment details for the first time
+      ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
       paymentMethod: data.paymentMethod,
     };
-
-    return res;
   }
 
   private populateAddionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
