@@ -37,7 +37,6 @@ export const paymentMethodConfig: PaymentMethodConfig = {
   },
 };
 
-// TODO: SCC-3447: do we need to pass this info to the enabler in order to allow/disallow certain stored web-components to be loaded?
 export type SupportedSavedPaymentMethodTypes = {
   [key: string]: {
     oneOffPayments: boolean;

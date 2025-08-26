@@ -340,7 +340,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    // TODO: SCC-3447: if the user payed with a spm, then the token (and the rest of the payment details --> this is already done) must be stored in the commercetools Payment entity.
+    // TODO: SCC-3447: (SCC-3449) if the user payed with a spm, then the token (and the rest of the payment details --> this is already done) must be stored in the commercetools Payment entity.
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -604,8 +604,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
     });
 
-    // TODO: SCC-3447: if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions
-    // TODO: SCC-3447: if the .env toggle is ENABLED then use that information to show the displayOptions
+    // TODO: SCC-3447: (SCC-3449) if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions
+    // TODO: SCC-3447: (SCC-3449) if the .env toggle is ENABLED then use that information to show the displayOptions
     const resList = savedPaymentMethods.results.map((spm) => {
       const res: StoredPaymentMethod = {
         id: spm.id,
