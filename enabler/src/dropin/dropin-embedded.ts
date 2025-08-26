@@ -98,10 +98,11 @@ export class DropinComponents implements DropinComponent {
     this.component = new Dropin(this.adyenCheckout, {
       showPayButton: true,
       showRadioButton: false,
+      isDropin: true,
       openFirstStoredPaymentMethod: false,
       showStoredPaymentMethods: this.isSavedPaymentMethodsEnabled,
       showRemovePaymentMethodButton: this.isSavedPaymentMethodsEnabled,
-      isDropin: true,
+      // TODO: SCC-3447: use the filterStoredPaymentMethods(storedPaymentMethods) callback function in order to filter out Adyen PM that does not exist in CT. That would require us passing in the known CT spm and then filter it out
       onDisableStoredPaymentMethod: async (
         storedPaymentMethod,
         resolve,
