@@ -86,7 +86,12 @@
         </div>
       </section>
 
-      <!-- SCC-3447: add test functionality for showing/rendering the saved pm (for both web-component and dropins) -->
+      <!-- SCC-3447: add test functionality for showing/paying the saved pm for web-components
+        1. if the given cartId has an customerId set
+        2. call the processor get-stored-payment-methods API
+        3. render the CT stored payment-methods beside the normal card component. Essentially mimicking the SPA.
+        4. add button to pay cart with that spm without entering any data in the card web-component
+-->
 
       <div class="album py-5 bg-light">
         <div class="container">
