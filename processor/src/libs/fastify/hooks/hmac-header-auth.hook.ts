@@ -3,6 +3,9 @@ import { config } from '../../../config/config';
 import { FastifyRequest } from 'fastify';
 import { ErrorAuthErrorResponse } from '@commercetools/connect-payments-sdk';
 
+/**
+ * @see https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures/#verify-hmac-in-header
+ */
 export class HmacHeaderAuthHook {
   public authenticate() {
     return async (request: FastifyRequest) => {
