@@ -655,7 +655,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       tokenValue: id,
     });
 
-    // TODO: SCC-3447: what type of error processing do we want here?
+    // TODO: SCC-3447: first try and delete in CT, if that succeeds then try and delete in Adyen, if that fails then re-create the spm in CT
+
     const result = await Promise.allSettled([
       this.ctPaymentMethodService.delete({
         customerId: customerId,
