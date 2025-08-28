@@ -636,7 +636,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
           endDigits: tokenDetailsFromAdyen?.lastFour,
           expiryMonth: tokenDetailsFromAdyen?.expiryMonth,
           expiryYear: tokenDetailsFromAdyen?.expiryYear,
-          logoUrl: undefined, // TODO: SCC-3447: logoUrl is not present on the CT and adyen model
         },
       };
       return res;
