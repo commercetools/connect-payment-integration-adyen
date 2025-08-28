@@ -57,9 +57,7 @@ export class CreateSessionConverter {
       ...(getSavedPaymentsConfig().enabled && {
         shopperReference: opts.cart.customerId,
         recurringProcessingModel: CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
-        shopperInteraction: CreateCheckoutSessionRequest.ShopperInteractionEnum.Ecommerce,
         storePaymentMethodMode: CreateCheckoutSessionRequest.StorePaymentMethodModeEnum.AskForConsent,
-        storePaymentMethod: true,
       }),
     };
   }
