@@ -1,49 +1,19 @@
+import { ICore, Card } from "@adyen/adyen-web";
 import {
-  ICore,
-  ApplePay,
-  GooglePay,
-  Redirect,
-  Card,
-  PayPal,
-  Klarna,
-  EPS,
-  Twint,
-  SepaDirectDebit,
-  Blik,
-  Swish,
-  Vipps,
-  OnlineBankingPL,
-  AfterPay,
-} from "@adyen/adyen-web";
-import {
-  ComponentOptions,
-  PaymentComponent,
-  PaymentComponentBuilder,
+  StoredComponentOptions,
+  StoredComponent,
+  StoredComponentBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 
-type AdyenComponent =
-  | Card
-  | PayPal
-  | ApplePay
-  | GooglePay
-  | Klarna
-  | EPS
-  | Twint
-  | Redirect
-  | SepaDirectDebit
-  | Blik
-  | Vipps
-  | OnlineBankingPL
-  | Swish
-  | AfterPay;
+type AdyenComponent = Card; // We can add more components as needed
 
 /**
  * Base Web Component
  */
-export abstract class AdyenBaseComponentBuilder
-  implements PaymentComponentBuilder
+export abstract class AdyenBaseStoredComponentBuilder
+  implements StoredComponentBuilder
 {
   public componentHasSubmit = true;
 
@@ -52,19 +22,23 @@ export abstract class AdyenBaseComponentBuilder
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentsConfigOverride: Record<string, any>;
-  protected setStorePaymentDetails?: (enabled: boolean) => void;
+  protected storedPaymentMethodsTokens: Record<string, string>;
 
-  constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
+  constructor(
+    paymentMethod: PaymentMethod,
+    baseOptions: BaseOptions,
+    storedPaymentMethodsTokens: Record<string, string>,
+  ) {
     this.paymentMethod = paymentMethod;
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.sessionId = baseOptions.sessionId;
     this.processorUrl = baseOptions.processorUrl;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
-    this.setStorePaymentDetails = baseOptions.setStorePaymentDetails;
+    this.storedPaymentMethodsTokens = storedPaymentMethodsTokens;
   }
 
-  abstract build(config: ComponentOptions): PaymentComponent;
+  abstract build(config: StoredComponentOptions): StoredComponent;
 
   protected resolvePaymentComponentConfigOverride(
     paymentMethod: string,
@@ -73,24 +47,24 @@ export abstract class AdyenBaseComponentBuilder
   }
 }
 
-export abstract class DefaultAdyenComponent implements PaymentComponent {
+export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   protected component: AdyenComponent;
   protected paymentMethod: PaymentMethod;
   protected adyenCheckout: ICore;
-  protected componentOptions: ComponentOptions;
+  protected componentOptions: StoredComponentOptions;
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentConfigOverride: Record<string, any>;
-  protected setStorePaymentDetails?: (enabled: boolean) => void;
+  protected storedPaymentMethodsTokens: Record<string, string>;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
     adyenCheckout: ICore;
-    componentOptions: ComponentOptions;
+    componentOptions: StoredComponentOptions;
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
-    setStorePaymentDetails?: (enabled: boolean) => void;
+    storedPaymentMethodsTokens: Record<string, string>;
   }) {
     this.paymentMethod = opts.paymentMethod;
     this.adyenCheckout = opts.adyenCheckout;
@@ -98,16 +72,13 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     this.sessionId = opts.sessionId;
     this.processorUrl = opts.processorUrl;
     this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
-    this.setStorePaymentDetails = opts.setStorePaymentDetails;
+    this.storedPaymentMethodsTokens = opts.storedPaymentMethodsTokens;
   }
-  abstract init(): void;
+  abstract init(options: { id: string }): void;
 
-  async submit({
-    storePaymentDetails = false,
-  }: {
-    storePaymentDetails?: boolean;
-  }): Promise<void> {
-    this.setStorePaymentDetails?.(storePaymentDetails);
+  abstract remove(): Promise<void>;
+
+  async submit(): Promise<void> {
     this.component.submit();
   }
 

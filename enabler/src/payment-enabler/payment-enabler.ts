@@ -7,7 +7,11 @@ type CardPaymentState = {
 };
 
 export interface PaymentComponent {
-  submit(): Promise<void>;
+  submit({
+    storePaymentDetails,
+  }: {
+    storePaymentDetails?: boolean;
+  }): Promise<void>;
   mount(selector: string): Promise<void>;
   showValidation?(): Promise<void>;
   isValid?(): Promise<boolean>;
@@ -82,7 +86,27 @@ export type PaymentResult =
 
 export type ComponentOptions = {
   showPayButton?: boolean;
+  onPayButtonClick?: () => Promise<{ storePaymentDetails?: boolean }>;
+};
+
+export interface StoredComponent {
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
+  showValidation?(): Promise<void>;
+  isValid?(): Promise<boolean>;
+  isAvailable?(): Promise<boolean>;
+  remove(): Promise<void>;
+}
+
+export interface StoredComponentBuilder {
+  componentHasSubmit: boolean;
+  build(config: StoredComponentOptions): StoredComponent;
+}
+
+export type StoredComponentOptions = {
+  showPayButton?: boolean;
   onPayButtonClick?: () => Promise<void>;
+  id: string;
 };
 
 export enum DropinType {
@@ -111,6 +135,38 @@ export interface PaymentDropinBuilder {
   build(config: DropinOptions): DropinComponent;
 }
 
+type BaseStoredDisplayOptions = {
+  name: string;
+  logoUrl?: string;
+  [key: string]: unknown;
+};
+
+type BaseStoredPaymentMethod = {
+  id: string;
+  type: string;
+  createdAt: string; // ISO date string
+  isDefault: boolean;
+  displayOptions: BaseStoredDisplayOptions;
+};
+
+type StoredCardPaymentMethod = BaseStoredPaymentMethod & {
+  type: "card";
+  displayOptions: BaseStoredDisplayOptions & {
+    endDigits?: string;
+    brand?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+  };
+};
+
+export type StoredPaymentMethod =
+  | BaseStoredPaymentMethod
+  | StoredCardPaymentMethod;
+
+export type CocoStoredPaymentMethod = StoredPaymentMethod & {
+  token: string;
+};
+
 export interface PaymentEnabler {
   /**
    * @throws {Error}
@@ -127,4 +183,18 @@ export interface PaymentEnabler {
   createDropinBuilder: (
     type: DropinType,
   ) => Promise<PaymentDropinBuilder | never>;
+
+  createStoredPaymentMethodBuilder: (
+    type: string,
+  ) => Promise<StoredComponentBuilder | never>;
+
+  getStoredPaymentMethods: ({
+    allowedMethodTypes,
+  }: {
+    allowedMethodTypes: string[];
+  }) => Promise<{
+    storedPaymentMethods?: StoredPaymentMethod[];
+  }>;
+
+  setStorePaymentDetails(enabled: boolean): void;
 }
