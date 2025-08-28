@@ -12,12 +12,14 @@ import {
 } from "@adyen/adyen-web";
 import "@adyen-css";
 import {
+  CocoStoredPaymentMethod,
   DropinType,
   EnablerOptions,
   getPaymentMethodType,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
+  StoredComponentBuilder,
 } from "./payment-enabler";
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
 import { CardBuilder } from "../components/payment-methods/card";
@@ -42,6 +44,7 @@ import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
+import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -69,17 +72,34 @@ export type BaseOptions = {
     isEnabled: boolean;
     knownTokensIds: string[];
   };
+  setStorePaymentDetails: (enabled: boolean) => void;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
+  storedPaymentMethodsTokens: Record<string, string> = {};
+  private storePaymentDetails = false;
 
   constructor(options: AdyenEnablerOptions) {
-    this.setupData = AdyenPaymentEnabler._Setup(options);
+    this.setupData = AdyenPaymentEnabler._Setup(
+      options,
+      this.getStorePaymentDetails,
+      this.setStorePaymentDetails,
+    );
   }
+
+  setStorePaymentDetails = (enabled: boolean): void => {
+    this.storePaymentDetails = enabled;
+  };
+
+  getStorePaymentDetails = (): boolean => {
+    return this.storePaymentDetails;
+  };
 
   private static _Setup = async (
     options: AdyenEnablerOptions,
+    getStorePaymentDetails: () => boolean,
+    setStorePaymentDetails: (enabled: boolean) => void,
   ): Promise<{ baseOptions: BaseOptions }> => {
     const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
 
@@ -165,6 +185,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               shopperLocale: adyenLocale,
               channel: "Web",
               paymentReference,
+              ...(getStorePaymentDetails() ? { storePaymentMethod: true } : {}),
             };
 
             const response = await fetch(options.processorUrl + "/payments", {
@@ -273,10 +294,40 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
           }),
           savedpaymentMethodsConfig: configJson.savedpaymentMethodsConfig,
+          setStorePaymentDetails,
         },
       };
     }
   };
+
+  async getStoredPaymentMethods({ allowedMethodTypes }) {
+    const setupData = await this.setupData;
+    const { processorUrl, sessionId } = setupData.baseOptions;
+
+    const response = await fetch(processorUrl + "/stored-payment-methods", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Session-Id": sessionId,
+      },
+    });
+
+    const {
+      storedPaymentMethods: cocoStoredPaymentMethods,
+    }: { storedPaymentMethods: CocoStoredPaymentMethod[] } =
+      await response.json();
+
+    this.storedPaymentMethodsTokens = Object.fromEntries(
+      cocoStoredPaymentMethods.map((method) => [method.id, method.token]),
+    );
+    const storedPaymentMethods = cocoStoredPaymentMethods
+      .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
+      .filter((method) => allowedMethodTypes.includes(method.type));
+
+    // TODO: SCC-3447: is this timeout required?
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return { storedPaymentMethods };
+  }
 
   async createComponentBuilder(
     type: string,
@@ -315,6 +366,28 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       );
     }
     return new supportedMethods[type](setupData.baseOptions);
+  }
+
+  async createStoredPaymentMethodBuilder(
+    type: string,
+  ): Promise<StoredComponentBuilder | never> {
+    const setupData = await this.setupData;
+    if (!setupData) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+    const supportedMethods = {
+      card: StoredCardBuilder,
+    };
+
+    if (!Object.keys(supportedMethods).includes(type)) {
+      throw new Error(
+        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+      );
+    }
+    return new supportedMethods[type](
+      setupData.baseOptions,
+      this.storedPaymentMethodsTokens,
+    );
   }
 
   async createDropinBuilder(
