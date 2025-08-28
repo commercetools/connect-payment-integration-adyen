@@ -5,13 +5,14 @@ import { Payment, type TPaymentRest } from '@commercetools/composable-commerce-t
 import { CartRest, type TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 import { Cart } from '@commercetools/connect-payments-sdk';
+import { paymentSDK } from '../../../src/payment-sdk';
 
 jest.spyOn(Helpers, 'buildReturnUrl').mockReturnValue('https://commercetools.com');
 
 describe('create-payment.converter', () => {
-  const converter = new CreatePaymentConverter();
+  const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-  test('should map over all required fields', () => {
+  test('should map over all required fields', async () => {
     const cartRandom = CartRest.random()
       .lineItems([])
       .customLineItems([])
@@ -21,7 +22,7 @@ describe('create-payment.converter', () => {
     const paymentRandom = Payment.random().buildRest<TPaymentRest>();
     const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
 
-    const result = converter.convertRequest({
+    const result = await converter.convertRequest({
       data: paymentRequestDTO,
       cart: cartRandom,
       payment: paymentRandom,
@@ -51,14 +52,14 @@ describe('create-payment.converter', () => {
     expect(result).toStrictEqual(expected);
   });
 
-  test('should set the additional data for afterpaytouch', () => {
+  test('should set the additional data for afterpaytouch', async () => {
     const cartRandom = CartRest.random().customLineItems([]).buildRest<TCartRest>({}) as Cart;
     const paymentRandom = Payment.random().buildRest<TPaymentRest>();
     const paymentRequestDTO: CreatePaymentRequestDTO = {
       paymentMethod: { type: 'afterpaytouch' },
     } as CreatePaymentRequestDTO;
 
-    const result = converter.convertRequest({
+    const result = await converter.convertRequest({
       data: paymentRequestDTO,
       cart: cartRandom,
       payment: paymentRandom,
