@@ -119,7 +119,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         usesOwnCertificate,
       },
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
-      savedpaymentMethodsConfig: {
+      savedPaymentMethodsConfig: {
         isEnabled: getSavedPaymentsConfig().enabled,
         knownTokensIds: savedPaymentMethods.storedPaymentMethods.map((spm) => spm.token),
       },
