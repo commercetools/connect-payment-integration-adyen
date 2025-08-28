@@ -27,9 +27,10 @@ export class HmacHeaderAuthHook {
         hmacSignature = hmacSignatureHeaders;
       }
 
-      const hmacKey = config.adyenHMACTokenizationWebHooksKey
-        ? config.adyenHMACTokenizationWebHooksKey
-        : config.adyenHMACKey;
+      const hmacKey =
+        config.adyenHMACTokenizationWebHooksKey !== undefined
+          ? config.adyenHMACTokenizationWebHooksKey
+          : config.adyenHMACKey;
 
       const validator = new HmacValidator();
 
