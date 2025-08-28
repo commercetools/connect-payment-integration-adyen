@@ -36,7 +36,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private adyenCheckout: ICore;
   private processorUrl: string;
   private sessionId: string;
-  private savedpaymentMethodsConfig: {
+  private savedPaymentMethodsConfig: {
     isEnabled: boolean;
     knownTokensIds: string[];
   };
@@ -45,7 +45,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
-    this.savedpaymentMethodsConfig = baseOptions.savedpaymentMethodsConfig;
+    this.savedPaymentMethodsConfig = baseOptions.savedPaymentMethodsConfig;
     this.processorUrl = baseOptions.processorUrl;
     this.sessionId = baseOptions.sessionId;
   }
@@ -55,7 +55,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       adyenCheckout: this.adyenCheckout,
       dropinOptions: config,
       dropinConfigOverride: this.resolveDropinComponentConfigOverride(),
-      savedPaymentMethodsConfig: this.savedpaymentMethodsConfig,
+      savedPaymentMethodsConfig: this.savedPaymentMethodsConfig,
       processorUrl: this.processorUrl,
       sessionId: this.sessionId,
     });

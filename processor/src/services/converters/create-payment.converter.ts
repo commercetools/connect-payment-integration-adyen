@@ -87,6 +87,18 @@ export class CreatePaymentConverter {
       return;
     }
 
+    const storedPaymentMethodIdKeyValuePair = Object.entries(data.paymentMethod).find(
+      (keyValuePair) => keyValuePair[0] === 'storedPaymentMethodId',
+    );
+
+    const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
+    const tokeniseForFirstTime = data.storePaymentMethod;
+
+    // User does not want to store token for the first time nor pay with existing one
+    if (!tokeniseForFirstTime && !payWithExistingToken) {
+      return;
+    }
+
     const customerReference = cart.customerId;
 
     if (!customerReference) {
@@ -99,18 +111,6 @@ export class CreatePaymentConverter {
           },
         },
       });
-    }
-
-    const storedPaymentMethodIdKeyValuePair = Object.entries(data.paymentMethod).find(
-      (keyValuePair) => keyValuePair[0] === 'storedPaymentMethodId',
-    );
-
-    const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
-    const tokeniseForFirstTime = data.storePaymentMethod;
-
-    // User does not want to store token for the first time nor pay with existing one
-    if (!tokeniseForFirstTime && !payWithExistingToken) {
-      return;
     }
 
     if (payWithExistingToken) {
