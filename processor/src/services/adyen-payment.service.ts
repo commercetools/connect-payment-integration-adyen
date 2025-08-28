@@ -614,22 +614,29 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     // TODO: SCC-3447: (SCC-3449) if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
 
-    // TODO: SCC-3447: retrieve the displayable info data during runtime from Adyen
-    // const a = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails();
+    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
+      customerId,
+      getConfig().adyenMerchantAccount,
+    );
+
     const resList = savedPaymentMethods.results.map((spm) => {
+      const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+        (tokenDetails) => tokenDetails.id === spm.token?.value,
+      );
+
       const res: StoredPaymentMethod = {
         id: spm.id,
         createdAt: spm.createdAt,
         isDefault: spm.default,
-        token: spm.token?.value || '',
-        type: 'card/scheme',
+        token: spm.token?.value || tokenDetailsFromAdyen?.id || '',
+        type: spm.method || tokenDetailsFromAdyen?.type || '',
         displayOptions: {
-          name: '',
-          brand: '',
-          endDigits: '',
-          expiryMonth: '',
-          expiryYear: '',
-          logoUrl: '',
+          name: `•••• ${tokenDetailsFromAdyen?.lastFour}`,
+          brand: tokenDetailsFromAdyen?.brand,
+          endDigits: tokenDetailsFromAdyen?.lastFour,
+          expiryMonth: tokenDetailsFromAdyen?.expiryMonth,
+          expiryYear: tokenDetailsFromAdyen?.expiryYear,
+          logoUrl: undefined, // TODO: SCC-3447: logoUrl is not present on the CT and adyen model
         },
       };
       return res;
