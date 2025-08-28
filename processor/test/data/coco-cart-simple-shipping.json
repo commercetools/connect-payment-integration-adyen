@@ -527,5 +527,6 @@
     "email": "Johannes.Vermeer@example.com"
   },
   "itemShippingAddresses": [],
-  "totalLineItemQuantity": 1
+  "totalLineItemQuantity": 1,
+  "priceRoundingMode": "HalfEven"
 }

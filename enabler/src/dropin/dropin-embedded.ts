@@ -34,16 +34,18 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
   private paymentComponentsConfigOverride: Record<string, any>;
   private adyenCheckout: ICore;
-  private isSavedPaymentMethodsEnabled: boolean;
   private processorUrl: string;
   private sessionId: string;
+  private savedpaymentMethodsConfig: {
+    isEnabled: boolean;
+    knownTokensIds: string[];
+  };
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
-    this.isSavedPaymentMethodsEnabled =
-      baseOptions.isSavedPaymentMethodsEnabled;
+    this.savedpaymentMethodsConfig = baseOptions.savedpaymentMethodsConfig;
     this.processorUrl = baseOptions.processorUrl;
     this.sessionId = baseOptions.sessionId;
   }
@@ -53,7 +55,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       adyenCheckout: this.adyenCheckout,
       dropinOptions: config,
       dropinConfigOverride: this.resolveDropinComponentConfigOverride(),
-      isSavedPaymentMethodsEnabled: this.isSavedPaymentMethodsEnabled,
+      savedPaymentMethodsConfig: this.savedpaymentMethodsConfig,
       processorUrl: this.processorUrl,
       sessionId: this.sessionId,
     });
@@ -72,22 +74,28 @@ export class DropinComponents implements DropinComponent {
   private adyenCheckout: ICore;
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
-  private isSavedPaymentMethodsEnabled: boolean;
   private processorUrl: string;
   private sessionId: string;
+  private savedpaymentMethodsConfig: {
+    isEnabled: boolean;
+    knownTokensIds: string[];
+  };
 
   constructor(opts: {
     adyenCheckout: ICore;
     dropinOptions: DropinOptions;
     dropinConfigOverride: Record<string, any>;
-    isSavedPaymentMethodsEnabled: boolean;
+    savedPaymentMethodsConfig: {
+      isEnabled: boolean;
+      knownTokensIds: string[];
+    };
     processorUrl: string;
     sessionId: string;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
-    this.isSavedPaymentMethodsEnabled = opts.isSavedPaymentMethodsEnabled;
+    this.savedpaymentMethodsConfig = opts.savedPaymentMethodsConfig;
     this.processorUrl = opts.processorUrl;
     this.sessionId = opts.sessionId;
 
@@ -100,9 +108,13 @@ export class DropinComponents implements DropinComponent {
       showRadioButton: false,
       isDropin: true,
       openFirstStoredPaymentMethod: false,
-      showStoredPaymentMethods: this.isSavedPaymentMethodsEnabled,
-      showRemovePaymentMethodButton: this.isSavedPaymentMethodsEnabled,
-      // TODO: SCC-3447: use the filterStoredPaymentMethods(storedPaymentMethods) callback function in order to filter out Adyen PM that does not exist in CT. That would require us passing in the known CT spm and then filter it out
+      showStoredPaymentMethods: this.savedpaymentMethodsConfig.isEnabled,
+      showRemovePaymentMethodButton: this.savedpaymentMethodsConfig.isEnabled,
+      filterStoredPaymentMethods: (storedPaymentMethods) => {
+        return storedPaymentMethods.filter((spm) => {
+          return this.savedpaymentMethodsConfig.knownTokensIds.includes(spm.id);
+        });
+      },
       onDisableStoredPaymentMethod: async (
         storedPaymentMethod,
         resolve,
@@ -192,7 +204,7 @@ export class DropinComponents implements DropinComponent {
             getPaymentMethodType(PaymentMethod.card)
           ],
           // Configuration that can not be overridden
-          enableStoreDetails: this.isSavedPaymentMethodsEnabled,
+          enableStoreDetails: this.savedpaymentMethodsConfig.isEnabled,
         },
         googlepay: {
           buttonType: "pay",

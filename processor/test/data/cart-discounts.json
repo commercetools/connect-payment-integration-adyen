@@ -479,5 +479,6 @@
   "discountTypeCombination": {
     "type": "Stacking"
   },
-  "totalLineItemQuantity": 2
+  "totalLineItemQuantity": 2,
+  "priceRoundingMode": "HalfEven"
 }

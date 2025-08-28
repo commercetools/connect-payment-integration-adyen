@@ -110,6 +110,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
 
+    const savedPaymentMethods = await this.getSavedPaymentMethods();
+
     return {
       clientKey: getConfig().adyenClientKey,
       environment: getConfig().adyenEnvironment,
@@ -117,7 +119,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
         usesOwnCertificate,
       },
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
-      isSavedPaymentMethodsEnabled: getSavedPaymentsConfig().enabled,
+      savedpaymentMethodsConfig: {
+        isEnabled: getSavedPaymentsConfig().enabled,
+        knownTokensIds: savedPaymentMethods.storedPaymentMethods.map((spm) => spm.token),
+      },
     };
   }
 
@@ -580,6 +585,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
+  /**
+   * Gets the known saved payment methods from CT based on the customerId on the cart in the session
+   */
   async getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),

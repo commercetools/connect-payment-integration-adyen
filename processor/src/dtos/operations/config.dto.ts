@@ -9,7 +9,10 @@ export const ConfigResponseSchema = Type.Object({
     }),
   ),
   paymentComponentsConfig: Type.Optional(Type.Any()),
-  isSavedPaymentMethodsEnabled: Type.Boolean(),
+  savedpaymentMethodsConfig: Type.Object({
+    isEnabled: Type.Boolean(),
+    knownTokensIds: Type.Array(Type.String()),
+  }),
 });
 
 export type ConfigResponseSchemaDTO = Static<typeof ConfigResponseSchema>;

@@ -503,5 +503,6 @@
       "key": "key1"
     }
   ],
-  "totalLineItemQuantity": 1
+  "totalLineItemQuantity": 1,
+  "priceRoundingMode": "HalfEven"
 }

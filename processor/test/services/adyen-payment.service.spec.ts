@@ -43,6 +43,7 @@ import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarn
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import * as FastifyContext from '../../src/libs/fastify/context/context';
+import { StoredPaymentMethod } from '../../src/dtos/saved-payment-methods.dto';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -63,6 +64,7 @@ describe('adyen-payment.service', () => {
     ctCartService: paymentSDK.ctCartService,
     ctPaymentService: paymentSDK.ctPaymentService,
     ctOrderService: paymentSDK.ctOrderService,
+    ctPaymentMethodService: paymentSDK.ctPaymentMethodService,
   };
 
   const paymentService = new AdyenPaymentService(opts);
@@ -86,6 +88,10 @@ describe('adyen-payment.service', () => {
   });
 
   test('getConfig', async () => {
+    jest.spyOn(AdyenPaymentService.prototype, 'getSavedPaymentMethods').mockResolvedValueOnce({
+      storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
+    });
+
     // Setup mock config for a system using `clientKey`
     setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'test' });
 
