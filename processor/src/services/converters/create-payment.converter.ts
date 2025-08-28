@@ -134,7 +134,6 @@ export class CreatePaymentConverter {
               customerId: customerReference,
               paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
               interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
-              token: storedPaymentMethodId,
             },
           },
         );
