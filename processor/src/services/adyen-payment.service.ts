@@ -27,7 +27,7 @@ import {
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
-import { AdyenApi, wrapAdyenError } from '../clients/adyen.client';
+import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
   getCartIdFromContext,
   getMerchantReturnUrlFromContext,
@@ -605,6 +605,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     // TODO: SCC-3447: (SCC-3449) if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
+
+    // TODO: SCC-3447: retrieve the displayable info data during runtime from Adyen
     // const a = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails();
     const resList = savedPaymentMethods.results.map((spm) => {
       const res: StoredPaymentMethod = {
@@ -655,24 +657,73 @@ export class AdyenPaymentService extends AbstractPaymentService {
       tokenValue: id,
     });
 
-    // TODO: SCC-3447: first try and delete in CT, if that succeeds then try and delete in Adyen, if that fails then re-create the spm in CT
-
-    const result = await Promise.allSettled([
-      this.ctPaymentMethodService.delete({
+    try {
+      await this.ctPaymentMethodService.delete({
         customerId: customerId,
         id: paymentMethod.id,
         version: paymentMethod.version,
-      }),
-      AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(id, customerId, getConfig().adyenMerchantAccount),
-    ]);
+      });
+    } catch (error) {
+      log.error('Could not delete payment-method in CT', {
+        error,
+        customer: { id: customerId, type: 'customer' },
+        paymentMethod: { id: paymentMethod.id, type: 'payment-method' },
+        cart: { id: ctCart.id, type: 'cart' },
+      });
 
-    for (const res of result) {
-      if (res.status === 'rejected') {
-        log.error('An error occured when deleting saved payment methods', {
-          reason: res.reason,
-        });
-      }
+      throw error;
     }
+
+    const maxRetries = 3;
+    let attempt = 1;
+
+    async function sleep(ms: number): Promise<void> {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    do {
+      try {
+        AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(id, customerId, getConfig().adyenMerchantAccount);
+        break;
+      } catch (error) {
+        const wrappedAdyenError = wrapAdyenError(error);
+
+        const errorLogObject = {
+          error,
+          retry: {
+            attempt,
+            maxRetries,
+          },
+          customer: { id: customerId, type: 'customer' },
+          paymentMethod: { id: paymentMethod.id, type: 'payment-method' },
+          cart: { id: ctCart.id, type: 'cart' },
+        };
+
+        if (isAdyenApiError(wrappedAdyenError)) {
+          if (wrappedAdyenError.httpErrorStatus === 404) {
+            break;
+          }
+
+          if (wrappedAdyenError.httpErrorStatus === 401 || wrappedAdyenError.httpErrorStatus === 403) {
+            log.error('Could not delete payment-method in Adyen due to credential problems', {
+              ...errorLogObject,
+              httpStatusCode: wrappedAdyenError.httpErrorStatus,
+            });
+            break;
+          }
+        }
+
+        log.error('Could not delete payment-method in Adyen', errorLogObject);
+
+        await sleep(200);
+
+        if (attempt === maxRetries) {
+          throw wrappedAdyenError;
+        }
+
+        attempt++;
+      }
+    } while (attempt <= maxRetries);
   }
 
   private async processPaymentModificationInternal(opts: {
