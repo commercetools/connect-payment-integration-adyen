@@ -78,7 +78,7 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
   }
 
   async remove() {
-    // TODO: SCC-3471: make HTTP DELETE call to remove it. See the drop-in component and the "onDisableStoredPaymentMethod" function.
+    // TODO: SCC-3447: make HTTP DELETE call to remove it. See the drop-in component and the "onDisableStoredPaymentMethod" function. Make sure the error is coded so they can take action on it.
     console.log("TODO: Implement remove method for stored card component");
     return;
   }
