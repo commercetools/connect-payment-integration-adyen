@@ -7,6 +7,7 @@ import * as SavedPaymentsConfig from '../../../src/config/saved-payment-method.c
 import { NotificationTokenizationConverter } from '../../../src/services/converters/notification-recurring.converter';
 import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.error';
 
+// TODO: SCC-3447: update unit-tests in accordance with the AdyenAPI integration calls.
 describe('notification.tokenization.converter', () => {
   const converter = new NotificationTokenizationConverter();
 

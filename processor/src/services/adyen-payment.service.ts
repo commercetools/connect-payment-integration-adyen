@@ -110,6 +110,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
 
+    // TODO: SCC-3447: test with feature flag disabled
+    // TODO: SCC-3447: this will throw an error if no customerId is set on the cart. How to best handle this? Based on the feature flag AND if no customerId is set then return empty list?
     const savedPaymentMethods = await this.getSavedPaymentMethods();
 
     return {
@@ -345,7 +347,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    // TODO: SCC-3447: (SCC-3449) if the user payed with a spm, then the token (and the rest of the payment details --> this is already done) must be stored in the commercetools Payment entity.
+    // TODO: SCC-3449: if the user payed with a spm, then the token (and the rest of the payment details --> this is already done) must be stored in the commercetools Payment entity.
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -613,7 +615,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return { storedPaymentMethods: [] };
     }
 
-    // TODO: SCC-3447: (SCC-3449) if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
+    // TODO: SCC-3449: if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
 
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
       customerId,
