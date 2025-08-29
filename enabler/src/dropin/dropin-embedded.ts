@@ -34,11 +34,20 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
   private paymentComponentsConfigOverride: Record<string, any>;
   private adyenCheckout: ICore;
+  private processorUrl: string;
+  private sessionId: string;
+  private savedPaymentMethodsConfig: {
+    isEnabled: boolean;
+    knownTokensIds: string[];
+  };
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
+    this.savedPaymentMethodsConfig = baseOptions.savedPaymentMethodsConfig;
+    this.processorUrl = baseOptions.processorUrl;
+    this.sessionId = baseOptions.sessionId;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -46,6 +55,9 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       adyenCheckout: this.adyenCheckout,
       dropinOptions: config,
       dropinConfigOverride: this.resolveDropinComponentConfigOverride(),
+      savedPaymentMethodsConfig: this.savedPaymentMethodsConfig,
+      processorUrl: this.processorUrl,
+      sessionId: this.sessionId,
     });
 
     dropin.init();
@@ -62,15 +74,30 @@ export class DropinComponents implements DropinComponent {
   private adyenCheckout: ICore;
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
+  private processorUrl: string;
+  private sessionId: string;
+  private savedpaymentMethodsConfig: {
+    isEnabled: boolean;
+    knownTokensIds: string[];
+  };
 
   constructor(opts: {
     adyenCheckout: ICore;
     dropinOptions: DropinOptions;
     dropinConfigOverride: Record<string, any>;
+    savedPaymentMethodsConfig: {
+      isEnabled: boolean;
+      knownTokensIds: string[];
+    };
+    processorUrl: string;
+    sessionId: string;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
+    this.savedpaymentMethodsConfig = opts.savedPaymentMethodsConfig;
+    this.processorUrl = opts.processorUrl;
+    this.sessionId = opts.sessionId;
 
     this.overrideOnSubmit();
   }
@@ -79,9 +106,37 @@ export class DropinComponents implements DropinComponent {
     this.component = new Dropin(this.adyenCheckout, {
       showPayButton: true,
       showRadioButton: false,
-      openFirstStoredPaymentMethod: false,
-      showStoredPaymentMethods: false,
       isDropin: true,
+      openFirstStoredPaymentMethod: false,
+      showStoredPaymentMethods: this.savedpaymentMethodsConfig.isEnabled,
+      showRemovePaymentMethodButton: this.savedpaymentMethodsConfig.isEnabled,
+      filterStoredPaymentMethods: (storedPaymentMethods) => {
+        return storedPaymentMethods.filter((spm) => {
+          return this.savedpaymentMethodsConfig.knownTokensIds.includes(spm.id);
+        });
+      },
+      onDisableStoredPaymentMethod: async (
+        storedPaymentMethod,
+        resolve,
+        reject,
+      ) => {
+        const url = this.processorUrl.endsWith("/")
+          ? `${this.processorUrl}stored-payment-methods/${storedPaymentMethod}`
+          : `${this.processorUrl}/stored-payment-methods/${storedPaymentMethod}`;
+
+        const response = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            "X-Session-Id": this.sessionId,
+          },
+        });
+
+        if (response.ok) {
+          return resolve();
+        } else {
+          return reject();
+        }
+      },
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {
           this.dropinOptions
@@ -141,7 +196,6 @@ export class DropinComponents implements DropinComponent {
           ],
           // Configuration that can not be overridden
         },
-
         card: {
           hasHolderName: true,
           holderNameRequired: true,
@@ -150,6 +204,7 @@ export class DropinComponents implements DropinComponent {
             getPaymentMethodType(PaymentMethod.card)
           ],
           // Configuration that can not be overridden
+          enableStoreDetails: this.savedpaymentMethodsConfig.isEnabled,
         },
         googlepay: {
           buttonType: "pay",

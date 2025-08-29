@@ -26,7 +26,9 @@ export class CardBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
-      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride("card"),
+      paymentComponentConfigOverride:
+        this.resolvePaymentComponentConfigOverride("card"),
+      setStorePaymentDetails: this.setStorePaymentDetails,
     });
     cardComponent.init();
     return cardComponent;
@@ -43,6 +45,7 @@ export class CardComponent extends DefaultAdyenComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
+    setStorePaymentDetails: (enabled: boolean) => void;
   }) {
     super(opts);
   }
@@ -63,6 +66,11 @@ export class CardComponent extends DefaultAdyenComponent {
       },
       ...this.componentOptions,
     });
+
+    this.component.props = {
+      ...this.component.props,
+      showStoreDetailsCheckbox: false,
+    };
   }
 
   async showValidation() {

@@ -13,18 +13,23 @@ import {
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
   CreateSessionResponseDTO,
+  NotificationTokenizationDTO,
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
+import { StoredPaymentMethodsResponseSchema } from '../dtos/saved-payment-methods.dto';
+import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
+import { Type } from '@sinclair/typebox';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
   sessionHeaderAuthHook: SessionHeaderAuthenticationHook;
   sessionQueryParamAuthHook: SessionQueryParamAuthenticationHook;
   hmacAuthHook: HmacAuthHook;
+  hmacHeaderAuthHook: HmacHeaderAuthHook;
 };
 
 export const adyenPaymentRoutes = async (
@@ -150,6 +155,66 @@ export const adyenPaymentRoutes = async (
       });
 
       return reply.status(200).send('[accepted]');
+    },
+  );
+
+  fastify.post<{ Body: NotificationTokenizationDTO }>(
+    '/notifications/tokenization',
+    {
+      preHandler: [opts.hmacHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      await opts.paymentService.processNotificationTokenization({
+        data: request.body,
+      });
+
+      return reply.status(200).send('[accepted]');
+    },
+  );
+
+  fastify.get(
+    '/stored-payment-methods',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+      schema: {
+        response: {
+          200: StoredPaymentMethodsResponseSchema,
+        },
+      },
+    },
+    async (_, reply) => {
+      const res = await opts.paymentService.getSavedPaymentMethods();
+      reply.code(200).send(res);
+    },
+  );
+
+  fastify.delete<{
+    Params: { id: string };
+  }>(
+    '/stored-payment-methods/:id',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+      schema: {
+        params: {
+          $id: 'paramsSchema',
+          type: 'object',
+          properties: {
+            id: Type.String(),
+          },
+          required: ['id'],
+        },
+        response: {
+          200: {},
+        },
+      },
+    },
+    async (request, reply) => {
+      // TODO: SCC-3447: validate if the access-logs don't pose a problem if those contain the Adyen token ID.
+      const { id } = request.params;
+
+      await opts.paymentService.deleteSavedPaymentMethod(id);
+
+      return reply.status(200).send();
     },
   );
 };
