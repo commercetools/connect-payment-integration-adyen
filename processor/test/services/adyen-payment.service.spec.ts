@@ -867,4 +867,10 @@ describe('adyen-payment.service', () => {
       });
     });
   });
+
+  // TODO: SCC-3447: implement getSavedPaymentMethods unit-test
+  test.todo('getSavedPaymentMethods');
+
+  // TODO: SCC-3447: implement deleteSavedPaymentMethod unit-test
+  test.todo('deleteSavedPaymentMethod');
 });

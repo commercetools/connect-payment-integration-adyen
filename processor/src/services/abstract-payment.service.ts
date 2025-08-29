@@ -88,9 +88,14 @@ export abstract class AbstractPaymentService {
   abstract reversePayment(request: ReversePaymentRequest): Promise<PaymentProviderModificationResponse>;
 
   /**
-   * Get list of stored payment methods
+   * Gets the known saved payment methods from CT based on the customerId on the cart in the session
    */
   abstract getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse>;
+
+  /**
+   * Delete the payment method by Adyen id ("storedPaymentMethodId") in CT and Adyen.
+   */
+  abstract deleteSavedPaymentMethod(id: string): Promise<void>;
 
   public async modifyPayment(opts: ModifyPayment): Promise<PaymentIntentResponseSchemaDTO> {
     const ctPayment = await this.ctPaymentService.getPayment({

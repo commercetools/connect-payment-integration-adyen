@@ -78,4 +78,21 @@ describe('create-payment.converter', () => {
 
     expect(result).toStrictEqual(expect.objectContaining(expected));
   });
+
+  // TODO: SCC-3447: implement the create-payment.converter saved payment methods data mapper functionality
+  describe('saved payment methods data', () => {
+    test.todo('it should return empty object if the feature is disabled');
+    test.todo(
+      'it should return empty object if the the given type of payment method is not supported for tokenisation',
+    );
+    test.todo(
+      'it should return empty object if the customer does not want to tokenise for the first time NOR pay with an existing token',
+    );
+    test.todo('it should return throw an "ErrorRequiredField" if no customerId is set on the cart');
+    test.todo(
+      'it should return throw an "ErrorInternalConstraintViolated" if the given tokenId does NOT belong to the customerId set on the cart',
+    );
+    test.todo('it should return the required saved payment methods data for tokenising for the first time');
+    test.todo('it should return the required saved payment methods data when paying with an tokenId');
+  });
 });
