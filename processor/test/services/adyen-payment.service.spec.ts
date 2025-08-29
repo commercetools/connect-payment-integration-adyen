@@ -873,7 +873,6 @@ describe('adyen-payment.service', () => {
     });
   });
 
-  // TODO: SCC-3447: implement getSavedPaymentMethods unit-test
   describe('getSavedPaymentMethods', () => {
     test('should throw an "ErrorRequiredField" error if no customerId is set on the cart', async () => {
       const cartRandom = CartRest.random()
@@ -1038,7 +1037,32 @@ describe('adyen-payment.service', () => {
   });
 
   describe('deleteSavedPaymentMethod', () => {
-    // TODO: SCC-3447: implement deleteSavedPaymentMethod unit-test
-    test.todo('deleteSavedPaymentMethod');
+    test('should throw an "ErrorRequiredField" error if no customerId is set on the cart', async () => {
+      const adyenToken = 'adyen-token-value';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .buildRest<TCartRest>({
+          omitFields: ['billingAddress', 'shippingAddress', 'customerId'],
+        }) as Cart;
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+
+      expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
+    });
+
+    test.todo(
+      'should throw an error if the deletion of the payment method in CT fails without calling Adyen to delete the token',
+    );
+
+    test.todo('should immediatly stop trying to delete the token in Adyen if the API call returns a 404');
+    test.todo('should immediatly stop trying to delete the token in Adyen if the API call fails with a 401');
+    test.todo('should immediatly stop trying to delete the token in Adyen if the API call fails with a 403');
+    test.todo(
+      'should retry up to 3 times trying to delete the token in Adyen afterwhich it will throw the last received error',
+    );
+    test.todo('should succesfully delete the token in CT and Adyen');
   });
 });
