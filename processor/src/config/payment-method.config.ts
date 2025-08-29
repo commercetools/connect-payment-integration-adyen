@@ -36,18 +36,3 @@ export const paymentMethodConfig: PaymentMethodConfig = {
     supportSeparateCapture: false,
   },
 };
-
-export type SupportedSavedPaymentMethodTypes = {
-  [key: string]: {
-    oneOffPayments: boolean;
-  };
-};
-
-/**
- * Represents which payment methods are supported for tokenization. The key represents the type value of the payment method as defined by Adyen.
- */
-export const supportedSavedPaymentMethodTypes: SupportedSavedPaymentMethodTypes = {
-  scheme: {
-    oneOffPayments: true,
-  },
-};
