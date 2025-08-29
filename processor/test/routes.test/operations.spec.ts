@@ -126,7 +126,7 @@ describe('/operations APIs', () => {
         applePayConfig: {
           usesOwnCertificate: false,
         },
-        savedpaymentMethodsConfig: {
+        savedPaymentMethodsConfig: {
           isEnabled: false,
           knownTokensIds: ['sometokenidvaluefromadyen'],
         },

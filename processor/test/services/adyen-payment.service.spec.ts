@@ -1,6 +1,7 @@
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
 import { DefaultOrderService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-order.service';
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
+import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment-method.service';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals';
 import { paymentSDK } from '../../src/payment-sdk';
 import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/services/types/operation.type';
@@ -33,6 +34,7 @@ import {
   CreatePaymentRequestDTO,
   CreateSessionRequestDTO,
   NotificationRequestDTO,
+  NotificationTokenizationDTO,
   PaymentMethodsRequestDTO,
 } from '../../src/dtos/adyen-payment.dto';
 import { SupportedPaymentComponentsSchemaDTO } from '../../src/dtos/operations/payment-componets.dto';
@@ -42,8 +44,11 @@ import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDet
 import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
+import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
+
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { StoredPaymentMethod } from '../../src/dtos/saved-payment-methods.dto';
+import * as SavedPaymentsConfig from '../../src/config/saved-payment-method.config';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -798,6 +803,67 @@ describe('adyen-payment.service', () => {
           state: 'Success',
           type: 'CancelAuthorization',
         },
+      });
+    });
+  });
+
+  describe('processNotificationTokenization', () => {
+    test('it should process the notification tokenization of type "recurring.token.created" properly', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const shopperReference = 'some-shopper-reference';
+      const storedPaymentMethodId = 'abcdefg';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const methodType = 'scheme';
+
+      const notification: NotificationTokenizationDTO = {
+        createdAt: new Date(),
+        environment: TokenizationCreatedDetailsNotificationRequest.EnvironmentEnum.Test,
+        eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
+        type: TokenizationCreatedDetailsNotificationRequest.TypeEnum.RecurringTokenCreated,
+        data: {
+          merchantAccount: merchantReference,
+          operation: 'operation text description',
+          shopperReference: shopperReference,
+          storedPaymentMethodId,
+          type: methodType,
+        },
+      };
+
+      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+        },
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: shopperReference,
+          typeId: 'customer',
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+      // When
+      await paymentService.processNotificationTokenization({ data: notification });
+
+      // Then
+      expect(DefaultPaymentMethodService.prototype.save).toHaveBeenCalledWith({
+        customerId: shopperReference,
+        method: 'scheme',
+        paymentInterface: 'adyen-payment-interface',
+        interfaceAccount: 'adyen-interface-account',
+        token: storedPaymentMethodId,
       });
     });
   });
