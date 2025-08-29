@@ -22,7 +22,6 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
-import { supportedSavedPaymentMethodTypes } from '../../config/payment-method.config';
 import { getSavedPaymentsConfig } from '../../config/saved-payment-method.config';
 
 export class CreatePaymentConverter {
@@ -74,7 +73,10 @@ export class CreatePaymentConverter {
     };
   }
 
-  private async populateSavedPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
+  public async populateSavedPaymentMethodData(
+    data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
+    cart: Pick<Cart, 'id' | 'customerId'>,
+  ) {
     if (!getSavedPaymentsConfig().enabled) {
       return;
     }
@@ -82,7 +84,7 @@ export class CreatePaymentConverter {
     const paymentMethodType = data.paymentMethod.type;
     if (
       typeof paymentMethodType !== 'string' ||
-      !Object.keys(supportedSavedPaymentMethodTypes).includes(paymentMethodType)
+      !Object.keys(getSavedPaymentsConfig().config.supportedPaymentMethodTypes).includes(paymentMethodType)
     ) {
       return;
     }

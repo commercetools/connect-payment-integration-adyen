@@ -836,6 +836,9 @@ describe('adyen-payment.service', () => {
         config: {
           paymentInterface,
           interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true },
+          },
         },
       });
 
