@@ -692,13 +692,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const maxRetries = 3;
     let attempt = 1;
 
-    async function sleep(ms: number): Promise<void> {
-      return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
     do {
       try {
-        AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(id, customerId, getConfig().adyenMerchantAccount);
+        await AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(
+          id,
+          customerId,
+          getConfig().adyenMerchantAccount,
+        );
         break;
       } catch (error) {
         const wrappedAdyenError = wrapAdyenError(error);
@@ -728,15 +728,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
           }
         }
 
-        log.error('Could not delete payment-method in Adyen', errorLogObject);
-
-        await sleep(200);
-
         if (attempt === maxRetries) {
+          log.error('Could not delete payment-method in Adyen and maximum attempt reached', errorLogObject);
           throw wrappedAdyenError;
         }
 
-        attempt++;
+        log.warn('Could not delete payment-method in Adyen, retrying...', errorLogObject);
+
+        attempt += 1;
       }
     } while (attempt <= maxRetries);
   }
