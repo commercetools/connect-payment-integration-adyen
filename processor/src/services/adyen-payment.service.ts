@@ -585,9 +585,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  /**
-   * Gets the known saved payment methods from CT based on the customerId on the cart in the session
-   */
   async getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
