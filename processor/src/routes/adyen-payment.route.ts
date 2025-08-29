@@ -209,6 +209,7 @@ export const adyenPaymentRoutes = async (
       },
     },
     async (request, reply) => {
+      // TODO: SCC-3447: validate if the access-logs don't pose a problem if those contain the Adyen token ID.
       const { id } = request.params;
 
       await opts.paymentService.deleteSavedPaymentMethod(id);

@@ -5,6 +5,10 @@ import { CommercetoolsPaymentMethodTypes } from '@commercetools/connect-payments
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { getSavedPaymentsConfig } from '../../config/saved-payment-method.config';
+import { convertPaymentMethodFromAdyenFormat } from './helper.converter';
+import { AdyenApi } from '../../clients/adyen.client';
+import { getConfig } from '../../config/config';
+import { log } from '../../libs/logger';
 
 export type NotificationTokenizationConverterResponse = {
   draft?: CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft;
@@ -26,14 +30,43 @@ export class NotificationTokenizationConverter {
   }
 
   private async processRecurringTokenCreated(
-    data: TokenizationCreatedDetailsNotificationRequest,
+    notification: TokenizationCreatedDetailsNotificationRequest,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
+    const method = await this.mapNotificationPaymentMethodTypeToCTType(notification);
+
     return {
-      customerId: data.data.shopperReference,
-      method: data.data.type,
+      customerId: notification.data.shopperReference,
+      method,
       paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
       interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
-      token: data.data.storedPaymentMethodId,
+      token: notification.data.storedPaymentMethodId,
     };
+  }
+
+  /**
+   * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit".
+   * So we need to fetch the values via the API before we can map it to CT values.
+   */
+  private async mapNotificationPaymentMethodTypeToCTType(
+    notification: TokenizationCreatedDetailsNotificationRequest,
+  ): Promise<string> {
+    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
+      notification.data.shopperReference,
+      getConfig().adyenMerchantAccount,
+    );
+
+    const detailFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+      (spm) => notification.data.storedPaymentMethodId === spm.id,
+    );
+
+    if (!detailFromAdyen || !detailFromAdyen.type) {
+      log.warn(
+        'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
+      );
+
+      return notification.data.type;
+    }
+
+    return convertPaymentMethodFromAdyenFormat(detailFromAdyen.type);
   }
 }
