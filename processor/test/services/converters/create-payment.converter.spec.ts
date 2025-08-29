@@ -99,12 +99,7 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
+      const cartRandom = CartRest.random().lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
@@ -128,12 +123,7 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
+      const cartRandom = CartRest.random().lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'afterpaytouch' },
       } as CreatePaymentRequestDTO;
@@ -157,12 +147,7 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
+      const cartRandom = CartRest.random().lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
@@ -191,7 +176,7 @@ describe('create-payment.converter', () => {
         .lineItems([])
         .customLineItems([])
         .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress', 'customerId'],
+          omitFields: ['customerId'],
         }) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme', storedPaymentMethodId },
@@ -224,9 +209,7 @@ describe('create-payment.converter', () => {
         .lineItems([])
         .customLineItems([])
         .customerId(customerId)
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
+        .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme', storedPaymentMethodId },
         storePaymentMethod: true,
@@ -267,9 +250,7 @@ describe('create-payment.converter', () => {
         .lineItems([])
         .customLineItems([])
         .customerId(customerId)
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
+        .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
         storePaymentMethod: true,
@@ -307,9 +288,7 @@ describe('create-payment.converter', () => {
         .lineItems([])
         .customLineItems([])
         .customerId(customerId)
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
+        .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme', storedPaymentMethodId },
       } as CreatePaymentRequestDTO;

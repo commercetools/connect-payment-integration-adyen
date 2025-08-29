@@ -609,6 +609,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
     });
 
+    if (savedPaymentMethods.results.length <= 0) {
+      return { storedPaymentMethods: [] };
+    }
+
     // TODO: SCC-3447: (SCC-3449) if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
 
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(

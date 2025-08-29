@@ -28,7 +28,8 @@ import { MockAgent, setGlobalDispatcher } from 'undici';
 import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 
-import { HealthCheckResult } from '@commercetools/connect-payments-sdk';
+import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
+import { Cart, ErrorRequiredField, HealthCheckResult } from '@commercetools/connect-payments-sdk';
 import {
   CreateApplePaySessionRequestDTO,
   CreatePaymentRequestDTO,
@@ -45,6 +46,7 @@ import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarn
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
+import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
 
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { StoredPaymentMethod } from '../../src/dtos/saved-payment-methods.dto';
@@ -872,8 +874,171 @@ describe('adyen-payment.service', () => {
   });
 
   // TODO: SCC-3447: implement getSavedPaymentMethods unit-test
-  test.todo('getSavedPaymentMethods');
+  describe('getSavedPaymentMethods', () => {
+    test('should throw an "ErrorRequiredField" error if no customerId is set on the cart', async () => {
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .buildRest<TCartRest>({
+          omitFields: ['billingAddress', 'shippingAddress', 'customerId'],
+        }) as Cart;
 
-  // TODO: SCC-3447: implement deleteSavedPaymentMethod unit-test
-  test.todo('deleteSavedPaymentMethod');
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+
+      const result = paymentService.getSavedPaymentMethods();
+
+      expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
+    });
+
+    test('should return an empty list if no saved payment methods are stored for the given customerId from the cart', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const result = await paymentService.getSavedPaymentMethods();
+
+      expect(result).toStrictEqual({ storedPaymentMethods: [] });
+    });
+
+    test('should return a list of mapped saved payment methods', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenTokenOne = 'adyen-token-value-123';
+      const adyenTokenTwo = 'adyen-token-value-456';
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenTokenOne,
+            type: methodType,
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+          {
+            id: adyenTokenTwo,
+            type: methodType,
+            lastFour: '5678',
+            brand: 'mastercard',
+            expiryMonth: '11',
+            expiryYear: '28',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: {
+              id: customerId,
+              typeId: 'customer',
+            },
+            token: {
+              value: adyenTokenOne,
+            },
+            paymentInterface,
+            interfaceAccount,
+            method: methodType,
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+          {
+            id: '91d31650-04f5-4528-90fc-213c8e38a408',
+            customer: {
+              id: customerId,
+              typeId: 'customer',
+            },
+            token: {
+              value: adyenTokenTwo,
+            },
+            paymentInterface,
+            interfaceAccount,
+            method: methodType,
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getSavedPaymentMethods();
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: 'adyen-token-value-123',
+            type: 'scheme',
+            displayOptions: {
+              name: '•••• 1234',
+              brand: 'visa',
+              endDigits: '1234',
+              expiryMonth: '03',
+              expiryYear: '30',
+            },
+          },
+          {
+            id: '91d31650-04f5-4528-90fc-213c8e38a408',
+            createdAt: '',
+            isDefault: false,
+            token: 'adyen-token-value-456',
+            type: 'scheme',
+            displayOptions: {
+              name: '•••• 5678',
+              brand: 'mastercard',
+              endDigits: '5678',
+              expiryMonth: '11',
+              expiryYear: '28',
+            },
+          },
+        ],
+      });
+    });
+  });
+
+  describe('deleteSavedPaymentMethod', () => {
+    // TODO: SCC-3447: implement deleteSavedPaymentMethod unit-test
+    test.todo('deleteSavedPaymentMethod');
+  });
 });
