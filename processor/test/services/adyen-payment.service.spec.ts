@@ -51,9 +51,7 @@ import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recur
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { StoredPaymentMethod } from '../../src/dtos/saved-payment-methods.dto';
 import * as SavedPaymentsConfig from '../../src/config/saved-payment-method.config';
-import { AdyenApiError } from '../../src/errors/adyen-api.error';
 import { HttpClientException } from '@adyen/api-library';
-import { log } from '../../src/libs/logger';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -820,7 +818,7 @@ describe('adyen-payment.service', () => {
       const storedPaymentMethodId = 'abcdefg';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
-      const methodType = 'scheme';
+      const methodType = 'visapremiumdebit';
 
       const notification: NotificationTokenizationDTO = {
         createdAt: new Date(),
@@ -847,6 +845,21 @@ describe('adyen-payment.service', () => {
         },
       });
 
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: merchantReference,
+        shopperReference,
+        storedPaymentMethods: [
+          {
+            id: storedPaymentMethodId,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+
       jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
         customer: {
@@ -855,20 +868,21 @@ describe('adyen-payment.service', () => {
         },
         paymentInterface,
         interfaceAccount,
-        method: methodType,
+        method: 'card',
         createdAt: '',
         lastModifiedAt: '',
         default: false,
         paymentMethodStatus: 'Active',
         version: 1,
       });
+
       // When
       await paymentService.processNotificationTokenization({ data: notification });
 
       // Then
       expect(DefaultPaymentMethodService.prototype.save).toHaveBeenCalledWith({
         customerId: shopperReference,
-        method: 'scheme',
+        method: 'card',
         paymentInterface: 'adyen-payment-interface',
         interfaceAccount: 'adyen-interface-account',
         token: storedPaymentMethodId,
@@ -974,7 +988,7 @@ describe('adyen-payment.service', () => {
             },
             paymentInterface,
             interfaceAccount,
-            method: methodType,
+            method: 'card',
             createdAt: '',
             lastModifiedAt: '',
             default: false,
@@ -992,7 +1006,7 @@ describe('adyen-payment.service', () => {
             },
             paymentInterface,
             interfaceAccount,
-            method: methodType,
+            method: 'card',
             createdAt: '',
             lastModifiedAt: '',
             default: false,
@@ -1011,7 +1025,7 @@ describe('adyen-payment.service', () => {
             createdAt: '',
             isDefault: false,
             token: 'adyen-token-value-123',
-            type: 'scheme',
+            type: 'card',
             displayOptions: {
               name: '•••• 1234',
               brand: 'visa',
@@ -1025,7 +1039,7 @@ describe('adyen-payment.service', () => {
             createdAt: '',
             isDefault: false,
             token: 'adyen-token-value-456',
-            type: 'scheme',
+            type: 'card',
             displayOptions: {
               name: '•••• 5678',
               brand: 'mastercard',

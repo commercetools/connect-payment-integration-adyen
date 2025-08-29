@@ -6,8 +6,8 @@ import * as SavedPaymentsConfig from '../../../src/config/saved-payment-method.c
 
 import { NotificationTokenizationConverter } from '../../../src/services/converters/notification-recurring.converter';
 import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.error';
+import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
 
-// TODO: SCC-3447: update unit-tests in accordance with the AdyenAPI integration calls.
 describe('notification.tokenization.converter', () => {
   const converter = new NotificationTokenizationConverter();
 
@@ -18,7 +18,7 @@ describe('notification.tokenization.converter', () => {
     const storedPaymentMethodId = 'abcdefg';
     const paymentInterface = 'adyen-payment-interface';
     const interfaceAccount = 'adyen-interface-account';
-    const methodType = 'scheme';
+    const methodType = 'visapremiumdebit';
 
     const notification: NotificationTokenizationDTO = {
       createdAt: new Date(),
@@ -33,6 +33,21 @@ describe('notification.tokenization.converter', () => {
         type: methodType,
       },
     };
+
+    jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      merchantAccount: merchantReference,
+      shopperReference,
+      storedPaymentMethods: [
+        {
+          id: storedPaymentMethodId,
+          type: 'scheme',
+          lastFour: '1234',
+          brand: 'visa',
+          expiryMonth: '03',
+          expiryYear: '30',
+        },
+      ],
+    });
 
     jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
       enabled: true,
@@ -53,7 +68,7 @@ describe('notification.tokenization.converter', () => {
       draft: {
         customerId: 'some-shopper-reference',
         interfaceAccount: 'adyen-interface-account',
-        method: 'scheme',
+        method: 'card',
         paymentInterface: 'adyen-payment-interface',
         token: 'abcdefg',
       },
