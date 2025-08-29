@@ -29,7 +29,7 @@ import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 
 import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
-import { Cart, ErrorRequiredField, HealthCheckResult } from '@commercetools/connect-payments-sdk';
+import { Cart, ErrorRequiredField, Errorx, HealthCheckResult } from '@commercetools/connect-payments-sdk';
 import {
   CreateApplePaySessionRequestDTO,
   CreatePaymentRequestDTO,
@@ -51,6 +51,9 @@ import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recur
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { StoredPaymentMethod } from '../../src/dtos/saved-payment-methods.dto';
 import * as SavedPaymentsConfig from '../../src/config/saved-payment-method.config';
+import { AdyenApiError } from '../../src/errors/adyen-api.error';
+import { HttpClientException } from '@adyen/api-library';
+import { log } from '../../src/libs/logger';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -1053,16 +1056,390 @@ describe('adyen-payment.service', () => {
       expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
     });
 
-    test.todo(
-      'should throw an error if the deletion of the payment method in CT fails without calling Adyen to delete the token',
-    );
+    test('should throw an error if the deletion of the payment method in CT fails without calling Adyen to delete the token', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
 
-    test.todo('should immediatly stop trying to delete the token in Adyen if the API call returns a 404');
-    test.todo('should immediatly stop trying to delete the token in Adyen if the API call fails with a 401');
-    test.todo('should immediatly stop trying to delete the token in Adyen if the API call fails with a 403');
-    test.todo(
-      'should retry up to 3 times trying to delete the token in Adyen afterwhich it will throw the last received error',
-    );
-    test.todo('should succesfully delete the token in CT and Adyen');
+      const adyenToken = 'adyen-token-value';
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockImplementationOnce(() => {
+        throw new Error('some error thrown during delete');
+      });
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+
+      expect(result).rejects.toThrow(new Error('some error thrown during delete'));
+    });
+
+    test('should immediatly stop trying to delete the token in Adyen if the API call returns a 404', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      const adyenToken = 'adyen-token-value';
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
+        throw new HttpClientException({
+          message: 'adyen error message',
+          responseBody:
+            '{"status":404,"errorCode":"000","message":"HTTP Status Response - Not Found","errorType":"security"}',
+          errorCode: 'error-code',
+          statusCode: 404,
+        });
+      });
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+
+      expect(() => result).not.toThrow();
+    });
+
+    test('should not throw an error if Adyen returns a 401 when trying to delete the token', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      const adyenToken = 'adyen-token-value';
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
+        throw new HttpClientException({
+          message: 'adyen error message',
+          responseBody:
+            '{"status":401,"errorCode":"000","message":"HTTP Status Response - Unauthorized","errorType":"security"}',
+          errorCode: 'error-code',
+          statusCode: 401,
+        });
+      });
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+
+      expect(() => result).not.toThrow();
+    });
+
+    test('should not throw an error if Adyen returns a 403 when trying to delete the token', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      const adyenToken = 'adyen-token-value';
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
+        throw new HttpClientException({
+          message: 'adyen error message',
+          responseBody:
+            '{"status":403,"errorCode":"000","message":"HTTP Status Response - Forbidden","errorType":"security"}',
+          errorCode: 'error-code',
+          statusCode: 403,
+        });
+      });
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+
+      expect(() => result).not.toThrow();
+    });
+
+    test('should retry up to 3 times trying to delete the token in Adyen afterwhich it will throw the last received error', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      const adyenToken = 'adyen-token-value';
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementation(async () => {
+        throw new HttpClientException({
+          message: 'adyen error message',
+          responseBody:
+            '{"status":500,"errorCode":"000","message":"HTTP Status Response - Internal Server Error","errorType":"security"}',
+          errorCode: 'error-code',
+          statusCode: 500,
+        });
+      });
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+      expect(result).rejects.toThrow(
+        new Errorx({
+          cause: {
+            errorCode: 'error-code',
+            message: 'adyen error message',
+            name: 'HttpClientException',
+            responseBody:
+              '{"status":500,"errorCode":"000","message":"HTTP Status Response - Internal Server Error","errorType":"security"}',
+            statusCode: 500,
+          },
+          code: 'AdyenError-000',
+          fields: undefined,
+          httpErrorStatus: 500,
+          message: 'HTTP Status Response - Internal Server Error',
+          privateFields: undefined,
+          privateMessage: undefined,
+          skipLog: undefined,
+        }),
+      );
+    });
+
+    test('should succesfully delete the token in CT and Adyen', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      const adyenToken = 'adyen-token-value';
+      const methodType = 'scheme';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: customerId,
+          typeId: 'customer',
+        },
+        token: {
+          value: adyenToken,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: methodType,
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockResolvedValueOnce(undefined);
+
+      const result = paymentService.deleteSavedPaymentMethod(adyenToken);
+
+      expect(result).resolves.not.toThrow();
+    });
   });
 });
