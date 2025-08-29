@@ -324,8 +324,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
       .filter((method) => allowedMethodTypes.includes(method.type));
 
-    // TODO: SCC-3447: is this timeout required?
-    await new Promise((resolve) => setTimeout(resolve, 500));
     return { storedPaymentMethods };
   }
 
