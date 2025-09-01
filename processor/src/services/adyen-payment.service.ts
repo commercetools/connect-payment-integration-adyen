@@ -12,6 +12,7 @@ import {
   TransactionState,
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
+  PaymentMethod,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -466,8 +467,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   public async processNotificationTokenization(opts: { data: NotificationTokenizationDTO }): Promise<void> {
-    log.info('Processing notification tokenization', {
-      notification: JSON.stringify({
+    const notificationLogObject = {
+      notification: {
         createdAt: opts.data.createdAt,
         environment: opts.data.environment,
         eventId: opts.data.eventId,
@@ -478,8 +479,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
           shopperReference: opts.data.data.shopperReference,
           type: opts.data.data.type,
         },
-      }),
-    });
+      },
+    };
+
+    log.info('Processing notification tokenization', notificationLogObject);
 
     try {
       const actions = await this.notificationTokenizationConverter.convert(opts);
@@ -501,24 +504,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {
         log.info('Unsupported notification received', {
-          notification: JSON.stringify({
-            createdAt: opts.data.createdAt,
-            environment: opts.data.environment,
-            eventId: opts.data.eventId,
-            type: opts.data.type,
-            version: opts.data.version,
-            data: {
-              merchantAccount: opts.data.data.merchantAccount,
-              shopperReference: opts.data.data.shopperReference,
-              type: opts.data.data.type,
-            },
-          }),
+          notificationLogObject,
         });
 
         return;
       }
 
-      log.error('Error processing notification', { error: e });
+      log.error('Error processing notification', { error: e, notificationLogObject });
       throw e;
     }
   }
@@ -722,6 +714,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
         id: paymentMethod.id,
         version: paymentMethod.version,
       });
+
+      log.info('Successfully deleted payment-method in CT', {
+        customer: { id: customerId, type: 'customer' },
+        paymentMethod: { id: paymentMethod.id, type: 'payment-method', version: paymentMethod.version },
+        cart: { id: ctCart.id, type: 'cart' },
+      });
     } catch (error) {
       log.error('Could not delete payment-method in CT', {
         error,
@@ -733,6 +731,15 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw error;
     }
 
+    await this.deleteTokenInAdyen(id, customerId, paymentMethod, ctCart);
+  }
+
+  private async deleteTokenInAdyen(
+    id: string,
+    customerId: string,
+    ctPaymentMethod: Pick<PaymentMethod, 'id' | 'version'>,
+    ctCart: Pick<Cart, 'id'>,
+  ) {
     const maxRetries = 3;
     let attempt = 1;
 
@@ -743,6 +750,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
           customerId,
           getConfig().adyenMerchantAccount,
         );
+
+        log.info('Successfully deleted token in Adyen', {
+          customer: { id: customerId, type: 'customer' },
+          paymentMethod: { id: ctPaymentMethod.id, type: 'payment-method', version: ctPaymentMethod.version },
+          cart: { id: ctCart.id, type: 'cart' },
+        });
+
         break;
       } catch (error) {
         const wrappedAdyenError = wrapAdyenError(error);
@@ -754,7 +768,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
             maxRetries,
           },
           customer: { id: customerId, type: 'customer' },
-          paymentMethod: { id: paymentMethod.id, type: 'payment-method' },
+          paymentMethod: { id: ctPaymentMethod.id, type: 'payment-method' },
           cart: { id: ctCart.id, type: 'cart' },
         };
 
