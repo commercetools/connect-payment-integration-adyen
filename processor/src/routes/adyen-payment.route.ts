@@ -17,12 +17,12 @@ import {
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
+  DeleteSavedPaymentMethodRequestDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 import { StoredPaymentMethodsResponseSchema } from '../dtos/saved-payment-methods.dto';
 import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
-import { Type } from '@sinclair/typebox';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
@@ -188,31 +188,13 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.delete<{
-    Params: { id: string };
-  }>(
-    '/stored-payment-methods/:id',
+  fastify.post<{ Body: DeleteSavedPaymentMethodRequestDTO }>(
+    '/stored-payment-methods',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
-      schema: {
-        params: {
-          $id: 'paramsSchema',
-          type: 'object',
-          properties: {
-            id: Type.String(),
-          },
-          required: ['id'],
-        },
-        response: {
-          200: {},
-        },
-      },
     },
     async (request, reply) => {
-      // TODO: SCC-3447: validate if the access-logs don't pose a problem if those contain the Adyen token ID.
-      const { id } = request.params;
-
-      await opts.paymentService.deleteSavedPaymentMethod(id);
+      await opts.paymentService.deleteSavedPaymentMethod(request.body.tokenId);
 
       return reply.status(200).send();
     },
