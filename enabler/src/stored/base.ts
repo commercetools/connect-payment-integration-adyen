@@ -56,6 +56,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   protected processorUrl: string;
   protected paymentComponentConfigOverride: Record<string, any>;
   protected storedPaymentMethodsTokens: Record<string, string>;
+  protected adyenStoredPaymentMethodId: string;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;

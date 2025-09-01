@@ -57,16 +57,17 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
   }
 
   init({ id }: { id: string }): void {
-    const adyenId = this.storedPaymentMethodsTokens[id];
+    const adyenStoredPaymentMethodId = this.storedPaymentMethodsTokens[id];
     this.component = new Card(this.adyenCheckout, {
       // Override the default config with the one provided by the user
       ...this.paymentComponentConfigOverride,
       // Configuration that can not be overridden
-      storedPaymentMethodId: adyenId,
+      storedPaymentMethodId: adyenStoredPaymentMethodId,
       isStoredPaymentMethod: true,
       supportedShopperInteractions: ["Ecommerce"],
       ...this.componentOptions,
     });
+    this.adyenStoredPaymentMethodId = adyenStoredPaymentMethodId;
   }
 
   async showValidation() {
@@ -78,8 +79,23 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
   }
 
   async remove() {
-    // TODO: SCC-3447: make HTTP DELETE call to remove it. See the drop-in component and the "onDisableStoredPaymentMethod" function. Make sure the error is coded so they can take action on it.
-    console.log("TODO: Implement remove method for stored card component");
-    return;
+    const url = this.processorUrl.endsWith("/")
+      ? `${this.processorUrl}stored-payment-methods`
+      : `${this.processorUrl}/stored-payment-methods`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-Session-Id": this.sessionId,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        tokenId: this.adyenStoredPaymentMethodId,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("failed for some reason");
+    }
   }
 }
