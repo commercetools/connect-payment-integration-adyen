@@ -107,7 +107,6 @@ export class DropinComponents implements DropinComponent {
       showPayButton: true,
       showRadioButton: false,
       isDropin: true,
-      openFirstStoredPaymentMethod: false,
       showStoredPaymentMethods: this.savedpaymentMethodsConfig.isEnabled,
       showRemovePaymentMethodButton: this.savedpaymentMethodsConfig.isEnabled,
       filterStoredPaymentMethods: (storedPaymentMethods) => {
@@ -121,14 +120,18 @@ export class DropinComponents implements DropinComponent {
         reject,
       ) => {
         const url = this.processorUrl.endsWith("/")
-          ? `${this.processorUrl}stored-payment-methods/${storedPaymentMethod}`
-          : `${this.processorUrl}/stored-payment-methods/${storedPaymentMethod}`;
+          ? `${this.processorUrl}stored-payment-methods`
+          : `${this.processorUrl}/stored-payment-methods`;
 
         const response = await fetch(url, {
-          method: "DELETE",
+          method: "POST",
           headers: {
             "X-Session-Id": this.sessionId,
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            tokenId: storedPaymentMethod,
+          }),
         });
 
         if (response.ok) {

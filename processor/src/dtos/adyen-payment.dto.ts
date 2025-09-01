@@ -69,6 +69,10 @@ export type NotificationRequestDTO = Notification;
 
 export type NotificationTokenizationDTO = GenericWebhook;
 
+export type DeleteSavedPaymentMethodRequestDTO = {
+  tokenId: string;
+};
+
 export type CreateApplePaySessionRequestDTO = {
   validationUrl: string;
 };
