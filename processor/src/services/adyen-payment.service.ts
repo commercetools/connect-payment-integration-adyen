@@ -466,7 +466,20 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   public async processNotificationTokenization(opts: { data: NotificationTokenizationDTO }): Promise<void> {
-    log.info('Processing notification tokenization', { notification: JSON.stringify(opts.data) });
+    log.info('Processing notification tokenization', {
+      notification: JSON.stringify({
+        createdAt: opts.data.createdAt,
+        environment: opts.data.environment,
+        eventId: opts.data.eventId,
+        type: opts.data.type,
+        version: opts.data.version,
+        data: {
+          merchantAccount: opts.data.data.merchantAccount,
+          shopperReference: opts.data.data.shopperReference,
+          type: opts.data.data.type,
+        },
+      }),
+    });
 
     try {
       const actions = await this.notificationTokenizationConverter.convert(opts);
@@ -487,7 +500,21 @@ export class AdyenPaymentService extends AbstractPaymentService {
       }
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {
-        log.info('Unsupported notification received', { notification: JSON.stringify(opts.data) });
+        log.info('Unsupported notification received', {
+          notification: JSON.stringify({
+            createdAt: opts.data.createdAt,
+            environment: opts.data.environment,
+            eventId: opts.data.eventId,
+            type: opts.data.type,
+            version: opts.data.version,
+            data: {
+              merchantAccount: opts.data.data.merchantAccount,
+              shopperReference: opts.data.data.shopperReference,
+              type: opts.data.data.type,
+            },
+          }),
+        });
+
         return;
       }
 
