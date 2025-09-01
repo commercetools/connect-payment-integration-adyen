@@ -3,6 +3,7 @@ import { describe, beforeAll, afterAll, test, expect, jest, afterEach } from '@j
 import {
   AuthorityAuthorizationHook,
   AuthorityAuthorizationManager,
+  Cart,
   CommercetoolsCartService,
   CommercetoolsOrderService,
   CommercetoolsPaymentMethodService,
@@ -20,7 +21,6 @@ import {
 import { IncomingHttpHeaders } from 'node:http';
 import { operationsRoute } from '../../src/routes/operation.route';
 import { AdyenPaymentService } from '../../src/services/adyen-payment.service';
-import { StoredPaymentMethod } from '../../src/dtos/saved-payment-methods.dto';
 
 describe('/operations APIs', () => {
   const app = fastify({ logger: false });
@@ -71,8 +71,6 @@ describe('/operations APIs', () => {
     logger,
   });
 
-  const spyOnGetSavedPaymentMethods = jest.spyOn(AdyenPaymentService.prototype, 'getSavedPaymentMethods');
-
   const spiedPaymentService = new AdyenPaymentService({
     ctCartService: jest.fn() as unknown as CommercetoolsCartService,
     ctPaymentService: jest.fn() as unknown as CommercetoolsPaymentService,
@@ -104,9 +102,7 @@ describe('/operations APIs', () => {
 
   describe('GET /operations/config', () => {
     test('it should return the Adyen client config', async () => {
-      spyOnGetSavedPaymentMethods.mockResolvedValueOnce({
-        storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
-      });
+      jest.spyOn(spiedPaymentService, 'getKnownTokenIds').mockResolvedValueOnce(['sometokenidvaluefromadyen']);
 
       //When
       const responseGetConfig = await app.inject({

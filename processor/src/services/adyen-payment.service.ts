@@ -107,12 +107,27 @@ export class AdyenPaymentService extends AbstractPaymentService {
     this.refundPaymentConverter = new RefundPaymentConverter();
     this.reversePaymentConverter = new ReversePaymentConverter();
   }
+
+  async getKnownTokenIds(): Promise<string[]> {
+    if (!getSavedPaymentsConfig().enabled) {
+      return [];
+    }
+
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    if (!ctCart.customerId) {
+      return [];
+    }
+
+    const savedPaymentMethods = await this.getSavedPaymentMethods();
+
+    return savedPaymentMethods.storedPaymentMethods.map((spm) => spm.token);
+  }
+
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
-
-    // TODO: SCC-3447: test with feature flag disabled
-    // TODO: SCC-3447: this will throw an error if no customerId is set on the cart. How to best handle this? Based on the feature flag AND if no customerId is set then return empty list?
-    const savedPaymentMethods = await this.getSavedPaymentMethods();
 
     return {
       clientKey: getConfig().adyenClientKey,
@@ -123,7 +138,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
       savedPaymentMethodsConfig: {
         isEnabled: getSavedPaymentsConfig().enabled,
-        knownTokensIds: savedPaymentMethods.storedPaymentMethods.map((spm) => spm.token),
+        knownTokensIds: await this.getKnownTokenIds(),
       },
     };
   }
