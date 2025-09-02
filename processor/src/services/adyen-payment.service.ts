@@ -67,8 +67,8 @@ import { NotificationUpdatePayment } from './types/service.type';
 import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
 import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse';
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
-import { getSavedPaymentsConfig } from '../config/saved-payment-method.config';
-import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/saved-payment-methods.dto';
+import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.config';
+import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -110,7 +110,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   async getKnownTokenIds(): Promise<string[]> {
-    if (!getSavedPaymentsConfig().enabled) {
+    if (!getStoredPaymentMethodsConfig().enabled) {
       return [];
     }
 
@@ -122,9 +122,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return [];
     }
 
-    const savedPaymentMethods = await this.getSavedPaymentMethods();
+    const storedPaymentMethodss = await this.getStoredPaymentMethods();
 
-    return savedPaymentMethods.storedPaymentMethods.map((spm) => spm.token);
+    return storedPaymentMethodss.storedPaymentMethods.map((spm) => spm.token);
   }
 
   async config(): Promise<ConfigResponse> {
@@ -137,8 +137,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
         usesOwnCertificate,
       },
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
-      savedPaymentMethodsConfig: {
-        isEnabled: getSavedPaymentsConfig().enabled,
+      storedPaymentMethodsConfig: {
+        isEnabled: getStoredPaymentMethodsConfig().enabled,
         knownTokensIds: await this.getKnownTokenIds(),
       },
     };
@@ -154,7 +154,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       'manage_checkout_payment_intents',
     ];
 
-    if (getSavedPaymentsConfig().enabled) {
+    if (getStoredPaymentMethodsConfig().enabled) {
       requiredPermissions.push('manage_payment_methods');
     }
 
@@ -621,7 +621,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  async getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
@@ -639,13 +639,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
     }
 
-    const savedPaymentMethods = await this.ctPaymentMethodService.find({
+    const storedPaymentMethods = await this.ctPaymentMethodService.find({
       customerId: ctCart.customerId,
-      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
     });
 
-    if (savedPaymentMethods.results.length <= 0) {
+    if (storedPaymentMethods.results.length <= 0) {
       return { storedPaymentMethods: [] };
     }
 
@@ -656,7 +656,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       getConfig().adyenMerchantAccount,
     );
 
-    const resList = savedPaymentMethods.results.map((spm) => {
+    const resList = storedPaymentMethods.results.map((spm) => {
       const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
         (tokenDetails) => tokenDetails.id === spm.token?.value,
       );
@@ -683,7 +683,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     };
   }
 
-  async deleteSavedPaymentMethod(id: string): Promise<void> {
+  async deleteStoredPaymentMethod(id: string): Promise<void> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
@@ -703,8 +703,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const paymentMethod = await this.ctPaymentMethodService.getByTokenValue({
       customerId: customerId,
-      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
       tokenValue: id,
     });
 

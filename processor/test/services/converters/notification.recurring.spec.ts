@@ -2,7 +2,7 @@ import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-librar
 import { TokenizationAlreadyExistingDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationAlreadyExistingDetailsNotificationRequest';
 
 import { NotificationTokenizationDTO } from '../../../src/dtos/adyen-payment.dto';
-import * as SavedPaymentsConfig from '../../../src/config/saved-payment-method.config';
+import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
 
 import { NotificationTokenizationConverter } from '../../../src/services/converters/notification-recurring.converter';
 import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.error';
@@ -49,7 +49,7 @@ describe('notification.tokenization.converter', () => {
       ],
     });
 
-    jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
       enabled: true,
       config: {
         paymentInterface,

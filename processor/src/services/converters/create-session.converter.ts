@@ -14,7 +14,7 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
-import { getSavedPaymentsConfig } from '../../config/saved-payment-method.config';
+import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 
 export class CreateSessionConverter {
   public convertRequest(opts: {
@@ -54,7 +54,7 @@ export class CreateSessionConverter {
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
-      ...(getSavedPaymentsConfig().enabled && {
+      ...(getStoredPaymentMethodsConfig().enabled && {
         shopperReference: opts.cart.customerId,
         recurringProcessingModel: CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
         storePaymentMethodMode: CreateCheckoutSessionRequest.StorePaymentMethodModeEnum.AskForConsent,

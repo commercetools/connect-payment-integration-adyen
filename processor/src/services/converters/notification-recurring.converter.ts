@@ -4,7 +4,7 @@ import { CommercetoolsPaymentMethodTypes } from '@commercetools/connect-payments
 
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
-import { getSavedPaymentsConfig } from '../../config/saved-payment-method.config';
+import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 import { convertPaymentMethodFromAdyenFormat } from './helper.converter';
 import { AdyenApi } from '../../clients/adyen.client';
 import { getConfig } from '../../config/config';
@@ -37,8 +37,8 @@ export class NotificationTokenizationConverter {
     return {
       customerId: notification.data.shopperReference,
       method,
-      paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-      interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
       token: notification.data.storedPaymentMethodId,
     };
   }

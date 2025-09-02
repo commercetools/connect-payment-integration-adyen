@@ -22,7 +22,7 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
-import { getSavedPaymentsConfig } from '../../config/saved-payment-method.config';
+import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 
 export class CreatePaymentConverter {
   private ctPaymentMethodService: CommercetoolsPaymentMethodService;
@@ -42,7 +42,7 @@ export class CreatePaymentConverter {
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
 
-    const savedPaymentMethodData = await this.populateSavedPaymentMethodData(opts.data, opts.cart);
+    const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
 
     return {
       ...requestData,
@@ -69,22 +69,22 @@ export class CreatePaymentConverter {
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
-      ...savedPaymentMethodData,
+      ...storedPaymentMethodsData,
     };
   }
 
-  public async populateSavedPaymentMethodData(
+  public async populateStoredPaymentMethodsData(
     data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
     cart: Pick<Cart, 'id' | 'customerId'>,
   ) {
-    if (!getSavedPaymentsConfig().enabled) {
+    if (!getStoredPaymentMethodsConfig().enabled) {
       return;
     }
 
     const paymentMethodType = data.paymentMethod.type;
     if (
       typeof paymentMethodType !== 'string' ||
-      !Object.keys(getSavedPaymentsConfig().config.supportedPaymentMethodTypes).includes(paymentMethodType)
+      !Object.keys(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).includes(paymentMethodType)
     ) {
       return;
     }
@@ -119,8 +119,8 @@ export class CreatePaymentConverter {
       const storedPaymentMethodId = storedPaymentMethodIdKeyValuePair[1];
       const doesTokenBelongsToCustomer = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
         customerId: customerReference,
-        paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-        interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+        paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+        interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
         tokenValue: storedPaymentMethodId,
       });
 
@@ -134,8 +134,8 @@ export class CreatePaymentConverter {
                 typeId: 'cart',
               },
               customerId: customerReference,
-              paymentInterface: getSavedPaymentsConfig().config.paymentInterface,
-              interfaceAccount: getSavedPaymentsConfig().config.interfaceAccount,
+              paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+              interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
             },
           },
         );

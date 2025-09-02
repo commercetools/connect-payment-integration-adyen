@@ -69,7 +69,7 @@ export type NotificationRequestDTO = Notification;
 
 export type NotificationTokenizationDTO = GenericWebhook;
 
-export type DeleteSavedPaymentMethodRequestDTO = {
+export type DeleteStoredPaymentMethodRequestDTO = {
   tokenId: string;
 };
 
