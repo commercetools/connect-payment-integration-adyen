@@ -18,7 +18,7 @@ import {
 import { PaymentIntentResponseSchemaDTO, PaymentModificationStatus } from '../dtos/operations/payment-intents.dto';
 import { SupportedPaymentComponentsSchemaDTO } from '../dtos/operations/payment-componets.dto';
 import { log } from '../libs/logger';
-import { StoredPaymentMethodsResponse } from '../dtos/saved-payment-methods.dto';
+import { StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 
 export abstract class AbstractPaymentService {
   protected ctCartService: CommercetoolsCartService;
@@ -88,14 +88,14 @@ export abstract class AbstractPaymentService {
   abstract reversePayment(request: ReversePaymentRequest): Promise<PaymentProviderModificationResponse>;
 
   /**
-   * Gets the known saved payment methods from CT based on the customerId on the cart in the session
+   * Gets the known stored payment methods from CT based on the customerId on the cart in the session
    */
-  abstract getSavedPaymentMethods(): Promise<StoredPaymentMethodsResponse>;
+  abstract getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse>;
 
   /**
-   * Delete the payment method by Adyen id ("storedPaymentMethodId") in CT and Adyen.
+   * Delete the stored payment method by Adyen id ("storedPaymentMethodId") in CT and Adyen.
    */
-  abstract deleteSavedPaymentMethod(id: string): Promise<void>;
+  abstract deleteStoredPaymentMethod(id: string): Promise<void>;
 
   public async modifyPayment(opts: ModifyPayment): Promise<PaymentIntentResponseSchemaDTO> {
     const ctPayment = await this.ctPaymentService.getPayment({

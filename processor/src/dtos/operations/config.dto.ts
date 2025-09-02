@@ -9,7 +9,7 @@ export const ConfigResponseSchema = Type.Object({
     }),
   ),
   paymentComponentsConfig: Type.Optional(Type.Any()),
-  savedPaymentMethodsConfig: Type.Object({
+  storedPaymentMethodsConfig: Type.Object({
     isEnabled: Type.Boolean(),
     knownTokensIds: Type.Array(Type.String()),
   }),

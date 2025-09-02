@@ -17,11 +17,11 @@ import {
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
-  DeleteSavedPaymentMethodRequestDTO,
+  DeleteStoredPaymentMethodRequestDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
-import { StoredPaymentMethodsResponseSchema } from '../dtos/saved-payment-methods.dto';
+import { StoredPaymentMethodsResponseSchema } from '../dtos/stored-payment-methods.dto';
 import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
 
 type PaymentRoutesOptions = {
@@ -183,18 +183,18 @@ export const adyenPaymentRoutes = async (
       },
     },
     async (_, reply) => {
-      const res = await opts.paymentService.getSavedPaymentMethods();
+      const res = await opts.paymentService.getStoredPaymentMethods();
       reply.code(200).send(res);
     },
   );
 
-  fastify.post<{ Body: DeleteSavedPaymentMethodRequestDTO }>(
+  fastify.post<{ Body: DeleteStoredPaymentMethodRequestDTO }>(
     '/stored-payment-methods',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
-      await opts.paymentService.deleteSavedPaymentMethod(request.body.tokenId);
+      await opts.paymentService.deleteStoredPaymentMethod(request.body.tokenId);
 
       return reply.status(200).send();
     },

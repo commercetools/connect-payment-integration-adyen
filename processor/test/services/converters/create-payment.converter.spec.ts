@@ -6,7 +6,7 @@ import { CartRest, type TCartRest } from '@commercetools/composable-commerce-tes
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 import { Cart, ErrorInternalConstraintViolated, ErrorRequiredField } from '@commercetools/connect-payments-sdk';
 import { paymentSDK } from '../../../src/payment-sdk';
-import * as SavedPaymentsConfig from '../../../src/config/saved-payment-method.config';
+import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
 import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment-method.service';
 
 jest.spyOn(Helpers, 'buildReturnUrl').mockReturnValue('https://commercetools.com');
@@ -81,14 +81,14 @@ describe('create-payment.converter', () => {
     expect(result).toStrictEqual(expect.objectContaining(expected));
   });
 
-  describe('saved payment methods data', () => {
+  describe('stored payment methods data', () => {
     const paymentInterface = 'paymentInterface';
     const interfaceAccount = 'interfaceAccount';
 
     test('it should return undefined if the feature is disabled', async () => {
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: false,
         config: {
           paymentInterface,
@@ -104,7 +104,7 @@ describe('create-payment.converter', () => {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
 
-      const result = await converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).toBeUndefined();
     });
@@ -112,7 +112,7 @@ describe('create-payment.converter', () => {
     test('it should return undefined if the the given type of payment method is not supported for tokenisation', async () => {
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -128,7 +128,7 @@ describe('create-payment.converter', () => {
         paymentMethod: { type: 'afterpaytouch' },
       } as CreatePaymentRequestDTO;
 
-      const result = await converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).toBeUndefined();
     });
@@ -136,7 +136,7 @@ describe('create-payment.converter', () => {
     test('it should return undefined if the customer does not want to tokenise for the first time NOR pay with an existing token', async () => {
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -152,7 +152,7 @@ describe('create-payment.converter', () => {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
 
-      const result = await converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).toBeUndefined();
     });
@@ -161,7 +161,7 @@ describe('create-payment.converter', () => {
       const storedPaymentMethodId = 'abcdefgh';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -183,7 +183,7 @@ describe('create-payment.converter', () => {
         storePaymentMethod: true,
       } as CreatePaymentRequestDTO;
 
-      const result = converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
     });
@@ -193,7 +193,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -215,7 +215,7 @@ describe('create-payment.converter', () => {
         storePaymentMethod: true,
       } as CreatePaymentRequestDTO;
 
-      const result = converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).rejects.toThrow(
         new ErrorInternalConstraintViolated(
@@ -230,11 +230,11 @@ describe('create-payment.converter', () => {
       });
     });
 
-    test('it should return the required saved payment methods data for tokenising for the first time', async () => {
+    test('it should return the required stored payment methods data for tokenising for the first time', async () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -256,7 +256,7 @@ describe('create-payment.converter', () => {
         storePaymentMethod: true,
       } as CreatePaymentRequestDTO;
 
-      const result = await converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).toStrictEqual({
         recurringProcessingModel: 'CardOnFile',
@@ -267,12 +267,12 @@ describe('create-payment.converter', () => {
       });
     });
 
-    test('it should return the required saved payment methods data when paying with an tokenId', async () => {
+    test('it should return the required stored payment methods data when paying with an tokenId', async () => {
       const storedPaymentMethodId = 'abcdefgh';
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
 
-      jest.spyOn(SavedPaymentsConfig, 'getSavedPaymentsConfig').mockReturnValue({
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -293,7 +293,7 @@ describe('create-payment.converter', () => {
         paymentMethod: { type: 'scheme', storedPaymentMethodId },
       } as CreatePaymentRequestDTO;
 
-      const result = await converter.populateSavedPaymentMethodData(paymentRequestDTO, cartRandom);
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
       expect(result).toStrictEqual({
         recurringProcessingModel: 'CardOnFile',

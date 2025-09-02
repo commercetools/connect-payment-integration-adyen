@@ -3,7 +3,6 @@ import { describe, beforeAll, afterAll, test, expect, jest, afterEach } from '@j
 import {
   AuthorityAuthorizationHook,
   AuthorityAuthorizationManager,
-  Cart,
   CommercetoolsCartService,
   CommercetoolsOrderService,
   CommercetoolsPaymentMethodService,
@@ -122,7 +121,7 @@ describe('/operations APIs', () => {
         applePayConfig: {
           usesOwnCertificate: false,
         },
-        savedPaymentMethodsConfig: {
+        storedPaymentMethodsConfig: {
           isEnabled: false,
           knownTokensIds: ['sometokenidvaluefromadyen'],
         },
