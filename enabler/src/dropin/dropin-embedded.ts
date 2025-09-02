@@ -110,6 +110,7 @@ export class DropinComponents implements DropinComponent {
       showStoredPaymentMethods: this.storedPaymentMethodsConfig.isEnabled,
       showRemovePaymentMethodButton: this.storedPaymentMethodsConfig.isEnabled,
       filterStoredPaymentMethods: (storedPaymentMethods) => {
+        // TODO: SCC-3447: make sure the config returns a map between CT id and adyen ID so that we can make an HTTP delete like HTTP DELETE /stored/stored-payment-methods/<CT UUID>
         return storedPaymentMethods.filter((spm) => {
           return this.storedPaymentMethodsConfig.knownTokensIds.includes(
             spm.id,
