@@ -122,9 +122,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return [];
     }
 
-    const storedPaymentMethodss = await this.getStoredPaymentMethods();
+    const storedPaymentMethods = await this.getStoredPaymentMethods();
 
-    return storedPaymentMethodss.storedPaymentMethods.map((spm) => spm.token);
+    return storedPaymentMethods.storedPaymentMethods.map((spm) => spm.token);
   }
 
   async config(): Promise<ConfigResponse> {
@@ -621,6 +621,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
+  // TODO: SCC-3447: refactor/improve readability of this function
   async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
@@ -668,6 +669,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         token: spm.token?.value || tokenDetailsFromAdyen?.id || '',
         type: spm.method || tokenDetailsFromAdyen?.type || '',
         displayOptions: {
+          // TODO: SCC-3447: discuss with Juan about if processor or FE should add the four dots
           name: `•••• ${tokenDetailsFromAdyen?.lastFour}`,
           brand: tokenDetailsFromAdyen?.brand,
           endDigits: tokenDetailsFromAdyen?.lastFour,
@@ -684,6 +686,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   async deleteStoredPaymentMethod(id: string): Promise<void> {
+    // TODO: SCC-3447: extract getCart and it's customerId validation into a seperate function so that this function can also support "my account page" where there is no cart available.
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });

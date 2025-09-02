@@ -79,6 +79,8 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
   }
 
   async remove() {
+    // TODO: SCC-3447: make sure the config returns a map between CT id and adyen ID so that we can make an HTTP delete like HTTP DELETE /stored/stored-payment-methods/<CT UUID>
+
     const url = this.processorUrl.endsWith("/")
       ? `${this.processorUrl}stored-payment-methods`
       : `${this.processorUrl}/stored-payment-methods`;

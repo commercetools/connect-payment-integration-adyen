@@ -88,6 +88,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   }
 
   async isAvailable(): Promise<boolean> {
+    // TODO: SCC-3447: check if the feature is enabled. If not then resolve to false.
     if (!this.isPaymentMethodAllowed()) {
       console.log(`${this.paymentMethod} is not allowed`);
       return Promise.resolve(false);
