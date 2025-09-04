@@ -146,6 +146,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       configResponse.json(),
     ]);
 
+    // TODO: SCC-3447: if the configResponse.storedPaymentMethodsConfig.enabled === true then also fetch the stored-payment-methods in a new HTTP GET then store it as the storedPaymentMethodsTokens.
+
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
@@ -301,6 +303,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   };
 
   async getStoredPaymentMethods({ allowedMethodTypes }) {
+    // TODO: SCC-3447: remove the HTTP Get and instead return the values from the class directly from the storedPaymentMethodsTokens.
     const setupData = await this.setupData;
     const { processorUrl, sessionId } = setupData.baseOptions;
 

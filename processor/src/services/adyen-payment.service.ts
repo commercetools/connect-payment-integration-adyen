@@ -130,6 +130,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
 
+    // TODO: SCC-3447: the storedPaymentMethodsConfig.isEnabled will be true only if the env feature flag is true AND the cart has an customerId set. Remove the knownTokensIds.
     return {
       clientKey: getConfig().adyenClientKey,
       environment: getConfig().adyenEnvironment,
