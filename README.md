@@ -210,7 +210,6 @@ Here you can see the details about various variables in configuration
 - ADYEN_STORED_PAYMENT_METHODS_ENABLED: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false".
 - ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods.
 - ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
-- ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
 - ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
 
 ## Development
