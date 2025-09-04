@@ -1,7 +1,9 @@
 # connect-payment-integration-adyen
+
 This repository provides a [connect](https://docs.commercetools.com/connect) for integration to Adyen payment service provider (PSP).
 
 ## Features
+
 - Typescript language supported.
 - Uses Fastify as web server framework.
 - Uses [commercetools SDK](https://docs.commercetools.com/sdk/js-sdk-getting-started) for the commercetools-specific communication.
@@ -9,9 +11,11 @@ This repository provides a [connect](https://docs.commercetools.com/connect) for
 - Includes local development utilities in npm commands to build, start, test, lint & prettify code.
 
 ## Overview
-The adyen-integration connector contains two modules :  
+
+The adyen-integration connector contains two modules :
+
 - Enabler: Acts as a wrapper implementation in which frontend components from Adyen embedded. It gives control to checkout product on when and how to load the connector frontend based on business configuration. In cases connector is used directly and not through Checkout product, the connector library can be loaded directly on frontend than the PSP one.
-- Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce.  `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
+- Processor : Acts as backend services which is middleware to integrate with Adyen platform. It is mainly responsible for managing transactions with Adyen and updating payment entity in composable commerce. `connect-payment-sdk` will be offered to be used in connector to manage request context, sessions and other tools necessary to transact.
 
 ```mermaid
 %%{ init : { "theme" : "", "flowchart" : { "defaultRenderer": "dagre-wrapper", "curve" : "linear" }}}%%
@@ -28,10 +32,10 @@ flowchart TD
         cart
         order
         payment
-        
+
     end
     checkout----node1
-    
+
     node1--"1. Cart management"-->cart("cart")
     node1--"2. Order management"-->order("order")
     checkout("Commercetools Checkout")----node2
@@ -48,34 +52,44 @@ flowchart TD
 4. The processor transforms the received request and send them to Ayden platform.
 5. Adyen processes the payment operations and return the response to processor.
 6. The processor handles the payment persistence to composable commerce, and return the result to front-end.
-7. commercetools Checkout handles the order management in composable commerce once it receives the result from the processor. 
+7. commercetools Checkout handles the order management in composable commerce once it receives the result from the processor.
 
 ## Prerequisite
+
 #### 1. commercetools composable commerce API client
+
 Users are expected to create API client responsible for payment management in composable commerce project. Details of the API client are taken as input as environment variables/ configuration for connect such as `CTP_PROJECT_KEY` , `CTP_CLIENT_ID`, `CTP_CLIENT_SECRET`. For details, please read [Deployment Configuration](./README.md#deployment-configuration).
 In addition, please make sure the API client should have enough scope to be able to manage payment. For details, please refer to [Running Application](./processor/README.md#running-application)
 
 #### 2. various URLs from commercetools composable commerce
+
 Various URLs from commercetools platform are required to be configured so that the connect application can handle session and authentication process for endpoints.
 Their values are taken as input as environment variables/ configuration for connect with variable names `CTP_API_URL`, `CTP_AUTH_URL` and `CTP_SESSION_URL`.
 
 #### 3. Adyen account credentials
+
 Various account data provided by Adyen are necessary to be configured so that the requests from the connect application can be authenticated by Adyen platform within the integration.
 Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX` and `ADYEN_ENVIRONMENT`.
 
 ## Development Guide
+
 Regarding the development of enabler module, please refer to the following documentations:
+
 - [Development of Enabler](./enabler/README.md)
 
 Regarding the development of processor module, please refer to the following documentations:
+
 - [Development of Processor](./processor/README.md)
 
 #### Connector in commercetools Connect
+
 Use public connector listed in connect marketplace. If any customization done, follow guidelines [here](https://docs.commercetools.com/connect/getting-started) to register the connector for private use.
 
 #### Deployment Configuration
+
 In order to deploy your customized connector application on commercetools Connect, it needs to be published. For details, please refer to [documentation about commercetools Connect](https://docs.commercetools.com/connect/concepts)
 In addition, in order to support connect, the adyen payment integration connector has a folder structure as listed below
+
 ```
 ├── enabler
 │   ├── src
@@ -89,6 +103,7 @@ In addition, in order to support connect, the adyen payment integration connecto
 ```
 
 Connect deployment configuration is specified in `connect.yaml` which is required information needed for publishing of the application. Following is the deployment configuration used by enabler and processor modules
+
 ```
 deployAs:
   - name: enabler
@@ -171,6 +186,7 @@ deployAs:
 ```
 
 Here you can see the details about various variables in configuration
+
 - `CTP_PROJECT_KEY`: The key of commercetools composable commerce project.
 - `CTP_CLIENT_ID`: The client ID of your commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK. Expected scopes are: `manage_payments` `manage_orders` `view_sessions` `view_api_clients` `manage_checkout_payment_intents` `introspect_oauth_tokens`.
 - `CTP_CLIENT_SECRET`: The client secret of commercetools composable commerce user account. It is used in commercetools client to communicate with commercetools composable commerce via SDK.
@@ -179,7 +195,7 @@ Here you can see the details about various variables in configuration
 - `CTP_SESSION_URL`: The URL for session creation in commercetools platform. Connectors relies on the session created to be able to share information between enabler and processor. The default value is `https://session.europe-west1.gcp.commercetools.com`.
 - `CTP_JWKS_URL`: The URL which provides JSON Web Key Set. Default value is `https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json`.
 - `CTP_JWT_ISSUER`: The issuer inside JSON Web Token which is required in JWT validation process. Default value is `default: https://mc-api.europe-west1.gcp.commercetools.com`
-- `ADYEN_ENVIRONMENT`: The indicator of adyen environment.  Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
+- `ADYEN_ENVIRONMENT`: The indicator of adyen environment. Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
 - `ADYEN_MERCHANT_ACCOUNT`: The name of adyen merchant account.
 - `ADYEN_CLIENT_KEY`: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication).
 - `ADYEN_LIVE_URL_PREFIX`: It represents live endpoint prefix used by Adyen platform. It is only required for Adyen live environment. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
@@ -191,8 +207,14 @@ Here you can see the details about various variables in configuration
 - `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`: The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
 - `ADYEN_SHOPPER_STATEMENT`: The text to be shown on the shopper's bank statement. For more information, see [Adyen's reference](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement).
+- ADYEN_STORED_PAYMENT_METHODS_ENABLED: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false".
+- ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods.
+- ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
+- ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
+- ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
 
 ## Development
+
 In order to get started developing this connector certain configuration are necessary, most of which involve updating environment variables in both services (enabler, processor).
 
 #### Configuration steps
@@ -206,6 +228,7 @@ cp .env.template .env
 ```
 
 #### 2. Spin Up Components via Docker Compose
+
 With the help of docker compose, you are able to spin up all necessary components required for developing the connector by running the following command from the root directory;
 
 ```bash
@@ -213,6 +236,7 @@ docker compose up
 ```
 
 This command would start 3 required services, necessary for development
+
 1. JWT Server
 2. Enabler
 3. Processor
