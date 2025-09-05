@@ -1124,9 +1124,9 @@ describe('adyen-payment.service', () => {
     });
   });
 
-  describe('deleteStoredPaymentMethod', () => {
+  describe('deleteStoredPaymentMethodViaCart', () => {
     test('should throw an "ErrorRequiredField" error if no customerId is set on the cart', async () => {
-      const adyenToken = 'adyen-token-value';
+      const ctPaymentMethodId = '88e7b1e4-eeee-45a9-b9c5-8723e8435d51';
       const cartRandom = CartRest.random()
         .lineItems([])
         .customLineItems([])
@@ -1136,11 +1136,13 @@ describe('adyen-payment.service', () => {
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethodViaCart(ctPaymentMethodId);
 
       expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
     });
+  });
 
+  describe('deleteStoredPaymentMethod', () => {
     test('should throw an error if the deletion of the payment method in CT fails without calling Adyen to delete the token', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const cartRandom = CartRest.random()
@@ -1149,14 +1151,15 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
       const methodType = 'scheme';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1178,7 +1181,7 @@ describe('adyen-payment.service', () => {
         throw new Error('some error thrown during delete');
       });
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
       expect(result).rejects.toThrow(new Error('some error thrown during delete'));
     });
@@ -1191,14 +1194,15 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
       const methodType = 'scheme';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1217,7 +1221,7 @@ describe('adyen-payment.service', () => {
       });
 
       jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1245,7 +1249,7 @@ describe('adyen-payment.service', () => {
         });
       });
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
       expect(() => result).not.toThrow();
     });
@@ -1258,14 +1262,15 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
       const methodType = 'scheme';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1312,7 +1317,7 @@ describe('adyen-payment.service', () => {
         });
       });
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
       expect(() => result).not.toThrow();
     });
@@ -1325,14 +1330,15 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
       const methodType = 'scheme';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1379,7 +1385,7 @@ describe('adyen-payment.service', () => {
         });
       });
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
       expect(() => result).not.toThrow();
     });
@@ -1392,14 +1398,15 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
       const methodType = 'scheme';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1418,7 +1425,7 @@ describe('adyen-payment.service', () => {
       });
 
       jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1446,7 +1453,7 @@ describe('adyen-payment.service', () => {
         });
       });
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
       expect(result).rejects.toThrow(
         new Errorx({
           cause: {
@@ -1476,14 +1483,15 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
       const methodType = 'scheme';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1502,7 +1510,7 @@ describe('adyen-payment.service', () => {
       });
 
       jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
-        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        id: ctPaymentMethodId,
         customer: {
           id: customerId,
           typeId: 'customer',
@@ -1522,7 +1530,7 @@ describe('adyen-payment.service', () => {
 
       jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockResolvedValueOnce(undefined);
 
-      const result = paymentService.deleteStoredPaymentMethod(adyenToken);
+      const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
       expect(result).resolves.not.toThrow();
     });

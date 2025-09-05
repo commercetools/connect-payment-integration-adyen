@@ -95,7 +95,7 @@ export abstract class AbstractPaymentService {
   /**
    * Delete the stored payment method by CT id in CT and Adyen.
    */
-  abstract deleteStoredPaymentMethod(id: string): Promise<void>;
+  abstract deleteStoredPaymentMethod(id: string, customerId: string): Promise<void>;
 
   public async modifyPayment(opts: ModifyPayment): Promise<PaymentIntentResponseSchemaDTO> {
     const ctPayment = await this.ctPaymentService.getPayment({

@@ -206,7 +206,7 @@ export const adyenPaymentRoutes = async (
     async (request, reply) => {
       const { id } = request.params;
 
-      await opts.paymentService.deleteStoredPaymentMethod(id);
+      await opts.paymentService.deleteStoredPaymentMethodViaCart(id);
 
       return reply.status(200).send();
     },

@@ -680,8 +680,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     };
   }
 
-  async deleteStoredPaymentMethod(id: string): Promise<void> {
-    // TODO: SCC-3447: extract getCart and it's customerId validation into a seperate function so that this function can also support "my account page" where there is no cart available.
+  async deleteStoredPaymentMethodViaCart(id: string): Promise<void> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
@@ -699,6 +698,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
     }
 
+    await this.deleteStoredPaymentMethod(id, customerId);
+  }
+
+  async deleteStoredPaymentMethod(id: string, customerId: string): Promise<void> {
     const paymentMethod = await this.ctPaymentMethodService.get({
       customerId: customerId,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
@@ -716,26 +719,23 @@ export class AdyenPaymentService extends AbstractPaymentService {
       log.info('Successfully deleted payment-method in CT', {
         customer: { id: customerId, type: 'customer' },
         paymentMethod: { id: paymentMethod.id, type: 'payment-method', version: paymentMethod.version },
-        cart: { id: ctCart.id, type: 'cart' },
       });
     } catch (error) {
       log.error('Could not delete payment-method in CT', {
         error,
         customer: { id: customerId, type: 'customer' },
         paymentMethod: { id: paymentMethod.id, type: 'payment-method' },
-        cart: { id: ctCart.id, type: 'cart' },
       });
 
       throw error;
     }
 
-    await this.deleteTokenInAdyen(customerId, paymentMethod, ctCart);
+    await this.deleteTokenInAdyen(customerId, paymentMethod);
   }
 
   private async deleteTokenInAdyen(
     customerId: string,
     ctPaymentMethod: Pick<PaymentMethod, 'id' | 'version' | 'token'>,
-    ctCart: Pick<Cart, 'id'>,
   ) {
     const maxRetries = 3;
     let attempt = 1;
@@ -751,7 +751,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         log.info('Successfully deleted token in Adyen', {
           customer: { id: customerId, type: 'customer' },
           paymentMethod: { id: ctPaymentMethod.id, type: 'payment-method', version: ctPaymentMethod.version },
-          cart: { id: ctCart.id, type: 'cart' },
         });
 
         break;
@@ -766,7 +765,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
           },
           customer: { id: customerId, type: 'customer' },
           paymentMethod: { id: ctPaymentMethod.id, type: 'payment-method' },
-          cart: { id: ctCart.id, type: 'cart' },
         };
 
         if (isAdyenApiError(wrappedAdyenError)) {
