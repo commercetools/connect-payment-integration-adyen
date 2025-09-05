@@ -118,20 +118,27 @@ export class DropinComponents implements DropinComponent {
         resolve,
         reject,
       ) => {
-        // TODO: SCC-3447: make sure the config returns a map between CT id and adyen ID so that we can make an HTTP delete like HTTP DELETE /stored/stored-payment-methods/<CT UUID>
+        const ctStoredPaymentMethod =
+          this.storedPaymentMethodsConfig.storedPaymentMethods.find((spm) => {
+            return spm.token === storedPaymentMethod;
+          });
+
+        if (!ctStoredPaymentMethod) {
+          console.log(
+            "Drop-in component return an token id which is not known",
+          );
+          return reject();
+        }
+
         const url = this.processorUrl.endsWith("/")
-          ? `${this.processorUrl}stored-payment-methods`
-          : `${this.processorUrl}/stored-payment-methods`;
+          ? `${this.processorUrl}stored-payment-methods/${ctStoredPaymentMethod.id}`
+          : `${this.processorUrl}/stored-payment-methods/${ctStoredPaymentMethod.id}`;
 
         const response = await fetch(url, {
-          method: "POST",
+          method: "DELETE",
           headers: {
             "X-Session-Id": this.sessionId,
-            "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            tokenId: storedPaymentMethod,
-          }),
         });
 
         if (response.ok) {

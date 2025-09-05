@@ -93,7 +93,7 @@ export abstract class AbstractPaymentService {
   abstract getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse>;
 
   /**
-   * Delete the stored payment method by Adyen id ("storedPaymentMethodId") in CT and Adyen.
+   * Delete the stored payment method by CT id in CT and Adyen.
    */
   abstract deleteStoredPaymentMethod(id: string): Promise<void>;
 

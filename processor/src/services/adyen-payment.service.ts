@@ -699,11 +699,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
     }
 
-    const paymentMethod = await this.ctPaymentMethodService.getByTokenValue({
+    const paymentMethod = await this.ctPaymentMethodService.get({
       customerId: customerId,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-      tokenValue: id,
+      id,
     });
 
     try {
@@ -729,13 +729,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw error;
     }
 
-    await this.deleteTokenInAdyen(id, customerId, paymentMethod, ctCart);
+    await this.deleteTokenInAdyen(customerId, paymentMethod, ctCart);
   }
 
   private async deleteTokenInAdyen(
-    id: string,
     customerId: string,
-    ctPaymentMethod: Pick<PaymentMethod, 'id' | 'version'>,
+    ctPaymentMethod: Pick<PaymentMethod, 'id' | 'version' | 'token'>,
     ctCart: Pick<Cart, 'id'>,
   ) {
     const maxRetries = 3;
@@ -744,7 +743,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     do {
       try {
         await AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(
-          id,
+          ctPaymentMethod.token!.value,
           customerId,
           getConfig().adyenMerchantAccount,
         );
