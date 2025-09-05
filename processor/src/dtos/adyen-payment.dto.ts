@@ -7,6 +7,7 @@ import { PaymentMethodsResponse } from '@adyen/api-library/lib/src/typings/check
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { Notification } from '@adyen/api-library/lib/src/typings/notification/notification';
+import { GenericWebhook } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationWebhooksHandler';
 
 export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount' | 'countryCode'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
@@ -65,6 +66,8 @@ export type ConfirmPaymentResponseDTO = Pick<
 };
 
 export type NotificationRequestDTO = Notification;
+
+export type NotificationTokenizationDTO = GenericWebhook;
 
 export type CreateApplePaySessionRequestDTO = {
   validationUrl: string;
