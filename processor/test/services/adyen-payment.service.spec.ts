@@ -890,8 +890,8 @@ describe('adyen-payment.service', () => {
     });
   });
 
-  describe('getKnownTokenIds', () => {
-    test('should return an empty list if the feature flag is disabled', async () => {
+  describe('isStoredPaymentMethodsEnabled', () => {
+    test('should return an "false" if the feature flag is disabled', async () => {
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: false,
         config: {
@@ -903,12 +903,12 @@ describe('adyen-payment.service', () => {
         },
       });
 
-      const result = await paymentService.getKnownTokenIds();
+      const result = await paymentService.isStoredPaymentMethodsEnabled();
 
-      expect(result).toStrictEqual([]);
+      expect(result).toStrictEqual(false);
     });
 
-    test('should return an empty list if no customerId is set on the cart', async () => {
+    test('should return an "false" if the feature flag is enabled but no customerId is set on the cart', async () => {
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -929,12 +929,12 @@ describe('adyen-payment.service', () => {
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
-      const result = await paymentService.getKnownTokenIds();
+      const result = await paymentService.isStoredPaymentMethodsEnabled();
 
-      expect(result).toStrictEqual([]);
+      expect(result).toStrictEqual(false);
     });
 
-    test('should return an empty list if the customerId that is set on the cart has no stored payment methods', async () => {
+    test('should return an "true" if the feature flag is enabled and the cart has an customerId set', async () => {
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -955,46 +955,9 @@ describe('adyen-payment.service', () => {
 
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
-      jest
-        .spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods')
-        .mockResolvedValueOnce({ storedPaymentMethods: [] });
+      const result = await paymentService.isStoredPaymentMethodsEnabled();
 
-      const result = await paymentService.getKnownTokenIds();
-
-      expect(result).toStrictEqual([]);
-    });
-
-    test('should return a list of (Adyen) token ids for the given customerId if they have stored payment methods', async () => {
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface: 'paymentInterface',
-          interfaceAccount: 'interfaceAccount',
-          supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .buildRest<TCartRest>({
-          omitFields: ['billingAddress', 'shippingAddress'],
-        }) as Cart;
-
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-
-      jest.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
-        storedPaymentMethods: [
-          { token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod,
-          { token: 'another-token-id' } as StoredPaymentMethod,
-        ],
-      });
-
-      const result = await paymentService.getKnownTokenIds();
-
-      expect(result).toStrictEqual(['sometokenidvaluefromadyen', 'another-token-id']);
+      expect(result).toStrictEqual(true);
     });
   });
 

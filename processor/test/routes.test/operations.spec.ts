@@ -101,7 +101,7 @@ describe('/operations APIs', () => {
 
   describe('GET /operations/config', () => {
     test('it should return the Adyen client config', async () => {
-      jest.spyOn(spiedPaymentService, 'getKnownTokenIds').mockResolvedValueOnce(['sometokenidvaluefromadyen']);
+      jest.spyOn(spiedPaymentService, 'isStoredPaymentMethodsEnabled').mockResolvedValueOnce(true);
 
       //When
       const responseGetConfig = await app.inject({
@@ -122,8 +122,7 @@ describe('/operations APIs', () => {
           usesOwnCertificate: false,
         },
         storedPaymentMethodsConfig: {
-          isEnabled: false,
-          knownTokensIds: ['sometokenidvaluefromadyen'],
+          isEnabled: true,
         },
       });
     });

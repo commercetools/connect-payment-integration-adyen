@@ -60,6 +60,11 @@ type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
 };
 
+export type StoredPaymentMethodsConfig = {
+  isEnabled: boolean;
+  storedPaymentMethods: CocoStoredPaymentMethod[];
+};
+
 export type BaseOptions = {
   adyenCheckout: ICore;
   sessionId: string;
@@ -68,16 +73,12 @@ export type BaseOptions = {
     usesOwnCertificate: boolean;
   };
   paymentComponentsConfigOverride?: Record<string, any>;
-  storedPaymentMethodsConfig: {
-    isEnabled: boolean;
-    knownTokensIds: string[];
-  };
+  storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   setStorePaymentDetails: (enabled: boolean) => void;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
-  storedPaymentMethodsTokens: Record<string, string> = {};
   private storePaymentDetails = false;
 
   constructor(options: AdyenEnablerOptions) {
@@ -87,14 +88,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       this.setStorePaymentDetails,
     );
   }
-
-  setStorePaymentDetails = (enabled: boolean): void => {
-    this.storePaymentDetails = enabled;
-  };
-
-  getStorePaymentDetails = (): boolean => {
-    return this.storePaymentDetails;
-  };
 
   private static _Setup = async (
     options: AdyenEnablerOptions,
@@ -146,7 +139,25 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       configResponse.json(),
     ]);
 
-    // TODO: SCC-3447: if the configResponse.storedPaymentMethodsConfig.enabled === true then also fetch the stored-payment-methods in a new HTTP GET then store it as the storedPaymentMethodsTokens.
+    let storedPaymentMethodsList: CocoStoredPaymentMethod[];
+    if (configJson.storedPaymentMethodsConfig.isEnabled === true) {
+      const response = await fetch(
+        options.processorUrl + "/stored-payment-methods",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-Id": options.sessionId,
+          },
+        },
+      );
+
+      const storedPaymentMethods: {
+        storedPaymentMethods: CocoStoredPaymentMethod[];
+      } = await response.json();
+
+      storedPaymentMethodsList = storedPaymentMethods.storedPaymentMethods;
+    }
 
     const { sessionData: data, paymentReference } = sessionJson;
 
@@ -295,7 +306,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           ...(configJson.paymentComponentsConfig && {
             paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
           }),
-          storedPaymentMethodsConfig: configJson.storedPaymentMethodsConfig,
+          storedPaymentMethodsConfig: {
+            isEnabled: configJson.storedPaymentMethodsConfig.isEnabled,
+            storedPaymentMethods: storedPaymentMethodsList,
+          },
           setStorePaymentDetails,
         },
       };
@@ -303,32 +317,28 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   };
 
   async getStoredPaymentMethods({ allowedMethodTypes }) {
-    // TODO: SCC-3447: remove the HTTP Get and instead return the values from the class directly from the storedPaymentMethodsTokens.
     const setupData = await this.setupData;
-    const { processorUrl, sessionId } = setupData.baseOptions;
 
-    const response = await fetch(processorUrl + "/stored-payment-methods", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Session-Id": sessionId,
-      },
-    });
-
-    const {
-      storedPaymentMethods: cocoStoredPaymentMethods,
-    }: { storedPaymentMethods: CocoStoredPaymentMethod[] } =
-      await response.json();
-
-    this.storedPaymentMethodsTokens = Object.fromEntries(
-      cocoStoredPaymentMethods.map((method) => [method.id, method.token]),
-    );
-    const storedPaymentMethods = cocoStoredPaymentMethods
-      .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
-      .filter((method) => allowedMethodTypes.includes(method.type));
+    const storedPaymentMethods =
+      setupData.baseOptions.storedPaymentMethodsConfig.storedPaymentMethods
+        .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
+        .filter((method) => allowedMethodTypes.includes(method.type));
 
     return { storedPaymentMethods };
   }
+
+  async isStoredPaymentMethodsEnabled(): Promise<boolean> {
+    const setupData = await this.setupData;
+    return setupData.baseOptions.storedPaymentMethodsConfig.isEnabled;
+  }
+
+  setStorePaymentDetails = (enabled: boolean): void => {
+    this.storePaymentDetails = enabled;
+  };
+
+  getStorePaymentDetails = (): boolean => {
+    return this.storePaymentDetails;
+  };
 
   async createComponentBuilder(
     type: string,
@@ -376,6 +386,13 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     if (!setupData) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
+
+    if (!setupData.baseOptions.storedPaymentMethodsConfig.isEnabled) {
+      throw new Error(
+        "Stored payment methods is not enabled and thus cannot be used to build a new component",
+      );
+    }
+
     const supportedMethods = {
       card: StoredCardBuilder,
     };
@@ -385,10 +402,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
       );
     }
-    return new supportedMethods[type](
-      setupData.baseOptions,
-      this.storedPaymentMethodsTokens,
-    );
+
+    return new supportedMethods[type](setupData.baseOptions);
   }
 
   async createDropinBuilder(

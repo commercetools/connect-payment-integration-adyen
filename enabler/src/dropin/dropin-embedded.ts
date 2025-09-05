@@ -6,7 +6,10 @@ import {
   PaymentDropinBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
-import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
+import {
+  BaseOptions,
+  StoredPaymentMethodsConfig,
+} from "../payment-enabler/adyen-payment-enabler";
 import {
   ICore,
   SubmitActions,
@@ -36,10 +39,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private adyenCheckout: ICore;
   private processorUrl: string;
   private sessionId: string;
-  private storedPaymentMethodsConfig: {
-    isEnabled: boolean;
-    knownTokensIds: string[];
-  };
+  private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -76,19 +76,13 @@ export class DropinComponents implements DropinComponent {
   private dropinConfigOverride: Record<string, any>;
   private processorUrl: string;
   private sessionId: string;
-  private storedPaymentMethodsConfig: {
-    isEnabled: boolean;
-    knownTokensIds: string[];
-  };
+  private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
 
   constructor(opts: {
     adyenCheckout: ICore;
     dropinOptions: DropinOptions;
     dropinConfigOverride: Record<string, any>;
-    storedPaymentMethodsConfig: {
-      isEnabled: boolean;
-      knownTokensIds: string[];
-    };
+    storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
     processorUrl: string;
     sessionId: string;
   }) {
@@ -110,11 +104,13 @@ export class DropinComponents implements DropinComponent {
       showStoredPaymentMethods: this.storedPaymentMethodsConfig.isEnabled,
       showRemovePaymentMethodButton: this.storedPaymentMethodsConfig.isEnabled,
       filterStoredPaymentMethods: (storedPaymentMethods) => {
-        // TODO: SCC-3447: make sure the config returns a map between CT id and adyen ID so that we can make an HTTP delete like HTTP DELETE /stored/stored-payment-methods/<CT UUID>
         return storedPaymentMethods.filter((spm) => {
-          return this.storedPaymentMethodsConfig.knownTokensIds.includes(
-            spm.id,
-          );
+          const ctStoredPaymentMethod =
+            this.storedPaymentMethodsConfig.storedPaymentMethods.find(
+              (ctSpm) => ctSpm.token === spm.id,
+            );
+
+          return ctStoredPaymentMethod !== undefined;
         });
       },
       onDisableStoredPaymentMethod: async (
@@ -122,6 +118,7 @@ export class DropinComponents implements DropinComponent {
         resolve,
         reject,
       ) => {
+        // TODO: SCC-3447: make sure the config returns a map between CT id and adyen ID so that we can make an HTTP delete like HTTP DELETE /stored/stored-payment-methods/<CT UUID>
         const url = this.processorUrl.endsWith("/")
           ? `${this.processorUrl}stored-payment-methods`
           : `${this.processorUrl}/stored-payment-methods`;

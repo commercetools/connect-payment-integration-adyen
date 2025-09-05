@@ -190,6 +190,8 @@ export interface PaymentEnabler {
     type: string,
   ) => Promise<StoredComponentBuilder | never>;
 
+  isStoredPaymentMethodsEnabled: () => Promise<boolean>;
+
   getStoredPaymentMethods: ({
     allowedMethodTypes,
   }: {

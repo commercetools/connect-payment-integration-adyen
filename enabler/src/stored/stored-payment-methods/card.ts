@@ -7,7 +7,10 @@ import {
   AdyenBaseStoredComponentBuilder,
   DefaultAdyenStoredComponent,
 } from "../base";
-import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import {
+  BaseOptions,
+  StoredPaymentMethodsConfig,
+} from "../../payment-enabler/adyen-payment-enabler";
 import { Card, ICore } from "@adyen/adyen-web";
 
 /**
@@ -18,11 +21,8 @@ import { Card, ICore } from "@adyen/adyen-web";
  */
 
 export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
-  constructor(
-    baseOptions: BaseOptions,
-    storedPaymentMethodsTokens: Record<string, string>,
-  ) {
-    super(PaymentMethod.card, baseOptions, storedPaymentMethodsTokens);
+  constructor(baseOptions: BaseOptions) {
+    super(PaymentMethod.card, baseOptions);
   }
 
   build(config: StoredComponentOptions): StoredComponent {
@@ -34,11 +34,13 @@ export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
       processorUrl: this.processorUrl,
       paymentComponentConfigOverride:
         this.resolvePaymentComponentConfigOverride("card"),
-      storedPaymentMethodsTokens: this.storedPaymentMethodsTokens,
+      storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
     });
+
     cardComponent.init({
       id: config.id,
     });
+
     return cardComponent;
   }
 }
@@ -51,23 +53,33 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
-    storedPaymentMethodsTokens: Record<string, string>;
+    storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   }) {
     super(opts);
   }
 
   init({ id }: { id: string }): void {
-    const adyenStoredPaymentMethodId = this.storedPaymentMethodsTokens[id];
+    const cocoStoredPaymentMethod =
+      this.storedPaymentMethodsConfig.storedPaymentMethods.find(
+        (spm) => spm.id === id,
+      );
+
+    if (!cocoStoredPaymentMethod) {
+      throw new Error(
+        `Received stored payment method id "${id} however that is not an available id to use. Available ones are: [${this.storedPaymentMethodsConfig.storedPaymentMethods.map((spm) => spm.id).join(", ")}]"`,
+      );
+    }
+
     this.component = new Card(this.adyenCheckout, {
       // Override the default config with the one provided by the user
       ...this.paymentComponentConfigOverride,
       // Configuration that can not be overridden
-      storedPaymentMethodId: adyenStoredPaymentMethodId,
+      storedPaymentMethodId: cocoStoredPaymentMethod.token,
       isStoredPaymentMethod: true,
       supportedShopperInteractions: ["Ecommerce"],
       ...this.componentOptions,
     });
-    this.adyenStoredPaymentMethodId = adyenStoredPaymentMethodId;
+    this.cocoStoredPaymentMethod = cocoStoredPaymentMethod;
   }
 
   async showValidation() {
@@ -92,7 +104,7 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        tokenId: this.adyenStoredPaymentMethodId,
+        tokenId: this.cocoStoredPaymentMethod.token,
       }),
     });
 

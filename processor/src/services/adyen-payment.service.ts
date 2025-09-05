@@ -109,28 +109,23 @@ export class AdyenPaymentService extends AbstractPaymentService {
     this.reversePaymentConverter = new ReversePaymentConverter();
   }
 
-  async getKnownTokenIds(): Promise<string[]> {
+  async isStoredPaymentMethodsEnabled(): Promise<boolean> {
     if (!getStoredPaymentMethodsConfig().enabled) {
-      return [];
+      return false;
     }
 
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
 
-    if (!ctCart.customerId) {
-      return [];
-    }
+    const isCustomerIdSetOnCart = ctCart.customerId !== undefined;
 
-    const storedPaymentMethods = await this.getStoredPaymentMethods();
-
-    return storedPaymentMethods.storedPaymentMethods.map((spm) => spm.token);
+    return isCustomerIdSetOnCart && getStoredPaymentMethodsConfig().enabled;
   }
 
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
 
-    // TODO: SCC-3447: the storedPaymentMethodsConfig.isEnabled will be true only if the env feature flag is true AND the cart has an customerId set. Remove the knownTokensIds.
     return {
       clientKey: getConfig().adyenClientKey,
       environment: getConfig().adyenEnvironment,
@@ -139,8 +134,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       },
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
       storedPaymentMethodsConfig: {
-        isEnabled: getStoredPaymentMethodsConfig().enabled,
-        knownTokensIds: await this.getKnownTokenIds(),
+        isEnabled: await this.isStoredPaymentMethodsEnabled(),
       },
     };
   }

@@ -4,8 +4,12 @@ import {
   StoredComponent,
   StoredComponentBuilder,
   PaymentMethod,
+  CocoStoredPaymentMethod,
 } from "../payment-enabler/payment-enabler";
-import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
+import {
+  BaseOptions,
+  StoredPaymentMethodsConfig,
+} from "../payment-enabler/adyen-payment-enabler";
 
 type AdyenComponent = Card; // We can add more components as needed
 
@@ -22,20 +26,16 @@ export abstract class AdyenBaseStoredComponentBuilder
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentsConfigOverride: Record<string, any>;
-  protected storedPaymentMethodsTokens: Record<string, string>;
+  protected storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
 
-  constructor(
-    paymentMethod: PaymentMethod,
-    baseOptions: BaseOptions,
-    storedPaymentMethodsTokens: Record<string, string>,
-  ) {
+  constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
     this.paymentMethod = paymentMethod;
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.sessionId = baseOptions.sessionId;
     this.processorUrl = baseOptions.processorUrl;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
-    this.storedPaymentMethodsTokens = storedPaymentMethodsTokens;
+    this.storedPaymentMethodsConfig = baseOptions.storedPaymentMethodsConfig;
   }
 
   abstract build(config: StoredComponentOptions): StoredComponent;
@@ -55,8 +55,8 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   protected sessionId: string;
   protected processorUrl: string;
   protected paymentComponentConfigOverride: Record<string, any>;
-  protected storedPaymentMethodsTokens: Record<string, string>;
-  protected adyenStoredPaymentMethodId: string;
+  protected storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
+  protected cocoStoredPaymentMethod: CocoStoredPaymentMethod;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
@@ -65,7 +65,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
     sessionId: string;
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
-    storedPaymentMethodsTokens: Record<string, string>;
+    storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   }) {
     this.paymentMethod = opts.paymentMethod;
     this.adyenCheckout = opts.adyenCheckout;
@@ -73,8 +73,9 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
     this.sessionId = opts.sessionId;
     this.processorUrl = opts.processorUrl;
     this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
-    this.storedPaymentMethodsTokens = opts.storedPaymentMethodsTokens;
+    this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
   }
+
   abstract init(options: { id: string }): void;
 
   abstract remove(): Promise<void>;
@@ -88,7 +89,13 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   }
 
   async isAvailable(): Promise<boolean> {
-    // TODO: SCC-3447: check if the feature is enabled. If not then resolve to false.
+    if (!this.storedPaymentMethodsConfig.isEnabled) {
+      console.log(
+        `${this.paymentMethod} is not allowed to be used cause the stored payment methods is not enabled`,
+      );
+      return Promise.resolve(false);
+    }
+
     if (!this.isPaymentMethodAllowed()) {
       console.log(`${this.paymentMethod} is not allowed`);
       return Promise.resolve(false);
