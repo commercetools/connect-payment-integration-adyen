@@ -1256,11 +1256,6 @@ describe('adyen-payment.service', () => {
 
     test('should not throw an error if Adyen returns a 401 when trying to delete the token', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
 
       const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
@@ -1268,7 +1263,6 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
       jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
@@ -1324,11 +1318,6 @@ describe('adyen-payment.service', () => {
 
     test('should not throw an error if Adyen returns a 403 when trying to delete the token', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
 
       const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
@@ -1336,7 +1325,6 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
       jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
@@ -1392,11 +1380,6 @@ describe('adyen-payment.service', () => {
 
     test('should retry up to 3 times trying to delete the token in Adyen afterwhich it will throw the last received error', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
 
       const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
@@ -1404,7 +1387,6 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
       jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
@@ -1477,11 +1459,6 @@ describe('adyen-payment.service', () => {
 
     test('should succesfully delete the token in CT and Adyen', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
 
       const ctPaymentMethodId = '7140d787-831f-4b15-bf42-2828e2598aeb';
       const adyenToken = 'adyen-token-value';
@@ -1489,7 +1466,6 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
       jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
