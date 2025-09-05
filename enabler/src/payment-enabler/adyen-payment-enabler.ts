@@ -139,7 +139,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       configResponse.json(),
     ]);
 
-    let storedPaymentMethodsList: CocoStoredPaymentMethod[];
+    let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
     if (configJson.storedPaymentMethodsConfig.isEnabled === true) {
       const response = await fetch(
         options.processorUrl + "/stored-payment-methods",
