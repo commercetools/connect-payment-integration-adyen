@@ -118,9 +118,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       id: getCartIdFromContext(),
     });
 
-    const isCustomerIdSetOnCart = ctCart.customerId !== undefined;
-
-    return isCustomerIdSetOnCart && getStoredPaymentMethodsConfig().enabled;
+    return ctCart.customerId !== undefined;
   }
 
   async config(): Promise<ConfigResponse> {
@@ -616,8 +614,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  // TODO: SCC-3447: refactor/improve readability of this function
-  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+  /**
+   * Returns "cart.customerId" from the catt that is present in the context. If the "cart.customerId" is not set then a "ErrorRequiredField" will be thrown.
+   */
+  async getCustomerIdFromCart(): Promise<string> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
@@ -635,8 +635,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
     }
 
+    return customerId;
+  }
+
+  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+    const customerId = await this.getCustomerIdFromCart();
+
     const storedPaymentMethods = await this.ctPaymentMethodService.find({
-      customerId: ctCart.customerId,
+      customerId: customerId,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
     });
@@ -645,6 +651,20 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return { storedPaymentMethods: [] };
     }
 
+    const resList = await this.enhanceCTStoredPaymentMethodsWithAdyenDisplayData(
+      customerId,
+      storedPaymentMethods.results,
+    );
+
+    return {
+      storedPaymentMethods: resList,
+    };
+  }
+
+  async enhanceCTStoredPaymentMethodsWithAdyenDisplayData(
+    customerId: string,
+    storedPaymentMethods: PaymentMethod[],
+  ): Promise<StoredPaymentMethod[]> {
     // TODO: SCC-3449: if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
 
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
@@ -652,7 +672,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       getConfig().adyenMerchantAccount,
     );
 
-    const resList = storedPaymentMethods.results.map((spm) => {
+    return storedPaymentMethods.map((spm) => {
       const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
         (tokenDetails) => tokenDetails.id === spm.token?.value,
       );
@@ -674,29 +694,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       };
       return res;
     });
-
-    return {
-      storedPaymentMethods: resList,
-    };
   }
 
   async deleteStoredPaymentMethodViaCart(id: string): Promise<void> {
-    const ctCart = await this.ctCartService.getCart({
-      id: getCartIdFromContext(),
-    });
-
-    const customerId = ctCart.customerId;
-
-    if (!customerId) {
-      throw new ErrorRequiredField('customerId', {
-        privateMessage: 'customerId is not set on the cart',
-        privateFields: {
-          cart: {
-            id: ctCart.id,
-          },
-        },
-      });
-    }
+    const customerId = await this.getCustomerIdFromCart();
 
     await this.deleteStoredPaymentMethod(id, customerId);
   }
