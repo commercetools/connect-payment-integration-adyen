@@ -1098,7 +1098,6 @@ describe('adyen-payment.service', () => {
             token: 'adyen-token-value-123',
             type: 'card',
             displayOptions: {
-              name: '•••• 1234',
               brand: 'visa',
               endDigits: '1234',
               expiryMonth: '03',
@@ -1112,7 +1111,6 @@ describe('adyen-payment.service', () => {
             token: 'adyen-token-value-456',
             type: 'card',
             displayOptions: {
-              name: '•••• 5678',
               brand: 'mastercard',
               endDigits: '5678',
               expiryMonth: '11',

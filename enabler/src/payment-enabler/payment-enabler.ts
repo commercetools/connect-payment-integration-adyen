@@ -136,7 +136,6 @@ export interface PaymentDropinBuilder {
 }
 
 type BaseStoredDisplayOptions = {
-  name: string;
   logoUrl?: string;
   [key: string]: unknown;
 };

@@ -684,8 +684,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         token: spm.token?.value || tokenDetailsFromAdyen?.id || '',
         type: spm.method || tokenDetailsFromAdyen?.type || '',
         displayOptions: {
-          // TODO: SCC-3447: discuss with Juan about if processor or FE should add the four dots
-          name: `•••• ${tokenDetailsFromAdyen?.lastFour}`,
           brand: tokenDetailsFromAdyen?.brand,
           endDigits: tokenDetailsFromAdyen?.lastFour,
           expiryMonth: tokenDetailsFromAdyen?.expiryMonth,
