@@ -686,10 +686,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
         displayOptions: {
           brand: tokenDetailsFromAdyen?.brand,
           endDigits: tokenDetailsFromAdyen?.lastFour,
-          expiryMonth: tokenDetailsFromAdyen?.expiryMonth,
-          expiryYear: tokenDetailsFromAdyen?.expiryYear,
+          expiryMonth: tokenDetailsFromAdyen?.expiryMonth ? Number(tokenDetailsFromAdyen.expiryMonth) : undefined,
+          expiryYear: tokenDetailsFromAdyen?.expiryYear ? Number(tokenDetailsFromAdyen.expiryYear) : undefined,
         },
       };
+
       return res;
     });
   }

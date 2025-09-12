@@ -9,8 +9,8 @@ export const StoredPaymentMethodSchema = Type.Object({
   displayOptions: Type.Object({
     endDigits: Type.Optional(Type.String()),
     brand: Type.Optional(Type.String()),
-    expiryMonth: Type.Optional(Type.String()),
-    expiryYear: Type.Optional(Type.String()),
+    expiryMonth: Type.Optional(Type.Number()),
+    expiryYear: Type.Optional(Type.Number()),
     logoUrl: Type.Optional(Type.String()),
   }),
 });

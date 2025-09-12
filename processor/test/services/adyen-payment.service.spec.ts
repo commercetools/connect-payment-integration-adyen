@@ -1100,8 +1100,8 @@ describe('adyen-payment.service', () => {
             displayOptions: {
               brand: 'visa',
               endDigits: '1234',
-              expiryMonth: '03',
-              expiryYear: '30',
+              expiryMonth: 3,
+              expiryYear: 30,
             },
           },
           {
@@ -1113,8 +1113,8 @@ describe('adyen-payment.service', () => {
             displayOptions: {
               brand: 'mastercard',
               endDigits: '5678',
-              expiryMonth: '11',
-              expiryYear: '28',
+              expiryMonth: 11,
+              expiryYear: 28,
             },
           },
         ],
