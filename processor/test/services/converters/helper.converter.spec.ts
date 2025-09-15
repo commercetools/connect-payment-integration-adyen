@@ -82,8 +82,14 @@ describe('helper.converter', () => {
   test('convertCTCardBrandToAdyenFormat', async () => {
     const inputTable = [
       ['Amex', 'amex'],
+      ['Bancontact', 'bcmc'],
+      ['CartesBancaires', 'cartebancaire'],
+      ['Diners', 'diners'],
+      ['Discover', 'discover'],
+      ['Jcb', 'jcb'],
       ['Maestro', 'maestro'],
       ['Mastercard', 'mc'],
+      ['UnionPay', 'cup'],
       ['Visa', 'visa'],
       ['some-random-value-which-is-not-known', 'Unknown'],
       [undefined, 'Unknown'],
@@ -102,8 +108,14 @@ describe('helper.converter', () => {
   test('convertAdyenCardBrandToCTFormat', async () => {
     const inputTable = [
       ['amex', 'Amex'],
+      ['bcmc', 'Bancontact'],
+      ['cartebancaire', 'CartesBancaires'],
+      ['diners', 'Diners'],
+      ['discover', 'Discover'],
+      ['jcb', 'Jcb'],
       ['maestro', 'Maestro'],
       ['mc', 'Mastercard'],
+      ['cup', 'UnionPay'],
       ['visa', 'Visa'],
       ['some-random-value-which-is-not-known', 'Unknown'],
       [undefined, 'Unknown'],

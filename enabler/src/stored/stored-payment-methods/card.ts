@@ -15,8 +15,14 @@ import { Card, ICore } from "@adyen/adyen-web";
 
 const CT_CARD_BRAND_TO_ADYEN_MAPPING: Record<string, string> = {
   Amex: "amex",
+  Bancontact: "bcmc",
+  CartesBancaires: "cartebancaire",
+  Diners: "diners",
+  Discover: "discover",
+  Jcb: "jcb",
   Maestro: "maestro",
   Mastercard: "mc",
+  UnionPay: "cup",
   Visa: "visa",
 };
 
