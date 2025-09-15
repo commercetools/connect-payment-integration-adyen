@@ -194,36 +194,59 @@
                       allowedMethodTypes: allowedStoredPaymentMethods,
                     });
 
-                  for (
-                    let i = 0;
-                    i < storedPaymentMethods.storedPaymentMethods.length;
-                    i++
-                  ) {
-                    const spm = storedPaymentMethods.storedPaymentMethods[i];
-                    const useSelectedOne = confirm(
-                      `Use SPM with id ${spm.id} | "**** ${spm.displayOptions.endDigits} | ${spm.displayOptions.expiryMonth}/${spm.displayOptions.expiryYear}"`,
-                    );
+                  if (storedPaymentMethods.storedPaymentMethods.length === 0) {
+                    console.warn("No stored payment methods for this customer");
+                    return;
+                  }
 
-                    if (useSelectedOne) {
-                      selectedStoredPaymentMethod = spm;
-                      break;
+                  if (storedPaymentMethods.storedPaymentMethods.length === 1) {
+                    selectedStoredPaymentMethod =
+                      storedPaymentMethods.storedPaymentMethods[0];
+                  } else {
+                    for (const spm of storedPaymentMethods.storedPaymentMethods) {
+                      {
+                        const useSelectedOne = confirm(
+                          `Use SPM with id ${spm.id} | "**** ${spm.displayOptions.endDigits} | ${spm.displayOptions.expiryMonth}/${spm.displayOptions.expiryYear}"`,
+                        );
+
+                        if (useSelectedOne) {
+                          selectedStoredPaymentMethod = spm;
+                          break;
+                        }
+                      }
                     }
                   }
 
                   if (!selectedStoredPaymentMethod) {
                     console.warn(
-                      "No stored payment method is seleected to be used. Please select one",
+                      "No stored payment method is selected to be used. Please select one",
                     );
                     return;
                   }
+
+                  console.log(
+                    "Selected stored payment method",
+                    selectedStoredPaymentMethod,
+                  );
+
+                  document
+                    .getElementById("removeStorePaymentMethod-container")
+                    .classList.remove("d-none");
                 } else if (isDropin) {
                   builder = await enabler.createDropinBuilder(selectedValue);
                 } else {
                   builder = await enabler.createComponentBuilder(selectedValue);
                 }
 
-                // Only show the checkbox to store payment method if the selected payment method is in the allowed list
-                if (allowedStoredPaymentMethods.includes(selectedValue)) {
+                // Only show the checkbox to store payment method if:
+                // - not dropin this that has it's own way of storing a pm
+                // - the user opted to pay with existing spm
+                // - the selected payment method is in the allowed/supported list
+                if (
+                  !isDropin &&
+                  !isStoredPaymentMethodSelected &&
+                  allowedStoredPaymentMethods.includes(selectedValue)
+                ) {
                   document
                     .getElementById("storePaymentMethod-container")
                     .classList.remove("d-none");
@@ -233,7 +256,9 @@
                   ...(isStoredPaymentMethodSelected
                     ? {
                         id: selectedStoredPaymentMethod.id,
-                        brands: [selectedStoredPaymentMethod.brand],
+                        brands: [
+                          selectedStoredPaymentMethod.displayOptions.brand,
+                        ],
                       }
                     : {}),
                   showPayButton: !builder.componentHasSubmit,
@@ -255,6 +280,28 @@
                         },
                       }),
                 });
+
+                if (isStoredPaymentMethodSelected) {
+                  document.getElementById("removeStorePaymentMethod").onclick =
+                    function () {
+                      const id = component.usedCocoStoredPaymentMethod.id;
+                      component
+                        .remove()
+                        .then(() => {
+                          alert(
+                            "Deleted payment method with CT ID: '" +
+                              id +
+                              "'. Reload the Checkout to continue",
+                          );
+                        })
+                        .catch((error) => {
+                          alert(
+                            "Failed to delete payment method with msg: " +
+                              error.message,
+                          );
+                        });
+                    };
+                }
 
                 if (builder.componentHasSubmit) {
                   const methodsRequireMounting = [
@@ -321,6 +368,7 @@
           </script>
 
           <div id="container--external"></div>
+
           <div class="form-group form-check">
             <input
               type="checkbox"
@@ -345,6 +393,19 @@
             <label class="form-check-label" for="storePaymentMethod"
               >Check to store payment method</label
             >
+          </div>
+
+          <div
+            id="removeStorePaymentMethod-container"
+            class="form-group d-none"
+          >
+            <button
+              id="removeStorePaymentMethod"
+              type="button"
+              class="btn btn-secondary btn-sm"
+            >
+              Click to remove this stored payment method
+            </button>
           </div>
 
           <div id="container--internal"></div>
