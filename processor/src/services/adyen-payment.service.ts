@@ -357,8 +357,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    // TODO: SCC-3449: if the user payed with a spm, then the token (and the rest of the payment details --> this is already done) must be stored in the commercetools Payment entity.
-
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -666,8 +664,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     customerId: string,
     storedPaymentMethods: PaymentMethod[],
   ): Promise<StoredPaymentMethod[]> {
-    // TODO: SCC-3449: if the .env toggle is DISABLED then try and retrieve as much as possible from the Adyen API during runtime for the displayOptions. if ENABLED then use that information to show the displayOptions
-
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
       customerId,
       getConfig().adyenMerchantAccount,

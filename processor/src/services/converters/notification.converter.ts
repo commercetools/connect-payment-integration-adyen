@@ -15,7 +15,6 @@ import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
 
-  // TODO: SCC-3449: if enabled via .env config AND success === true then if the Adyen response contains the information store it displayInfo on the Payments entity and in PaymentMethods entity
   private manageAuthorizationTransactionData = async (item: NotificationRequestItem) => [
     {
       type: 'Authorization',
