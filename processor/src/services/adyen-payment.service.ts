@@ -70,6 +70,7 @@ import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checko
 import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.config';
 import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
+import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -684,7 +685,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
         token: spm.token?.value || tokenDetailsFromAdyen?.id || '',
         type: spm.method || tokenDetailsFromAdyen?.type || '',
         displayOptions: {
-          brand: tokenDetailsFromAdyen?.brand,
+          brand: {
+            key: convertAdyenCardBrandToCTFormat(tokenDetailsFromAdyen?.brand),
+          },
           endDigits: tokenDetailsFromAdyen?.lastFour,
           expiryMonth: tokenDetailsFromAdyen?.expiryMonth ? Number(tokenDetailsFromAdyen.expiryMonth) : undefined,
           expiryYear: tokenDetailsFromAdyen?.expiryYear ? Number(tokenDetailsFromAdyen.expiryYear) : undefined,

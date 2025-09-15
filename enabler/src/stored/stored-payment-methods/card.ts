@@ -13,13 +13,23 @@ import {
 } from "../../payment-enabler/adyen-payment-enabler";
 import { Card, ICore } from "@adyen/adyen-web";
 
+const CT_CARD_BRAND_TO_ADYEN_MAPPING: Record<string, string> = {
+  Amex: "amex",
+  Maestro: "maestro",
+  Mastercard: "mc",
+  Visa: "visa",
+};
+
+const convertCTCardBrandToAdyenFormat = (brand: string): string => {
+  return CT_CARD_BRAND_TO_ADYEN_MAPPING[brand] ?? "Unknown";
+};
+
 /**
  * Stored Credit card component
  *
  * Configuration options:
  * https://docs.adyen.com/payment-methods/cards/web-component/
  */
-
 export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
   constructor(baseOptions: BaseOptions) {
     super(PaymentMethod.card, baseOptions);
@@ -70,6 +80,10 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
       );
     }
 
+    const brandsMapped = this.componentOptions.brands.map(
+      convertCTCardBrandToAdyenFormat,
+    );
+
     this.component = new Card(this.adyenCheckout, {
       // Override the default config with the one provided by the user
       ...this.paymentComponentConfigOverride,
@@ -78,6 +92,7 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
       isStoredPaymentMethod: true,
       supportedShopperInteractions: ["Ecommerce"],
       ...this.componentOptions,
+      brands: brandsMapped,
     });
     this.usedCocoStoredPaymentMethod = cocoStoredPaymentMethod;
   }

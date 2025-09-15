@@ -1036,7 +1036,7 @@ describe('adyen-payment.service', () => {
             id: adyenTokenTwo,
             type: methodType,
             lastFour: '5678',
-            brand: 'mastercard',
+            brand: 'mc',
             expiryMonth: '11',
             expiryYear: '28',
           },
@@ -1098,7 +1098,9 @@ describe('adyen-payment.service', () => {
             token: 'adyen-token-value-123',
             type: 'card',
             displayOptions: {
-              brand: 'visa',
+              brand: {
+                key: 'Visa',
+              },
               endDigits: '1234',
               expiryMonth: 3,
               expiryYear: 30,
@@ -1111,7 +1113,9 @@ describe('adyen-payment.service', () => {
             token: 'adyen-token-value-456',
             type: 'card',
             displayOptions: {
-              brand: 'mastercard',
+              brand: {
+                key: 'Mastercard',
+              },
               endDigits: '5678',
               expiryMonth: 11,
               expiryYear: 28,

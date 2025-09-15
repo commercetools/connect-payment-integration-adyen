@@ -8,7 +8,11 @@ export const StoredPaymentMethodSchema = Type.Object({
   createdAt: Type.String({ format: 'date-time' }),
   displayOptions: Type.Object({
     endDigits: Type.Optional(Type.String()),
-    brand: Type.Optional(Type.String()),
+    brand: Type.Optional(
+      Type.Object({
+        key: Type.String(),
+      }),
+    ),
     expiryMonth: Type.Optional(Type.Number()),
     expiryYear: Type.Optional(Type.Number()),
     logoUrl: Type.Optional(Type.String()),

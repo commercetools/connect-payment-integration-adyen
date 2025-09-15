@@ -107,6 +107,7 @@ export type StoredComponentOptions = {
   showPayButton?: boolean;
   onPayButtonClick?: () => Promise<void>;
   id: string;
+  brands: string[];
 };
 
 export enum DropinType {
