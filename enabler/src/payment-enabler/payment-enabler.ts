@@ -153,8 +153,9 @@ type StoredCardPaymentMethod = BaseStoredPaymentMethod & {
   type: "card";
   displayOptions: BaseStoredDisplayOptions & {
     endDigits?: string;
-    // TODO: SCC-3447: should we have a fixed enum type list? Talk with Juan what the desired approach is.
-    brand?: string;
+    brand?: {
+      key: string;
+    };
     expiryMonth?: number;
     expiryYear?: number;
   };
