@@ -54,11 +54,12 @@ export class CreateSessionConverter {
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
-      ...(getStoredPaymentMethodsConfig().enabled && {
-        shopperReference: opts.cart.customerId,
-        recurringProcessingModel: CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
-        storePaymentMethodMode: CreateCheckoutSessionRequest.StorePaymentMethodModeEnum.AskForConsent,
-      }),
+      ...(getStoredPaymentMethodsConfig().enabled &&
+        opts.cart.customerId && {
+          shopperReference: opts.cart.customerId,
+          recurringProcessingModel: CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
+          storePaymentMethodMode: CreateCheckoutSessionRequest.StorePaymentMethodModeEnum.AskForConsent,
+        }),
     };
   }
 
