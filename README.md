@@ -276,7 +276,7 @@ The next time the same customer goes through Checkout (either using drop-ins or 
 
 In order to get started developing this connector certain configuration are necessary, most of which involve updating environment variables in both services (enabler, processor).
 
-#### Configuration steps
+### Configuration steps
 
 #### 1. Environment Variable Setup
 
