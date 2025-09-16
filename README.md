@@ -256,14 +256,14 @@ Currently supported payment-methods for storing: (for both web-components and dr
 #### Setting up stored payment methods
 
 1. update the env configuration
-   1.1 set `ADYEN_STORED_PAYMENT_METHODS_ENABLED` to `true`. By default it is not enabled.
-   1.2 set `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE` to any string value.
-   1.3 optionally set `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT` to any string value.
-   1.4 for the tokenization notifications choose between using a new HMAC key by setting `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY` or if unset the connector will use the HMAC key of `ADYEN_NOTIFICATION_HMAC_KEY`
+   1. set `ADYEN_STORED_PAYMENT_METHODS_ENABLED` to `true`. By default it is not enabled.
+   2. set `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE` to any string value.
+   3. optionally set `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT` to any string value.
+   4. for the tokenization notifications choose between using a new HMAC key by setting `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY` or if unset the connector will use the HMAC key of `ADYEN_NOTIFICATION_HMAC_KEY`
 2. create a new CT API client which the additional scope of `manage_payment_methods` and update the corresponding env values. The connector health check will fail if the feature is enabled but the configured API client is missing this scope.
 3. create a new webhook in Adyen of type `Recurring tokens life cycle events` with the event to be send of `recurring.token.created`.
-   2.1 the destination must be to `<processorUrl>/notifications/tokenization`
-   2.2 choose either the existing hmac key or generate a new one
+   1. the destination must be to `<processorUrl>/notifications/tokenization`
+   2. choose either the existing hmac key or generate a new one
 4. ensure that before Checkout is instantiated the `cart.customerId` is set to the correct customer. The Adyen connector uses this for all interactions.
 
 #### CT payment-methods and Adyen tokens
