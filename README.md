@@ -238,7 +238,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`: The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
 - `ADYEN_SHOPPER_STATEMENT`: The text to be shown on the shopper's bank statement. For more information, see [Adyen's reference](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement).
-- `ADYEN_STORED_PAYMENT_METHODS_ENABLED`: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false".
+- `ADYEN_STORED_PAYMENT_METHODS_ENABLED`: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false". Default it's "false".
 - `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE`: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods.
 - `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT`: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
 - `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY`: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
