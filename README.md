@@ -1,5 +1,24 @@
 # connect-payment-integration-adyen
 
+<!--toc:start-->
+
+- [connect-payment-integration-adyen](#connect-payment-integration-adyen)
+  - [Features](#features)
+  - [Overview](#overview)
+  - [Prerequisite](#prerequisite)
+    - [1. commercetools composable commerce API client](#1-commercetools-composable-commerce-api-client)
+    - [2. various URLs from commercetools composable commerce](#2-various-urls-from-commercetools-composable-commerce)
+    - [3. Adyen account credentials](#3-adyen-account-credentials)
+  - [Development Guide](#development-guide)
+    - [Connector in commercetools Connect](#connector-in-commercetools-connect)
+    - [Deployment Configuration](#deployment-configuration)
+  - [Feature](#feature)
+    - [stored payment methods](#stored-payment-methods)
+      - [Setting up stored payment methods](#setting-up-stored-payment-methods)
+      - [CT payment-methods and Adyen tokens](#ct-payment-methods-and-adyen-tokens)
+  - [Development](#development) - [Configuration steps](#configuration-steps) - [1. Environment Variable Setup](#1-environment-variable-setup) - [2. Spin Up Components via Docker Compose](#2-spin-up-components-via-docker-compose)
+  <!--toc:end-->
+
 This repository provides a [connect](https://docs.commercetools.com/connect) for integration to Adyen payment service provider (PSP).
 
 ## Features
@@ -169,6 +188,15 @@ deployAs:
         - key: ADYEN_PAYMENT_COMPONENTS_CONFIG
           description: Adyen payment components configuration in JSON String format. For example: {"paypal":{"blockPayPalVenmoButton":false}}. Please refer to the Adyen documentation for more details.
           required: false
+        - key: ADYEN_STORED_PAYMENT_METHODS_ENABLED
+          description: If set to "true" then the stored payment methods feature is enabled. Default value is "false".
+          required: false
+        - key: ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE
+          description: The payment method payment interface value used in the commerceotools payment methods. Default value is "adyen".
+          required: false
+        - key: ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT
+          description: The payment method interface account value used in the commerceotools payment methods.
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret
@@ -179,6 +207,9 @@ deployAs:
         - key: ADYEN_NOTIFICATION_HMAC_KEY
           description: Adyen HMAC key
           required: true
+        - key: ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY
+          description: Adyen HMAC tokenization webhooks key. This will be used if provided, otherwise the ADYEN_NOTIFICATION_HMAC_KEY will be used. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
+          required: false
         - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
           description: Apple Pay own certificate
           required: false
@@ -207,10 +238,39 @@ Here you can see the details about various variables in configuration
 - `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`: The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
 - `ADYEN_SHOPPER_STATEMENT`: The text to be shown on the shopper's bank statement. For more information, see [Adyen's reference](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement).
-- ADYEN_STORED_PAYMENT_METHODS_ENABLED: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false".
-- ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods.
-- ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
-- ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
+- `ADYEN_STORED_PAYMENT_METHODS_ENABLED`: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false".
+- `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE`: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods.
+- `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT`: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods.
+- `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY`: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
+
+## Feature
+
+### stored payment methods
+
+The feature stored payment methods allows the payment details to be tokenised to the next time the customers goes through Checkout they won't have to re-enter the payment details.
+
+Currently supported payment-methods for storing: (for both web-components and drop-ins)
+
+- `card`
+
+#### Setting up stored payment methods
+
+1. update the env configuration
+   1.1 set `ADYEN_STORED_PAYMENT_METHODS_ENABLED` to `true`. By default it is not enabled.
+   1.2 set `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE` to any string value.
+   1.3 optionally set `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT` to any string value.
+   1.4 for the tokenization notifications choose between using a new HMAC key by setting `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY` or if unset the connector will use the HMAC key of `ADYEN_NOTIFICATION_HMAC_KEY`
+2. create a new CT API client which the additional scope of `manage_payment_methods` and update the corresponding env values. The connector health check will fail if the feature is enabled but the configured API client is missing this scope.
+3. create a new webhook in Adyen of type `Recurring tokens life cycle events` with the event to be send of `recurring.token.created`.
+   2.1 the destination must be to `<processorUrl>/notifications/tokenization`
+   2.2 choose either the existing hmac key or generate a new one
+4. ensure that before Checkout is instantiated the `cart.customerId` is set to the correct customer. The Adyen connector uses this for all interactions.
+
+#### CT payment-methods and Adyen tokens
+
+When a payment method is tokenized for the first time Adyen will send a new notification stating that the payment method has been tokenized. The processor handles the notification by creating a new payment-method in CT. The payment-method is attached to the `cart.customerId` as well as the `paymentInterface` and `interfaceAccount` are set based on the previously configured env values.
+
+The next time the same customer goes through Checkout (either using drop-ins or web-components) they will see the stored payment method as a option to pay with.
 
 ## Development
 
