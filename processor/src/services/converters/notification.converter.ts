@@ -14,6 +14,7 @@ import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
+
   private manageAuthorizationTransactionData = async (item: NotificationRequestItem) => [
     {
       type: 'Authorization',

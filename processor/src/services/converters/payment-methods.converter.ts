@@ -34,6 +34,7 @@ export class PaymentMethodsConverter {
       },
       countryCode: cart.country,
       merchantAccount: config.adyenMerchantAccount,
+      shopperReference: cart.customerId,
     };
   }
 
