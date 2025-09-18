@@ -103,30 +103,18 @@ export class CreatePaymentConverter {
 
   private populateKlarnaB2BData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
     const { billingAddress } = cart;
-    const { firstName, lastName, email, company } = billingAddress || {};
-
-    const hasValidBillingAddress = (): boolean => {
-      return !!(company && firstName && lastName && email);
-    };
+    const { firstName, lastName, company } = billingAddress || {};
 
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
-
-    if (hasValidBillingAddress()) {
-      return {
-        shopperName: {
-          firstName: firstName ?? '',
-          lastName: lastName ?? '',
-        },
-        company: {
-          name: company ?? '',
-        },
-        shopperEmail: email,
-        lineItems,
-      };
-    } else {
-      return {
-        lineItems,
-      };
-    }
+    return {
+      shopperName: {
+        firstName: firstName ?? '',
+        lastName: lastName ?? '',
+      },
+      company: {
+        name: company ?? '',
+      },
+      lineItems,
+    };
   }
 }
