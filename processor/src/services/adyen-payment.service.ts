@@ -483,7 +483,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
 
         log.info('Created new payment method used for tokenization', {
-          notification: JSON.stringify(opts.data),
+          notification: notificationLogObject,
           paymentMethod: {
             id: newlyCreatedPaymentMethod.id,
             customer: newlyCreatedPaymentMethod.customer,
