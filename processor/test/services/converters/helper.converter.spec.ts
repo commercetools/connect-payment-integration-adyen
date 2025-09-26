@@ -8,6 +8,8 @@ import {
   mapCoCoCustomLineItemToAdyenLineItem,
   mapCoCoShippingInfoToAdyenLineItem,
   mapCoCoDiscountOnTotalPriceToAdyenLineItem,
+  convertAdyenCardBrandToCTFormat,
+  convertCTCardBrandToAdyenFormat,
 } from '../../../src/services/converters/helper.converter';
 import { Address as AdyenAddress } from '@adyen/api-library/lib/src/typings/checkout/address';
 import { Address } from '@commercetools/connect-payments-sdk';
@@ -74,6 +76,58 @@ describe('helper.converter', () => {
       const result = convertPaymentMethodToAdyenFormat(adyenName);
 
       expect(result).toEqual(checkoutName);
+    }
+  });
+
+  test('convertCTCardBrandToAdyenFormat', async () => {
+    const inputTable = [
+      ['Amex', 'amex'],
+      ['Bancontact', 'bcmc'],
+      ['CartesBancaires', 'cartebancaire'],
+      ['Diners', 'diners'],
+      ['Discover', 'discover'],
+      ['Jcb', 'jcb'],
+      ['Maestro', 'maestro'],
+      ['Mastercard', 'mc'],
+      ['UnionPay', 'cup'],
+      ['Visa', 'visa'],
+      ['some-random-value-which-is-not-known', 'Unknown'],
+      [undefined, 'Unknown'],
+    ];
+
+    for (const testData of inputTable) {
+      const ctName = testData[0];
+      const adyenName = testData[1];
+
+      const result = convertCTCardBrandToAdyenFormat(ctName);
+
+      expect(result).toEqual(adyenName);
+    }
+  });
+
+  test('convertAdyenCardBrandToCTFormat', async () => {
+    const inputTable = [
+      ['amex', 'Amex'],
+      ['bcmc', 'Bancontact'],
+      ['cartebancaire', 'CartesBancaires'],
+      ['diners', 'Diners'],
+      ['discover', 'Discover'],
+      ['jcb', 'Jcb'],
+      ['maestro', 'Maestro'],
+      ['mc', 'Mastercard'],
+      ['cup', 'UnionPay'],
+      ['visa', 'Visa'],
+      ['some-random-value-which-is-not-known', 'Unknown'],
+      [undefined, 'Unknown'],
+    ];
+
+    for (const testData of inputTable) {
+      const adyenName = testData[0];
+      const ctName = testData[1];
+
+      const result = convertAdyenCardBrandToCTFormat(adyenName);
+
+      expect(result).toEqual(ctName);
     }
   });
 

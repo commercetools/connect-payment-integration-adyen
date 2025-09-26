@@ -1,7 +1,15 @@
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
-import { config } from '../../config/config';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
-import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
+
+import { config } from '../../config/config';
+import {
+  Cart,
+  CurrencyConverters,
+  Payment,
+  CommercetoolsPaymentMethodService,
+  ErrorRequiredField,
+  ErrorInternalConstraintViolated,
+} from '@commercetools/connect-payments-sdk';
 import {
   buildReturnUrl,
   getShopperStatement,
@@ -14,14 +22,28 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
+import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 
 export class CreatePaymentConverter {
-  public convertRequest(opts: { data: CreatePaymentRequestDTO; cart: Cart; payment: Payment }): PaymentRequest {
+  private ctPaymentMethodService: CommercetoolsPaymentMethodService;
+
+  constructor(ctPaymentMethodService: CommercetoolsPaymentMethodService) {
+    this.ctPaymentMethodService = ctPaymentMethodService;
+  }
+
+  public async convertRequest(opts: {
+    data: CreatePaymentRequestDTO;
+    cart: Cart;
+    payment: Payment;
+  }): Promise<PaymentRequest> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { paymentReference: _, ...requestData } = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
+
+    const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
+
     return {
       ...requestData,
       amount: {
@@ -47,6 +69,89 @@ export class CreatePaymentConverter {
       ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
+      ...storedPaymentMethodsData,
+    };
+  }
+
+  public async populateStoredPaymentMethodsData(
+    data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
+    cart: Pick<Cart, 'id' | 'customerId'>,
+  ) {
+    if (!getStoredPaymentMethodsConfig().enabled) {
+      return;
+    }
+
+    const paymentMethodType = data.paymentMethod.type;
+    if (
+      typeof paymentMethodType !== 'string' ||
+      !Object.keys(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).includes(paymentMethodType)
+    ) {
+      return;
+    }
+
+    const storedPaymentMethodIdKeyValuePair = Object.entries(data.paymentMethod).find(
+      (keyValuePair) => keyValuePair[0] === 'storedPaymentMethodId',
+    );
+
+    const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
+    const tokeniseForFirstTime = data.storePaymentMethod;
+
+    // User does not want to store token for the first time nor pay with existing one
+    if (!tokeniseForFirstTime && !payWithExistingToken) {
+      return;
+    }
+
+    const customerReference = cart.customerId;
+
+    if (!customerReference) {
+      throw new ErrorRequiredField('customerId', {
+        privateMessage: 'The customerId is not set on the cart yet the customer wants to tokenize the payment',
+        privateFields: {
+          cart: {
+            id: cart.id,
+            typeId: 'cart',
+          },
+        },
+      });
+    }
+
+    if (payWithExistingToken) {
+      const storedPaymentMethodId = storedPaymentMethodIdKeyValuePair[1];
+      const doesTokenBelongsToCustomer = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
+        customerId: customerReference,
+        paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+        interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+        tokenValue: storedPaymentMethodId,
+      });
+
+      if (!doesTokenBelongsToCustomer) {
+        throw new ErrorInternalConstraintViolated(
+          'The provided token does not belong to the given customer for any payment method currently stored.',
+          {
+            privateFields: {
+              cart: {
+                id: cart.id,
+                typeId: 'cart',
+              },
+              customerId: customerReference,
+              paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+              interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+            },
+          },
+        );
+      }
+    }
+
+    const shopperInteraction = payWithExistingToken
+      ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
+      : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
+
+    return {
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile, // always the same static value
+      shopperInteraction,
+      shopperReference: customerReference,
+      ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
+      paymentMethod: data.paymentMethod,
     };
   }
 

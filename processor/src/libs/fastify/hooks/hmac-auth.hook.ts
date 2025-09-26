@@ -4,6 +4,9 @@ import { FastifyRequest } from 'fastify';
 import { ErrorAuthErrorResponse } from '@commercetools/connect-payments-sdk';
 import { NotificationRequestDTO } from '../../../dtos/adyen-payment.dto';
 
+/**
+ * @see https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures/?programming_language=js
+ */
 export class HmacAuthHook {
   public authenticate() {
     return async (request: FastifyRequest) => {
