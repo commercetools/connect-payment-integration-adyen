@@ -1,4 +1,5 @@
 import { Client, CheckoutAPI } from '@adyen/api-library';
+import { EnvironmentEnum } from '@adyen/api-library/lib/src/config';
 import { config } from '../config/config';
 import { log } from '../libs/logger';
 import { AdyenApiError, AdyenApiErrorData } from '../errors/adyen-api.error';
@@ -6,7 +7,7 @@ import { AdyenApiError, AdyenApiErrorData } from '../errors/adyen-api.error';
 export const AdyenApi = (): CheckoutAPI => {
   const apiClient = new Client({
     apiKey: config.adyenApiKey,
-    environment: config.adyenEnvironment.toUpperCase() as Environment,
+    environment: config.adyenEnvironment.toUpperCase() as EnvironmentEnum,
     ...(config.adyenLiveUrlPrefix && {
       liveEndpointUrlPrefix: config.adyenLiveUrlPrefix,
     }),
