@@ -10,6 +10,9 @@ import {
   Errorx,
   TransactionType,
   TransactionState,
+  CommercetoolsPaymentMethodService,
+  ErrorRequiredField,
+  PaymentMethod,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -20,11 +23,12 @@ import {
   CreatePaymentResponseDTO,
   CreateSessionRequestDTO,
   CreateSessionResponseDTO,
+  NotificationTokenizationDTO,
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
 } from '../dtos/adyen-payment.dto';
-import { AdyenApi, wrapAdyenError } from '../clients/adyen.client';
+import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
   getCartIdFromContext,
   getMerchantReturnUrlFromContext,
@@ -63,6 +67,11 @@ import { NotificationUpdatePayment } from './types/service.type';
 import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
 import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse';
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
+import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.config';
+import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
+import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
+import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
 
@@ -70,6 +79,7 @@ export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
   ctPaymentService: CommercetoolsPaymentService;
   ctOrderService: CommercetoolsOrderService;
+  ctPaymentMethodService: CommercetoolsPaymentMethodService;
 };
 
 export class AdyenPaymentService extends AbstractPaymentService {
@@ -78,6 +88,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private createPaymentConverter: CreatePaymentConverter;
   private confirmPaymentConverter: ConfirmPaymentConverter;
   private notificationConverter: NotificationConverter;
+  private notificationTokenizationConverter: NotificationTokenizationConverter;
   private paymentComponentsConverter: PaymentComponentsConverter;
   private cancelPaymentConverter: CancelPaymentConverter;
   private capturePaymentConverter: CapturePaymentConverter;
@@ -85,18 +96,32 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private reversePaymentConverter: ReversePaymentConverter;
 
   constructor(opts: AdyenPaymentServiceOptions) {
-    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService);
+    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService, opts.ctPaymentMethodService);
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
-    this.createPaymentConverter = new CreatePaymentConverter();
+    this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService);
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
     this.notificationConverter = new NotificationConverter(this.ctPaymentService);
+    this.notificationTokenizationConverter = new NotificationTokenizationConverter();
     this.paymentComponentsConverter = new PaymentComponentsConverter();
     this.cancelPaymentConverter = new CancelPaymentConverter();
     this.capturePaymentConverter = new CapturePaymentConverter(this.ctCartService, this.ctOrderService);
     this.refundPaymentConverter = new RefundPaymentConverter();
     this.reversePaymentConverter = new ReversePaymentConverter();
   }
+
+  async isStoredPaymentMethodsEnabled(): Promise<boolean> {
+    if (!getStoredPaymentMethodsConfig().enabled) {
+      return false;
+    }
+
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    return ctCart.customerId !== undefined;
+  }
+
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
 
@@ -107,23 +132,32 @@ export class AdyenPaymentService extends AbstractPaymentService {
         usesOwnCertificate,
       },
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
+      storedPaymentMethodsConfig: {
+        isEnabled: await this.isStoredPaymentMethodsEnabled(),
+      },
     };
   }
 
   async status(): Promise<StatusResponse> {
+    const requiredPermissions = [
+      'manage_payments',
+      'view_sessions',
+      'view_api_clients',
+      'manage_orders',
+      'introspect_oauth_tokens',
+      'manage_checkout_payment_intents',
+    ];
+
+    if (getStoredPaymentMethodsConfig().enabled) {
+      requiredPermissions.push('manage_payment_methods');
+    }
+
     const handler = await statusHandler({
       timeout: config.healthCheckTimeout,
       log: appLogger,
       checks: [
         healthCheckCommercetoolsPermissions({
-          requiredPermissions: [
-            'manage_payments',
-            'view_sessions',
-            'view_api_clients',
-            'manage_orders',
-            'introspect_oauth_tokens',
-            'manage_checkout_payment_intents',
-          ],
+          requiredPermissions: requiredPermissions,
           ctAuthorizationService: paymentSDK.ctAuthorizationService,
           projectKey: config.projectKey,
         }),
@@ -305,7 +339,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentId: ctPayment.id,
       });
     }
-    const data = this.createPaymentConverter.convertRequest({
+    const data = await this.createPaymentConverter.convertRequest({
       data: opts.data,
       cart: ctCart,
       payment: ctPayment,
@@ -322,6 +356,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       res.resultCode as PaymentResponse.ResultCodeEnum,
       this.isActionRequired(res),
     );
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -419,6 +454,55 @@ export class AdyenPaymentService extends AbstractPaymentService {
       }
 
       log.error('Error processing notification', { error: e });
+      throw e;
+    }
+  }
+
+  public async processNotificationTokenization(opts: { data: NotificationTokenizationDTO }): Promise<void> {
+    const notificationLogObject = {
+      notification: {
+        createdAt: opts.data.createdAt,
+        environment: opts.data.environment,
+        eventId: opts.data.eventId,
+        type: opts.data.type,
+        version: opts.data.version,
+        data: {
+          merchantAccount: opts.data.data.merchantAccount,
+          shopperReference: opts.data.data.shopperReference,
+          type: opts.data.data.type,
+        },
+      },
+    };
+
+    log.info('Processing notification tokenization', notificationLogObject);
+
+    try {
+      const actions = await this.notificationTokenizationConverter.convert(opts);
+
+      if (actions.draft) {
+        const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
+
+        log.info('Created new payment method used for tokenization', {
+          notification: notificationLogObject,
+          paymentMethod: {
+            id: newlyCreatedPaymentMethod.id,
+            customer: newlyCreatedPaymentMethod.customer,
+            paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
+            interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
+            method: newlyCreatedPaymentMethod.method,
+          },
+        });
+      }
+    } catch (e) {
+      if (e instanceof UnsupportedNotificationError) {
+        log.info('Unsupported notification received', {
+          notificationLogObject,
+        });
+
+        return;
+      }
+
+      log.error('Error processing notification', { error: e, notificationLogObject });
       throw e;
     }
   }
@@ -527,6 +611,185 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     return response;
+  }
+
+  /**
+   * Returns "cart.customerId" from the catt that is present in the context. If the "cart.customerId" is not set then a "ErrorRequiredField" will be thrown.
+   */
+  async getCustomerIdFromCart(): Promise<string> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    const customerId = ctCart.customerId;
+
+    if (!customerId) {
+      throw new ErrorRequiredField('customerId', {
+        privateMessage: 'customerId is not set on the cart',
+        privateFields: {
+          cart: {
+            id: ctCart.id,
+          },
+        },
+      });
+    }
+
+    return customerId;
+  }
+
+  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+    const customerId = await this.getCustomerIdFromCart();
+
+    const storedPaymentMethods = await this.ctPaymentMethodService.find({
+      customerId: customerId,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+    });
+
+    if (storedPaymentMethods.results.length <= 0) {
+      return { storedPaymentMethods: [] };
+    }
+
+    const resList = await this.enhanceCTStoredPaymentMethodsWithAdyenDisplayData(
+      customerId,
+      storedPaymentMethods.results,
+    );
+
+    return {
+      storedPaymentMethods: resList,
+    };
+  }
+
+  async enhanceCTStoredPaymentMethodsWithAdyenDisplayData(
+    customerId: string,
+    storedPaymentMethods: PaymentMethod[],
+  ): Promise<StoredPaymentMethod[]> {
+    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
+      customerId,
+      getConfig().adyenMerchantAccount,
+    );
+
+    return storedPaymentMethods.map((spm) => {
+      const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+        (tokenDetails) => tokenDetails.id === spm.token?.value,
+      );
+
+      const res: StoredPaymentMethod = {
+        id: spm.id,
+        createdAt: spm.createdAt,
+        isDefault: spm.default,
+        token: spm.token?.value || tokenDetailsFromAdyen?.id || '',
+        type: spm.method || tokenDetailsFromAdyen?.type || '',
+        displayOptions: {
+          brand: {
+            key: convertAdyenCardBrandToCTFormat(tokenDetailsFromAdyen?.brand),
+          },
+          endDigits: tokenDetailsFromAdyen?.lastFour,
+          expiryMonth: tokenDetailsFromAdyen?.expiryMonth ? Number(tokenDetailsFromAdyen.expiryMonth) : undefined,
+          expiryYear: tokenDetailsFromAdyen?.expiryYear ? Number(tokenDetailsFromAdyen.expiryYear) : undefined,
+        },
+      };
+
+      return res;
+    });
+  }
+
+  async deleteStoredPaymentMethodViaCart(id: string): Promise<void> {
+    const customerId = await this.getCustomerIdFromCart();
+
+    await this.deleteStoredPaymentMethod(id, customerId);
+  }
+
+  async deleteStoredPaymentMethod(id: string, customerId: string): Promise<void> {
+    const paymentMethod = await this.ctPaymentMethodService.get({
+      customerId: customerId,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+      id,
+    });
+
+    try {
+      await this.ctPaymentMethodService.delete({
+        customerId: customerId,
+        id: paymentMethod.id,
+        version: paymentMethod.version,
+      });
+
+      log.info('Successfully deleted payment-method in CT', {
+        customer: { id: customerId, type: 'customer' },
+        paymentMethod: { id: paymentMethod.id, type: 'payment-method', version: paymentMethod.version },
+      });
+    } catch (error) {
+      log.error('Could not delete payment-method in CT', {
+        error,
+        customer: { id: customerId, type: 'customer' },
+        paymentMethod: { id: paymentMethod.id, type: 'payment-method' },
+      });
+
+      throw error;
+    }
+
+    await this.deleteTokenInAdyen(customerId, paymentMethod);
+  }
+
+  private async deleteTokenInAdyen(
+    customerId: string,
+    ctPaymentMethod: Pick<PaymentMethod, 'id' | 'version' | 'token'>,
+  ) {
+    const maxRetries = 3;
+    let attempt = 1;
+
+    do {
+      try {
+        await AdyenApi().RecurringApi.deleteTokenForStoredPaymentDetails(
+          ctPaymentMethod.token!.value,
+          customerId,
+          getConfig().adyenMerchantAccount,
+        );
+
+        log.info('Successfully deleted token in Adyen', {
+          customer: { id: customerId, type: 'customer' },
+          paymentMethod: { id: ctPaymentMethod.id, type: 'payment-method', version: ctPaymentMethod.version },
+        });
+
+        break;
+      } catch (error) {
+        const wrappedAdyenError = wrapAdyenError(error);
+
+        const errorLogObject = {
+          error,
+          retry: {
+            attempt,
+            maxRetries,
+          },
+          customer: { id: customerId, type: 'customer' },
+          paymentMethod: { id: ctPaymentMethod.id, type: 'payment-method' },
+        };
+
+        if (isAdyenApiError(wrappedAdyenError)) {
+          if (wrappedAdyenError.httpErrorStatus === 404) {
+            break;
+          }
+
+          if (wrappedAdyenError.httpErrorStatus === 401 || wrappedAdyenError.httpErrorStatus === 403) {
+            log.error('Could not delete payment-method in Adyen due to credential problems', {
+              ...errorLogObject,
+              httpStatusCode: wrappedAdyenError.httpErrorStatus,
+            });
+            break;
+          }
+        }
+
+        if (attempt === maxRetries) {
+          log.error('Could not delete payment-method in Adyen and maximum attempt reached', errorLogObject);
+          throw wrappedAdyenError;
+        }
+
+        log.warn('Could not delete payment-method in Adyen, retrying...', errorLogObject);
+
+        attempt += 1;
+      }
+    } while (attempt <= maxRetries);
   }
 
   private async processPaymentModificationInternal(opts: {

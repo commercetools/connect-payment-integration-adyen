@@ -9,5 +9,6 @@ export default async function (server: FastifyInstance) {
     sessionHeaderAuthHook: paymentSDK.sessionHeaderAuthHookFn,
     sessionQueryParamAuthHook: paymentSDK.sessionQueryParamAuthHookFn,
     hmacAuthHook: app.hooks.hmacAuthHook,
+    hmacHeaderAuthHook: app.hooks.hmacHeaderAuthHook,
   });
 }

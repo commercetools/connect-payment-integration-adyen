@@ -6,7 +6,10 @@ import {
   PaymentDropinBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
-import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
+import {
+  BaseOptions,
+  StoredPaymentMethodsConfig,
+} from "../payment-enabler/adyen-payment-enabler";
 import {
   ICore,
   SubmitActions,
@@ -34,11 +37,17 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   public dropinHasSubmit = false;
   private paymentComponentsConfigOverride: Record<string, any>;
   private adyenCheckout: ICore;
+  private processorUrl: string;
+  private sessionId: string;
+  private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
+    this.storedPaymentMethodsConfig = baseOptions.storedPaymentMethodsConfig;
+    this.processorUrl = baseOptions.processorUrl;
+    this.sessionId = baseOptions.sessionId;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -46,6 +55,9 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       adyenCheckout: this.adyenCheckout,
       dropinOptions: config,
       dropinConfigOverride: this.resolveDropinComponentConfigOverride(),
+      storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
+      processorUrl: this.processorUrl,
+      sessionId: this.sessionId,
     });
 
     dropin.init();
@@ -62,15 +74,24 @@ export class DropinComponents implements DropinComponent {
   private adyenCheckout: ICore;
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
+  private processorUrl: string;
+  private sessionId: string;
+  private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
 
   constructor(opts: {
     adyenCheckout: ICore;
     dropinOptions: DropinOptions;
     dropinConfigOverride: Record<string, any>;
+    storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
+    processorUrl: string;
+    sessionId: string;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
+    this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
+    this.processorUrl = opts.processorUrl;
+    this.sessionId = opts.sessionId;
 
     this.overrideOnSubmit();
   }
@@ -79,9 +100,53 @@ export class DropinComponents implements DropinComponent {
     this.component = new Dropin(this.adyenCheckout, {
       showPayButton: true,
       showRadioButton: false,
-      openFirstStoredPaymentMethod: false,
-      showStoredPaymentMethods: false,
       isDropin: true,
+      showStoredPaymentMethods: this.storedPaymentMethodsConfig.isEnabled,
+      showRemovePaymentMethodButton: this.storedPaymentMethodsConfig.isEnabled,
+      filterStoredPaymentMethods: (storedPaymentMethods) => {
+        return storedPaymentMethods.filter((spm) => {
+          const ctStoredPaymentMethod =
+            this.storedPaymentMethodsConfig.storedPaymentMethods.find(
+              (ctSpm) => ctSpm.token === spm.id,
+            );
+
+          return ctStoredPaymentMethod !== undefined;
+        });
+      },
+      onDisableStoredPaymentMethod: async (
+        storedPaymentMethod,
+        resolve,
+        reject,
+      ) => {
+        const ctStoredPaymentMethod =
+          this.storedPaymentMethodsConfig.storedPaymentMethods.find((spm) => {
+            return spm.token === storedPaymentMethod;
+          });
+
+        if (!ctStoredPaymentMethod) {
+          console.log(
+            "Drop-in component return an token id which is not known",
+          );
+          return reject();
+        }
+
+        const url = this.processorUrl.endsWith("/")
+          ? `${this.processorUrl}stored-payment-methods/${ctStoredPaymentMethod.id}`
+          : `${this.processorUrl}/stored-payment-methods/${ctStoredPaymentMethod.id}`;
+
+        const response = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            "X-Session-Id": this.sessionId,
+          },
+        });
+
+        if (response.ok) {
+          return resolve();
+        } else {
+          return reject();
+        }
+      },
       onReady: () => {
         if (this.dropinOptions.onDropinReady) {
           this.dropinOptions
@@ -141,7 +206,6 @@ export class DropinComponents implements DropinComponent {
           ],
           // Configuration that can not be overridden
         },
-
         card: {
           hasHolderName: true,
           holderNameRequired: true,
@@ -150,6 +214,7 @@ export class DropinComponents implements DropinComponent {
             getPaymentMethodType(PaymentMethod.card)
           ],
           // Configuration that can not be overridden
+          enableStoreDetails: this.storedPaymentMethodsConfig.isEnabled,
         },
         googlepay: {
           buttonType: "pay",

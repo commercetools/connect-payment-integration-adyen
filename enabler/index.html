@@ -130,6 +130,12 @@
                 option.textContent = `dropin-${method.type}`;
                 paymentMethodSelect.appendChild(option);
               });
+
+              const optionStoredPaymentMethods =
+                document.createElement("option");
+              optionStoredPaymentMethods.value = `stored-payment-methods`;
+              optionStoredPaymentMethods.textContent = `Use a stored-payment-method that is associated with the customerId set on the cart`;
+              paymentMethodSelect.appendChild(optionStoredPaymentMethods);
             });
 
             document
@@ -161,13 +167,100 @@
 
                 let builder;
 
-                if (isDropin) {
+                const isStoredPaymentMethodSelected =
+                  selectedValue === "stored-payment-methods";
+                const allowedStoredPaymentMethods = ["card"]; // expand with more payment methods when they are supported
+                const paymentMethodTypeToUseForSPM =
+                  allowedStoredPaymentMethods[0]; // change to another type when desired for testing
+                const isStoredPaymentMethodsEnabled =
+                  await enabler.isStoredPaymentMethodsEnabled();
+
+                let selectedStoredPaymentMethod = undefined;
+
+                if (isStoredPaymentMethodSelected) {
+                  if (!isStoredPaymentMethodsEnabled) {
+                    console.warn(
+                      "Stored payment methods is selected but it's not enabled. Make sure the feature flag is enabled in the processor AND the cart.customerId is set",
+                    );
+                    return;
+                  }
+
+                  builder = await enabler.createStoredPaymentMethodBuilder(
+                    paymentMethodTypeToUseForSPM,
+                  );
+
+                  const storedPaymentMethods =
+                    await enabler.getStoredPaymentMethods({
+                      allowedMethodTypes: allowedStoredPaymentMethods,
+                    });
+
+                  if (storedPaymentMethods.storedPaymentMethods.length === 0) {
+                    console.warn("No stored payment methods for this customer");
+                    return;
+                  }
+
+                  if (storedPaymentMethods.storedPaymentMethods.length === 1) {
+                    selectedStoredPaymentMethod =
+                      storedPaymentMethods.storedPaymentMethods[0];
+                  } else {
+                    for (const spm of storedPaymentMethods.storedPaymentMethods) {
+                      {
+                        const useSelectedOne = confirm(
+                          `Use SPM with id ${spm.id} | "**** ${spm.displayOptions.endDigits} | ${spm.displayOptions.expiryMonth}/${spm.displayOptions.expiryYear}"`,
+                        );
+
+                        if (useSelectedOne) {
+                          selectedStoredPaymentMethod = spm;
+                          break;
+                        }
+                      }
+                    }
+                  }
+
+                  if (!selectedStoredPaymentMethod) {
+                    console.warn(
+                      "No stored payment method is selected to be used. Please select one",
+                    );
+                    return;
+                  }
+
+                  console.log(
+                    "Selected stored payment method",
+                    selectedStoredPaymentMethod,
+                  );
+
+                  document
+                    .getElementById("removeStorePaymentMethod-container")
+                    .classList.remove("d-none");
+                } else if (isDropin) {
                   builder = await enabler.createDropinBuilder(selectedValue);
                 } else {
                   builder = await enabler.createComponentBuilder(selectedValue);
                 }
 
+                // Only show the checkbox to store payment method if:
+                // - not dropin this that has it's own way of storing a pm
+                // - the user opted to pay with existing spm
+                // - the selected payment method is in the allowed/supported list
+                if (
+                  !isDropin &&
+                  !isStoredPaymentMethodSelected &&
+                  allowedStoredPaymentMethods.includes(selectedValue)
+                ) {
+                  document
+                    .getElementById("storePaymentMethod-container")
+                    .classList.remove("d-none");
+                }
+
                 const component = await builder.build({
+                  ...(isStoredPaymentMethodSelected
+                    ? {
+                        id: selectedStoredPaymentMethod.id,
+                        brands: [
+                          selectedStoredPaymentMethod.displayOptions.brand.key,
+                        ],
+                      }
+                    : {}),
                   showPayButton: !builder.componentHasSubmit,
                   ...(builder.componentHasSubmit
                     ? {}
@@ -187,6 +280,28 @@
                         },
                       }),
                 });
+
+                if (isStoredPaymentMethodSelected) {
+                  document.getElementById("removeStorePaymentMethod").onclick =
+                    function () {
+                      const id = component.usedCocoStoredPaymentMethod.id;
+                      component
+                        .remove()
+                        .then(() => {
+                          alert(
+                            "Deleted payment method with CT ID: '" +
+                              id +
+                              "'. Reload the Checkout to continue",
+                          );
+                        })
+                        .catch((error) => {
+                          alert(
+                            "Failed to delete payment method with msg: " +
+                              error.message,
+                          );
+                        });
+                    };
+                }
 
                 if (builder.componentHasSubmit) {
                   const methodsRequireMounting = [
@@ -208,6 +323,7 @@
                     "mobilepay",
                     "afterpay",
                     "clearpay",
+                    "stored-payment-methods",
                   ];
                   const isAvailable = await component.isAvailable();
                   if (
@@ -226,7 +342,18 @@
                         alert("You must agree to the terms and conditions.");
                         return;
                       }
-                      await component.submit();
+
+                      const shouldStorePaymentMethod =
+                        document.getElementById("storePaymentMethod").checked;
+
+                      console.log(
+                        "Should store/tokenise the payment method?",
+                        shouldStorePaymentMethod,
+                      );
+
+                      await component.submit({
+                        storePaymentDetails: shouldStorePaymentMethod,
+                      });
                     });
                     document
                       .getElementById("container--internal")
@@ -241,6 +368,7 @@
           </script>
 
           <div id="container--external"></div>
+
           <div class="form-group form-check">
             <input
               type="checkbox"
@@ -252,6 +380,34 @@
               >I agree to the terms and conditions</label
             >
           </div>
+
+          <div
+            id="storePaymentMethod-container"
+            class="form-group form-check d-none"
+          >
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="storePaymentMethod"
+            />
+            <label class="form-check-label" for="storePaymentMethod"
+              >Check to store payment method</label
+            >
+          </div>
+
+          <div
+            id="removeStorePaymentMethod-container"
+            class="form-group d-none"
+          >
+            <button
+              id="removeStorePaymentMethod"
+              type="button"
+              class="btn btn-secondary btn-sm"
+            >
+              Click to remove this stored payment method
+            </button>
+          </div>
+
           <div id="container--internal"></div>
         </div>
       </div>

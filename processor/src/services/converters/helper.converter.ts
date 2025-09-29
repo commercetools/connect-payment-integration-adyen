@@ -386,3 +386,46 @@ const getTaxAmount = (lineItem: CoCoLineItem | CustomLineItem): number => {
     currencyCode: lineItem.taxedPrice.totalTax.currencyCode,
   });
 };
+
+const CT_CARD_BRAND_TO_ADYEN_MAPPING: Record<string, string> = {
+  Amex: 'amex',
+  Bancontact: 'bcmc',
+  CartesBancaires: 'cartebancaire',
+  Diners: 'diners',
+  Discover: 'discover',
+  Jcb: 'jcb',
+  Maestro: 'maestro',
+  Mastercard: 'mc',
+  UnionPay: 'cup',
+  Visa: 'visa',
+};
+
+const ADYEN_CARD_BRAND_TO_CT_MAPPING: Record<string, string> = Object.entries(CT_CARD_BRAND_TO_ADYEN_MAPPING).reduce(
+  (acc, [key, value]) => {
+    acc[value] = key;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
+/**
+ * Converts CT brand to the Adyen style. Will return "Unknown" if the brand mapping is not in place or a undefined value is provided.
+ */
+export const convertCTCardBrandToAdyenFormat = (brand?: string): string => {
+  if (!brand) {
+    return 'Unknown';
+  }
+
+  return CT_CARD_BRAND_TO_ADYEN_MAPPING[brand] ?? 'Unknown';
+};
+
+/**
+ * Converts Adyen brand to the CT style. Will return "Unknown" if the brand mapping is not in place or a undefined value is provided.
+ */
+export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
+  if (!brand) {
+    return 'Unknown';
+  }
+
+  return ADYEN_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
+};

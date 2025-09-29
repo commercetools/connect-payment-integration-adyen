@@ -12,12 +12,14 @@ import {
 } from "@adyen/adyen-web";
 import "@adyen-css";
 import {
+  CocoStoredPaymentMethod,
   DropinType,
   EnablerOptions,
   getPaymentMethodType,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
+  StoredComponentBuilder,
 } from "./payment-enabler";
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
 import { CardBuilder } from "../components/payment-methods/card";
@@ -42,6 +44,7 @@ import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
+import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -57,6 +60,11 @@ type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
 };
 
+export type StoredPaymentMethodsConfig = {
+  isEnabled: boolean;
+  storedPaymentMethods: CocoStoredPaymentMethod[];
+};
+
 export type BaseOptions = {
   adyenCheckout: ICore;
   sessionId: string;
@@ -65,17 +73,26 @@ export type BaseOptions = {
     usesOwnCertificate: boolean;
   };
   paymentComponentsConfigOverride?: Record<string, any>;
+  storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
+  setStorePaymentDetails: (enabled: boolean) => void;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   setupData: Promise<{ baseOptions: BaseOptions }>;
+  private storePaymentDetails = false;
 
   constructor(options: AdyenEnablerOptions) {
-    this.setupData = AdyenPaymentEnabler._Setup(options);
+    this.setupData = AdyenPaymentEnabler._Setup(
+      options,
+      this.getStorePaymentDetails,
+      this.setStorePaymentDetails,
+    );
   }
 
   private static _Setup = async (
     options: AdyenEnablerOptions,
+    getStorePaymentDetails: () => boolean,
+    setStorePaymentDetails: (enabled: boolean) => void,
   ): Promise<{ baseOptions: BaseOptions }> => {
     const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
 
@@ -122,6 +139,26 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       configResponse.json(),
     ]);
 
+    let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
+    if (configJson.storedPaymentMethodsConfig.isEnabled === true) {
+      const response = await fetch(
+        options.processorUrl + "/stored-payment-methods",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-Id": options.sessionId,
+          },
+        },
+      );
+
+      const storedPaymentMethods: {
+        storedPaymentMethods: CocoStoredPaymentMethod[];
+      } = await response.json();
+
+      storedPaymentMethodsList = storedPaymentMethods.storedPaymentMethods;
+    }
+
     const { sessionData: data, paymentReference } = sessionJson;
 
     if (!data || !data.id) {
@@ -161,7 +198,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               shopperLocale: adyenLocale,
               channel: "Web",
               paymentReference,
+              ...(getStorePaymentDetails() ? { storePaymentMethod: true } : {}),
             };
+
             const response = await fetch(options.processorUrl + "/payments", {
               method: "POST",
               headers: {
@@ -267,9 +306,38 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
           ...(configJson.paymentComponentsConfig && {
             paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
           }),
+          storedPaymentMethodsConfig: {
+            isEnabled: configJson.storedPaymentMethodsConfig.isEnabled,
+            storedPaymentMethods: storedPaymentMethodsList,
+          },
+          setStorePaymentDetails,
         },
       };
     }
+  };
+
+  async getStoredPaymentMethods({ allowedMethodTypes }) {
+    const setupData = await this.setupData;
+
+    const storedPaymentMethods =
+      setupData.baseOptions.storedPaymentMethodsConfig.storedPaymentMethods
+        .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
+        .filter((method) => allowedMethodTypes.includes(method.type));
+
+    return { storedPaymentMethods };
+  }
+
+  async isStoredPaymentMethodsEnabled(): Promise<boolean> {
+    const setupData = await this.setupData;
+    return setupData.baseOptions.storedPaymentMethodsConfig.isEnabled;
+  }
+
+  setStorePaymentDetails = (enabled: boolean): void => {
+    this.storePaymentDetails = enabled;
+  };
+
+  getStorePaymentDetails = (): boolean => {
+    return this.storePaymentDetails;
   };
 
   async createComponentBuilder(
@@ -308,6 +376,33 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
       );
     }
+    return new supportedMethods[type](setupData.baseOptions);
+  }
+
+  async createStoredPaymentMethodBuilder(
+    type: string,
+  ): Promise<StoredComponentBuilder | never> {
+    const setupData = await this.setupData;
+    if (!setupData) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+
+    if (!setupData.baseOptions.storedPaymentMethodsConfig.isEnabled) {
+      throw new Error(
+        "Stored payment methods is not enabled and thus cannot be used to build a new component",
+      );
+    }
+
+    const supportedMethods = {
+      card: StoredCardBuilder,
+    };
+
+    if (!Object.keys(supportedMethods).includes(type)) {
+      throw new Error(
+        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+      );
+    }
+
     return new supportedMethods[type](setupData.baseOptions);
   }
 
