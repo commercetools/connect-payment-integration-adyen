@@ -71,6 +71,9 @@ deployAs:
         - key: ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT
           description: The payment method interface account value used in the commerceotools payment methods.
           required: false
+        - key: ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED
+          description: If set to "true" then displayable payment method details will be stored on the payment and payment-method entities. Default value is "false".
+          required: false
 
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
