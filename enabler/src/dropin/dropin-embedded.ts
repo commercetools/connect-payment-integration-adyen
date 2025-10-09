@@ -31,6 +31,7 @@ import {
   Swish,
   Vipps,
   AfterPay,
+  MolPayEBankingMY,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -163,6 +164,7 @@ export class DropinComponents implements DropinComponent {
         Card,
         GooglePay,
         EPS,
+        MolPayEBankingMY,
         Klarna,
         OnlineBankingPL,
         PayPal,

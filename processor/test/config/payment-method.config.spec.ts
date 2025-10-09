@@ -15,6 +15,9 @@ describe('payment-method.config', () => {
       eps: {
         supportSeparateCapture: false,
       },
+      molpay_ebanking_fpx_MY: {
+        supportSeparateCapture: false,
+      },
       ideal: {
         supportSeparateCapture: false,
       },

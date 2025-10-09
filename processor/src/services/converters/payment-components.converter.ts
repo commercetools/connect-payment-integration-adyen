@@ -31,6 +31,9 @@ export class PaymentComponentsConverter {
           type: 'eps',
         },
         {
+          type: 'molpay_ebanking_fpx_MY',
+        },
+        {
           type: 'googlepay',
         },
         {
