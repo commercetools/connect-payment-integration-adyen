@@ -443,6 +443,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     try {
+      // TODO: SCC-3449: maybe we can hook into the notification to always get the final Authorization result for storing payment method details instead of in the create-payment and confirm-payment flows.
       const updateData = await this.notificationConverter.convert(opts);
       const payment = await this.getPaymentFromNotification(updateData);
 
