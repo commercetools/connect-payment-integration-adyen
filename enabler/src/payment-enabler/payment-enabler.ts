@@ -46,6 +46,7 @@ export enum PaymentMethod {
   clearpay = "clearpay",
   dropin = "dropin",
   eps = "eps",
+  molpay_ebanking_fpx_MY = "molpay_ebanking_fpx_MY",
   googlepay = "googlepay",
   ideal = "ideal",
   klarna_billie = "klarna_b2b", // Billie

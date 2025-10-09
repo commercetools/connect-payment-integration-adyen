@@ -112,7 +112,7 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(21);
+    expect(result?.components).toHaveLength(22);
     expect(result?.components[0]?.type).toStrictEqual('afterpay');
     expect(result?.components[1]?.type).toStrictEqual('applepay');
     expect(result?.components[2]?.type).toStrictEqual('bancontactcard');
@@ -120,20 +120,21 @@ describe('adyen-payment.service', () => {
     expect(result?.components[4]?.type).toStrictEqual('blik');
     expect(result?.components[5]?.type).toStrictEqual('card');
     expect(result?.components[6]?.type).toStrictEqual('eps');
-    expect(result?.components[7]?.type).toStrictEqual('googlepay');
-    expect(result?.components[8]?.type).toStrictEqual('ideal');
-    expect(result?.components[9]?.type).toStrictEqual('klarna_billie');
-    expect(result?.components[10]?.type).toStrictEqual('klarna_pay_later');
-    expect(result?.components[11]?.type).toStrictEqual('klarna_pay_now');
-    expect(result?.components[12]?.type).toStrictEqual('klarna_pay_overtime');
-    expect(result?.components[13]?.type).toStrictEqual('mobilepay');
-    expect(result?.components[14]?.type).toStrictEqual('paypal');
-    expect(result?.components[15]?.type).toStrictEqual('przelewy24');
-    expect(result?.components[16]?.type).toStrictEqual('sepadirectdebit');
-    expect(result?.components[17]?.type).toStrictEqual('swish');
-    expect(result?.components[18]?.type).toStrictEqual('twint');
-    expect(result?.components[19]?.type).toStrictEqual('vipps');
-    expect(result?.components[20]?.type).toStrictEqual('clearpay');
+    expect(result?.components[7]?.type).toStrictEqual('molpay_ebanking_fpx_MY');
+    expect(result?.components[8]?.type).toStrictEqual('googlepay');
+    expect(result?.components[9]?.type).toStrictEqual('ideal');
+    expect(result?.components[10]?.type).toStrictEqual('klarna_billie');
+    expect(result?.components[11]?.type).toStrictEqual('klarna_pay_later');
+    expect(result?.components[12]?.type).toStrictEqual('klarna_pay_now');
+    expect(result?.components[13]?.type).toStrictEqual('klarna_pay_overtime');
+    expect(result?.components[14]?.type).toStrictEqual('mobilepay');
+    expect(result?.components[15]?.type).toStrictEqual('paypal');
+    expect(result?.components[16]?.type).toStrictEqual('przelewy24');
+    expect(result?.components[17]?.type).toStrictEqual('sepadirectdebit');
+    expect(result?.components[18]?.type).toStrictEqual('swish');
+    expect(result?.components[19]?.type).toStrictEqual('twint');
+    expect(result?.components[20]?.type).toStrictEqual('vipps');
+    expect(result?.components[21]?.type).toStrictEqual('clearpay');
   });
 
   test('getStatus', async () => {

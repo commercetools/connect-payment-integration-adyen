@@ -52,6 +52,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "blik",
         "card",
         "eps",
+        "molpay_ebanking_fpx_MY",
         "googlepay",
         "ideal",
         "klarna_billie",
