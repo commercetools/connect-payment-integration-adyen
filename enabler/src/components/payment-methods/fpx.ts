@@ -15,7 +15,7 @@ import { MolPayEBankingMY, ICore } from "@adyen/adyen-web";
  */
 export class FPXBuilder extends AdyenBaseComponentBuilder {
   constructor(baseOptions: BaseOptions) {
-    super(PaymentMethod.molpay_ebanking_fpx_MY, baseOptions);
+    super(PaymentMethod.fpx, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {
@@ -26,9 +26,7 @@ export class FPXBuilder extends AdyenBaseComponentBuilder {
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
       paymentComponentConfigOverride:
-        this.resolvePaymentComponentConfigOverride(
-          PaymentMethod.molpay_ebanking_fpx_MY,
-        ),
+        this.resolvePaymentComponentConfigOverride(PaymentMethod.fpx),
     });
     fpxComponent.init();
     return fpxComponent;

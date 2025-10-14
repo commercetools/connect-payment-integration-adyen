@@ -264,6 +264,11 @@ export class DropinComponents implements DropinComponent {
           ],
           // Configuration that can not be overridden
         },
+        molpay_ebanking_fpx_MY: {
+          // Override the default config with the one provided by the user
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.fpx)],
+          // Configuration that can not be overridden
+        },
         onlineBanking_PL: {
           // Override the default config with the one provided by the user
           ...this.dropinConfigOverride[

@@ -355,7 +355,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       blik: BlikBuilder,
       card: CardBuilder,
       eps: EPSBuilder,
-      molpay_ebanking_fpx_MY: FPXBuilder,
+      fpx: FPXBuilder,
       googlepay: GooglepayBuilder,
       ideal: IdealBuilder,
       klarna_billie: KlarnaBillieBuilder,

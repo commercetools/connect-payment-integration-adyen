@@ -42,6 +42,7 @@ describe('helper.converter', () => {
       ['klarna_b2b', 'klarna_billie'],
       [GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl, 'przelewy24'],
       ['afterpaytouch', 'afterpay'],
+      ['molpay_ebanking_fpx_MY', 'fpx'],
       ['unknown_method_should_return_this_value', 'unknown_method_should_return_this_value'],
     ];
 
@@ -66,6 +67,7 @@ describe('helper.converter', () => {
       ['klarna_billie', 'klarna_b2b'],
       ['przelewy24', GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl],
       ['afterpay', 'afterpaytouch'],
+      ['fpx', 'molpay_ebanking_fpx_MY'],
       ['unknown_method_should_return_this_value', 'unknown_method_should_return_this_value'],
     ];
 
