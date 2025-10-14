@@ -14,7 +14,15 @@ export async function createPaymentMethodDetailsCustomType(): Promise<void> {
 
   const typeDrafts: TypeDraft[] = [CardDetailsTypeDraft, SepaDetailsTypeDraft];
 
-  // TODO: SCC-3449: figure out the correct approach with regards to custom 'key' value or not.
+  // the stripe connector creates a custom type for customers and what it does is check if the type exists, if so, then it adds a new attribute to the existing type.
+  // I think that the behaviour we want, either to create or to extend a type
+  // https://github.com/stripe/stripe-commercetools-checkout-app/blob/8bf028100eec0a8fea8b392f65d5098740a32927/processor/src/services/stripe-payment.service.ts#L742
+
+  // https://github.com/stripe/stripe-commercetools-checkout-app/blob/main/processor/src/connectors/actions.ts#L81
+
+  // https://github.com/stripe/stripe-commercetools-checkout-app/blob/main/processor/src/services/commerce-tools/customTypeHelper.ts#L47
+  // https://github.com/stripe/stripe-commercetools-checkout-app/blob/main/processor/src/services/commerce-tools/customTypeHelper.ts#L130
+
   // TODO: SCC-3449: figure out the correct approach with regards to validating if the existing custom type schema is correct or not. If not should we update it?
 
   for (const typeDraft of typeDrafts) {
