@@ -368,6 +368,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       customFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
     }
 
+    // TODO: SCC-3449: the customFieldsDraft should be set on the payment-method-info and not on the payment itself
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -419,6 +420,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       customFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
     }
 
+    // TODO: SCC-3449: the customFieldsDraft should be set on the payment-method-info and not on the payment itself
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
