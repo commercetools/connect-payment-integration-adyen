@@ -31,6 +31,9 @@ export class PaymentComponentsConverter {
           type: 'eps',
         },
         {
+          type: 'fpx', // FPX Online banking Malaysia
+        },
+        {
           type: 'googlepay',
         },
         {

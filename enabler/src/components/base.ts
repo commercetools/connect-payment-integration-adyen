@@ -14,6 +14,7 @@ import {
   Vipps,
   OnlineBankingPL,
   AfterPay,
+  MolPayEBankingMY,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -30,6 +31,7 @@ type AdyenComponent =
   | GooglePay
   | Klarna
   | EPS
+  | MolPayEBankingMY
   | Twint
   | Redirect
   | SepaDirectDebit

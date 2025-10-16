@@ -31,6 +31,7 @@ import {
   Swish,
   Vipps,
   AfterPay,
+  MolPayEBankingMY,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -163,6 +164,7 @@ export class DropinComponents implements DropinComponent {
         Card,
         GooglePay,
         EPS,
+        MolPayEBankingMY,
         Klarna,
         OnlineBankingPL,
         PayPal,
@@ -260,6 +262,11 @@ export class DropinComponents implements DropinComponent {
           ...this.dropinConfigOverride[
             getPaymentMethodType(PaymentMethod.klarna_pay_overtime)
           ],
+          // Configuration that can not be overridden
+        },
+        molpay_ebanking_fpx_MY: {
+          // Override the default config with the one provided by the user
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.fpx)],
           // Configuration that can not be overridden
         },
         onlineBanking_PL: {

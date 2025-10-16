@@ -52,6 +52,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "blik",
         "card",
         "eps",
+        "fpx",
         "googlepay",
         "ideal",
         "klarna_billie",

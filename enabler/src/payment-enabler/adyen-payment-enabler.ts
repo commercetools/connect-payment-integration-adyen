@@ -45,6 +45,7 @@ import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
 import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
+import { FPXBuilder } from "../components/payment-methods/fpx";
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -354,6 +355,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       blik: BlikBuilder,
       card: CardBuilder,
       eps: EPSBuilder,
+      fpx: FPXBuilder,
       googlepay: GooglepayBuilder,
       ideal: IdealBuilder,
       klarna_billie: KlarnaBillieBuilder,

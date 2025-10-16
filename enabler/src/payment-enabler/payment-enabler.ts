@@ -46,6 +46,7 @@ export enum PaymentMethod {
   clearpay = "clearpay",
   dropin = "dropin",
   eps = "eps",
+  fpx = "molpay_ebanking_fpx_MY", // FPX Online banking Malaysia
   googlepay = "googlepay",
   ideal = "ideal",
   klarna_billie = "klarna_b2b", // Billie
