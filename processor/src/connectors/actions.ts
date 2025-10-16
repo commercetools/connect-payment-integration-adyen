@@ -23,7 +23,8 @@ export async function createPaymentMethodDetailsCustomType(): Promise<void> {
   // https://github.com/stripe/stripe-commercetools-checkout-app/blob/main/processor/src/services/commerce-tools/customTypeHelper.ts#L47
   // https://github.com/stripe/stripe-commercetools-checkout-app/blob/main/processor/src/services/commerce-tools/customTypeHelper.ts#L130
 
-  // TODO: SCC-3449: figure out the correct approach with regards to validating if the existing custom type schema is correct or not. If not should we update it?
+  // TODO: SCC-3449: if the type by key does NOT exist then create the custom type
+  // TODO: SCC-3449: if the type by key does exist then check if the static TypeDraft definition has more fields then in CT, if yes then update/add those fields.
 
   for (const typeDraft of typeDrafts) {
     const getRes = await apiClient
