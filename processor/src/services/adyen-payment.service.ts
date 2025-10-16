@@ -153,6 +153,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       requiredPermissions.push('manage_payment_methods');
     }
 
+    if (getConfig().adyenStorePaymentMethodDetailsEnabled) {
+      requiredPermissions.push('manage_types');
+    }
+
     const handler = await statusHandler({
       timeout: config.healthCheckTimeout,
       log: appLogger,

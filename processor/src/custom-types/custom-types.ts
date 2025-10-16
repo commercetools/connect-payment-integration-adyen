@@ -1,5 +1,8 @@
 import { TypeDraft } from '@commercetools/connect-payments-sdk';
 
+// TODO: SCC-3449: Ensure to allow a flag to save the intention of the buyer to store the payment method (needed for cko connector)
+// TODO: SCC-3449: Evaluate if it’s better to have a single type for all the payment methods or a specific type for each one as it is in the RFC.
+
 export const CardDetailsTypeDraft: TypeDraft = {
   key: 'CardDetails',
   name: {
