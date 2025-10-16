@@ -1047,7 +1047,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   // TODO: SCC-3449: update docs to indicate that in the Adyen customer center under "Additional data" the `cardSummary` and `expiryDate` needs to be checked otherwise Adyen does not return it.
-  // TODO: SCC-3449: beside create-payment and confirm-payment flows are there are places where we would need to extract it from?
   // TODO: SCC-3449: write unit-test for "convertAdyenPaymentsResultToCustomType"
   private convertAdyenPaymentsResultToCustomType(response: PaymentResponse): CustomFieldsDraft | undefined {
     // TODO: SCC-3449: remove comment once no longer required.
@@ -1058,25 +1057,25 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     switch (response.paymentMethod?.type) {
       case 'scheme': {
-        // TODO: SCC-3449: validate if we need to enable this in the "Additional data" section of the Adyen customer center
-        // TODO: SCC-3449: validate that the returned format of each attribute is correct
-
-        const lastFourDigits = response.additionalData?.cardSummary;
-        const expiryDate = response.additionalData?.expiryDate;
-        const brand = response.paymentMethod.brand; // TODO: SCC-3449: map over the brand to our way of brands
-
         // TODO: SCC-3449: should we take special care of undefined values?
+        const lastFourDigits = response.additionalData?.cardSummary;
+        const expiryDate = response.additionalData?.expiryDate; // 6/2016
+        const brand = response.paymentMethod.brand;
 
-        // TODO: SCC-3449: get the key value from somewhere. .env or fixed in code as const readonly string?
+        const expireMonthAndYear = expiryDate?.split('/');
+        const expiryMonth = 2; // expireMonthAndYear![0];
+        const expiryYear = 2016; //expireMonthAndYear![1];
+
         const customFieldsDraft: CustomFieldsDraft = {
           type: {
-            key: '',
+            key: '', // TODO: SCC-3449: get the key value from somewhere. .env or fixed in code as const readonly string?
             typeId: 'type',
           },
           fields: {
-            lastFourDigits,
-            expiryDate,
-            brand,
+            lastFour: lastFourDigits,
+            expiryMonth: expiryMonth,
+            expiryYear: expiryYear,
+            brand: convertAdyenCardBrandToCTFormat(brand),
           },
         };
 
