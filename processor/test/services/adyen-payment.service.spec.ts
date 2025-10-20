@@ -120,7 +120,7 @@ describe('adyen-payment.service', () => {
     expect(result?.components[4]?.type).toStrictEqual('blik');
     expect(result?.components[5]?.type).toStrictEqual('card');
     expect(result?.components[6]?.type).toStrictEqual('eps');
-    expect(result?.components[7]?.type).toStrictEqual('molpay_ebanking_fpx_MY');
+    expect(result?.components[7]?.type).toStrictEqual('fpx');
     expect(result?.components[8]?.type).toStrictEqual('googlepay');
     expect(result?.components[9]?.type).toStrictEqual('ideal');
     expect(result?.components[10]?.type).toStrictEqual('klarna_billie');
