@@ -1052,6 +1052,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
+  // TODO: SCC-3449: Refine the RFC of predefined payment methods types and adjust the ticket definition accordingly.
+  // - 1) consider to make every field optional
+  // - 2) change the type of the card from enum to string in order to relax validations.
+  // - 3) ensure to allow a flag to save the intention of the buyer to store the payment method (needed for cko connector)
+  // - 4) Evaluate if it’s better to have a single type for all the payment methods or a specific type for each one as it is in the RFC.
+  // - 5) (already in place for stored-payment-methods) The brand mapping can be done at code level by an utility in the connectors.
+
   // TODO: SCC-3449: update docs to indicate that in the Adyen customer center under "Additional data" the `cardSummary` and `expiryDate` needs to be checked otherwise Adyen does not return it.
   // TODO: SCC-3449: write unit-test for "convertAdyenPaymentsResultToCustomType"
   private convertAdyenPaymentsResultToCustomType(response: PaymentResponse): CustomFieldsDraft | undefined {
