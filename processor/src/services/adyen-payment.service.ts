@@ -14,6 +14,8 @@ import {
   ErrorRequiredField,
   PaymentMethod,
   CustomFieldsDraft,
+  CardDetailsFields,
+  CardDetailsTypeKey,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -362,13 +364,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    let customFieldsDraft: CustomFieldsDraft | undefined;
+    let paymentMethodInfoCustomFieldsDraft: CustomFieldsDraft | undefined;
 
     if (getConfig().adyenStorePaymentMethodDetailsEnabled && txState === 'Success') {
-      customFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
+      paymentMethodInfoCustomFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
     }
 
-    // TODO: SCC-3449: the customFieldsDraft should be set on the payment-method-info and not on the payment itself
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -378,7 +379,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
-      ...(customFieldsDraft ? { customFields: customFieldsDraft } : {}),
+      ...(paymentMethodInfoCustomFieldsDraft
+        ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
+        : {}),
     });
 
     log.info(`Payment authorization processed.`, {
@@ -414,13 +417,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const txState = this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false);
 
-    let customFieldsDraft: CustomFieldsDraft | undefined;
+    let paymentMethodInfoCustomFieldsDraft: CustomFieldsDraft | undefined;
 
     if (getConfig().adyenStorePaymentMethodDetailsEnabled && txState === 'Success') {
-      customFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
+      paymentMethodInfoCustomFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
     }
 
-    // TODO: SCC-3449: the customFieldsDraft should be set on the payment-method-info and not on the payment itself
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -430,7 +432,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
-      ...(customFieldsDraft ? { customFields: customFieldsDraft } : {}),
+      ...(paymentMethodInfoCustomFieldsDraft
+        ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
+        : {}),
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -449,7 +453,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     try {
-      // TODO: SCC-3449: maybe we can hook into the notification to always get the final Authorization result for storing payment method details instead of in the create-payment and confirm-payment flows.
       const updateData = await this.notificationConverter.convert(opts);
       const payment = await this.getPaymentFromNotification(updateData);
 
@@ -504,8 +507,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       const actions = await this.notificationTokenizationConverter.convert(opts);
 
       if (actions.draft) {
-        // TODO: SCC-3449: if feature is enabled AND in case a new stored payment method is created, also add the customFieldsDraft with displayable data.
-
         const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
 
         log.info('Created new payment method used for tokenization', {
@@ -1052,44 +1053,36 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  // TODO: SCC-3449: Refine the RFC of predefined payment methods types and adjust the ticket definition accordingly.
-  // - 1) consider to make every field optional
-  // - 2) change the type of the card from enum to string in order to relax validations.
-  // - 3) ensure to allow a flag to save the intention of the buyer to store the payment method (needed for cko connector)
-  // - 4) Evaluate if it’s better to have a single type for all the payment methods or a specific type for each one as it is in the RFC.
-  // - 5) (already in place for stored-payment-methods) The brand mapping can be done at code level by an utility in the connectors.
-
-  // TODO: SCC-3449: update docs to indicate that in the Adyen customer center under "Additional data" the `cardSummary` and `expiryDate` needs to be checked otherwise Adyen does not return it.
-  // TODO: SCC-3449: write unit-test for "convertAdyenPaymentsResultToCustomType"
+  // TODO: SCC-3449: update docs to talk about this feature. Including that in the Adyen customer center under "Additional data" the `cardSummary` and `expiryDate` needs to be checked otherwise Adyen does not return it.
   private convertAdyenPaymentsResultToCustomType(response: PaymentResponse): CustomFieldsDraft | undefined {
-    // TODO: SCC-3449: remove comment once no longer required.
-    // Need to get these three properties for card/scheme payments. Only do this if authorizated and paymentMethod.type === card/scheme.
-    // lastFour   | res.additionalData.cardSummary | string | The last four digits of a card number.
-    // expiryDate | res.additionalData.expiryDate  | string | The expiry date on the card. Example: 6/2016. Returned only in case of a card payment.
-    // brand      | res.paymentMethod.brand        | string | The card brand that the shopper used to pay. Only returned if paymentMethod.type is scheme.
-
     switch (response.paymentMethod?.type) {
       case 'scheme': {
-        // TODO: SCC-3449: should we take special care of undefined values?
         const lastFourDigits = response.additionalData?.cardSummary;
-        const expiryDate = response.additionalData?.expiryDate; // 6/2016
+        const expiryDate = response.additionalData?.expiryDate; // returned as: '6/2016'
         const brand = response.paymentMethod.brand;
 
-        const expireMonthAndYear = expiryDate?.split('/');
-        const expiryMonth = 2; // expireMonthAndYear![0];
-        const expiryYear = 2016; //expireMonthAndYear![1];
+        // Both are mandatory values, if any of them are not provided we can't do anything
+        if (!lastFourDigits || !expiryDate) {
+          return undefined;
+        }
+
+        const expireMonthAndYear = expiryDate.split('/');
+        const expiryMonth = expireMonthAndYear[0];
+        const expiryYear = expireMonthAndYear[1];
+
+        const fields: CardDetailsFields = {
+          brand: convertAdyenCardBrandToCTFormat(brand),
+          lastFour: lastFourDigits,
+          expireMonth: Number(expiryMonth),
+          expireYear: Number(expiryYear),
+        };
 
         const customFieldsDraft: CustomFieldsDraft = {
           type: {
-            key: '', // TODO: SCC-3449: get the key value from somewhere. .env or fixed in code as const readonly string?
+            key: CardDetailsTypeKey,
             typeId: 'type',
           },
-          fields: {
-            lastFour: lastFourDigits,
-            expiryMonth: expiryMonth,
-            expiryYear: expiryYear,
-            brand: convertAdyenCardBrandToCTFormat(brand),
-          },
+          fields,
         };
 
         return customFieldsDraft;
