@@ -100,6 +100,12 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         format: "FULL",
         phoneNumberRequired: true,
       },
+      // Todo: fix failing error due to this. Google suggest prefetch for performance reasons, but i am getting a failure with code: OR_BIBED_06
+      transactionInfo: {
+        // countryCode: this.countryCode,
+        currencyCode: this.currencyCode,
+        totalPriceStatus: 'NOT_CURRENTLY_KNOWN'
+      },
       onClick: (resolve, reject) => {
         return this.expressOptions
           .onPaymentInit()
