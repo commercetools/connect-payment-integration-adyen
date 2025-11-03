@@ -15,7 +15,6 @@ import {
   PaymentMethod,
   CustomFieldsDraft,
   GenerateCardDetailsCustomFieldsDraft,
-  GenerateSepaDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
