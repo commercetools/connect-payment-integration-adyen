@@ -292,10 +292,11 @@ The payment method details are stored on the `custom` attribute. Since any entit
 
 #### Configuration
 
-1. set the `ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED` environment variable to `true`.
+1. ensure the configured commercetools API client has the scope `manage_types` set.
+2. set the `ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED` environment variable to `true`.
    1. this will create the predefined Checkout custom-types the next time the connector is re-deployed.
    2. enable the feature during runtime.
-2. In Adyen configure the following settings:
+3. In Adyen configure the following settings:
    1. In `Additional Data` check the `Card Summary` in order for Adyen to return the last four digits of the card
    2. In `Additional Data` check the `Expire date` in order for Adyen to return the expiration data of the card
 
