@@ -27,6 +27,7 @@ import {
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
+  GetExpressPaymentDataResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
@@ -730,6 +731,42 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     await this.deleteTokenInAdyen(customerId, paymentMethod);
+  }
+
+  async getExpressPaymentData(): Promise<GetExpressPaymentDataResponseDTO> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    return {
+      totalPrice: {
+        currencyCode: ctCart.taxedPrice?.totalGross.currencyCode || ctCart.totalPrice.currencyCode,
+        centAmount: ctCart.taxedPrice?.totalGross.centAmount || ctCart.totalPrice.centAmount,
+      },
+      lineItems: [
+        {
+          name: 'Subtotal',
+          amount: {
+            centAmount: ctCart.taxedPrice?.totalNet.centAmount || ctCart.totalPrice.centAmount,
+            currencyCode: ctCart.taxedPrice?.totalNet.currencyCode || ctCart.totalPrice.currencyCode,
+          },
+          type: 'SUBTOTAL',
+        },
+        ...(ctCart.taxedPrice
+          ? [
+              {
+                name: 'Tax',
+                amount: {
+                  centAmount: ctCart.taxedPrice?.totalTax?.centAmount || 0,
+                  currencyCode: ctCart.taxedPrice?.totalTax?.currencyCode || ctCart.totalPrice.currencyCode,
+                },
+                type: 'TAX',
+              },
+            ]
+          : []),
+      ],
+      currencyCode: ctCart.taxedPrice?.totalGross.currencyCode || ctCart.totalPrice.currencyCode,
+    };
   }
 
   private async deleteTokenInAdyen(

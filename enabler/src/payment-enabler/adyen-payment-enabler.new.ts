@@ -126,10 +126,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     return new supportedMethods[type]({
       adyenCheckout: this.adyenCheckout,
-      applePayConfig: this.applePayConfig,
-      processorUrl: this.processorUrl,
-      paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
       sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+      applePayConfig: this.applePayConfig,
     });
   }
 
@@ -148,10 +147,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     return new supportedMethods[type]({
       adyenCheckout: this.adyenCheckout,
-      applePayConfig: this.applePayConfig,
-      processorUrl: this.processorUrl,
-      paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
       sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
+      applePayConfig: this.applePayConfig,
     });
   }
 
@@ -170,13 +168,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     return new supportedMethods[type]({
       adyenCheckout: this.adyenCheckout,
-      applePayConfig: this.applePayConfig,
+      sessionId: this.sessionId,
+      processorUrl: this.processorUrl,
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
-      processorUrl: this.processorUrl,
-      paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
+      applePayConfig: this.applePayConfig,
       paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
-      sessionId: this.sessionId,
     });
   }
 
@@ -188,7 +185,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
 
-    if (!this.storedPaymentMethodsConfig?.isEnabled) {
+    if (!this.storedPaymentMethodsConfig.isEnabled) {
       throw new Error(
         "Stored payment methods is not enabled and thus cannot be used to build a new component"
       );
@@ -208,16 +205,14 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     return new supportedMethods[type]({
       adyenCheckout: this.adyenCheckout,
-      applePayConfig: this.applePayConfig,
-      processorUrl: this.processorUrl,
-      paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
       sessionId: this.sessionId,
-      setStorePaymentDetails: this.setStorePaymentDetails,
+      processorUrl: this.processorUrl,
+      applePayConfig: this.applePayConfig,
     });
   }
 
   async isStoredPaymentMethodsEnabled(): Promise<boolean> {
-    return this.storedPaymentMethodsConfig?.isEnabled;
+    return this.storedPaymentMethodsConfig.isEnabled;
   }
 
   setStorePaymentDetails = (enabled: boolean): void => {
@@ -289,7 +284,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     ]);
 
     let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
-    if (configJson.storedPaymentMethodsConfig?.isEnabled === true) {
+    if (configJson.storedPaymentMethodsConfig.isEnabled === true) {
       const response = await fetch(
         options.processorUrl + "/stored-payment-methods",
         {

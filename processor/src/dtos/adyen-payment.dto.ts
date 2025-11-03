@@ -9,7 +9,7 @@ import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/pay
 import { Notification } from '@adyen/api-library/lib/src/typings/notification/notification';
 import { GenericWebhook } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationWebhooksHandler';
 
-export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount' | 'countryCode'>;
+export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
 
 export type CreateSessionRequestDTO = Omit<
@@ -76,4 +76,22 @@ export type CreateApplePaySessionRequestDTO = {
 export type CreateApplePaySessionResponseDTO = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
+};
+
+export type ExpressLineItemData = {
+  name: string;
+  amount: {
+    centAmount: number;
+    currencyCode: string;
+  };
+  type: string;
+};
+
+export type GetExpressPaymentDataResponseDTO = {
+  totalPrice: {
+    centAmount: number;
+    currencyCode: string;
+  };
+  lineItems: ExpressLineItemData[];
+  currencyCode: string;
 };
