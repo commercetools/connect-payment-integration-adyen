@@ -1,10 +1,9 @@
 import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
 
 import {
-  CardDetailsFields,
-  CardDetailsTypeKey,
   CommercetoolsPaymentMethodTypes,
   CustomFieldsDraft,
+  GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
@@ -82,22 +81,12 @@ export class NotificationTokenizationConverter {
           return undefined;
         }
 
-        const fields: CardDetailsFields = {
+        return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),
           lastFour: lastFourDigits,
-          expireMonth: Number(expiryMonth),
-          expireYear: Number(expiryYear),
-        };
-
-        const customFieldsDraft: CustomFieldsDraft = {
-          type: {
-            key: CardDetailsTypeKey,
-            typeId: 'type',
-          },
-          fields,
-        };
-
-        return customFieldsDraft;
+          expiryMonth: Number(expiryMonth),
+          expiryYear: Number(expiryYear),
+        });
       }
       default: {
         return undefined;
