@@ -1053,7 +1053,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  // TODO: SCC-3449: update docs to talk about this feature. Including that in the Adyen customer center under "Additional data" the `cardSummary` and `expiryDate` needs to be checked otherwise Adyen does not return it.
   private convertAdyenPaymentsResultToCustomType(response: PaymentResponse): CustomFieldsDraft | undefined {
     switch (response.paymentMethod?.type) {
       case 'scheme': {
