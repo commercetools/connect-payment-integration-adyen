@@ -1076,12 +1076,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
           expireYear: Number(expiryYear),
         });
       }
-      case 'sepadirectdebit': {
-        // TODO: SCC-3449: where to get the lastFour from for SEPA payments?
-        return GenerateSepaDetailsCustomFieldsDraft({
-          lastFour: '',
-        });
-      }
       default: {
         return undefined;
       }
