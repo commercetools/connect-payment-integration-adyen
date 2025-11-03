@@ -284,7 +284,6 @@ This feature will ensure that on the `payment.paymentMethodInfo` and the `paymen
 Currently supported payment-methods are:
 
 - card
-- sepa
 
 #### Considerations
 
