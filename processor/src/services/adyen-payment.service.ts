@@ -14,8 +14,8 @@ import {
   ErrorRequiredField,
   PaymentMethod,
   CustomFieldsDraft,
-  CardDetailsFields,
-  CardDetailsTypeKey,
+  GenerateCardDetailsCustomFieldsDraft,
+  GenerateSepaDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -1070,22 +1070,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
         const expiryMonth = expireMonthAndYear[0];
         const expiryYear = expireMonthAndYear[1];
 
-        const fields: CardDetailsFields = {
+        return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),
           lastFour: lastFourDigits,
           expireMonth: Number(expiryMonth),
           expireYear: Number(expiryYear),
-        };
-
-        const customFieldsDraft: CustomFieldsDraft = {
-          type: {
-            key: CardDetailsTypeKey,
-            typeId: 'type',
-          },
-          fields,
-        };
-
-        return customFieldsDraft;
+        });
+      }
+      case 'sepadirectdebit': {
+        // TODO: SCC-3449: where to get the lastFour from for SEPA payments?
+        return GenerateSepaDetailsCustomFieldsDraft({
+          lastFour: '',
+        });
       }
       default: {
         return undefined;
