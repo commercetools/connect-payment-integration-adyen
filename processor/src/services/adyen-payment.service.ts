@@ -488,15 +488,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
         });
 
         if (doesTokenAlreadyExist) {
-          log.info('Stored payment method already exists in CT for the customer, not creating a new one', {
-            notification: notificationLogObject,
-            paymentMethod: {
-              customer: actions.draft.customerId,
-              paymentInterface: actions.draft.paymentInterface,
-              interfaceAccount: actions.draft.interfaceAccount,
-              method: actions.draft.method,
+          log.info(
+            'Stored payment method already exists in CT for the given customer, paymentInterface, interfaceAccount and token combination. Not creating a new one and ignoring request to save a new stored payment method.',
+            {
+              notification: notificationLogObject,
+              paymentMethod: {
+                customer: actions.draft.customerId,
+                paymentInterface: actions.draft.paymentInterface,
+                interfaceAccount: actions.draft.interfaceAccount,
+                method: actions.draft.method,
+              },
             },
-          });
+          );
         } else {
           const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
 
