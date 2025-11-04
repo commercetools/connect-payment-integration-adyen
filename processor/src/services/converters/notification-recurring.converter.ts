@@ -1,4 +1,8 @@
-import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
+import {
+  RecurringTokenStoreOperation,
+  TokenizationAlreadyExistingDetailsNotificationRequest,
+  TokenizationCreatedDetailsNotificationRequest,
+} from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/models';
 
 import { CommercetoolsPaymentMethodTypes } from '@commercetools/connect-payments-sdk';
 
@@ -22,6 +26,10 @@ export class NotificationTokenizationConverter {
 
     if (opts.data.type === TokenizationCreatedDetailsNotificationRequest.TypeEnum.RecurringTokenCreated) {
       response.draft = await this.processRecurringTokenCreated(opts.data);
+    } else if (
+      opts.data.type === TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting
+    ) {
+      response.draft = await this.processRecurringTokenAlreadyExists(opts.data);
     } else {
       throw new UnsupportedNotificationError({ notificationEvent: opts.data.type });
     }
@@ -32,7 +40,21 @@ export class NotificationTokenizationConverter {
   private async processRecurringTokenCreated(
     notification: TokenizationCreatedDetailsNotificationRequest,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
-    const method = await this.mapNotificationPaymentMethodTypeToCTType(notification);
+    const method = await this.mapNotificationPaymentMethodTypeToCTType(notification.data);
+
+    return {
+      customerId: notification.data.shopperReference,
+      method,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+      token: notification.data.storedPaymentMethodId,
+    };
+  }
+
+  private async processRecurringTokenAlreadyExists(
+    notification: TokenizationAlreadyExistingDetailsNotificationRequest,
+  ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
+    const method = await this.mapNotificationPaymentMethodTypeToCTType(notification.data);
 
     return {
       customerId: notification.data.shopperReference,
@@ -48,15 +70,15 @@ export class NotificationTokenizationConverter {
    * So we need to fetch the values via the API before we can map it to CT values.
    */
   private async mapNotificationPaymentMethodTypeToCTType(
-    notification: TokenizationCreatedDetailsNotificationRequest,
+    recurringTokenOperationData: RecurringTokenStoreOperation,
   ): Promise<string> {
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
-      notification.data.shopperReference,
+      recurringTokenOperationData.shopperReference,
       getConfig().adyenMerchantAccount,
     );
 
     const detailFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
-      (spm) => notification.data.storedPaymentMethodId === spm.id,
+      (spm) => recurringTokenOperationData.storedPaymentMethodId === spm.id,
     );
 
     if (!detailFromAdyen || !detailFromAdyen.type) {
@@ -64,7 +86,7 @@ export class NotificationTokenizationConverter {
         'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
       );
 
-      return notification.data.type;
+      return recurringTokenOperationData.type;
     }
 
     return convertPaymentMethodFromAdyenFormat(detailFromAdyen.type);

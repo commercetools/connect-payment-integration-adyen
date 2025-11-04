@@ -29,7 +29,13 @@ import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 
 import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
-import { Cart, ErrorRequiredField, Errorx, HealthCheckResult } from '@commercetools/connect-payments-sdk';
+import {
+  Cart,
+  ErrorRequiredField,
+  Errorx,
+  HealthCheckResult,
+  PaymentMethod,
+} from '@commercetools/connect-payments-sdk';
 import {
   CreateApplePaySessionRequestDTO,
   CreatePaymentRequestDTO,
@@ -45,7 +51,10 @@ import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDet
 import { KlarnaDetails } from '@adyen/api-library/lib/src/typings/checkout/klarnaDetails';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
-import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
+import {
+  TokenizationCreatedDetailsNotificationRequest,
+  TokenizationAlreadyExistingDetailsNotificationRequest,
+} from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/models';
 import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
 
 import * as FastifyContext from '../../src/libs/fastify/context/context';
@@ -861,6 +870,8 @@ describe('adyen-payment.service', () => {
         ],
       });
 
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(false);
+
       jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
         customer: {
@@ -888,6 +899,148 @@ describe('adyen-payment.service', () => {
         interfaceAccount: 'adyen-interface-account',
         token: storedPaymentMethodId,
       });
+    });
+
+    test('it should process the notification tokenization of type "recurring.token.alreadyExisting" properly', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const shopperReference = 'some-shopper-reference';
+      const storedPaymentMethodId = 'abcdefg';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const methodType = 'visapremiumdebit';
+
+      const notification: NotificationTokenizationDTO = {
+        createdAt: new Date(),
+        environment: TokenizationAlreadyExistingDetailsNotificationRequest.EnvironmentEnum.Test,
+        eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
+        type: TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting,
+        data: {
+          merchantAccount: merchantReference,
+          operation: 'operation text description',
+          shopperReference: shopperReference,
+          storedPaymentMethodId,
+          type: methodType,
+        },
+      };
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true },
+          },
+        },
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: merchantReference,
+        shopperReference,
+        storedPaymentMethods: [
+          {
+            id: storedPaymentMethodId,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(false);
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: shopperReference,
+          typeId: 'customer',
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: 'card',
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      });
+
+      // When
+      await paymentService.processNotificationTokenization({ data: notification });
+
+      // Then
+      expect(DefaultPaymentMethodService.prototype.save).toHaveBeenCalledWith({
+        customerId: shopperReference,
+        method: 'card',
+        paymentInterface: 'adyen-payment-interface',
+        interfaceAccount: 'adyen-interface-account',
+        token: storedPaymentMethodId,
+      });
+    });
+
+    test('it should not create a new stored payment-method if an payment-method with the same token already exists for the given customer', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const shopperReference = 'some-shopper-reference';
+      const storedPaymentMethodId = 'abcdefg';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const methodType = 'visapremiumdebit';
+
+      const notification: NotificationTokenizationDTO = {
+        createdAt: new Date(),
+        environment: TokenizationAlreadyExistingDetailsNotificationRequest.EnvironmentEnum.Test,
+        eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
+        type: TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting,
+        data: {
+          merchantAccount: merchantReference,
+          operation: 'operation text description',
+          shopperReference: shopperReference,
+          storedPaymentMethodId,
+          type: methodType,
+        },
+      };
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true },
+          },
+        },
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: merchantReference,
+        shopperReference,
+        storedPaymentMethods: [
+          {
+            id: storedPaymentMethodId,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(true);
+
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockImplementationOnce(async () => {
+        return {} as PaymentMethod;
+      });
+
+      // When
+      await paymentService.processNotificationTokenization({ data: notification });
+
+      // Then
+      expect(DefaultPaymentMethodService.prototype.save).not.toHaveBeenCalled();
     });
   });
 

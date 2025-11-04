@@ -480,18 +480,37 @@ export class AdyenPaymentService extends AbstractPaymentService {
       const actions = await this.notificationTokenizationConverter.convert(opts);
 
       if (actions.draft) {
-        const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
-
-        log.info('Created new payment method used for tokenization', {
-          notification: notificationLogObject,
-          paymentMethod: {
-            id: newlyCreatedPaymentMethod.id,
-            customer: newlyCreatedPaymentMethod.customer,
-            paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
-            interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
-            method: newlyCreatedPaymentMethod.method,
-          },
+        const doesTokenAlreadyExist = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
+          customerId: actions.draft.customerId,
+          paymentInterface: actions.draft.paymentInterface,
+          interfaceAccount: actions.draft.interfaceAccount,
+          tokenValue: actions.draft.token,
         });
+
+        if (doesTokenAlreadyExist) {
+          log.info('Stored payment method already exists in CT for the customer, not creating a new one', {
+            notification: notificationLogObject,
+            paymentMethod: {
+              customer: actions.draft.customerId,
+              paymentInterface: actions.draft.paymentInterface,
+              interfaceAccount: actions.draft.interfaceAccount,
+              method: actions.draft.method,
+            },
+          });
+        } else {
+          const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
+
+          log.info('Created new payment method used for tokenization', {
+            notification: notificationLogObject,
+            paymentMethod: {
+              id: newlyCreatedPaymentMethod.id,
+              customer: newlyCreatedPaymentMethod.customer,
+              paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
+              interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
+              method: newlyCreatedPaymentMethod.method,
+            },
+          });
+        }
       }
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {

@@ -1,5 +1,7 @@
-import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
-import { TokenizationAlreadyExistingDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationAlreadyExistingDetailsNotificationRequest';
+import {
+  TokenizationCreatedDetailsNotificationRequest,
+  TokenizationUpdatedDetailsNotificationRequest,
+} from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/models';
 
 import { NotificationTokenizationDTO } from '../../../src/dtos/adyen-payment.dto';
 import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
@@ -84,9 +86,9 @@ describe('notification.tokenization.converter', () => {
 
     const notification: NotificationTokenizationDTO = {
       createdAt: new Date(),
-      environment: TokenizationAlreadyExistingDetailsNotificationRequest.EnvironmentEnum.Test,
+      environment: TokenizationUpdatedDetailsNotificationRequest.EnvironmentEnum.Test,
       eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
-      type: TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting,
+      type: TokenizationUpdatedDetailsNotificationRequest.TypeEnum.RecurringTokenUpdated,
       data: {
         merchantAccount: merchantReference,
         operation: 'operation text description',
@@ -102,7 +104,7 @@ describe('notification.tokenization.converter', () => {
     // Assert
     expect(result).rejects.toThrow(
       new UnsupportedNotificationError({
-        notificationEvent: TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting,
+        notificationEvent: TokenizationUpdatedDetailsNotificationRequest.TypeEnum.RecurringTokenUpdated,
       }),
     );
   });
