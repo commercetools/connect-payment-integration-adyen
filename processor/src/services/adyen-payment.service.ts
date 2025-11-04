@@ -690,8 +690,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     customerId: string,
     storedPaymentMethods: PaymentMethod[],
   ): Promise<StoredPaymentMethod[]> {
-    // TODO: SCC-3449: how should we go about retrieving this data? If the feature is enabled check the payment-method? Or always check if before hand and only if something is missing talk with Adyen?
-
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
       customerId,
       getConfig().adyenMerchantAccount,
@@ -1071,8 +1069,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
         return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),
           lastFour: lastFourDigits,
-          expireMonth: Number(expiryMonth),
-          expireYear: Number(expiryYear),
+          expiryMonth: Number(expiryMonth),
+          expiryYear: Number(expiryYear),
         });
       }
       default: {
