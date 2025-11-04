@@ -40,28 +40,26 @@ export class NotificationTokenizationConverter {
   private async processRecurringTokenCreated(
     notification: TokenizationCreatedDetailsNotificationRequest,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
-    const method = await this.mapNotificationPaymentMethodTypeToCTType(notification.data);
-
-    return {
-      customerId: notification.data.shopperReference,
-      method,
-      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
-      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-      token: notification.data.storedPaymentMethodId,
-    };
+    return await this.buildDraftFromNotificationData(notification.data);
   }
 
   private async processRecurringTokenAlreadyExists(
     notification: TokenizationAlreadyExistingDetailsNotificationRequest,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
-    const method = await this.mapNotificationPaymentMethodTypeToCTType(notification.data);
+    return await this.buildDraftFromNotificationData(notification.data);
+  }
+
+  private async buildDraftFromNotificationData(
+    recurringTokenOperationData: RecurringTokenStoreOperation,
+  ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
+    const method = await this.mapNotificationPaymentMethodTypeToCTType(recurringTokenOperationData);
 
     return {
-      customerId: notification.data.shopperReference,
+      customerId: recurringTokenOperationData.shopperReference,
       method,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-      token: notification.data.storedPaymentMethodId,
+      token: recurringTokenOperationData.storedPaymentMethodId,
     };
   }
 
