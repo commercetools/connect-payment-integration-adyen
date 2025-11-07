@@ -135,6 +135,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
   async createDropinBuilder(type: DropinType): Promise<PaymentDropinBuilder> {
     await this.initializeAdyenWithSession(this.initOptions);
+    if (!this.adyenCheckout) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
 
     const supportedMethods = { embedded: DropinEmbeddedBuilder };
 
@@ -157,6 +160,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
   async createExpressBuilder(type: string): Promise<PaymentExpressBuilder> {
     await this.initializeAdyenForExpressCheckout();
+    if (!this.adyenCheckout) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
 
     const supportedMethods = { googlepay: GooglePayExpressBuilder };
 
@@ -209,6 +215,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     return new supportedMethods[type]({
       adyenCheckout: this.adyenCheckout,
       applePayConfig: this.applePayConfig,
+      countryCode: this.countryCode,
       processorUrl: this.processorUrl,
       paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
       sessionId: this.sessionId,
@@ -436,6 +443,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       locale: adyenLocale,
       environment: configJson.environment,
       clientKey: configJson.clientKey,
+      countryCode: this.countryCode,
       session: {
         id: data.id,
         sessionData: data.sessionData,
