@@ -100,12 +100,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         format: "FULL",
         phoneNumberRequired: true,
       },
-      // Todo: fix failing error due to this. Google suggest prefetch for performance reasons, but i am getting a failure with code: OR_BIBED_06
-      transactionInfo: {
-        // countryCode: this.countryCode,
-        currencyCode: this.currencyCode,
-        totalPriceStatus: 'NOT_CURRENTLY_KNOWN'
-      },
       onClick: (resolve, reject) => {
         return this.expressOptions
           .onPaymentInit()
@@ -119,41 +113,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
             const { callbackTrigger, shippingAddress, shippingOptionData } = intermediatePaymentData;
             const paymentDataRequestUpdate: google.payments.api.PaymentDataRequestUpdate = {};
 
-//             {
-//     "statusCode": 400,
-//     "message": "Tax category '6e18e474-16db-438b-a478-d53d54c7fcee' is missing a tax rate for country 'BR'",
-//     "errors": [
-//         {
-//             "code": "MissingTaxRateForCountry",
-//             "message": "Tax category '6e18e474-16db-438b-a478-d53d54c7fcee' is missing a tax rate for country 'BR'",
-//             "action": {
-//                 "action": "setShippingAddress",
-//                 "address": {
-//                     "country": "BR",
-//                     "postalCode": "04538-133",
-//                     "city": "São Paulo"
-//                 }
-//             },
-//             "actionIndex": 1,
-//             "taxCategoryId": "6e18e474-16db-438b-a478-d53d54c7fcee",
-//             "country": "BR"
-//         },
-//         {
-//             "code": "InvalidOperation",
-//             "message": "Zone for country 'BR' not found.",
-//             "action": {
-//                 "action": "setShippingAddress",
-//                 "address": {
-//                     "country": "BR",
-//                     "postalCode": "04538-133",
-//                     "city": "São Paulo"
-//                 }
-//             },
-//             "actionIndex": 1
-//         }
-//     ]
-// }
-
             /** If it initializes or changes the shipping address, we calculate the shipping options and transaction info  */
             if (callbackTrigger === "INITIALIZE" || callbackTrigger === "SHIPPING_ADDRESS") {
               try {
@@ -165,8 +124,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                   },
                 });
               } catch (error) {
-                //TODO: think of how to manage this error scenarios
-                console.error("## onSetShippingAddress - error", error);
                 paymentDataRequestUpdate.error = {
                   reason: "SHIPPING_ADDRESS_UNSERVICEABLE",
                   message: "Cannot ship to the selected address",
@@ -189,11 +146,19 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
             }
             /** If SHIPPING_OPTION changed, we calculate the new fee */
             if (callbackTrigger === "SHIPPING_OPTION") {
-              await me.setShippingMethod({
-                shippingOption: {
-                  id: shippingOptionData.id,
-                },
-              });
+              try {
+                await me.setShippingMethod({
+                  shippingOption: {
+                    id: shippingOptionData.id,
+                  },
+                });
+              } catch (error) {
+                paymentDataRequestUpdate.error = {
+                  reason: 'SHIPPING_OPTION_INVALID',
+                  message: 'Cannot use the selected shipping method',
+                  intent: 'SHIPPING_OPTION'
+                }
+              }
 
               paymentDataRequestUpdate.newTransactionInfo = await me.getTransactionInfo();
             }
@@ -239,7 +204,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
             action: data.action,
           });
         } catch (error) {
-          console.error("## onSubmit - critical error", error);
           actions.reject();
         }
       },

@@ -69,6 +69,11 @@ const setShippingMethod = async (opts) => {
     },
     body: JSON.stringify(payload),
   });
+
+  if (!res.ok) {
+    throw new Error('unable to set shipping method')
+  }
+
   const data = await res.json();
 
   console.log("Set shipping method", data);
@@ -110,8 +115,12 @@ const setShippingAddress = async (opts) => {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
 
+  if (!res.ok) {
+    throw new Error('unable to set shipping address')
+  }
+  
+  const data = await res.json();
   console.log("Set shipping address", data);
 
   return data;
