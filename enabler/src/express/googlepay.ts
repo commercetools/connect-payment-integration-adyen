@@ -12,6 +12,17 @@ import { DefaultAdyenExpressComponent } from "./base";
  * Configuration options:
  * https://docs.adyen.com/payment-methods/google-pay/web-component/express-checkout
  */
+type GooglePayShippingOption = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+type GooglePayShippingOptions = {
+  defaultSelectedOptionId: string;
+  shippingOptions: GooglePayShippingOption[];
+};
+
 export class GooglePayExpressBuilder implements PaymentExpressBuilder {
   private adyenCheckout: ICore;
   private processorUrl: string;
@@ -44,17 +55,6 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     return googlePayComponent;
   }
 }
-
-type GooglePayShippingOption = {
-  id: string;
-  label: string;
-  description?: string;
-};
-
-type GooglePayShippingOptions = {
-  defaultSelectedOptionId: string;
-  shippingOptions: GooglePayShippingOption[];
-};
 
 export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
@@ -102,12 +102,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       billingAddressParameters: {
         format: "FULL",
         phoneNumberRequired: true,
-      },
-      // Todo: fix failing error due to this. Google suggest prefetch for performance reasons, but i am getting a failure with code: OR_BIBED_06
-      transactionInfo: {
-        // countryCode: this.countryCode,
-        currencyCode: this.currencyCode,
-        totalPriceStatus: 'NOT_CURRENTLY_KNOWN'
       },
       onClick: (resolve, reject) => {
         return this.expressOptions
