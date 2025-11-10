@@ -1,5 +1,5 @@
 import { GooglePay, ICore } from "@adyen/adyen-web";
-import { ExpressComponent, ExpressOptions, PaymentExpressBuilder } from "../payment-enabler/payment-enabler";
+import { ExpressOptions, PaymentExpressBuilder } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import { DefaultAdyenExpressComponent } from "./base";
 
@@ -26,7 +26,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
   }
 
-  build(config: ExpressOptions): ExpressComponent {
+  build(config: ExpressOptions): GooglePayExpressComponent {
     const googlePayComponent = new GooglePayExpressComponent({
       adyenCheckout: this.adyenCheckout,
       componentOptions: config,
