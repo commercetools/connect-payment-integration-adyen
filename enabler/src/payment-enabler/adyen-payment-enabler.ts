@@ -85,7 +85,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
   private storePaymentDetails = false;
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
-  private paymentComponentsConfigOverride?: Record<string, any>
+  private paymentComponentsConfigOverride?: Record<string, any>;
 
   constructor(options: AdyenEnablerOptions) {
     this.sessionId = options.sessionId;
@@ -97,7 +97,10 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createComponentBuilder(type: string): Promise<PaymentComponentBuilder> {
-    await this.initializeAdyenWithSession(this.initOptions);
+    await this.initializeAdyenWithSession();
+    if (!this.adyenCheckout) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
 
     const supportedMethods = {
       applepay: ApplePayBuilder,
@@ -134,7 +137,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createDropinBuilder(type: DropinType): Promise<PaymentDropinBuilder> {
-    await this.initializeAdyenWithSession(this.initOptions);
+    await this.initializeAdyenWithSession();
     if (!this.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
@@ -164,7 +167,9 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
 
-    const supportedMethods = { googlepay: GooglePayExpressBuilder };
+    const supportedMethods = {
+      googlepay: GooglePayExpressBuilder,
+    };
 
     if (!(type in supportedMethods)) {
       throw new Error(
@@ -189,7 +194,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   async createStoredPaymentMethodBuilder(
     type: string
   ): Promise<StoredComponentBuilder | never> {
-    await this.initializeAdyenWithSession(this.initOptions);
+    await this.initializeAdyenWithSession();
     if (!this.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
@@ -244,12 +249,13 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     return { storedPaymentMethods };
   }
 
-  private async initializeAdyenWithSession(
-    options: AdyenEnablerOptions
-  ): Promise<void> {
+  //TODO: move initialize away to another class or something AdyenInit
+  private async initializeAdyenWithSession(): Promise<void> {
     if (this.adyenCheckout) return;
 
-    const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
+    const adyenLocale = convertToAdyenLocale(
+      this.initOptions.locale || "en-US"
+    );
 
     const [sessionResponse, configResponse] = await Promise.all([
       fetch(`${this.processorUrl}/sessions`, {
@@ -271,25 +277,6 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       }),
     ]);
 
-    const handleError = (error: any, component: UIElement) => {
-      if (options.onError) {
-        options.onError(error, {
-          paymentReference,
-          method: { type: getPaymentMethodType(component?.props?.type) },
-        });
-      }
-    };
-
-    const handleComplete = (isSuccess: boolean, component: UIElement) => {
-      if (options.onComplete) {
-        options.onComplete({
-          isSuccess,
-          paymentReference,
-          method: { type: getPaymentMethodType(component?.props?.type) },
-        });
-      }
-    };
-
     const [sessionJson, configJson] = await Promise.all([
       sessionResponse.json(),
       configResponse.json(),
@@ -298,12 +285,12 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
     if (configJson.storedPaymentMethodsConfig?.isEnabled === true) {
       const response = await fetch(
-        options.processorUrl + "/stored-payment-methods",
+        this.initOptions.processorUrl + "/stored-payment-methods",
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "X-Session-Id": options.sessionId,
+            "X-Session-Id": this.initOptions.sessionId,
           },
         }
       );
@@ -332,7 +319,11 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         console.info("payment completed", result.resultCode);
       },
       onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
-        handleComplete(false, _component);
+        this.handleComplete({
+          isSuccess: false,
+          component: _component,
+          paymentReference,
+        });
         console.info("payment failed", result.resultCode);
       },
       onError: (error: AdyenCheckoutError, component: UIElement) => {
@@ -342,7 +333,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         } else {
           console.error(error.name, error.message, error.stack, component);
         }
-        handleError(error, component);
+        this.handleError({ error, component, paymentReference });
       },
       onSubmit: async (
         state: SubmitData,
@@ -355,24 +346,29 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             shopperLocale: adyenLocale,
             channel: "Web",
             paymentReference,
-            ...(this.getStorePaymentDetails() ? { storePaymentMethod: true } : {}),
+            ...(this.getStorePaymentDetails()
+              ? { storePaymentMethod: true }
+              : {}),
           };
 
-          const response = await fetch(options.processorUrl + "/payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": options.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
+          const response = await fetch(
+            this.initOptions.processorUrl + "/payments",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": this.initOptions.sessionId,
+              },
+              body: JSON.stringify(reqData),
+            }
+          );
           const data = await response.json();
           if (data.action) {
             if (
               ["threeDS2", "qrCode"].includes(data.action.type) &&
-              options.onActionRequired
+              this.initOptions.onActionRequired
             ) {
-              options.onActionRequired({ type: "fullscreen" });
+              this.initOptions.onActionRequired({ type: "fullscreen" });
             }
             component.handleAction(data.action);
           } else {
@@ -381,9 +377,17 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
               data.resultCode === "Pending"
             ) {
               component.setStatus("success");
-              handleComplete(true, component);
+              this.handleComplete({
+                isSuccess: true,
+                component: component,
+                paymentReference,
+              });
             } else {
-              handleComplete(false, component);
+              this.handleComplete({
+                isSuccess: false,
+                component: component,
+                paymentReference,
+              });
               component.setStatus("error");
             }
           }
@@ -393,7 +397,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             action: data.action,
           });
         } catch (e) {
-          handleError(e, component);
+          this.handleError({ error: e, component, paymentReference });
           component.setStatus("ready");
           actions.reject(e);
         }
@@ -408,15 +412,15 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             ...state.data,
             paymentReference,
           };
-          const url = options.processorUrl.endsWith("/")
-            ? `${options.processorUrl}payments/details`
-            : `${options.processorUrl}/payments/details`;
+          const url = this.initOptions.processorUrl.endsWith("/")
+            ? `${this.initOptions.processorUrl}payments/details`
+            : `${this.initOptions.processorUrl}/payments/details`;
 
           const response = await fetch(url, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-Session-Id": options.sessionId,
+              "X-Session-Id": this.initOptions.sessionId,
             },
             body: JSON.stringify(requestData),
           });
@@ -426,15 +430,23 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
             data.resultCode === "Pending"
           ) {
             component.setStatus("success");
-            handleComplete(true, component);
+            this.handleComplete({
+              isSuccess: true,
+              component: component,
+              paymentReference,
+            });
           } else {
-            handleComplete(false, component);
+            this.handleComplete({
+              isSuccess: false,
+              component: component,
+              paymentReference,
+            });
             component.setStatus("error");
           }
           actions.resolve({ resultCode: data.resultCode });
         } catch (e) {
           console.error("Not able to submit the payment details", e);
-          handleError(e, component);
+          this.handleError({ error: e, component, paymentReference });
           component.setStatus("ready");
           actions.reject();
         }
@@ -457,19 +469,23 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     }
 
     if (configJson.paymentComponentsConfig) {
-      this.paymentComponentsConfigOverride = configJson.paymentComponentsConfig
+      this.paymentComponentsConfigOverride = configJson.paymentComponentsConfig;
     }
 
     if (configJson.storedPaymentMethodsConfig) {
       this.storedPaymentMethodsConfig = {
         isEnabled: configJson.storedPaymentMethodsConfig.isEnabled,
-        storedPaymentMethods: storedPaymentMethodsList
-      }
+        storedPaymentMethods: storedPaymentMethodsList,
+      };
     }
   }
 
   private async initializeAdyenForExpressCheckout(): Promise<void> {
     if (this.adyenCheckout) return;
+
+    const adyenLocale = convertToAdyenLocale(
+      this.initOptions.locale || "en-US"
+    );
 
     const [paymentMethodsResponse, configResponse] = await Promise.all([
       fetch(`${this.processorUrl}/payment-methods`, {
@@ -497,15 +513,25 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       configResponse.json(),
     ]);
 
+    if (!paymentMethodsJson.paymentMethods) {
+      throw new AdyenInitError("Not able to initialize Adyen", this.sessionId);
+    }
+
     paymentMethodsJson.paymentMethods.forEach((method: any) => {
       this.expressPaymentMethodsConfig.set(method.type, method.configuration);
     });
 
     const adyenCheckout = await AdyenCheckout({
-      onPaymentCompleted: (result: PaymentCompletedData) =>
-        console.info("payment completed", result.resultCode),
-      onPaymentFailed: (result: PaymentFailedData) =>
-        console.info("payment failed", result.resultCode),
+      onPaymentCompleted: (
+        result: PaymentCompletedData,
+        _component: UIElement
+      ) => {
+        console.info("payment completed", result.resultCode);
+      },
+      onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
+        this.handleComplete({ isSuccess: false, component: _component });
+        console.info("payment failed", result.resultCode);
+      },
       onError: (error: AdyenCheckoutError, component: UIElement) => {
         if (error.name === "CANCEL") {
           console.info("shopper canceled the payment attempt");
@@ -513,21 +539,46 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
         } else {
           console.error(error.name, error.message, error.stack, component);
         }
-        this.initOptions.onError?.(error);
+        this.handleError({ error, component });
       },
       analytics: { enabled: true },
-      ...(this.initOptions.locale ? { locale: this.initOptions.locale } : {}),
+      locale: adyenLocale,
       environment: configJson.environment,
       clientKey: configJson.clientKey,
       countryCode: this.countryCode,
-      amount: {
-        currency: this.currencyCode,
-        value: 1,
-      },
     });
 
     this.adyenCheckout = adyenCheckout;
-    if (configJson.applePayConfig)
+
+    if (configJson.applePayConfig) {
       this.applePayConfig = configJson.applePayConfig;
+    }
+  }
+
+  private handleError(opts: {
+    error: any;
+    component: UIElement;
+    paymentReference?: string;
+  }) {
+    if (this.initOptions.onError) {
+      this.initOptions.onError(opts.error, {
+        paymentReference: opts?.paymentReference || "",
+        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+      });
+    }
+  }
+
+  private handleComplete(opts: {
+    isSuccess: boolean;
+    component: UIElement;
+    paymentReference?: string;
+  }) {
+    if (this.initOptions.onComplete) {
+      this.initOptions.onComplete({
+        isSuccess: opts.isSuccess,
+        paymentReference: opts?.paymentReference || "",
+        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+      });
+    }
   }
 }
