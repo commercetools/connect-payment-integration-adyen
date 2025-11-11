@@ -297,6 +297,7 @@ At any point in time entities can only have one custom-type applied. Thus if thi
 #### Configuration
 
 1. ensure the configured commercetools API client has the scope `manage_types`.
+   1. the health check will fail if the API client does not have this scope but the feature is enabled
 2. In Adyen configure the following settings. (see [Adyen docs](https://help.adyen.com/en_US/knowledge/ecommerce-integrations/integrations-basics/how-do-i-configure-additionaldata-in-the-payments-or-authorisze-response).)
    1. In `Additional Data` check the `Card Summary` in order for Adyen to return the last four digits of the card
    2. In `Additional Data` check the `Expire date` in order for Adyen to return the expiration date of the card
