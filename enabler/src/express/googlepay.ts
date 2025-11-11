@@ -1,5 +1,8 @@
 import { GooglePay, ICore } from "@adyen/adyen-web";
-import { ExpressOptions, PaymentExpressBuilder } from "../payment-enabler/payment-enabler";
+import {
+  ExpressOptions,
+  PaymentExpressBuilder,
+} from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import { DefaultAdyenExpressComponent } from "./base";
 
@@ -110,11 +113,16 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       paymentDataCallbacks: {
         onPaymentDataChanged(intermediatePaymentData) {
           return new Promise(async (resolve) => {
-            const { callbackTrigger, shippingAddress, shippingOptionData } = intermediatePaymentData;
-            const paymentDataRequestUpdate: google.payments.api.PaymentDataRequestUpdate = {};
+            const { callbackTrigger, shippingAddress, shippingOptionData } =
+              intermediatePaymentData;
+            const paymentDataRequestUpdate: google.payments.api.PaymentDataRequestUpdate =
+              {};
 
             /** If it initializes or changes the shipping address, we calculate the shipping options and transaction info  */
-            if (callbackTrigger === "INITIALIZE" || callbackTrigger === "SHIPPING_ADDRESS") {
+            if (
+              callbackTrigger === "INITIALIZE" ||
+              callbackTrigger === "SHIPPING_ADDRESS"
+            ) {
               try {
                 await me.setShippingAddress({
                   address: {
@@ -131,13 +139,13 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                 };
               }
 
-              paymentDataRequestUpdate.newShippingOptionParameters = await me.getShippingOptions(
-                shippingAddress.countryCode
-              );
+              paymentDataRequestUpdate.newShippingOptionParameters =
+                await me.getShippingOptions(shippingAddress.countryCode);
 
               await me.setShippingMethod({
                 shippingOption: {
-                  id: paymentDataRequestUpdate.newShippingOptionParameters.defaultSelectedOptionId,
+                  id: paymentDataRequestUpdate.newShippingOptionParameters
+                    .defaultSelectedOptionId,
                 },
               });
 
@@ -154,58 +162,19 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                 });
               } catch (error) {
                 paymentDataRequestUpdate.error = {
-                  reason: 'SHIPPING_OPTION_INVALID',
-                  message: 'Cannot use the selected shipping method',
-                  intent: 'SHIPPING_OPTION'
-                }
+                  reason: "SHIPPING_OPTION_INVALID",
+                  message: "Cannot use the selected shipping method",
+                  intent: "SHIPPING_OPTION",
+                };
               }
 
-              paymentDataRequestUpdate.newTransactionInfo = await me.getTransactionInfo();
+              paymentDataRequestUpdate.newTransactionInfo =
+                await me.getTransactionInfo();
             }
 
             resolve(paymentDataRequestUpdate);
           });
         },
-      },
-
-      onSubmit: async (state, component, actions) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-          };
-          const response = await fetch(this.processorUrl + "/payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
-          const data = await response.json();
-
-          if (!data.resultCode) {
-            actions.reject();
-            return;
-          }
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (error) {
-          actions.reject();
-        }
       },
       onAuthorized: (data, actions) => {
         const shippingAddress = this.convertAddress({
@@ -218,8 +187,11 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         const billingAddress = this.convertAddress({
           address: data.billingAddress,
           email: data.authorizedEvent.email,
-          name: data.authorizedEvent.paymentMethodData.info?.billingAddress?.name,
-          phoneNumber: data.authorizedEvent.paymentMethodData.info?.billingAddress?.phoneNumber,
+          name: data.authorizedEvent.paymentMethodData.info?.billingAddress
+            ?.name,
+          phoneNumber:
+            data.authorizedEvent.paymentMethodData.info?.billingAddress
+              ?.phoneNumber,
         });
 
         this.expressOptions
@@ -235,7 +207,9 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
     });
   }
 
-  private async getShippingOptions(countryCode: string): Promise<GooglePayShippingOptions> {
+  private async getShippingOptions(
+    countryCode: string
+  ): Promise<GooglePayShippingOptions> {
     const shippingMethods = await this.getShippingMethods({
       address: {
         country: countryCode,
@@ -251,7 +225,8 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
     const selectedShippingOption = shippingMethods.find((s) => s.isSelected);
 
     return {
-      defaultSelectedOptionId: selectedShippingOption?.id || convertedShippingOptions[0].id,
+      defaultSelectedOptionId:
+        selectedShippingOption?.id || convertedShippingOptions[0].id,
       shippingOptions: convertedShippingOptions,
     };
   }
@@ -259,11 +234,12 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
   private async getTransactionInfo(): Promise<google.payments.api.TransactionInfo> {
     const paymentData = await this.getInitialPaymentData();
 
-    const displayItems: google.payments.api.DisplayItem[] = paymentData.lineItems.map((lineItem) => ({
-      label: lineItem.name,
-      type: this.convertToDisplayItemType(lineItem.type),
-      price: this.centAmountToString(lineItem.amount.centAmount),
-    }));
+    const displayItems: google.payments.api.DisplayItem[] =
+      paymentData.lineItems.map((lineItem) => ({
+        label: lineItem.name,
+        type: this.convertToDisplayItemType(lineItem.type),
+        price: this.centAmountToString(lineItem.amount.centAmount),
+      }));
 
     return {
       displayItems,
@@ -275,7 +251,9 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
     };
   }
 
-  private convertToDisplayItemType(type: string): google.payments.api.DisplayItemType {
+  private convertToDisplayItemType(
+    type: string
+  ): google.payments.api.DisplayItemType {
     switch (type.toLocaleLowerCase()) {
       case "tax":
         return "TAX";
