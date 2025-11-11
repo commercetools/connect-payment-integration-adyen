@@ -1057,14 +1057,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
         const expiryDate = response.additionalData?.expiryDate; // returned as: '6/2016'
         const brand = response.paymentMethod.brand;
 
-        // Both are mandatory values, if any of them are not provided we can't do anything
-        if (!lastFourDigits || !expiryDate) {
-          return undefined;
-        }
+        let expiryMonth: string | undefined = undefined;
+        let expiryYear: string | undefined = undefined;
 
-        const expireMonthAndYear = expiryDate.split('/');
-        const expiryMonth = expireMonthAndYear[0];
-        const expiryYear = expireMonthAndYear[1];
+        if (expiryDate) {
+          const expireMonthAndYear = expiryDate.split('/');
+          expiryMonth = expireMonthAndYear[0];
+          expiryYear = expireMonthAndYear[1];
+        }
 
         return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),

@@ -77,10 +77,6 @@ export class NotificationTokenizationConverter {
         const expiryYear = storedPaymentMethodResource.expiryYear;
         const brand = storedPaymentMethodResource.brand;
 
-        if (!lastFourDigits || !expiryMonth || !expiryYear || !brand) {
-          return undefined;
-        }
-
         return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),
           lastFour: lastFourDigits,
