@@ -13,6 +13,8 @@ import {
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
   PaymentMethod,
+  CustomFieldsDraft,
+  GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -150,6 +152,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     if (getStoredPaymentMethodsConfig().enabled) {
       requiredPermissions.push('manage_payment_methods');
+    }
+
+    if (getConfig().adyenStorePaymentMethodDetailsEnabled) {
+      requiredPermissions.push('manage_types');
     }
 
     const handler = await statusHandler({
@@ -357,6 +363,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
+    let paymentMethodInfoCustomFieldsDraft: CustomFieldsDraft | undefined;
+
+    if (getConfig().adyenStorePaymentMethodDetailsEnabled && txState === 'Success') {
+      paymentMethodInfoCustomFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
+    }
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -366,6 +378,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
+      ...(paymentMethodInfoCustomFieldsDraft
+        ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
+        : {}),
     });
 
     log.info(`Payment authorization processed.`, {
@@ -399,6 +414,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
+    const txState = this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false);
+
+    let paymentMethodInfoCustomFieldsDraft: CustomFieldsDraft | undefined;
+
+    if (getConfig().adyenStorePaymentMethodDetailsEnabled && txState === 'Success') {
+      paymentMethodInfoCustomFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
+    }
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -406,8 +429,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
-        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
+        state: txState,
       },
+      ...(paymentMethodInfoCustomFieldsDraft
+        ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
+        : {}),
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -935,7 +961,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum, isActionRequired: boolean): string {
+  private convertAdyenResultCode(
+    resultCode: PaymentResponse.ResultCodeEnum,
+    isActionRequired: boolean,
+  ): 'Success' | 'Pending' | 'Failure' | 'Initial' {
     if (resultCode === PaymentResponse.ResultCodeEnum.Authorised) {
       return 'Success';
     } else if (
@@ -1018,6 +1047,35 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } catch (e) {
       log.error('Error parsing payment components config', { error: e });
       return undefined;
+    }
+  }
+
+  private convertAdyenPaymentsResultToCustomType(response: PaymentResponse): CustomFieldsDraft | undefined {
+    switch (response.paymentMethod?.type) {
+      case 'scheme': {
+        const lastFourDigits = response.additionalData?.cardSummary;
+        const expiryDate = response.additionalData?.expiryDate; // returned as: '6/2016'
+        const brand = response.paymentMethod.brand;
+
+        let expiryMonth: string | undefined = undefined;
+        let expiryYear: string | undefined = undefined;
+
+        if (expiryDate) {
+          const expireMonthAndYear = expiryDate.split('/');
+          expiryMonth = expireMonthAndYear[0];
+          expiryYear = expireMonthAndYear[1];
+        }
+
+        return GenerateCardDetailsCustomFieldsDraft({
+          brand: convertAdyenCardBrandToCTFormat(brand),
+          lastFour: lastFourDigits,
+          expiryMonth: Number(expiryMonth),
+          expiryYear: Number(expiryYear),
+        });
+      }
+      default: {
+        return undefined;
+      }
     }
   }
 }

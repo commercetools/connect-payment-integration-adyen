@@ -4,6 +4,9 @@ deployAs:
   - name: processor
     applicationType: service
     endpoint: /
+    scripts:
+      postDeploy: npm install && npm run connector:post-deploy
+      preUndeploy: npm install && npm run connector:pre-undeploy
     configuration:
       standardConfiguration:
         - key: CTP_PROJECT_KEY
@@ -70,6 +73,9 @@ deployAs:
           required: false
         - key: ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT
           description: The payment method interface account value used in the commerceotools payment methods.
+          required: false
+        - key: ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED
+          description: If set to "true" then displayable payment method details will be stored on the payment.paymentMethodInfo and payment-method entities. Default value is "false".
           required: false
 
       securedConfiguration:
