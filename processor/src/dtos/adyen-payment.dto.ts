@@ -8,9 +8,16 @@ import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paym
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { Notification } from '@adyen/api-library/lib/src/typings/notification/notification';
 import { GenericWebhook } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationWebhooksHandler';
+import { ConfigResponseSchemaDTO } from './operations/config.dto';
+import { PaymentMethod } from '@adyen/api-library/lib/src/typings/checkout/paymentMethod';
 
 export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
+
+export type GetExpressConfigResponseDTO = {
+  config: Omit<ConfigResponseSchemaDTO, 'storedPaymentMethodsConfig'>;
+  methods: PaymentMethod[] | undefined;
+};
 
 export type CreateSessionRequestDTO = Omit<
   CreateCheckoutSessionRequest,

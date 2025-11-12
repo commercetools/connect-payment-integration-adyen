@@ -13,7 +13,7 @@ import { getPaymentMethodType } from "./payment-enabler";
 
 class AdyenInitError extends Error {
   sessionId: string;
-  constructor(message: string, sessionId: string) {
+  constructor(message: string, sessionId?: string) {
     super(message);
     this.name = "AdyenInitError";
     this.sessionId = sessionId;
@@ -36,40 +36,33 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       this.initOptions.locale || "en-US"
     );
 
-    const [paymentMethodsResponse, configResponse] = await Promise.all([
-      fetch(`${this.initOptions.processorUrl}/payment-methods`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": this.initOptions.sessionId,
-        },
-        body: JSON.stringify({
-          allowedPaymentMethods: ["paypal", "googlepay", "applepay"],
-          countryCode: this.initOptions.countryCode,
-        }),
-      }),
-      fetch(`${this.initOptions.processorUrl}/operations/config`, {
+    const [configResponse] = await Promise.all([
+      fetch(`${this.initOptions.processorUrl}/express-config`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "X-Session-Id": this.initOptions.sessionId,
         },
       }),
     ]);
 
-    const [paymentMethodsJson, configJson] = await Promise.all([
-      paymentMethodsResponse.json(),
-      configResponse.json(),
-    ]);
+    if (!configResponse.ok) {
+      throw new AdyenInitError(
+        configResponse.status === 403
+          ? "Unauthorized error fetching express config"
+          : "Not able to initialize Adyen"
+      );
+    }
 
-    if (!paymentMethodsJson.paymentMethods) {
+    const [configJson] = await Promise.all([configResponse.json()]);
+
+    if (!configJson.methods) {
       throw new AdyenInitError(
         "Not able to initialize Adyen",
         this.initOptions.sessionId
       );
     }
 
-    paymentMethodsJson.paymentMethods.forEach((method: any) => {
+    configJson.methods.forEach((method: any) => {
       this.expressPaymentMethodsConfig.set(method.type, method.configuration);
     });
 
@@ -140,15 +133,15 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       },
       analytics: { enabled: true },
       locale: adyenLocale,
-      environment: configJson.environment,
-      clientKey: configJson.clientKey,
+      environment: configJson.config.environment,
+      clientKey: configJson.config.clientKey,
       countryCode: this.initOptions.countryCode,
     });
 
     this.adyenCheckout = adyenCheckout;
 
-    if (configJson.applePayConfig) {
-      this.applePayConfig = configJson.applePayConfig;
+    if (configJson.config.applePayConfig) {
+      this.applePayConfig = configJson.config.applePayConfig;
     }
 
     return {

@@ -28,6 +28,7 @@ import {
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
   GetExpressPaymentDataResponseDTO,
+  GetExpressConfigResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
@@ -137,6 +138,31 @@ export class AdyenPaymentService extends AbstractPaymentService {
         isEnabled: await this.isStoredPaymentMethodsEnabled(),
       },
     };
+  }
+
+  async expressConfig(): Promise<GetExpressConfigResponseDTO> {
+    const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
+    const config = {
+      clientKey: getConfig().adyenClientKey,
+      environment: getConfig().adyenEnvironment,
+      applePayConfig: {
+        usesOwnCertificate,
+      },
+      paymentComponentsConfig: this.getPaymentComponentsConfig(),
+    };
+
+    try {
+      const res = await AdyenApi().PaymentsApi.paymentMethods({
+        merchantAccount: getConfig().adyenMerchantAccount,
+      });
+
+      return {
+        config,
+        methods: res.paymentMethods,
+      };
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
   }
 
   async status(): Promise<StatusResponse> {
