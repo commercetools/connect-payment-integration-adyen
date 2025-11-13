@@ -58,19 +58,26 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     this.component.mount(selector);
   }
 
-  async setShippingAddress(opts: { address: ExpressAddressData }): Promise<void> {
+  async setShippingAddress(opts: {
+    address: ExpressAddressData;
+  }): Promise<void> {
     if (this.expressOptions.onShippingAddressSelected) {
       await this.expressOptions.onShippingAddressSelected(opts);
     }
   }
 
-  async getShippingMethods(opts: { address: ExpressAddressData }): Promise<ExpressShippingOptionData[]> {
-    this.availableShippingMethods = await this.expressOptions.getShippingMethods(opts);
+  async getShippingMethods(opts: {
+    address: ExpressAddressData;
+  }): Promise<ExpressShippingOptionData[]> {
+    this.availableShippingMethods =
+      await this.expressOptions.getShippingMethods(opts);
 
     return this.availableShippingMethods;
   }
 
-  async setShippingMethod(opts: { shippingOption: { id: string } }): Promise<void> {
+  async setShippingMethod(opts: {
+    shippingOption: { id: string };
+  }): Promise<void> {
     if (this.expressOptions.onShippingMethodSelected) {
       await this.expressOptions.onShippingMethodSelected(opts);
     }
@@ -78,13 +85,16 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
 
   protected async getInitialPaymentData(): Promise<InitialPaymentData> {
     try {
-      const response = await fetch(`${this.processorUrl}/express-payment-data`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": this.sessionId,
-        },
-      });
+      const response = await fetch(
+        `${this.processorUrl}/express-payment-data`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-Id": this.sessionId,
+          },
+        }
+      );
       const data = await response.json();
       return data as InitialPaymentData;
     } catch (error) {
@@ -101,7 +111,10 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     return this.centAmountToString(selectedShippingMethod.amount.centAmount);
   }
 
-  protected formatCurrency(opts: { centAmount: number; currencyCode: string }): string {
+  protected formatCurrency(opts: {
+    centAmount: number;
+    currencyCode: string;
+  }): string {
     const amount = opts.centAmount / 100;
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -109,12 +122,17 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     }).format(amount);
   }
 
-  protected convertAddress(opts: { address: AddressData; email?: string; name?: string; phoneNumber?: string }): ExpressAddressData {
-    const fullName = opts.name || '';
+  protected convertAddress(opts: {
+    address: AddressData;
+    email?: string;
+    name?: string;
+    phoneNumber?: string;
+  }): ExpressAddressData {
+    const fullName = opts.name || "";
 
     return {
       country: opts.address.country,
-      firstName: fullName.split(' ')[0],
+      firstName: fullName.split(" ")[0],
       lastName: fullName.split(" ").slice(1).join(" "),
       streetName: opts.address.street,
       streetNumber: opts.address.houseNumberOrName,
