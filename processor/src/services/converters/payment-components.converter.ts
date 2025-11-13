@@ -76,6 +76,17 @@ export class PaymentComponentsConverter {
           type: 'clearpay',
         },
       ],
+      express: [
+        {
+          type: 'applepay',
+        },
+        {
+          type: 'googlepay',
+        },
+        {
+          type: 'paypal',
+        },
+      ],
     };
   }
 }

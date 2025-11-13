@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -43,7 +43,8 @@
       var __VITE_PROCESSOR_URL__ =
         !"%VITE_PROCESSOR_URL%".startsWith("%") && "%VITE_PROCESSOR_URL%";
     </script>
-    <script src="../dev-utils/session.js"></script>
+    <script src="dev-utils/session.js"></script>
+    <script src="dev-utils/checkout.js"></script>
   </head>
   <body>
     <main role="main">
@@ -115,7 +116,7 @@
                   headers: {
                     Authorization: `Bearer ${jsonWebToken.token}`,
                   },
-                },
+                }
               );
               const paymentMethods = await res.json();
               paymentMethods.components.forEach((method) => {
@@ -128,6 +129,12 @@
                 const option = document.createElement("option");
                 option.value = `${method.type}`;
                 option.textContent = `dropin-${method.type}`;
+                paymentMethodSelect.appendChild(option);
+              });
+              paymentMethods.express.forEach((method) => {
+                const option = document.createElement("option");
+                option.value = `${method.type}`;
+                option.textContent = `express-${method.type}`;
                 paymentMethodSelect.appendChild(option);
               });
 
@@ -143,20 +150,21 @@
               .addEventListener("click", async (event) => {
                 event.preventDefault();
                 const cartId = document.getElementById("cartId").value;
+                ckoCartId = cartId;
 
-                const paymentMethodSelect =
-                  document.getElementById("paymentMethod");
+                const paymentMethodSelect = document.getElementById("paymentMethod");
                 const selectedValue = paymentMethodSelect.value;
-                const selectedText =
-                  paymentMethodSelect.options[paymentMethodSelect.selectedIndex]
-                    .text;
-                const isDropin = selectedText.startsWith("dropin");
-                const sessionId = await getSessionId(cartId, isDropin);
+                const selectedText = paymentMethodSelect.options[paymentMethodSelect.selectedIndex].text;
+
+                const isDropIn = selectedText.startsWith("dropin");
+                const isExpress = selectedText.startsWith("express");
+                const sessionId = await getSessionId(cartId, isDropIn);
 
                 const enabler = new Enabler({
                   processorUrl: __VITE_PROCESSOR_URL__,
                   sessionId: sessionId,
-                  currency: "EUR",
+                  currencyCode: "EUR",
+                  countryCode: 'DE',
                   onComplete: ({ isSuccess, paymentReference }) => {
                     console.log("onComplete", { isSuccess, paymentReference });
                   },
@@ -178,15 +186,9 @@
                 let selectedStoredPaymentMethod = undefined;
 
                 if (isStoredPaymentMethodSelected) {
-                  if (!isStoredPaymentMethodsEnabled) {
-                    console.warn(
-                      "Stored payment methods is selected but it's not enabled. Make sure the feature flag is enabled in the processor AND the cart.customerId is set",
-                    );
-                    return;
-                  }
 
                   builder = await enabler.createStoredPaymentMethodBuilder(
-                    paymentMethodTypeToUseForSPM,
+                    paymentMethodTypeToUseForSPM
                   );
 
                   const storedPaymentMethods =
@@ -206,7 +208,7 @@
                     for (const spm of storedPaymentMethods.storedPaymentMethods) {
                       {
                         const useSelectedOne = confirm(
-                          `Use SPM with id ${spm.id} | "**** ${spm.displayOptions.endDigits} | ${spm.displayOptions.expiryMonth}/${spm.displayOptions.expiryYear}"`,
+                          `Use SPM with id ${spm.id} | "**** ${spm.displayOptions.endDigits} | ${spm.displayOptions.expiryMonth}/${spm.displayOptions.expiryYear}"`
                         );
 
                         if (useSelectedOne) {
@@ -219,21 +221,23 @@
 
                   if (!selectedStoredPaymentMethod) {
                     console.warn(
-                      "No stored payment method is selected to be used. Please select one",
+                      "No stored payment method is selected to be used. Please select one"
                     );
                     return;
                   }
 
                   console.log(
                     "Selected stored payment method",
-                    selectedStoredPaymentMethod,
+                    selectedStoredPaymentMethod
                   );
 
                   document
                     .getElementById("removeStorePaymentMethod-container")
                     .classList.remove("d-none");
-                } else if (isDropin) {
+                } else if (isDropIn) {
                   builder = await enabler.createDropinBuilder(selectedValue);
+                } else if (isExpress) {
+                  builder = await enabler.createExpressBuilder(selectedValue);
                 } else {
                   builder = await enabler.createComponentBuilder(selectedValue);
                 }
@@ -243,7 +247,7 @@
                 // - the user opted to pay with existing spm
                 // - the selected payment method is in the allowed/supported list
                 if (
-                  !isDropin &&
+                  !isDropIn &&
                   !isStoredPaymentMethodSelected &&
                   allowedStoredPaymentMethods.includes(selectedValue)
                 ) {
@@ -272,13 +276,27 @@
                           if (!termsChecked) {
                             event.preventDefault();
                             alert(
-                              "You must agree to the terms and conditions.",
+                              "You must agree to the terms and conditions."
                             );
                             return Promise.reject("error-occurred");
                           }
                           return Promise.resolve(); // change to true, to test payment flow
                         },
                       }),
+                      ...(isExpress ? {
+                        onPaymentInit: async () => {
+                          console.log("onPaymentInit event received");
+                          return Promise.resolve();
+                        },
+                        onShippingAddressSelected: setShippingAddress,
+                        getShippingMethods: getShippingMethods,
+                        onShippingMethodSelected: setShippingMethod,
+                        onPaymentSubmit: async (opts) => {
+                          await setShippingAddress({ address: opts.shippingAddress });
+                          await setBillingAddress({ address: opts.billingAddress });
+                          return Promise.resolve();
+                        },
+                      } : {})
                 });
 
                 if (isStoredPaymentMethodSelected) {
@@ -291,13 +309,13 @@
                           alert(
                             "Deleted payment method with CT ID: '" +
                               id +
-                              "'. Reload the Checkout to continue",
+                              "'. Reload the Checkout to continue"
                           );
                         })
                         .catch((error) => {
                           alert(
                             "Failed to delete payment method with msg: " +
-                              error.message,
+                              error.message
                           );
                         });
                     };
@@ -349,7 +367,7 @@
 
                       console.log(
                         "Should store/tokenise the payment method?",
-                        shouldStorePaymentMethod,
+                        shouldStorePaymentMethod
                       );
 
                       await component.submit({
