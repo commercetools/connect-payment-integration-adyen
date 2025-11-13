@@ -21,7 +21,6 @@ export type GetExpressConfigResponseDTO = {
 
 export type GetExpressConfigRequestDTO = {
   countryCode: string;
-  allowedPaymentMethods: string[];
 };
 
 export type CreateSessionRequestDTO = Omit<

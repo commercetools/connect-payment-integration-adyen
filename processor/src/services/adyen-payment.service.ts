@@ -154,7 +154,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       const res = await AdyenApi().PaymentsApi.paymentMethods({
         merchantAccount: getConfig().adyenMerchantAccount,
-        allowedPaymentMethods: opts.data.allowedPaymentMethods,
+        allowedPaymentMethods: ['paypal', 'googlepay', 'applepay'],
         countryCode: opts.data.countryCode,
       });
 

@@ -43,7 +43,6 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          allowedPaymentMethods: ["paypal", "googlepay", "applepay"],
           countryCode: this.initOptions.countryCode,
         })
       }),
@@ -59,6 +58,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
 
     const [configJson] = await Promise.all([configResponse.json()]);
 
+    console.log(configJson)
     if (!configJson.methods) {
       throw new AdyenInitError(
         "Not able to initialize Adyen",
