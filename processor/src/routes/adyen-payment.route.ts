@@ -19,6 +19,7 @@ import {
   PaymentMethodsResponseDTO,
   GetExpressPaymentDataResponseDTO,
   GetExpressConfigResponseDTO,
+  GetExpressConfigRequestDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
@@ -226,17 +227,20 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.get<{ Reply: GetExpressConfigResponseDTO }>(
+  fastify.post<{ Body: GetExpressConfigRequestDTO; Reply: GetExpressConfigResponseDTO }>(
     '/express-config',
     {
       preHandler: [corsAuthHook()],
     },
     async (request, reply) => {
-      const response = await opts.paymentService.expressConfig();
+      const response = await opts.paymentService.expressConfig({
+        data: request.body,
+      });
       return reply.status(200).send(response);
     },
   );
 };
+
 /**
  * Check if the payment method is a card and if so, ensure the card data is not sent in the fields that accept plain text
  * @param data

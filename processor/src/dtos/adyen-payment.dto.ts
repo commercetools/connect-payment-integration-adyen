@@ -19,6 +19,11 @@ export type GetExpressConfigResponseDTO = {
   methods: PaymentMethod[] | undefined;
 };
 
+export type GetExpressConfigRequestDTO = {
+  countryCode: string;
+  allowedPaymentMethods: string[];
+};
+
 export type CreateSessionRequestDTO = Omit<
   CreateCheckoutSessionRequest,
   | 'amount'

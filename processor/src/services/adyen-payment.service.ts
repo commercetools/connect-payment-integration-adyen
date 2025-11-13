@@ -29,6 +29,7 @@ import {
   PaymentMethodsResponseDTO,
   GetExpressPaymentDataResponseDTO,
   GetExpressConfigResponseDTO,
+  GetExpressConfigRequestDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
@@ -140,7 +141,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     };
   }
 
-  async expressConfig(): Promise<GetExpressConfigResponseDTO> {
+  async expressConfig(opts: { data: GetExpressConfigRequestDTO }): Promise<GetExpressConfigResponseDTO> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
     const config = {
       clientKey: getConfig().adyenClientKey,
@@ -148,12 +149,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
       applePayConfig: {
         usesOwnCertificate,
       },
-      paymentComponentsConfig: this.getPaymentComponentsConfig(),
     };
 
     try {
       const res = await AdyenApi().PaymentsApi.paymentMethods({
         merchantAccount: getConfig().adyenMerchantAccount,
+        allowedPaymentMethods: opts.data.allowedPaymentMethods,
+        countryCode: opts.data.countryCode,
       });
 
       return {

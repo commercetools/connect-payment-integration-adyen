@@ -38,10 +38,14 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
 
     const [configResponse] = await Promise.all([
       fetch(`${this.initOptions.processorUrl}/express-config`, {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          allowedPaymentMethods: ["paypal", "googlepay", "applepay"],
+          countryCode: this.initOptions.countryCode,
+        })
       }),
     ]);
 
