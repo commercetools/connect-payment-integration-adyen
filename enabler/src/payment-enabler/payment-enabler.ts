@@ -236,6 +236,7 @@ export type ExpressAddressData = {
 export interface ExpressComponent {
   mount(selector: string): void;
 }
+
 export type ExpressOptions = {
   allowedCountries?: string[]; //TODO: review
   onPaymentInit: () => Promise<void>;
@@ -253,14 +254,6 @@ export type ExpressOptions = {
     billingAddress: ExpressAddressData;
   }) => Promise<void>;
 };
-
-export interface PaymentExpressBuilder {
-  build(config: ExpressOptions): ExpressComponent;
-}
-
-export interface ExpressComponent {
-  mount(selector: string): void;
-}
 
 export interface PaymentExpressBuilder {
   build(config: ExpressOptions): ExpressComponent;
