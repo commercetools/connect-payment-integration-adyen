@@ -47,6 +47,8 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
   }
 
   async init(): Promise<BaseOptions> {
+    if(this.adyenCheckout) return;
+    
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
