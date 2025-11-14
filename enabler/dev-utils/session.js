@@ -1,5 +1,4 @@
 const projectKey = __VITE_CTP_PROJECT_KEY__;
-let oAuthToken = null;
 
 const fetchCoCoOAuthToken = async () => {
   const myHeaders = new Headers();
@@ -40,9 +39,7 @@ const fetchCoCoOAuthToken = async () => {
 };
 
 const getSessionId = async (cartId, isDropin = false) => {
-  if (!oAuthToken) {
-    oAuthToken = await fetchCoCoOAuthToken();
-  }
+  const oAuthToken = await fetchCoCoOAuthToken();
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,

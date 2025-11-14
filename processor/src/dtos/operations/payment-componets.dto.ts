@@ -9,10 +9,6 @@ export const SupportedPaymentDropinsData = Type.Object({
   type: DropinType,
 });
 
-export const SupportedPaymentExpressData = Type.Object({
-  type: Type.String(),
-});
-
 export const SupportedPaymentComponentsData = Type.Object({
   type: Type.String(),
   subtypes: Type.Optional(Type.Array(Type.String())),
@@ -21,7 +17,6 @@ export const SupportedPaymentComponentsData = Type.Object({
 export const SupportedPaymentComponentsSchema = Type.Object({
   dropins: Type.Array(SupportedPaymentDropinsData),
   components: Type.Array(SupportedPaymentComponentsData),
-  express: Type.Array(SupportedPaymentExpressData),
 });
 
 export type SupportedPaymentComponentsSchemaDTO = Static<typeof SupportedPaymentComponentsSchema>;

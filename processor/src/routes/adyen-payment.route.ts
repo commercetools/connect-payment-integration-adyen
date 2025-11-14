@@ -17,16 +17,12 @@ import {
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
-  GetExpressPaymentDataResponseDTO,
-  GetExpressConfigResponseDTO,
-  GetExpressConfigRequestDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 import { StoredPaymentMethodsResponseSchema } from '../dtos/stored-payment-methods.dto';
 import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
 import { Type } from '@sinclair/typebox';
-import { corsAuthHook } from '../libs/fastify/cors/cors';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
@@ -213,30 +209,6 @@ export const adyenPaymentRoutes = async (
       await opts.paymentService.deleteStoredPaymentMethodViaCart(id);
 
       return reply.status(200).send();
-    },
-  );
-
-  fastify.get<{ Reply: GetExpressPaymentDataResponseDTO }>(
-    '/express-payment-data',
-    {
-      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
-    },
-    async (_request, reply) => {
-      const resp = await opts.paymentService.getExpressPaymentData();
-      return reply.status(200).send(resp);
-    },
-  );
-
-  fastify.post<{ Body: GetExpressConfigRequestDTO; Reply: GetExpressConfigResponseDTO }>(
-    '/express-config',
-    {
-      preHandler: [corsAuthHook()],
-    },
-    async (request, reply) => {
-      const response = await opts.paymentService.expressConfig({
-        data: request.body,
-      });
-      return reply.status(200).send(response);
     },
   );
 };
