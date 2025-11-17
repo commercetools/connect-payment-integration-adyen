@@ -25,6 +25,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private adyenCheckout: ICore;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
+  private initPromise?: Promise<BaseOptions>;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
@@ -32,7 +33,14 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   }
 
   async init(type: string): Promise<BaseOptions> {
-    if(this.adyenCheckout) {
+    if (this.initPromise) return this.initPromise;
+
+    this.initPromise = this._initialize(type);
+    return this.initPromise;
+  }
+
+  private async _initialize(type: string): Promise<BaseOptions> {
+    if(this.initPromise) {
       return {
         adyenCheckout: this.adyenCheckout,
         applePayConfig: this.applePayConfig,
@@ -160,7 +168,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
     }
 
     return {
-      adyenCheckout: this.adyenCheckout,
+      adyenCheckout,
       applePayConfig: this.applePayConfig,
       countryCode: this.initOptions.countryCode,
       currencyCode: this.initOptions.currencyCode,
