@@ -29,6 +29,14 @@ import { GooglePayExpressBuilder } from "../express/googlepay";
 import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
 import { AdyenInitWithSessionFlow } from "./adyen-init-session";
 import { AdyenInitWithAdvancedFlow } from "./adyen-init-advanced";
+import { AfterPayBuilder } from "../components/payment-methods/afterpay";
+import { BlikBuilder } from "../components/payment-methods/blik";
+import { FPXBuilder } from "../components/payment-methods/fpx";
+import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
+import { Przelewy24Builder } from "../components/payment-methods/przelewy24";
+import { SwishBuilder } from "../components/payment-methods/swish";
+import { VippsBuilder } from "../components/payment-methods/vipps";
+import { ClearpayBuilder } from "../components/payment-methods/clearpay";
 
 export type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
@@ -72,19 +80,27 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     const supportedMethods = {
       applepay: ApplePayBuilder,
-      card: CardBuilder,
-      googlepay: GooglepayBuilder,
-      ideal: IdealBuilder,
-      paypal: PaypalBuilder,
-      klarna_pay_now: KlarnaPayNowBuilder,
-      klarna_pay_later: KlarnaPayLaterBuilder,
-      klarna_pay_overtime: KlarnaPayOverTimeBuilder,
-      eps: EPSBuilder,
       bancontactcard: BancontactCardBuilder,
       bancontactmobile: BancontactMobileBuilder,
-      twint: TwintBuilder,
-      sepadirectdebit: SepaBuilder,
+      blik: BlikBuilder,
+      card: CardBuilder,
+      eps: EPSBuilder,
+      fpx: FPXBuilder,
+      googlepay: GooglepayBuilder,
+      ideal: IdealBuilder,
       klarna_billie: KlarnaBillieBuilder,
+      klarna_pay_later: KlarnaPayLaterBuilder,
+      klarna_pay_now: KlarnaPayNowBuilder,
+      klarna_pay_overtime: KlarnaPayOverTimeBuilder,
+      przelewy24: Przelewy24Builder,
+      paypal: PaypalBuilder,
+      sepadirectdebit: SepaBuilder,
+      swish: SwishBuilder,
+      twint: TwintBuilder,
+      vipps: VippsBuilder,
+      mobilepay: MobilePayBuilder,
+      afterpay: AfterPayBuilder,
+      clearpay: ClearpayBuilder,
     };
 
     if (!(type in supportedMethods)) {

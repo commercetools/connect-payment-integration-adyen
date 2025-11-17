@@ -32,8 +32,18 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   }
 
   async init(type: string): Promise<BaseOptions> {
-    if(this.adyenCheckout) return;
-    
+    if(this.adyenCheckout) {
+      return {
+        adyenCheckout: this.adyenCheckout,
+        applePayConfig: this.applePayConfig,
+        countryCode: this.initOptions.countryCode,
+        currencyCode: this.initOptions.currencyCode,
+        processorUrl: this.initOptions.processorUrl,
+        paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
+        sessionId: this.initOptions.sessionId,
+      };
+    }
+
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
@@ -60,7 +70,6 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
 
     const [configJson] = await Promise.all([configResponse.json()]);
 
-    console.log(configJson)
     if (!configJson.methods) {
       throw new AdyenInitError(
         "Not able to initialize Adyen",

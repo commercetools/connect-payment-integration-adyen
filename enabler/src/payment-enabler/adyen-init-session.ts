@@ -47,8 +47,20 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
   }
 
   async init(): Promise<BaseOptions> {
-    if(this.adyenCheckout) return;
-    
+    if(this.adyenCheckout) {
+      return {
+        adyenCheckout: this.adyenCheckout,
+        sessionId: this.initOptions.sessionId,
+        processorUrl: this.initOptions.processorUrl,
+        countryCode: this.initOptions.countryCode,
+        currencyCode: this.initOptions.currencyCode,
+        applePayConfig: this.applePayConfig,
+        paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
+        storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
+        setStorePaymentDetails: this.setStorePaymentDetails,
+      };
+    }
+
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
@@ -146,8 +158,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
               ? { storePaymentMethod: true }
               : {}),
           };
-
-          console.log(reqData);
 
           const response = await fetch(
             this.initOptions.processorUrl + "/payments",
@@ -318,7 +328,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
   }
 
   setStorePaymentDetails = (enabled: boolean): void => {
-    console.log("===> clicked", enabled);
     this.storePaymentDetails = enabled;
   };
 
