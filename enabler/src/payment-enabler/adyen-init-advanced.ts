@@ -1,7 +1,6 @@
 import {
   AdyenCheckout,
   AdyenCheckoutError,
-  ICore,
   PaymentCompletedData,
   PaymentFailedData,
   UIElement,
@@ -22,7 +21,6 @@ class AdyenInitError extends Error {
 
 export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private initOptions: AdyenEnablerOptions;
-  private adyenCheckout: ICore;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
   private initPromise?: Promise<BaseOptions>;
@@ -40,18 +38,6 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   }
 
   private async _initialize(type: string): Promise<BaseOptions> {
-    if(this.initPromise) {
-      return {
-        adyenCheckout: this.adyenCheckout,
-        applePayConfig: this.applePayConfig,
-        countryCode: this.initOptions.countryCode,
-        currencyCode: this.initOptions.currencyCode,
-        processorUrl: this.initOptions.processorUrl,
-        paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
-        sessionId: this.initOptions.sessionId,
-      };
-    }
-
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
@@ -64,7 +50,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
         },
         body: JSON.stringify({
           countryCode: this.initOptions.countryCode,
-        })
+        }),
       }),
     ]);
 
@@ -160,8 +146,6 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       clientKey: configJson.config.clientKey,
       countryCode: this.initOptions.countryCode,
     });
-
-    this.adyenCheckout = adyenCheckout;
 
     if (configJson.config.applePayConfig) {
       this.applePayConfig = configJson.config.applePayConfig;
