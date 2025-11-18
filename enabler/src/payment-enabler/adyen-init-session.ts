@@ -3,7 +3,6 @@ import {
   AdditionalDetailsData,
   AdyenCheckout,
   AdyenCheckoutError,
-  ICore,
   PaymentCompletedData,
   PaymentFailedData,
   SubmitActions,
@@ -36,31 +35,24 @@ class AdyenInitError extends Error {
 
 export class AdyenInitWithSessionFlow implements AdyenInit {
   private initOptions: AdyenEnablerOptions;
-  private adyenCheckout: ICore;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private paymentComponentsConfigOverride?: Record<string, any>;
   private storePaymentDetails = false;
+  private initPromise?: Promise<BaseOptions>;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
   }
 
   async init(): Promise<BaseOptions> {
-    if(this.adyenCheckout) {
-      return {
-        adyenCheckout: this.adyenCheckout,
-        sessionId: this.initOptions.sessionId,
-        processorUrl: this.initOptions.processorUrl,
-        countryCode: this.initOptions.countryCode,
-        currencyCode: this.initOptions.currencyCode,
-        applePayConfig: this.applePayConfig,
-        paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
-        storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
-        setStorePaymentDetails: this.setStorePaymentDetails,
-      };
-    }
+    if (this.initPromise) return this.initPromise;
 
+    this.initPromise = this._initialize();
+    return this.initPromise;
+  }
+
+  private async _initialize(): Promise<BaseOptions> {
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
@@ -270,8 +262,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       },
     });
 
-    this.adyenCheckout = adyenCheckout;
-
     if (configJson.applePayConfig) {
       this.applePayConfig = configJson.applePayConfig;
     }
@@ -288,7 +278,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     }
 
     return {
-      adyenCheckout: this.adyenCheckout,
+      adyenCheckout,
       sessionId: this.initOptions.sessionId,
       processorUrl: this.initOptions.processorUrl,
       countryCode: this.initOptions.countryCode,

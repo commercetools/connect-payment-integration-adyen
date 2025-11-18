@@ -1,7 +1,6 @@
 import {
   AdyenCheckout,
   AdyenCheckoutError,
-  ICore,
   PaymentCompletedData,
   PaymentFailedData,
   UIElement,
@@ -22,9 +21,9 @@ class AdyenInitError extends Error {
 
 export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private initOptions: AdyenEnablerOptions;
-  private adyenCheckout: ICore;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
+  private initPromise?: Promise<BaseOptions>;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
@@ -32,18 +31,13 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   }
 
   async init(type: string): Promise<BaseOptions> {
-    if(this.adyenCheckout) {
-      return {
-        adyenCheckout: this.adyenCheckout,
-        applePayConfig: this.applePayConfig,
-        countryCode: this.initOptions.countryCode,
-        currencyCode: this.initOptions.currencyCode,
-        processorUrl: this.initOptions.processorUrl,
-        paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
-        sessionId: this.initOptions.sessionId,
-      };
-    }
+    if (this.initPromise) return this.initPromise;
 
+    this.initPromise = this._initialize(type);
+    return this.initPromise;
+  }
+
+  private async _initialize(type: string): Promise<BaseOptions> {
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
@@ -56,7 +50,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
         },
         body: JSON.stringify({
           countryCode: this.initOptions.countryCode,
-        })
+        }),
       }),
     ]);
 
@@ -153,14 +147,12 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       countryCode: this.initOptions.countryCode,
     });
 
-    this.adyenCheckout = adyenCheckout;
-
     if (configJson.config.applePayConfig) {
       this.applePayConfig = configJson.config.applePayConfig;
     }
 
     return {
-      adyenCheckout: this.adyenCheckout,
+      adyenCheckout,
       applePayConfig: this.applePayConfig,
       countryCode: this.initOptions.countryCode,
       currencyCode: this.initOptions.currencyCode,
