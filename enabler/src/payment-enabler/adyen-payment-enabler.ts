@@ -63,17 +63,20 @@ export type BaseOptions = {
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
-  private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private adyenInitWithSessionFlow: AdyenInitWithSessionFlow;
   private adyenInitWithAdvancedFlow: AdyenInitWithAdvancedFlow;
+  private sessionFlowBaseOptions: Promise<BaseOptions>;
+  private advancedFlowBaseOptions: Promise<BaseOptions>;
 
   constructor(options: AdyenEnablerOptions) {
     this.adyenInitWithSessionFlow = new AdyenInitWithSessionFlow(options);
     this.adyenInitWithAdvancedFlow = new AdyenInitWithAdvancedFlow(options);
+    this.sessionFlowBaseOptions = this.adyenInitWithSessionFlow.init();
+    this.advancedFlowBaseOptions = this.adyenInitWithAdvancedFlow.init();
   }
 
   async createComponentBuilder(type: string): Promise<PaymentComponentBuilder> {
-    const baseOptions = await this.adyenInitWithSessionFlow.init();
+    const baseOptions = await this.sessionFlowBaseOptions;
     if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
@@ -115,7 +118,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createDropinBuilder(type: DropinType): Promise<PaymentDropinBuilder> {
-    const baseOptions = await this.adyenInitWithSessionFlow.init();
+    const baseOptions = await this.sessionFlowBaseOptions;
     if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
@@ -134,7 +137,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createExpressBuilder(type: string): Promise<PaymentExpressBuilder> {
-    const baseOptions = await this.adyenInitWithAdvancedFlow.init(type);
+    const baseOptions = await this.advancedFlowBaseOptions;
+    const paymentMethodConfig = await this.adyenInitWithAdvancedFlow.getPaymentMethodConfig(type);
     if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
@@ -151,20 +155,18 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       );
     }
 
-    return new supportedMethods[type](baseOptions);
+    return new supportedMethods[type]({...baseOptions, paymentMethodConfig});
   }
 
   async createStoredPaymentMethodBuilder(
     type: string
   ): Promise<StoredComponentBuilder | never> {
-    const baseOptions = await this.adyenInitWithSessionFlow.init();
+    const baseOptions = await this.sessionFlowBaseOptions;
     if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
 
-    this.storedPaymentMethodsConfig = baseOptions.storedPaymentMethodsConfig;
-
-    if (!this.storedPaymentMethodsConfig?.isEnabled) {
+    if (!baseOptions.storedPaymentMethodsConfig?.isEnabled) {
       throw new Error(
         "Stored payment methods is not enabled and thus cannot be used to build a new component"
       );
@@ -186,12 +188,14 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async isStoredPaymentMethodsEnabled(): Promise<boolean> {
-    return this.storedPaymentMethodsConfig?.isEnabled;
+    const baseOptions = await this.sessionFlowBaseOptions;
+    return baseOptions.storedPaymentMethodsConfig?.isEnabled;
   }
 
   async getStoredPaymentMethods({ allowedMethodTypes }) {
+    const baseOptions = await this.sessionFlowBaseOptions;
     const storedPaymentMethods =
-      this.storedPaymentMethodsConfig.storedPaymentMethods
+      baseOptions.storedPaymentMethodsConfig.storedPaymentMethods
         .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
         .filter((method) => allowedMethodTypes.includes(method.type));
 

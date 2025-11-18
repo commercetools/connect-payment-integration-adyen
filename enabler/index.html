@@ -279,7 +279,6 @@
             builder = await enabler.createExpressBuilder(type);
           else if (category === "component")
             builder = await enabler.createComponentBuilder(type);
-          // const component = await builder.build({});
           const component = await builder.build({
             showPayButton: !builder.componentHasSubmit,
             ...(builder.componentHasSubmit
@@ -353,6 +352,9 @@
 
       btnLoadOthers.addEventListener("click", (e) => {
         e.preventDefault();
+        event.preventDefault();
+        const cartId = document.getElementById("cartId").value;
+        ckoCartId = cartId;
         loadMethods({ includeDropins: false });
       });
       btnLoadDropins.addEventListener("click", (e) => {

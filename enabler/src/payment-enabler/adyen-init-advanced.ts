@@ -23,21 +23,13 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private initOptions: AdyenEnablerOptions;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
-  private initPromise?: Promise<BaseOptions>;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
     this.expressPaymentMethodsConfig = new Map();
   }
 
-  async init(type: string): Promise<BaseOptions> {
-    if (this.initPromise) return this.initPromise;
-
-    this.initPromise = this._initialize(type);
-    return this.initPromise;
-  }
-
-  private async _initialize(type: string): Promise<BaseOptions> {
+  async init(): Promise<BaseOptions> {
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
@@ -157,9 +149,12 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       countryCode: this.initOptions.countryCode,
       currencyCode: this.initOptions.currencyCode,
       processorUrl: this.initOptions.processorUrl,
-      paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
       sessionId: this.initOptions.sessionId,
     };
+  }
+
+  getPaymentMethodConfig(type: string): { [key: string]: string } {
+    return this.expressPaymentMethodsConfig.get(type);
   }
 
   private handleError(opts: { error: any; component: UIElement }) {

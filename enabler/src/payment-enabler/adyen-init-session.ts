@@ -39,20 +39,12 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private paymentComponentsConfigOverride?: Record<string, any>;
   private storePaymentDetails = false;
-  private initPromise?: Promise<BaseOptions>;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
   }
 
   async init(): Promise<BaseOptions> {
-    if (this.initPromise) return this.initPromise;
-
-    this.initPromise = this._initialize();
-    return this.initPromise;
-  }
-
-  private async _initialize(): Promise<BaseOptions> {
     const adyenLocale = convertToAdyenLocale(
       this.initOptions.locale || "en-US"
     );
