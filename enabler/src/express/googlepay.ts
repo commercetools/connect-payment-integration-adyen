@@ -29,6 +29,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
   }
 
+  // TODO: validate other ExpressOptions fields exists before they are used.
   build(config: ExpressOptions): GooglePayExpressComponent {
     const googlePayComponent = new GooglePayExpressComponent({
       adyenCheckout: this.adyenCheckout,
@@ -104,10 +105,14 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         phoneNumberRequired: true,
       },
       onClick: (resolve, reject) => {
-        return this.expressOptions
-          .onPaymentInit()
-          .then(() => resolve())
-          .catch(() => reject());
+        if (this.expressOptions.onPaymentInit) {
+          return this.expressOptions
+            .onPaymentInit()
+            .then(() => resolve())
+            .catch(() => reject());
+        }
+
+        return resolve();
       },
       shippingOptionRequired: true,
       paymentDataCallbacks: {
@@ -194,15 +199,19 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
               ?.phoneNumber,
         });
 
-        this.expressOptions
-          .onPaymentSubmit({
-            shippingAddress,
-            billingAddress,
-          })
-          .then(() => actions.resolve())
-          .catch((error) => {
-            actions.reject(error);
-          });
+        if (this.expressOptions.onPaymentSubmit) {
+          this.expressOptions
+            .onPaymentSubmit({
+              shippingAddress,
+              billingAddress,
+            })
+            .then(() => actions.resolve())
+            .catch((error) => {
+              actions.reject(error);
+            });
+        } else {
+          return actions.resolve();
+        }
       },
     });
   }

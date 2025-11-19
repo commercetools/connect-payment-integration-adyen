@@ -92,7 +92,9 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
           const reqData = {
             ...state.data,
             channel: "Web",
+            countryCode: this.initOptions.countryCode,
           };
+          console.log(reqData);
           const response = await fetch(
             this.initOptions.processorUrl + "/payments",
             {
@@ -105,6 +107,8 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
             }
           );
           const data = await response.json();
+
+          console.log(data);
 
           if (!data.resultCode) {
             actions.reject();
