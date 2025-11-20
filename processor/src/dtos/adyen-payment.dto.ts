@@ -110,7 +110,7 @@ export type GetExpressPaymentDataResponseDTO = {
   currencyCode: string;
 };
 
-export type UpdatePayPalExpressPaymentRequestDTO = Pick<PaypalUpdateOrderRequest, 'amount'> & {
+export type UpdatePayPalExpressPaymentRequestDTO = Pick<PaypalUpdateOrderRequest, 'amount' | 'pspReference'> & {
   paymentReference: string;
   deliveryMethods: DeliveryMethod[];
 };

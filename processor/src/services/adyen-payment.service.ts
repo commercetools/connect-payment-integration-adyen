@@ -789,7 +789,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   async updatePayPalExpressOrder(opts: {
     data: UpdatePayPalExpressPaymentRequestDTO;
   }): Promise<UpdatePayPalExpressPaymentResponseDTO> {
-    const payment = await this.ctPaymentService.getPayment({
+    const ctPayment = await this.ctPaymentService.getPayment({
       id: opts.data.paymentReference,
     });
 
@@ -798,12 +798,36 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const requestData: PaypalUpdateOrderRequest = {
       ...opts.data,
       amount: {
-        currency: payment.amountPlanned.currencyCode,
-        value: payment.amountPlanned.centAmount + (selectedDeliveryMethod[0].amount?.value || 0),
+        currency: ctPayment.amountPlanned.currencyCode,
+        value: ctPayment.amountPlanned.centAmount + (selectedDeliveryMethod[0].amount?.value || 0),
       },
     };
 
-    return await AdyenApi().UtilityApi.updatesOrderForPaypalExpressCheckout(requestData);
+    const res = await AdyenApi().UtilityApi.updatesOrderForPaypalExpressCheckout(requestData);
+
+    // TODO: figure out how to update the payment transaction with the right amount.
+    // TODO: we also need to figure out how the cart amount should be updated.
+    // const updatedPayment = await this.ctPaymentService.updatePayment({
+    //   id: ctPayment.id,
+    //   pspReference: opts.data.pspReference,
+    //   transaction: {
+    //     type: 'Authorization',
+    //     amount: {
+    //       currencyCode: ctPayment.amountPlanned.currencyCode,
+    //       centAmount: ctPayment.amountPlanned.centAmount + (selectedDeliveryMethod[0].amount?.value || 0),
+    //     },
+    //     interactionId: opts.data.pspReference,
+    //     state: 'Initial',
+    //   },
+    // });
+
+    // log.info(`Paypal order updated.`, {
+    //   paymentId: updatedPayment.id,
+    //   interactionId: opts.data.pspReference,
+    //   result: res.status,
+    // });
+
+    return res;
   }
 
   async getExpressPaymentData(): Promise<GetExpressPaymentDataResponseDTO> {
