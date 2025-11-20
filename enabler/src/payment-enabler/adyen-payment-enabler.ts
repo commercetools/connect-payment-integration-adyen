@@ -52,6 +52,7 @@ export type BaseOptions = {
   paymentComponentsConfigOverride?: Record<string, any>;
   storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;
   setStorePaymentDetails?: (enabled: boolean) => void;
+  setSessionId?: (sessionId: string) => void;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
@@ -123,7 +124,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
 
-    const supportedMethods = {
+    const supportedMethods = {     
       googlepay: GooglePayExpressBuilder,
     };
 

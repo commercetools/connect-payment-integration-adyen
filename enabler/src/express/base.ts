@@ -1,4 +1,10 @@
-import { AddressData, ApplePay, GooglePay, PayPal } from "@adyen/adyen-web";
+import {
+  AddressData,
+  ApplePay,
+  GooglePay,
+  PayPal,
+  UIElement,
+} from "@adyen/adyen-web";
 import {
   ExpressAddressData,
   ExpressComponent,
@@ -83,6 +89,22 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     }
   }
 
+  async onComplete(
+    opts: {
+      isSuccess: boolean;
+      paymentReference: string;
+      method: { type: string };
+    },
+    component: UIElement
+  ): Promise<void> {
+    if (this.expressOptions.onComplete) {
+      await this.expressOptions.onComplete(opts, component);
+      return;
+    }
+
+    throw new Error("onComplete not implemented");
+  }
+
   protected async getInitialPaymentData(): Promise<InitialPaymentData> {
     try {
       const response = await fetch(
@@ -136,7 +158,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
       lastName: fullName.split(" ").slice(1).join(" "),
       streetName: opts.address.street,
       streetNumber: opts.address.houseNumberOrName,
-      region: opts.address.stateOrProvince,
+      state: opts.address.stateOrProvince,
       postalCode: opts.address.postalCode,
       city: opts.address.city,
       email: opts.email,

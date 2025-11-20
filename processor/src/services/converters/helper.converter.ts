@@ -263,7 +263,7 @@ export const populateCartAddress = (address?: CartAddress): Address => {
     city: address?.city || '',
     street: address?.streetName || '',
     houseNumberOrName: address?.streetNumber || '',
-    stateOrProvince: address?.region || address?.state || undefined,
+    stateOrProvince: address?.state || address?.region || undefined,
     postalCode: address?.postalCode || '',
   };
 };

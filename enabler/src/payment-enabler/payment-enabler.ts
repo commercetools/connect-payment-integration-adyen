@@ -1,3 +1,5 @@
+import { UIElement } from "@adyen/adyen-web";
+
 type CardPaymentState = {
   card?: {
     endDigits?: string;
@@ -226,7 +228,7 @@ export type ExpressAddressData = {
   streetName?: string;
   streetNumber?: string;
   additionalStreetInfo?: string;
-  region?: string;
+  state?: string;
   postalCode?: string;
   city?: string;
   phone?: string;
@@ -238,7 +240,7 @@ export interface ExpressComponent {
 }
 export type ExpressOptions = {
   allowedCountries?: string[]; //TODO: review
-  onPaymentInit: () => Promise<void>;
+  onPayButtonClick: () => Promise<string>;
   onShippingAddressSelected: (opts: {
     address: ExpressAddressData;
   }) => Promise<void>;
@@ -252,7 +254,14 @@ export type ExpressOptions = {
     shippingAddress: ExpressAddressData;
     billingAddress: ExpressAddressData;
   }) => Promise<void>;
-};
+  onComplete: (
+    opts: {
+      isSuccess: boolean;
+      paymentReference: string;
+      method: { type: string };
+    },
+    component: UIElement
+  ) => Promise<void>;};
 
 export interface PaymentExpressBuilder {
   build(config: ExpressOptions): ExpressComponent;

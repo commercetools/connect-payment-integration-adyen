@@ -284,8 +284,8 @@
                         },
                       }),
                       ...(isExpress ? {
-                        onPaymentInit: async () => {
-                          console.log("onPaymentInit event received");
+                        onPayButtonClick: async () => {
+                          console.log("onPayButtonClick event received");
                           return Promise.resolve();
                         },
                         onShippingAddressSelected: setShippingAddress,

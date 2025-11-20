@@ -19,6 +19,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
   private countryCode: string;
   private currencyCode: string;
   private paymentMethodConfig: { [key: string]: string };
+  private setSessionId: (sessionId: string) => void;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -27,6 +28,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
+    this.setSessionId = baseOptions.setSessionId;
   }
 
   build(config: ExpressOptions): GooglePayExpressComponent {
@@ -38,6 +40,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
       paymentMethodConfig: this.paymentMethodConfig,
+      setSessionId: this.setSessionId,
     });
     googlePayComponent.init();
 
@@ -59,6 +62,7 @@ type GooglePayShippingOptions = {
 export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
   public finalAmount: number;
+  private setSessionId: (sessionId: string) => void;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -68,6 +72,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    setSessionId: (sessionId: string) => void;
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -78,6 +83,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       paymentMethodConfig: opts.paymentMethodConfig,
     });
     this.adyenCheckout = opts.adyenCheckout;
+    this.setSessionId = opts.setSessionId;
   }
 
   init(): void {
@@ -94,7 +100,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       callbackIntents: ["SHIPPING_ADDRESS", "SHIPPING_OPTION"],
       shippingAddressRequired: true,
       shippingAddressParameters: {
-        allowedCountryCodes: [],
+        // Use allowedCountries from expressOptions if provided, otherwise allow all countries
+        // When specific countries are set, Google Pay will only show addresses from those countries
+        // and won't auto-select addresses from unsupported countries
+        allowedCountryCodes: this.expressOptions.allowedCountries || [],
         phoneNumberRequired: true,
       },
       emailRequired: true,
@@ -105,8 +114,12 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       },
       onClick: (resolve, reject) => {
         return this.expressOptions
-          .onPaymentInit()
-          .then(() => resolve())
+          .onPayButtonClick()
+          .then((sessionId: string) => {
+            this.sessionId = sessionId;
+            this.setSessionId(sessionId);
+            resolve();
+          })
           .catch(() => reject());
       },
       shippingOptionRequired: true,
@@ -127,30 +140,38 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                 await me.setShippingAddress({
                   address: {
                     country: shippingAddress.countryCode,
+                    state: shippingAddress.administrativeArea,
                     postalCode: shippingAddress.postalCode,
                     city: shippingAddress.locality,
                   },
                 });
+
+                paymentDataRequestUpdate.newShippingOptionParameters =
+                  await me.getShippingOptions(shippingAddress.countryCode);
+
+                await me.setShippingMethod({
+                  shippingOption: {
+                    id: paymentDataRequestUpdate.newShippingOptionParameters
+                      .defaultSelectedOptionId,
+                  },
+                });
+
+                const transactionInfo = await me.getTransactionInfo();
+                paymentDataRequestUpdate.newTransactionInfo = transactionInfo;
               } catch (error) {
                 paymentDataRequestUpdate.error = {
                   reason: "SHIPPING_ADDRESS_UNSERVICEABLE",
                   message: "Cannot ship to the selected address",
                   intent: "SHIPPING_ADDRESS",
                 };
+
+                // Don't provide shipping options or transaction info
+                // This prevents the user from proceeding and keeps the UI in an error state
+
+                // Return early - don't try to continue processing
+                resolve(paymentDataRequestUpdate);
+                return;
               }
-
-              paymentDataRequestUpdate.newShippingOptionParameters =
-                await me.getShippingOptions(shippingAddress.countryCode);
-
-              await me.setShippingMethod({
-                shippingOption: {
-                  id: paymentDataRequestUpdate.newShippingOptionParameters
-                    .defaultSelectedOptionId,
-                },
-              });
-
-              const transactionInfo = await me.getTransactionInfo();
-              paymentDataRequestUpdate.newTransactionInfo = transactionInfo;
             }
             /** If SHIPPING_OPTION changed, we calculate the new fee */
             if (callbackTrigger === "SHIPPING_OPTION") {

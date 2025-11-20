@@ -25,6 +25,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private adyenCheckout: ICore;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
+  private sessionId: string;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
@@ -61,8 +62,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
     console.log(configJson)
     if (!configJson.methods) {
       throw new AdyenInitError(
-        "Not able to initialize Adyen",
-        this.initOptions.sessionId
+        "No payment methods found",
       );
     }
 
@@ -102,7 +102,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "X-Session-Id": this.initOptions.sessionId,
+                "X-Session-Id": this.sessionId,
               },
               body: JSON.stringify(reqData),
             }
@@ -131,6 +131,14 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
             resultCode: data.resultCode,
             action: data.action,
           });
+
+          this.handleComplete(
+            {
+              isSuccess: data.resultCode === "Authorised" || data.resultCode === "Pending",
+              paymentReference: data.paymentReference,
+              component: component,
+            }
+          );
         } catch (error) {
           actions.reject();
         }
@@ -155,14 +163,18 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       currencyCode: this.initOptions.currencyCode,
       processorUrl: this.initOptions.processorUrl,
       paymentMethodConfig: this.expressPaymentMethodsConfig.get(type),
-      sessionId: this.initOptions.sessionId,
+      // can we remove this session id as it doesn't exist in express?
+      sessionId: this.sessionId,
+      setSessionId: (sessionId: string) => {
+        this.sessionId = sessionId;
+      },
     };
   }
 
   private handleError(opts: { error: any; component: UIElement }) {
     if (this.initOptions.onError) {
       this.initOptions.onError(opts.error, {
-        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+        method: { type: getPaymentMethodType(opts.component?.props?.type || opts.component?.type) },
       });
     }
   }
@@ -176,7 +188,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       this.initOptions.onComplete({
         isSuccess: opts.isSuccess,
         paymentReference: opts?.paymentReference,
-        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+        method: { type: getPaymentMethodType(opts.component?.props?.type || opts.component?.type) },
       });
     }
   }
