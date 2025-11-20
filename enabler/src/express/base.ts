@@ -125,15 +125,14 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected convertAddress(opts: {
     address: AddressData;
     email?: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     phoneNumber?: string;
   }): ExpressAddressData {
-    const fullName = opts.name || "";
-
     return {
       country: opts.address.country,
-      firstName: fullName.split(" ")[0],
-      lastName: fullName.split(" ").slice(1).join(" "),
+      firstName: opts.firstName,
+      lastName: opts.lastName,
       streetName: opts.address.street,
       streetNumber: opts.address.houseNumberOrName,
       region: opts.address.stateOrProvince,

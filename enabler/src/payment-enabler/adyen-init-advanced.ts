@@ -87,55 +87,6 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
         }
         this.handleError({ error, component });
       },
-      onSubmit: async (state, component, actions) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-            countryCode: this.initOptions.countryCode,
-          };
-          console.log(reqData);
-          const response = await fetch(
-            this.initOptions.processorUrl + "/payments",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": this.initOptions.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            }
-          );
-          const data = await response.json();
-
-          console.log(data);
-
-          if (!data.resultCode) {
-            actions.reject();
-            return;
-          }
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (error) {
-          actions.reject();
-        }
-      },
       analytics: { enabled: true },
       locale: adyenLocale,
       environment: configJson.config.environment,

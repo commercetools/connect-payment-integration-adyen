@@ -114,6 +114,55 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
 
         return resolve();
       },
+      onSubmit: async (state, component, actions) => {
+        try {
+          const reqData = {
+            ...state.data,
+            channel: "Web",
+            countryCode: this.countryCode,
+          };
+          console.log(reqData);
+          const response = await fetch(
+            this.processorUrl + "/payments",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": this.sessionId,
+              },
+              body: JSON.stringify(reqData),
+            }
+          );
+          const data = await response.json();
+
+          console.log(data);
+
+          if (!data.resultCode) {
+            actions.reject();
+            return;
+          }
+
+          if (data.action) {
+            component.handleAction(data.action);
+          } else {
+            if (
+              data.resultCode === "Authorised" ||
+              data.resultCode === "Pending"
+            ) {
+              component.setStatus("success");
+            } else {
+              component.setStatus("error");
+            }
+          }
+
+          actions.resolve({
+            resultCode: data.resultCode,
+            action: data.action,
+          });
+        } catch (error) {
+          actions.reject();
+        }
+      },
       shippingOptionRequired: true,
       paymentDataCallbacks: {
         onPaymentDataChanged(intermediatePaymentData) {
@@ -182,36 +231,36 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         },
       },
       onAuthorized: (data, actions) => {
+        const shippedToFullName = data.authorizedEvent.shippingAddress.name;
+        const payerFullName = data.authorizedEvent.paymentMethodData.info?.billingAddress?.name;
+
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
           email: data.authorizedEvent.email,
-          name: data.authorizedEvent?.shippingAddress?.name,
+          firstName: shippedToFullName.split(' ')[0],
+          lastName: shippedToFullName.split(' ').slice(1).join(' '),
           phoneNumber: data.authorizedEvent?.shippingAddress?.phoneNumber,
         });
 
         const billingAddress = this.convertAddress({
           address: data.billingAddress,
           email: data.authorizedEvent.email,
-          name: data.authorizedEvent.paymentMethodData.info?.billingAddress
-            ?.name,
+          firstName: payerFullName.split('')[0],
+          lastName: payerFullName.split(' ').slice(1).join(' '),
           phoneNumber:
             data.authorizedEvent.paymentMethodData.info?.billingAddress
               ?.phoneNumber,
         });
 
-        if (this.expressOptions.onPaymentSubmit) {
-          this.expressOptions
-            .onPaymentSubmit({
-              shippingAddress,
-              billingAddress,
-            })
-            .then(() => actions.resolve())
-            .catch((error) => {
-              actions.reject(error);
-            });
-        } else {
-          return actions.resolve();
-        }
+        this.expressOptions
+          .onPaymentSubmit({
+            shippingAddress,
+            billingAddress,
+          })
+          .then(() => actions.resolve())
+          .catch((error) => {
+            actions.reject(error);
+          });
       },
     });
   }

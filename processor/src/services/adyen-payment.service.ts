@@ -30,6 +30,8 @@ import {
   GetExpressPaymentDataResponseDTO,
   GetExpressConfigResponseDTO,
   GetExpressConfigRequestDTO,
+  UpdatePayPalExpressPaymentRequestDTO,
+  UpdatePayPalExpressPaymentResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
@@ -74,6 +76,7 @@ import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.
 import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
+import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -781,6 +784,26 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     await this.deleteTokenInAdyen(customerId, paymentMethod);
+  }
+
+  async updatePayPalExpressOrder(opts: {
+    data: UpdatePayPalExpressPaymentRequestDTO;
+  }): Promise<UpdatePayPalExpressPaymentResponseDTO> {
+    const payment = await this.ctPaymentService.getPayment({
+      id: opts.data.paymentReference,
+    });
+
+    const selectedDeliveryMethod = opts.data.deliveryMethods.filter((method) => method.selected === true);
+
+    const requestData: PaypalUpdateOrderRequest = {
+      ...opts.data,
+      amount: {
+        currency: payment.amountPlanned.currencyCode,
+        value: payment.amountPlanned.centAmount + (selectedDeliveryMethod[0].amount?.value || 0),
+      },
+    };
+
+    return await AdyenApi().UtilityApi.updatesOrderForPaypalExpressCheckout(requestData);
   }
 
   async getExpressPaymentData(): Promise<GetExpressPaymentDataResponseDTO> {

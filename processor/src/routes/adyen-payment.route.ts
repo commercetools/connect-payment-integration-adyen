@@ -20,6 +20,8 @@ import {
   GetExpressPaymentDataResponseDTO,
   GetExpressConfigResponseDTO,
   GetExpressConfigRequestDTO,
+  UpdatePayPalExpressPaymentRequestDTO,
+  UpdatePayPalExpressPaymentResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
@@ -213,6 +215,20 @@ export const adyenPaymentRoutes = async (
       await opts.paymentService.deleteStoredPaymentMethodViaCart(id);
 
       return reply.status(200).send();
+    },
+  );
+
+  fastify.post<{ Body: UpdatePayPalExpressPaymentRequestDTO; Reply: UpdatePayPalExpressPaymentResponseDTO }>(
+    '/paypal-order',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.updatePayPalExpressOrder({
+        data: request.body,
+      });
+
+      return reply.status(200).send(resp);
     },
   );
 

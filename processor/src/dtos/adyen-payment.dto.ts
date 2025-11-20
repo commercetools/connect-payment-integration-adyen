@@ -10,6 +10,9 @@ import { Notification } from '@adyen/api-library/lib/src/typings/notification/no
 import { GenericWebhook } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationWebhooksHandler';
 import { ConfigResponseSchemaDTO } from './operations/config.dto';
 import { PaymentMethod } from '@adyen/api-library/lib/src/typings/checkout/paymentMethod';
+import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
+import { PaypalUpdateOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderResponse';
+import { DeliveryMethod } from '@adyen/api-library/lib/src/typings/checkout/deliveryMethod';
 
 export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
@@ -106,3 +109,10 @@ export type GetExpressPaymentDataResponseDTO = {
   lineItems: ExpressLineItemData[];
   currencyCode: string;
 };
+
+export type UpdatePayPalExpressPaymentRequestDTO = Pick<PaypalUpdateOrderRequest, 'amount'> & {
+  paymentReference: string;
+  deliveryMethods: DeliveryMethod[];
+};
+
+export type UpdatePayPalExpressPaymentResponseDTO = PaypalUpdateOrderResponse;

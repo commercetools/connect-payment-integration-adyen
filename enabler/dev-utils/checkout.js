@@ -25,11 +25,13 @@ const getShippingMethods = async (opts) => {
   });
   const data = await res.json();
 
+  console.log(data, "shipping methods");
+
   return data.results.map((method) => {
     const shippingOption = {
       id: method.id,
       name: method.name,
-      description: method.localizedName[0],
+      description: method?.localizedName?.[0] || '',
       isSelected: method.isDefault,
     };
 
