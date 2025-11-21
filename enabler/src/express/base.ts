@@ -1,4 +1,4 @@
-import { AddressData, ApplePay, GooglePay, PayPal } from "@adyen/adyen-web";
+import { AddressData, ApplePay, GooglePay, PayPal, UIElement } from "@adyen/adyen-web";
 import {
   ExpressAddressData,
   ExpressComponent,
@@ -81,6 +81,24 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     if (this.expressOptions.onShippingMethodSelected) {
       await this.expressOptions.onShippingMethodSelected(opts);
     }
+  }
+
+  // TODO: set sessionId should be implemented here
+
+  async onComplete(
+    opts: {
+      isSuccess: boolean;
+      paymentReference: string;
+      method: { type: string };
+    },
+    component: UIElement
+  ): Promise<void> {
+    if (this.expressOptions.onComplete) {
+      await this.expressOptions.onComplete(opts, component);
+      return;
+    }
+
+    throw new Error("onComplete not implemented");
   }
 
   protected async getInitialPaymentData(): Promise<InitialPaymentData> {

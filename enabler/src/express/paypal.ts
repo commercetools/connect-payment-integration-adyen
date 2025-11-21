@@ -1,6 +1,7 @@
 import {
   ICore,
   Intent,
+  PaymentMethod,
   PayPal,
   SubmitActions,
   SubmitData,
@@ -69,6 +70,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
   private paymentReference: string;
   private shippingAddress: any;
   public finalAmount: number;
+  private paymentMethod: PaymentMethod;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -110,14 +112,24 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       },
       onClick: () => {
         return this.expressOptions
-          .onPaymentInit()
-          .then(() => true)
-          .catch((_error) => {
-            console.error("## onPaymentInit - error", _error);
-            return false;
-          });
+          .onPayButtonClick()
+          .then((sessionId: string) => {
+            this.sessionId = sessionId;
+            return true;
+          })
+          .catch(() => false);
       },
-      //TODO: Think on how to abstract this things
+      onPaymentCompleted: (_data, component) => {
+        // TODO: data contains resultCode and that should determine isSuccess
+        this.expressOptions.onComplete(
+          {
+            isSuccess: true,
+            paymentReference: this.paymentReference,
+            method: this.paymentMethod,
+          },
+          component
+        );
+      },
       onSubmit: async (
         state: SubmitData,
         component: UIElement,
@@ -129,25 +141,39 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             channel: "Web",
           };
 
-          const response = await fetch(this.processorUrl + "/payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
+          const response = await fetch(
+            this.processorUrl + "/payments?mode=express",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": this.sessionId,
+              },
+              body: JSON.stringify(reqData),
+            }
+          );
           const data = await response.json();
           this.pspReference = data.pspReference;
           this.paymentReference = data.paymentReference;
+
+          if (data.action) {
+            component.handleAction(data.action);
+          } else {
+            if (
+              data.resultCode === "Authorised" ||
+              data.resultCode === "Pending"
+            ) {
+              component.setStatus("success");
+            } else {
+              component.setStatus("error");
+            }
+          }
 
           actions.resolve({
             resultCode: data.resultCode,
             action: data.action,
           });
         } catch (e) {
-          console.log("Payment aborted by client");
-          component.setStatus("ready");
           actions.reject(e);
         }
       },
@@ -158,29 +184,38 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
               country: data.shippingAddress.countryCode,
               postalCode: data.shippingAddress.postalCode,
               city: data.shippingAddress.city,
-              // streetName: '' // IF street name is not set, adyen throws an error if the buyer re-attempts to buy after cancelling the first attempt, but
-              // since a new cart is going to be created every time the paypal button is clicked, we might need not to worry about this.
             },
           });
+
+          const shippingOptions = await me.getShippingOptions(
+            data.shippingAddress.countryCode
+          );
+
+          this.shippingAddress = data.shippingAddress;
+
+          // set the default shipping option at this point in the cart.
+          const selectedOption = shippingOptions.filter(
+            (option) => option.selected === true
+          );
+          await me.setShippingMethod({
+            shippingOption: {
+              id: selectedOption[0].reference,
+            },
+          });
+
+          // Update adyen with the new payment amount and delivery methods available to the selected address
+          const payload = {
+            paymentReference: this.paymentReference,
+            pspReference: this.pspReference,
+            paymentData: component.paymentData,
+            deliveryMethods: shippingOptions,
+          };
+
+          const updatedOrder = await me.updateOrder(payload);
+          component.updatePaymentData(updatedOrder.paymentData);
         } catch (err) {
           return actions.reject(data.errors.COUNTRY_ERROR);
         }
-
-        const shippingOptions = await me.getShippingOptions(
-          data.shippingAddress.countryCode
-        );
-        this.shippingAddress = data.shippingAddress;
-        //TODO: set the default shipping option at this point in the cart.
-
-        const payload = {
-          paymentReference: this.paymentReference,
-          pspReference: this.pspReference,
-          paymentData: component.paymentData,
-          deliveryMethods: shippingOptions,
-        };
-
-        const updatedOrder = await me.updateOrder(payload);
-        component.updatePaymentData(updatedOrder.paymentData);
       },
       onShippingOptionsChange: async (data, actions, component) => {
         try {
@@ -189,22 +224,26 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
               id: data.selectedShippingOption.id,
             },
           });
+
+          // fetch all shipping methods
+          const shippingOptions = await me.getShippingOptions(
+            this.shippingAddress.countryCode,
+            data.selectedShippingOption.id
+          );
+
+          const payload = {
+            paymentReference: this.paymentReference,
+            pspReference: this.pspReference,
+            paymentData: component.paymentData,
+            deliveryMethods: shippingOptions,
+          };
+
+          // Update adyen with the shipping methods and thus update to payment price depending on the amount for the shipping option
+          const updatedOrder = await me.updateOrder(payload);
+          component.updatePaymentData(updatedOrder.paymentData);
         } catch (err) {
           return actions.reject(data.errors.METHOD_UNAVAILABLE);
         }
-
-        const shippingOptions = await me.getShippingOptions(
-          this.shippingAddress.countryCode,
-          data.selectedShippingOption.id
-        );
-        const payload = {
-          paymentReference: this.paymentReference,
-          pspReference: this.pspReference,
-          paymentData: component.paymentData,
-          deliveryMethods: shippingOptions,
-        };
-        const updatedOrder = await me.updateOrder(payload);
-        component.updatePaymentData(updatedOrder.paymentData);
       },
       onAdditionalDetails: async (state, component, actions) => {
         try {
@@ -213,8 +252,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             paymentReference: this.paymentReference,
           };
           const url = this.processorUrl.endsWith("/")
-            ? `${this.processorUrl}payments/details`
-            : `${this.processorUrl}/payments/details`;
+            ? `${this.processorUrl}payments/details?mode=express`
+            : `${this.processorUrl}/payments/details?mode=express`;
 
           const response = await fetch(url, {
             method: "POST",
@@ -226,29 +265,19 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           });
 
           const data = await response.json();
+          this.paymentReference = data.paymentReference;
+          this.paymentMethod = data.paymentMethod;
+
           if (
             data.resultCode === "Authorised" ||
             data.resultCode === "Pending"
           ) {
             component.setStatus("success");
-            // this({
-            //   isSuccess: true,
-            //   component: component,
-            //   paymentReference: this.paymentReference,
-            // });
           } else {
-            // this.handleComplete({
-            //   isSuccess: false,
-            //   component: component,
-            //   paymentReference: this.paymentReference,
-            // });
             component.setStatus("error");
           }
           actions.resolve({ resultCode: data.resultCode });
-        } catch (err) {
-          console.error("Not able to submit the payment details", err);
-          // this.handleError({ error: err, component, paymentReference: this.paymentReference });
-          component.setStatus("ready");
+        } catch (_err) {
           actions.reject();
         }
       },
@@ -299,10 +328,13 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         },
         body: JSON.stringify(payload),
       });
+      if (!response.ok) {
+        throw new Error("something happened.");
+      }
+
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("## getPaymentData - critical error", error);
       throw error;
     }
   }

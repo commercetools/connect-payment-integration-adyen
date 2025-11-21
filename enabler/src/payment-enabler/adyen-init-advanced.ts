@@ -1,7 +1,6 @@
 import {
   AdyenCheckout,
   AdyenCheckoutError,
-  PaymentCompletedData,
   PaymentFailedData,
   UIElement,
 } from "@adyen/adyen-web";
@@ -68,15 +67,8 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
     });
 
     const adyenCheckout = await AdyenCheckout({
-      onPaymentCompleted: (
-        result: PaymentCompletedData,
-        _component: UIElement
-      ) => {
-        console.info("payment completed", result.resultCode);
-      },
-      onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
-        this.handleComplete({ isSuccess: false, component: _component });
-        console.info("payment failed", result.resultCode);
+      onPaymentFailed: (_result: PaymentFailedData, component: UIElement) => {
+        this.handleComplete({ isSuccess: false, component });
       },
       onError: (error: AdyenCheckoutError, component: UIElement) => {
         if (error.name === "CANCEL") {

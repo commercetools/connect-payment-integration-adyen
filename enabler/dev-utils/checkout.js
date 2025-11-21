@@ -31,11 +31,13 @@ const getShippingMethods = async (opts) => {
     const shippingOption = {
       id: method.id,
       name: method.name,
-      description: method?.localizedName?.[0] || '',
+      description: method?.localizedName?.[0] || "",
       isSelected: method.isDefault,
     };
 
-    const zoneRate = method.zoneRates[0].shippingRates.find((rate) => rate.isMatching);
+    const zoneRate = method.zoneRates[0].shippingRates.find(
+      (rate) => rate.isMatching
+    );
 
     shippingOption.amount = {
       centAmount: zoneRate.price.centAmount,
@@ -73,7 +75,7 @@ const setShippingMethod = async (opts) => {
   });
 
   if (!res.ok) {
-    throw new Error('unable to set shipping method')
+    throw new Error("unable to set shipping method");
   }
 
   const data = await res.json();
@@ -86,7 +88,7 @@ const setShippingMethod = async (opts) => {
 const setShippingAddress = async (opts) => {
   const url = `${__VITE_CTP_API_URL__}/${projectKey}/carts/${ckoCartId}`;
   const cart = await getCart();
-  
+
   const payload = {
     version: cart.version,
     actions: [
@@ -119,9 +121,9 @@ const setShippingAddress = async (opts) => {
   });
 
   if (!res.ok) {
-    throw new Error('unable to set shipping address')
+    throw new Error("unable to set shipping address");
   }
-  
+
   const data = await res.json();
   console.log("Set shipping address", data);
 

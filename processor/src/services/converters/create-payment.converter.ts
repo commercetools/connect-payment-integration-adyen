@@ -43,7 +43,6 @@ export class CreatePaymentConverter {
     const shopperStatement = getShopperStatement();
 
     const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
-    // TODO: we need to figure out how to pass countryCode down here. This implementation assumes the cart has this information already set, but it doesn't.
     return {
       ...requestData,
       amount: {

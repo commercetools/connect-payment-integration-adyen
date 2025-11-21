@@ -88,12 +88,17 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.post<{ Body: CreatePaymentRequestDTO; Reply: CreatePaymentResponseDTO }>(
+  fastify.post<{
+    Body: CreatePaymentRequestDTO;
+    Reply: CreatePaymentResponseDTO;
+    Querystring: { mode?: 'express' | 'standard' };
+  }>(
     '/payments',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
+      const { mode } = request.query;
       const data: CreatePaymentRequestDTO = {
         ...request.body,
         ...(request.clientIp && { shopperIP: request.clientIp }),
@@ -102,6 +107,7 @@ export const adyenPaymentRoutes = async (
 
       const resp = await opts.paymentService.createPayment({
         data,
+        mode,
       });
 
       return reply.status(200).send(resp);
@@ -137,14 +143,20 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.post<{ Body: ConfirmPaymentRequestDTO; Reply: ConfirmPaymentResponseDTO }>(
+  fastify.post<{
+    Body: ConfirmPaymentRequestDTO;
+    Reply: ConfirmPaymentResponseDTO;
+    Querystring: { mode?: 'express' | 'standard' };
+  }>(
     '/payments/details',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
+      const { mode } = request.query;
       const res = await opts.paymentService.confirmPayment({
         data: request.body,
+        mode,
       });
       return reply.status(200).send(res);
     },
