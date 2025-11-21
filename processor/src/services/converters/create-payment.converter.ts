@@ -43,7 +43,6 @@ export class CreatePaymentConverter {
     const shopperStatement = getShopperStatement();
 
     const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
-
     return {
       ...requestData,
       amount: {
@@ -66,7 +65,7 @@ export class CreatePaymentConverter {
         deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
-      ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
+      ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
       ...storedPaymentMethodsData,
@@ -155,7 +154,7 @@ export class CreatePaymentConverter {
     };
   }
 
-  private populateAddionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
+  private populateAdditionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
     switch (data?.paymentMethod?.type) {
       case 'scheme':
         return this.populateAdditionalCardData();

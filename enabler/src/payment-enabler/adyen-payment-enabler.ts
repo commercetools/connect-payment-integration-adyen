@@ -37,6 +37,7 @@ import { Przelewy24Builder } from "../components/payment-methods/przelewy24";
 import { SwishBuilder } from "../components/payment-methods/swish";
 import { VippsBuilder } from "../components/payment-methods/vipps";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
+import { PayPalExpressBuilder } from "../express/paypal";
 
 export type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
@@ -60,19 +61,18 @@ export type BaseOptions = {
   paymentComponentsConfigOverride?: Record<string, any>;
   storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;
   setStorePaymentDetails?: (enabled: boolean) => void;
+  setSessionId?: (sessionId: string) => void;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
   private adyenInitWithSessionFlow: AdyenInitWithSessionFlow;
   private adyenInitWithAdvancedFlow: AdyenInitWithAdvancedFlow;
   private sessionFlowBaseOptions: Promise<BaseOptions>;
-  private advancedFlowBaseOptions: Promise<BaseOptions>;
 
   constructor(options: AdyenEnablerOptions) {
     this.adyenInitWithSessionFlow = new AdyenInitWithSessionFlow(options);
     this.adyenInitWithAdvancedFlow = new AdyenInitWithAdvancedFlow(options);
     this.sessionFlowBaseOptions = this.adyenInitWithSessionFlow.init();
-    this.advancedFlowBaseOptions = this.adyenInitWithAdvancedFlow.init();
   }
 
   async createComponentBuilder(type: string): Promise<PaymentComponentBuilder> {
@@ -137,14 +137,16 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
   }
 
   async createExpressBuilder(type: string): Promise<PaymentExpressBuilder> {
-    const baseOptions = await this.advancedFlowBaseOptions;
-    const paymentMethodConfig = await this.adyenInitWithAdvancedFlow.getPaymentMethodConfig(type);
+    const baseOptions = await this.adyenInitWithAdvancedFlow.init();
+    const paymentMethodConfig =
+      await this.adyenInitWithAdvancedFlow.getPaymentMethodConfig(type);
     if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
 
     const supportedMethods = {
       googlepay: GooglePayExpressBuilder,
+      paypal: PayPalExpressBuilder,
     };
 
     if (!(type in supportedMethods)) {
@@ -155,7 +157,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       );
     }
 
-    return new supportedMethods[type]({...baseOptions, paymentMethodConfig});
+    return new supportedMethods[type]({ ...baseOptions, paymentMethodConfig });
   }
 
   async createStoredPaymentMethodBuilder(

@@ -298,9 +298,9 @@
                 }),
             ...(category === "express"
               ? {
-                  onPaymentInit: async () => {
+                  onPayButtonClick: async () => {
                     console.log("onPaymentInit event received");
-                    return Promise.resolve();
+                    return Promise.resolve(sessionIdGeneral);
                   },
                   onShippingAddressSelected: setShippingAddress,
                   getShippingMethods: getShippingMethods,
@@ -308,6 +308,10 @@
                   onPaymentSubmit: async (opts) => {
                     await setShippingAddress({ address: opts.shippingAddress });
                     await setBillingAddress({ address: opts.billingAddress });
+                    return Promise.resolve();
+                  },
+                  onComplete: async (data) => {
+                    console.log(data, "-> payment data");
                     return Promise.resolve();
                   },
                 }

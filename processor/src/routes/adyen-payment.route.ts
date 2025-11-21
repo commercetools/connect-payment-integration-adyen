@@ -20,6 +20,8 @@ import {
   GetExpressPaymentDataResponseDTO,
   GetExpressConfigResponseDTO,
   GetExpressConfigRequestDTO,
+  UpdatePayPalExpressPaymentRequestDTO,
+  UpdatePayPalExpressPaymentResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
@@ -86,12 +88,17 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.post<{ Body: CreatePaymentRequestDTO; Reply: CreatePaymentResponseDTO }>(
+  fastify.post<{
+    Body: CreatePaymentRequestDTO;
+    Reply: CreatePaymentResponseDTO;
+    Querystring: { mode?: 'express' | 'standard' };
+  }>(
     '/payments',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
+      const { mode } = request.query;
       const data: CreatePaymentRequestDTO = {
         ...request.body,
         ...(request.clientIp && { shopperIP: request.clientIp }),
@@ -100,6 +107,7 @@ export const adyenPaymentRoutes = async (
 
       const resp = await opts.paymentService.createPayment({
         data,
+        mode,
       });
 
       return reply.status(200).send(resp);
@@ -135,14 +143,20 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.post<{ Body: ConfirmPaymentRequestDTO; Reply: ConfirmPaymentResponseDTO }>(
+  fastify.post<{
+    Body: ConfirmPaymentRequestDTO;
+    Reply: ConfirmPaymentResponseDTO;
+    Querystring: { mode?: 'express' | 'standard' };
+  }>(
     '/payments/details',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
+      const { mode } = request.query;
       const res = await opts.paymentService.confirmPayment({
         data: request.body,
+        mode,
       });
       return reply.status(200).send(res);
     },
@@ -213,6 +227,20 @@ export const adyenPaymentRoutes = async (
       await opts.paymentService.deleteStoredPaymentMethodViaCart(id);
 
       return reply.status(200).send();
+    },
+  );
+
+  fastify.post<{ Body: UpdatePayPalExpressPaymentRequestDTO; Reply: UpdatePayPalExpressPaymentResponseDTO }>(
+    '/paypal-order',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.updatePayPalExpressOrder({
+        data: request.body,
+      });
+
+      return reply.status(200).send(resp);
     },
   );
 
