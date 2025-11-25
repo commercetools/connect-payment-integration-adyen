@@ -69,16 +69,21 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   }): Promise<void> {
     if (this.expressOptions.onShippingAddressSelected) {
       await this.expressOptions.onShippingAddressSelected(opts);
+      return
     }
+
+    throw new Error("setShippingAddress not implemented");
   }
 
   async getShippingMethods(opts: {
     address: ExpressAddressData;
   }): Promise<ExpressShippingOptionData[]> {
-    this.availableShippingMethods =
-      await this.expressOptions.getShippingMethods(opts);
-
-    return this.availableShippingMethods;
+    if (this.expressOptions.getShippingMethods) {
+      this.availableShippingMethods = await this.expressOptions.getShippingMethods(opts);
+      return this.availableShippingMethods;
+    }
+    
+    throw new Error('getShippingMethods not implemented');
   }
 
   async setShippingMethod(opts: {
@@ -86,11 +91,10 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   }): Promise<void> {
     if (this.expressOptions.onShippingMethodSelected) {
       await this.expressOptions.onShippingMethodSelected(opts);
+      return;
     }
-  }
 
-  async setSessionId(sessionId): Promise<void> {
-    this.sessionId = sessionId;
+    throw new Error("setShippingMethod not implemented");
   }
 
   async onComplete(
@@ -107,6 +111,10 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     }
 
     throw new Error("onComplete not implemented");
+  }
+
+  protected setSessionId(sessionId): void {
+    this.sessionId = sessionId;
   }
 
   protected async getInitialPaymentData(): Promise<InitialPaymentData> {

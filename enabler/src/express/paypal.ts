@@ -120,7 +120,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           .catch(() => false);
       },
       onPaymentCompleted: (data, component) => {
-        this.expressOptions.onComplete(
+        this.onComplete(
           {
             isSuccess: !!data.resultCode,
             paymentReference: this.paymentReference,

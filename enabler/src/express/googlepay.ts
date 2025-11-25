@@ -107,7 +107,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         phoneNumberRequired: true,
       },
       onPaymentCompleted: (data, component) => {
-        this.expressOptions.onComplete(
+        this.onComplete(
           {
             isSuccess: !!data.resultCode,
             paymentReference: this.paymentReference,
