@@ -106,11 +106,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         format: "FULL",
         phoneNumberRequired: true,
       },
-      onPaymentCompleted: (_data, component) => {
-        // TODO: data contains resultCode and that should determine isSuccess
+      onPaymentCompleted: (data, component) => {
         this.expressOptions.onComplete(
           {
-            isSuccess: true,
+            isSuccess: !!data.resultCode,
             paymentReference: this.paymentReference,
             method: this.paymentMethod,
           },
@@ -121,7 +120,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         return this.expressOptions
           .onPayButtonClick()
           .then((sessionId: string) => {
-            this.sessionId = sessionId;
+            this.setSessionId(sessionId);
             resolve();
           })
           .catch(() => reject());

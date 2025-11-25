@@ -25,8 +25,6 @@ const getShippingMethods = async (opts) => {
   });
   const data = await res.json();
 
-  console.log(data, "shipping methods");
-
   return data.results.map((method) => {
     const shippingOption = {
       id: method.id,

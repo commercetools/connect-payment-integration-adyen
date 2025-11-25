@@ -1,4 +1,10 @@
-import { AddressData, ApplePay, GooglePay, PayPal, UIElement } from "@adyen/adyen-web";
+import {
+  AddressData,
+  ApplePay,
+  GooglePay,
+  PayPal,
+  UIElement,
+} from "@adyen/adyen-web";
 import {
   ExpressAddressData,
   ExpressComponent,
@@ -83,7 +89,9 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     }
   }
 
-  // TODO: set sessionId should be implemented here
+  async setSessionId(sessionId): Promise<void> {
+    this.sessionId = sessionId;
+  }
 
   async onComplete(
     opts: {

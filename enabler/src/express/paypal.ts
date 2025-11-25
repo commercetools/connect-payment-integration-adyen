@@ -114,16 +114,15 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         return this.expressOptions
           .onPayButtonClick()
           .then((sessionId: string) => {
-            this.sessionId = sessionId;
+            this.setSessionId(sessionId);
             return true;
           })
           .catch(() => false);
       },
-      onPaymentCompleted: (_data, component) => {
-        // TODO: data contains resultCode and that should determine isSuccess
+      onPaymentCompleted: (data, component) => {
         this.expressOptions.onComplete(
           {
-            isSuccess: true,
+            isSuccess: !!data.resultCode,
             paymentReference: this.paymentReference,
             method: this.paymentMethod,
           },
