@@ -103,6 +103,8 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       );
     }
 
+    console.log(data)
+
     const adyenCheckout = await AdyenCheckout({
       onPaymentCompleted: (
         result: PaymentCompletedData,

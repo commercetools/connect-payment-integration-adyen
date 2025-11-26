@@ -1108,6 +1108,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
 
       const responseData = (await response.json()) as CreateApplePaySessionResponseDTO;
+      console.log(responseData);
       if (response.status !== 200) {
         const defaultErrorMessage = 'Not able to create the Apple Pay session';
         throw new ApplePayPaymentSessionError(
