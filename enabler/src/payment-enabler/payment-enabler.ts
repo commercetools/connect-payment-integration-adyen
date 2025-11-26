@@ -248,7 +248,7 @@ export type ExpressOptions = {
     address: ExpressAddressData;
   }) => Promise<ExpressShippingOptionData[]>;
   onShippingMethodSelected: (opts: {
-    shippingOption: { id: string };
+    shippingMethod: { id: string };
   }) => Promise<void>;
   onPaymentSubmit: (opts: {
     shippingAddress: ExpressAddressData;
