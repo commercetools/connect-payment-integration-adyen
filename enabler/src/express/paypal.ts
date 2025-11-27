@@ -154,7 +154,12 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             channel: "Web",
           };
 
-          const response = await fetch(this.processorUrl + "/paypal-express", {
+          this.paymentMethod = {
+            type: state.data.paymentMethod.type,
+            name: "unknown",
+          };
+
+          const response = await fetch(this.processorUrl + "/express-payments", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -166,10 +171,6 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           this.pspReference = data.pspReference;
           this.paymentReference = data.paymentReference;
           this.originalAmount = data.originalAmount;
-          this.paymentMethod = {
-            type: data.action.paymentMethodType,
-            name: "unknown",
-          };
 
           if (data.action) {
             component.handleAction(data.action);
@@ -270,8 +271,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             paymentMethod: this.paymentMethod.type,
           };
           const url = this.processorUrl.endsWith("/")
-            ? `${this.processorUrl}paypal-express/details`
-            : `${this.processorUrl}/paypal-express/details`;
+            ? `${this.processorUrl}express-payments/details`
+            : `${this.processorUrl}/express-payments/details`;
 
           const response = await fetch(url, {
             method: "POST",

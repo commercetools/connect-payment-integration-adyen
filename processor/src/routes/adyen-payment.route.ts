@@ -116,7 +116,7 @@ export const adyenPaymentRoutes = async (
     Body: CreatePaymentRequestDTO;
     Reply: CreateExpressPaymentResponseDTO;
   }>(
-    '/paypal-express',
+    '/express-payments',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
@@ -127,7 +127,7 @@ export const adyenPaymentRoutes = async (
       };
       validateCardData(data);
 
-      const resp = await opts.paymentService.createPaypalExpressPayment({
+      const resp = await opts.paymentService.createExpressPayment({
         data,
       });
 
@@ -184,12 +184,12 @@ export const adyenPaymentRoutes = async (
     Body: ConfirmPaymentRequestDTO;
     Reply: ConfirmPaymentResponseDTO;
   }>(
-    '/paypal-express/details',
+    '/express-payments/details',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
-      const res = await opts.paymentService.confirmPaypalExpressPayment({
+      const res = await opts.paymentService.confirmExpressPayment({
         data: request.body,
       });
       return reply.status(200).send(res);

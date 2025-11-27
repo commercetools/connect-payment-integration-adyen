@@ -132,7 +132,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
             countryCode: this.countryCode,
           };
 
-          const response = await fetch(this.processorUrl + "/payments", {
+          const response = await fetch(this.processorUrl + "/express-payments", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
