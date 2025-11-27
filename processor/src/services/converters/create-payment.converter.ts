@@ -23,7 +23,12 @@ import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
+import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 
+type ExpressPayment = {
+  amountPlanned: PaymentAmount;
+  id: string;
+};
 export class CreatePaymentConverter {
   private ctPaymentMethodService: CommercetoolsPaymentMethodService;
 
@@ -43,6 +48,45 @@ export class CreatePaymentConverter {
     const shopperStatement = getShopperStatement();
 
     const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
+    return {
+      ...requestData,
+      amount: {
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.payment.amountPlanned.centAmount,
+          currencyCode: opts.payment.amountPlanned.currencyCode,
+        }),
+        currency: opts.payment.amountPlanned.currencyCode,
+      },
+      reference: opts.payment.id,
+      merchantAccount: config.adyenMerchantAccount,
+      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      shopperEmail: opts.cart.customerEmail,
+      returnUrl: buildReturnUrl(opts.payment.id),
+      ...(opts.cart.billingAddress && {
+        billingAddress: populateCartAddress(opts.cart.billingAddress),
+      }),
+      ...(deliveryAddress && {
+        deliveryAddress: populateCartAddress(deliveryAddress),
+      }),
+      ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
+      ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
+      applicationInfo: populateApplicationInfo(),
+      ...(shopperStatement && { shopperStatement }),
+      ...storedPaymentMethodsData,
+    };
+  }
+
+  public async convertExpressRequest(opts: {
+    data: CreatePaymentRequestDTO;
+    cart: Cart;
+    payment: ExpressPayment;
+  }): Promise<PaymentRequest> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { paymentReference: _, ...requestData } = opts.data;
+    const futureOrderNumber = getFutureOrderNumberFromContext();
+    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const shopperStatement = getShopperStatement();
 
     return {
       ...requestData,
@@ -66,10 +110,9 @@ export class CreatePaymentConverter {
         deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
-      ...this.populateAddionalPaymentMethodData(opts.data, opts.cart),
+      ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
-      ...storedPaymentMethodsData,
     };
   }
 
@@ -155,7 +198,7 @@ export class CreatePaymentConverter {
     };
   }
 
-  private populateAddionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
+  private populateAdditionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {
     switch (data?.paymentMethod?.type) {
       case 'scheme':
         return this.populateAdditionalCardData();

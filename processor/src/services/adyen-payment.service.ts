@@ -30,6 +30,9 @@ import {
   GetExpressPaymentDataResponseDTO,
   GetExpressConfigResponseDTO,
   GetExpressConfigRequestDTO,
+  UpdatePayPalExpressPaymentRequestDTO,
+  UpdatePayPalExpressPaymentResponseDTO,
+  CreateExpressPaymentResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
@@ -74,6 +77,8 @@ import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.
 import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
+import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
+import { randomUUID } from 'node:crypto';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -452,6 +457,86 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } as ConfirmPaymentResponseDTO;
   }
 
+  public async createExpressPayment(opts: { data: CreatePaymentRequestDTO }): Promise<CreateExpressPaymentResponseDTO> {
+    if (opts.data.paymentMethod?.type === 'paypal') {
+      return this.processPaypalExpress(opts.data);
+    }
+
+    return this.processOtherExpressMethods(opts.data);
+  }
+
+  public async confirmExpressPayment(opts: { data: ConfirmPaymentRequestDTO }): Promise<ConfirmPaymentResponseDTO> {
+    let ctCart;
+    ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+
+    const ctPayment = await this.ctPaymentService.createPayment({
+      amountPlanned,
+      paymentMethodInfo: {
+        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+        method: opts.data.paymentMethod,
+      },
+      ...(ctCart.customerId && {
+        customer: {
+          typeId: 'customer',
+          id: ctCart.customerId,
+        },
+      }),
+      ...(!ctCart.customerId &&
+        ctCart.anonymousId && {
+          anonymousId: ctCart.anonymousId,
+        }),
+    });
+
+    ctCart = await this.ctCartService.addPayment({
+      resource: {
+        id: ctCart.id,
+        version: ctCart.version,
+      },
+      paymentId: ctPayment.id,
+    });
+
+    const data = this.confirmPaymentConverter.convertRequest({
+      data: opts.data,
+    });
+
+    let res!: PaymentDetailsResponse;
+    try {
+      res = await AdyenApi().PaymentsApi.paymentsDetails(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+
+    const updatedPayment = await this.ctPaymentService.updatePayment({
+      id: ctPayment.id,
+      pspReference: res.pspReference,
+      transaction: {
+        type: 'Authorization',
+        amount: {
+          centAmount: res.amount?.value || ctPayment.amountPlanned.centAmount,
+          currencyCode: res.amount?.currency || ctPayment.amountPlanned.currencyCode,
+        },
+        interactionId: res.pspReference,
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
+      },
+    });
+
+    log.info(`Payment confirmation processed.`, {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
+    return {
+      ...res,
+      paymentReference: updatedPayment.id,
+      merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode),
+    } as ConfirmPaymentResponseDTO;
+  }
+
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     try {
@@ -783,6 +868,42 @@ export class AdyenPaymentService extends AbstractPaymentService {
     await this.deleteTokenInAdyen(customerId, paymentMethod);
   }
 
+  async updatePayPalExpressOrder(opts: {
+    data: UpdatePayPalExpressPaymentRequestDTO;
+  }): Promise<UpdatePayPalExpressPaymentResponseDTO> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+    const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+
+    const enrichedDelivery = opts.data.deliveryMethods.map((item) => {
+      if (item.selected) {
+        return {
+          ...item,
+          amount: {
+            currency: amountPlanned.currencyCode,
+            value: amountPlanned.centAmount - opts.data.originalAmount.centAmount,
+          },
+        };
+      }
+      return item;
+    });
+
+    const requestData: PaypalUpdateOrderRequest = {
+      ...opts.data,
+      deliveryMethods: enrichedDelivery,
+      pspReference: opts.data.pspReference,
+      amount: {
+        currency: amountPlanned.currencyCode,
+        value: amountPlanned.centAmount,
+      },
+    };
+
+    const res = await AdyenApi().UtilityApi.updatesOrderForPaypalExpressCheckout(requestData);
+
+    return res;
+  }
+
   async getExpressPaymentData(): Promise<GetExpressPaymentDataResponseDTO> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
@@ -1106,5 +1227,131 @@ export class AdyenPaymentService extends AbstractPaymentService {
       log.error('Error parsing payment components config', { error: e });
       return undefined;
     }
+  }
+
+  private async processPaypalExpress(payload: CreatePaymentRequestDTO): Promise<CreateExpressPaymentResponseDTO> {
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+    const data = await this.createPaymentConverter.convertExpressRequest({
+      data: payload,
+      cart: ctCart,
+      payment: {
+        amountPlanned: amountPlanned,
+        id: `ct-checkout-${randomUUID()}`,
+      },
+    });
+
+    let res!: PaymentResponse;
+    try {
+      res = await AdyenApi().PaymentsApi.payments(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+
+    log.info(`Payment initiated with adyen.`, {
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
+    return {
+      ...res,
+      originalAmount: amountPlanned,
+    } as CreateExpressPaymentResponseDTO;
+  }
+
+  private async processOtherExpressMethods(payload: CreatePaymentRequestDTO): Promise<CreateExpressPaymentResponseDTO> {
+    let ctCart, ctPayment;
+    ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+    });
+
+    if (payload.paymentReference) {
+      ctPayment = await this.ctPaymentService.updatePayment({
+        id: payload.paymentReference,
+        paymentMethod: payload.paymentMethod?.type,
+      });
+
+      if (await this.hasPaymentAmountChanged(ctCart, ctPayment)) {
+        throw new ErrorInvalidOperation('The payment amount does not fulfill the remaining amount of the cart', {
+          fields: {
+            cartId: ctCart.id,
+            paymentId: ctPayment.id,
+          },
+        });
+      }
+    } else {
+      const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+      ctPayment = await this.ctPaymentService.createPayment({
+        amountPlanned,
+        paymentMethodInfo: {
+          paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          method: payload.paymentMethod?.type,
+        },
+        ...(ctCart.customerId && {
+          customer: {
+            typeId: 'customer',
+            id: ctCart.customerId,
+          },
+        }),
+        ...(!ctCart.customerId &&
+          ctCart.anonymousId && {
+            anonymousId: ctCart.anonymousId,
+          }),
+      });
+
+      ctCart = await this.ctCartService.addPayment({
+        resource: {
+          id: ctCart.id,
+          version: ctCart.version,
+        },
+        paymentId: ctPayment.id,
+      });
+    }
+
+    const data = await this.createPaymentConverter.convertExpressRequest({
+      data: payload,
+      cart: ctCart,
+      payment: ctPayment,
+    });
+
+    let res!: PaymentResponse;
+    try {
+      res = await AdyenApi().PaymentsApi.payments(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+
+    const txState = this.convertAdyenResultCode(
+      res.resultCode as PaymentResponse.ResultCodeEnum,
+      this.isActionRequired(res),
+    );
+
+    const updatedPayment = await this.ctPaymentService.updatePayment({
+      id: ctPayment.id,
+      pspReference: res.pspReference,
+      transaction: {
+        type: 'Authorization',
+        amount: ctPayment.amountPlanned,
+        interactionId: res.pspReference,
+        state: txState,
+      },
+    });
+
+    log.info(`Payment authorization processed.`, {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
+    return {
+      ...res,
+      paymentReference: updatedPayment.id,
+      ...(txState === 'Success' || txState === 'Pending'
+        ? { merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode) }
+        : {}),
+    } as CreatePaymentResponseDTO;
   }
 }

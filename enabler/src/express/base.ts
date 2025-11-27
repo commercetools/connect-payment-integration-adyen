@@ -1,4 +1,10 @@
-import { AddressData, ApplePay, GooglePay, PayPal } from "@adyen/adyen-web";
+import {
+  AddressData,
+  ApplePay,
+  GooglePay,
+  PayPal,
+  UIElement,
+} from "@adyen/adyen-web";
 import {
   ExpressAddressData,
   ExpressComponent,
@@ -63,24 +69,53 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   }): Promise<void> {
     if (this.expressOptions.onShippingAddressSelected) {
       await this.expressOptions.onShippingAddressSelected(opts);
+      return;
     }
+
+    throw new Error("setShippingAddress not implemented");
   }
 
   async getShippingMethods(opts: {
     address: ExpressAddressData;
   }): Promise<ExpressShippingOptionData[]> {
-    this.availableShippingMethods =
-      await this.expressOptions.getShippingMethods(opts);
+    if (this.expressOptions.getShippingMethods) {
+      this.availableShippingMethods =
+        await this.expressOptions.getShippingMethods(opts);
+      return this.availableShippingMethods;
+    }
 
-    return this.availableShippingMethods;
+    throw new Error("getShippingMethods not implemented");
   }
 
   async setShippingMethod(opts: {
-    shippingOption: { id: string };
+    shippingMethod: { id: string };
   }): Promise<void> {
     if (this.expressOptions.onShippingMethodSelected) {
       await this.expressOptions.onShippingMethodSelected(opts);
+      return;
     }
+
+    throw new Error("setShippingMethod not implemented");
+  }
+
+  async onComplete(
+    opts: {
+      isSuccess: boolean;
+      paymentReference: string;
+      method: { type: string };
+    },
+    component: UIElement
+  ): Promise<void> {
+    if (this.expressOptions.onComplete) {
+      await this.expressOptions.onComplete(opts, component);
+      return;
+    }
+
+    throw new Error("onComplete not implemented");
+  }
+
+  protected setSessionId(sessionId): void {
+    this.sessionId = sessionId;
   }
 
   protected async getInitialPaymentData(): Promise<InitialPaymentData> {
@@ -125,15 +160,14 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected convertAddress(opts: {
     address: AddressData;
     email?: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     phoneNumber?: string;
   }): ExpressAddressData {
-    const fullName = opts.name || "";
-
     return {
       country: opts.address.country,
-      firstName: fullName.split(" ")[0],
-      lastName: fullName.split(" ").slice(1).join(" "),
+      firstName: opts.firstName,
+      lastName: opts.lastName,
       streetName: opts.address.street,
       streetNumber: opts.address.houseNumberOrName,
       region: opts.address.stateOrProvince,
