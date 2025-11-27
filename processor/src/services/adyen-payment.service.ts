@@ -32,6 +32,7 @@ import {
   GetExpressConfigRequestDTO,
   UpdatePayPalExpressPaymentRequestDTO,
   UpdatePayPalExpressPaymentResponseDTO,
+  CreateExpressPaymentResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
@@ -77,6 +78,7 @@ import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/store
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
+import { randomUUID } from 'node:crypto';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -323,16 +325,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  public async createPayment(opts: {
-    data: CreatePaymentRequestDTO;
-    mode?: 'express' | 'standard';
-  }): Promise<CreatePaymentResponseDTO> {
-    if (opts.mode && opts.mode === 'express') {
-      return await this.createExpressPayment({
-        data: opts.data,
-      });
-    }
-
+  public async createPayment(opts: { data: CreatePaymentRequestDTO }): Promise<CreatePaymentResponseDTO> {
     let ctCart, ctPayment;
     ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
@@ -424,17 +417,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } as CreatePaymentResponseDTO;
   }
 
-  public async confirmPayment(opts: {
-    data: ConfirmPaymentRequestDTO;
-    mode?: 'express' | 'standard';
-  }): Promise<ConfirmPaymentResponseDTO> {
-    if (opts.mode && opts.mode === 'express') {
-      const response = this.confirmExpressPayment({
-        data: opts.data,
-      });
-      return response;
-    }
-
+  public async confirmPayment(opts: { data: ConfirmPaymentRequestDTO }): Promise<ConfirmPaymentResponseDTO> {
     const ctPayment = await this.ctPaymentService.getPayment({
       id: opts.data.paymentReference,
     });
@@ -474,40 +457,26 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } as ConfirmPaymentResponseDTO;
   }
 
-  public async createExpressPayment(opts: { data: CreatePaymentRequestDTO }): Promise<CreatePaymentResponseDTO> {
+  // HiNT: only to be used with express payments that behave like paypal, other express payments are okay using the existing routes we have.
+  public async createPaypalExpressPayment(opts: {
+    data: CreatePaymentRequestDTO;
+  }): Promise<CreateExpressPaymentResponseDTO> {
     const ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
 
     const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
-    // To initialize adyen we create a payment in coco, with the initial pricing.
-    // The thing is by the time the UI re-renders in paypal, the cart amount will be different.
-    // So at the point of confirming this transaction, we will create a new payment with the correct amount which would be added to the cart, thus preventing us from creating multiple
 
     // This is the walk around from the fact that paypal calls the /payment endpoint before it has all values, forcing us to manually do this computes
     // payments associated to this cart and order.
-    const ctPayment = await this.ctPaymentService.createPayment({
-      amountPlanned,
-      paymentMethodInfo: {
-        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
-        method: opts.data.paymentMethod?.type,
-      },
-      ...(ctCart.customerId && {
-        customer: {
-          typeId: 'customer',
-          id: ctCart.customerId,
-        },
-      }),
-      ...(!ctCart.customerId &&
-        ctCart.anonymousId && {
-          anonymousId: ctCart.anonymousId,
-        }),
-    });
 
-    const data = await this.createPaymentConverter.convertRequest({
+    const data = await this.createPaymentConverter.convertExpressRequest({
       data: opts.data,
       cart: ctCart,
-      payment: ctPayment,
+      payment: {
+        amountPlanned: amountPlanned,
+        id: `ct-checkout-${randomUUID()}`,
+      },
     });
 
     let res!: PaymentResponse;
@@ -524,11 +493,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     return {
       ...res,
-      paymentReference: ctPayment.id,
-    } as CreatePaymentResponseDTO;
+      originalAmount: amountPlanned,
+    } as CreateExpressPaymentResponseDTO;
   }
 
-  public async confirmExpressPayment(opts: { data: ConfirmPaymentRequestDTO }): Promise<ConfirmPaymentResponseDTO> {
+  public async confirmPaypalExpressPayment(opts: {
+    data: ConfirmPaymentRequestDTO;
+  }): Promise<ConfirmPaymentResponseDTO> {
     let ctCart;
     ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
@@ -549,6 +520,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
+      interfaceId: res.pspReference,
       paymentMethodInfo: {
         paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
         method: res.paymentMethod?.type,
@@ -563,6 +535,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
         ctCart.anonymousId && {
           anonymousId: ctCart.anonymousId,
         }),
+      transactions: [
+        {
+          type: 'Authorization',
+          amount: {
+            centAmount: res.amount?.value || amountPlanned.centAmount,
+            currencyCode: res.amount?.currency || amountPlanned.currencyCode,
+          },
+          interactionId: res.pspReference,
+          state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
+        },
+      ],
     });
 
     ctCart = await this.ctCartService.addPayment({
@@ -573,30 +556,16 @@ export class AdyenPaymentService extends AbstractPaymentService {
       paymentId: ctPayment.id,
     });
 
-    const updatedPayment = await this.ctPaymentService.updatePayment({
-      id: ctPayment.id,
-      pspReference: res.pspReference,
-      transaction: {
-        type: 'Authorization',
-        amount: {
-          centAmount: res.amount?.value || ctPayment.amountPlanned.centAmount,
-          currencyCode: res.amount?.currency || ctPayment.amountPlanned.currencyCode,
-        },
-        interactionId: res.pspReference,
-        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
-      },
-    });
-
     log.info(`Payment confirmation processed.`, {
-      paymentId: updatedPayment.id,
+      paymentId: ctPayment.id,
       interactionId: res.pspReference,
       result: res.resultCode,
     });
 
     return {
       ...res,
-      paymentReference: updatedPayment.id,
-      merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode),
+      paymentReference: ctPayment.id,
+      merchantReturnUrl: this.buildRedirectMerchantUrl(ctPayment.id, res.resultCode),
     } as ConfirmPaymentResponseDTO;
   }
 
@@ -939,17 +908,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
     const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
 
-    const ctPayment = await this.ctPaymentService.getPayment({
-      id: opts.data.paymentReference,
-    });
-
     const enrichedDelivery = opts.data.deliveryMethods.map((item) => {
       if (item.selected) {
         return {
           ...item,
           amount: {
             currency: amountPlanned.currencyCode,
-            value: amountPlanned.centAmount - ctPayment.amountPlanned.centAmount,
+            value: amountPlanned.centAmount - opts.data.originalAmount.centAmount,
           },
         };
       }

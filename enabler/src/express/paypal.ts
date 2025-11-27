@@ -25,6 +25,20 @@ type PayPalShippingOption = {
   selected: boolean;
 };
 
+type PaymentAmount = {
+  centAmount: number;
+  currencyCode: string;
+  fractionDigits: number;
+};
+
+type UpdateOrder = {
+  paymentReference?: string;
+  pspReference: string;
+  paymentData: string;
+  deliveryMethods: PayPalShippingOption[];
+  originalAmount: PaymentAmount;
+};
+
 /**
  * PayPal express component
  *
@@ -69,7 +83,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
   private pspReference: string;
   private paymentReference: string;
   private shippingAddress: any;
-  public finalAmount: number;
+  private originalAmount: PaymentAmount;
   private paymentMethod: PaymentMethod;
 
   constructor(opts: {
@@ -141,7 +155,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           };
 
           const response = await fetch(
-            this.processorUrl + "/payments?mode=express",
+            this.processorUrl + "/payments/express",
             {
               method: "POST",
               headers: {
@@ -154,6 +168,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           const data = await response.json();
           this.pspReference = data.pspReference;
           this.paymentReference = data.paymentReference;
+          this.originalAmount = data.originalAmount;
 
           if (data.action) {
             component.handleAction(data.action);
@@ -208,6 +223,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             pspReference: this.pspReference,
             paymentData: component.paymentData,
             deliveryMethods: shippingOptions,
+            originalAmount: this.originalAmount,
           };
 
           const updatedOrder = await me.updateOrder(payload);
@@ -235,6 +251,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             pspReference: this.pspReference,
             paymentData: component.paymentData,
             deliveryMethods: shippingOptions,
+            originalAmount: this.originalAmount,
           };
 
           // Update adyen with the shipping methods and thus update to payment price depending on the amount for the shipping option
@@ -251,8 +268,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             paymentReference: this.paymentReference,
           };
           const url = this.processorUrl.endsWith("/")
-            ? `${this.processorUrl}payments/details?mode=express`
-            : `${this.processorUrl}/payments/details?mode=express`;
+            ? `${this.processorUrl}payments/express/details`
+            : `${this.processorUrl}/payments/express/details`;
 
           const response = await fetch(url, {
             method: "POST",
@@ -317,7 +334,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     });
   }
 
-  protected async updateOrder(payload: any): Promise<any> {
+  protected async updateOrder(payload: UpdateOrder): Promise<any> {
     try {
       const response = await fetch(`${this.processorUrl}/paypal-order`, {
         method: "POST",

@@ -13,6 +13,7 @@ import { PaymentMethod } from '@adyen/api-library/lib/src/typings/checkout/payme
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 import { PaypalUpdateOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderResponse';
 import { DeliveryMethod } from '@adyen/api-library/lib/src/typings/checkout/deliveryMethod';
+import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 
 export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
@@ -67,6 +68,15 @@ export type CreatePaymentResponseDTO = Pick<
   merchantReturnUrl?: string;
 };
 
+export type CreateExpressPaymentResponseDTO = Pick<
+  PaymentResponse,
+  'action' | 'resultCode' | 'threeDS2ResponseData' | 'threeDS2Result' | 'threeDSPaymentData'
+> & {
+  paymentReference: string;
+  merchantReturnUrl?: string;
+  originalAmount?: PaymentAmount;
+};
+
 export type ConfirmPaymentRequestDTO = PaymentDetailsRequest & {
   paymentReference: string;
 };
@@ -111,7 +121,7 @@ export type GetExpressPaymentDataResponseDTO = {
 };
 
 export type UpdatePayPalExpressPaymentRequestDTO = Pick<PaypalUpdateOrderRequest, 'amount' | 'pspReference'> & {
-  paymentReference: string;
+  originalAmount: PaymentAmount;
   deliveryMethods: DeliveryMethod[];
 };
 

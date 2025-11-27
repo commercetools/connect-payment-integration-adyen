@@ -59,7 +59,6 @@ type GooglePayShippingOptions = {
 
 export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
-  public finalAmount: number;
   private paymentReference: string;
   private paymentMethod: PaymentMethod;
 
