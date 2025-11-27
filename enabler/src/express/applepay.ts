@@ -1,7 +1,10 @@
 import { ApplePay, ICore, PaymentMethod } from "@adyen/adyen-web";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import { DefaultAdyenExpressComponent } from "./base";
-import { PaymentExpressBuilder, ExpressOptions } from "../payment-enabler/payment-enabler";
+import {
+  PaymentExpressBuilder,
+  ExpressOptions,
+} from "../payment-enabler/payment-enabler";
 
 export class ApplePayExpressBuilder implements PaymentExpressBuilder {
   private adyenCheckout: ICore;
@@ -10,6 +13,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
   private countryCode: string;
   private currencyCode: string;
   private paymentMethodConfig: { [key: string]: string };
+  private usesOwnCertificate: boolean;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -29,6 +33,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
       paymentMethodConfig: this.paymentMethodConfig,
+      usesOwnCertificate: this.usesOwnCertificate,
     });
     googlePayComponent.init();
 
@@ -41,6 +46,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
   public finalAmount: number;
   private paymentReference: string;
   private paymentMethod: PaymentMethod;
+  private usesOwnCertificate: boolean;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -50,6 +56,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    usesOwnCertificate?: boolean;
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -59,20 +66,253 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
       currencyCode: opts.currencyCode,
       paymentMethodConfig: opts.paymentMethodConfig,
     });
+    this.usesOwnCertificate = opts.usesOwnCertificate;
     this.adyenCheckout = opts.adyenCheckout;
   }
 
   init(): void {
-    console.log(this.paymentMethodConfig)
+    const me = this;
 
     this.component = new ApplePay(this.adyenCheckout, {
       isExpress: true,
-      requiredBillingContactFields: ['postalAddress', 'email', 'name'],
-      requiredShippingContactFields: ['postalAddress', 'name', 'phoneticName', 'email', 'phone'],
+      buttonType: "pay",
+      buttonColor: "black",
+      amount: {
+        currency: this.currencyCode,
+        value: 2500,
+      },
+      ...(this.usesOwnCertificate && {
+        onValidateMerchant: this.onValidateMerchant.bind(this),
+      }),
+      requiredBillingContactFields: ["postalAddress", "email", "name"],
+      requiredShippingContactFields: [
+        "postalAddress",
+        "name",
+        "phoneticName",
+        "email",
+        "phone",
+      ],
       configuration: {
         merchantId: this.paymentMethodConfig.merchantId,
-        merchantName: this.paymentMethodConfig.merchantName
+        merchantName: this.paymentMethodConfig.merchantName,
       },
+      onPaymentCompleted: (_data, component) => {
+        // TODO: data contains resultCode and that should determine isSuccess
+        this.expressOptions.onComplete(
+          {
+            isSuccess: true,
+            paymentReference: this.paymentReference,
+            method: this.paymentMethod,
+          },
+          component
+        );
+      },
+      onClick: (resolve, reject) => {
+        // TODO: inside here try to compute the initial amount and set it to a variable that will be used when these component is set as amount value lets see i it picks it
+        return this.expressOptions
+          .onPayButtonClick()
+          .then((sessionId: string) => {
+            this.sessionId = sessionId;
+            resolve();
+          })
+          .catch(() => reject());
+      },
+      onSubmit: async (state, component, actions) => {
+        try {
+          const reqData = {
+            ...state.data,
+            channel: "Web",
+            countryCode: this.countryCode,
+            // TODO: figure out how to pass shopperLocale here thats initOptions.locale
+          };
+
+          const response = await fetch(this.processorUrl + "/payments", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Session-Id": this.sessionId,
+            },
+            body: JSON.stringify(reqData),
+          });
+          const data = await response.json();
+
+          this.paymentMethod = data.paymentMethod;
+
+          this.paymentReference = data.paymentReference;
+          this.paymentMethod = data.paymentMethod;
+          if (!data.resultCode) {
+            actions.reject();
+            return;
+          }
+
+          if (data.action) {
+            component.handleAction(data.action);
+          } else {
+            if (
+              data.resultCode === "Authorised" ||
+              data.resultCode === "Pending"
+            ) {
+              component.setStatus("success");
+            } else {
+              component.setStatus("error");
+            }
+          }
+
+          actions.resolve({
+            resultCode: data.resultCode,
+            action: data.action,
+          });
+        } catch (error) {
+          actions.reject(error);
+        }
+      },
+      onShippingContactSelected: async (
+        resolve,
+        _reject,
+        event: ApplePayJS.ApplePayShippingContactSelectedEvent
+      ) => {
+        const { countryCode, locality, postalCode } = event.shippingContact;
+
+        await me.setShippingAddress({
+          address: {
+            country: countryCode,
+            postalCode,
+            city: locality,
+            streetName: locality,
+          },
+        });
+
+        const shippingMethods = await this.fetchShippingMethods(countryCode);
+        const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
+          shippingMethods[0]
+        );
+
+        const update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {
+          ...updatedLineItemsWithTotal,
+          newShippingMethods: shippingMethods,
+        };
+
+        resolve(update);
+      },
+      onShippingMethodSelected: async (
+        resolve,
+        _reject,
+        event: ApplePayJS.ApplePayShippingMethodSelectedEvent
+      ) => {
+        const { shippingMethod } = event;
+
+        await me.setShippingMethod({
+          shippingOption: {
+            id: shippingMethod.identifier,
+          },
+        });
+        const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
+          shippingMethod
+        );
+
+        const update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {
+          ...updatedLineItemsWithTotal,
+        };
+
+        resolve(update);
+      },
+      onAuthorized: async (data, actions) => {
+        console.log(data)
+        const shippingAddress = this.convertAddress({
+          address: data.deliveryAddress,
+          email: data.authorizedEvent.payment.shippingContact.emailAddress,
+          firstName: data.authorizedEvent.payment.shippingContact.givenName,
+          lastName: data.authorizedEvent.payment.shippingContact.familyName,
+          phoneNumber: data.authorizedEvent.payment.shippingContact.phoneNumber,
+        });
+
+        const billingAddress = this.convertAddress({
+          address: data.billingAddress,
+          email: data.authorizedEvent.payment.billingContact?.emailAddress,
+          firstName: data.authorizedEvent.payment.billingContact.givenName,
+          lastName: data.authorizedEvent.payment.billingContact.familyName,
+          phoneNumber: data.authorizedEvent.payment.billingContact?.phoneNumber,
+        });
+
+        this.expressOptions
+          .onPaymentSubmit({
+            shippingAddress,
+            billingAddress,
+          })
+          .then(() => actions.resolve())
+          .catch((error) => {
+            actions.reject(error);
+          });
+      },
+    });
+  }
+
+  private onValidateMerchant(
+    resolve: Function,
+    reject: Function,
+    validationUrl: string
+  ) {
+    fetch(`${this.processorUrl}/applepay-sessions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Session-Id": this.sessionId,
+      },
+      body: JSON.stringify({
+        validationUrl,
+      }),
     })
+      .then((res) => res.json())
+      .then((merchantSession) => {
+        resolve(merchantSession);
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  }
+
+  private async getLineItemsWithNewTotal(
+    shippingMethod: ApplePayJS.ApplePayShippingMethod
+  ): Promise<ApplePayJS.ApplePayShippingContactUpdate> {
+    const paymentData = await this.getInitialPaymentData();
+
+    const lineItems: ApplePayJS.ApplePayLineItem[] = paymentData.lineItems.map(
+      (lineItem) => ({
+        label: lineItem.name,
+        amount: this.centAmountToString(lineItem.amount.centAmount),
+        type: "final",
+      })
+    );
+
+    lineItems.push({
+      label: `Delivery: ${shippingMethod.label}`,
+      amount: shippingMethod.amount,
+      type: "final" as const,
+    });
+
+    return {
+      newLineItems: lineItems,
+      newTotal: {
+        label: this.paymentMethodConfig.merchantName,
+        amount: this.centAmountToString(paymentData.totalPrice.centAmount),
+      },
+    };
+  }
+
+  private async fetchShippingMethods(
+    countryCode: string
+  ): Promise<ApplePayJS.ApplePayShippingMethod[]> {
+    const shippingsMethods = await this.getShippingMethods({
+      address: {
+        country: countryCode,
+      },
+    });
+
+    return shippingsMethods.map((method) => ({
+      label: method.name,
+      detail: method.description,
+      amount: this.centAmountToString(method.amount.centAmount),
+      identifier: method.id,
+    }));
   }
 }
