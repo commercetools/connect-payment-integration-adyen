@@ -26,7 +26,7 @@ const getShippingMethods = async (opts) => {
   const data = await res.json();
 
   return data.results.map((method) => {
-    const shippingOption = {
+    const shippingMethod = {
       id: method.id,
       name: method.name,
       description: method?.localizedName?.[0] || "",
@@ -37,12 +37,12 @@ const getShippingMethods = async (opts) => {
       (rate) => rate.isMatching
     );
 
-    shippingOption.amount = {
+    shippingMethod.amount = {
       centAmount: zoneRate.price.centAmount,
       currencyCode: zoneRate.price.currencyCode,
     };
 
-    return shippingOption;
+    return shippingMethod;
   });
 };
 
@@ -56,7 +56,7 @@ const setShippingMethod = async (opts) => {
       {
         action: "setShippingMethod",
         shippingMethod: {
-          id: opts.shippingOption.id,
+          id: opts.shippingMethod.id,
           typeId: "shipping-method",
         },
       },

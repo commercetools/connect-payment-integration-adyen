@@ -69,7 +69,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   }): Promise<void> {
     if (this.expressOptions.onShippingAddressSelected) {
       await this.expressOptions.onShippingAddressSelected(opts);
-      return
+      return;
     }
 
     throw new Error("setShippingAddress not implemented");
@@ -79,15 +79,16 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     address: ExpressAddressData;
   }): Promise<ExpressShippingOptionData[]> {
     if (this.expressOptions.getShippingMethods) {
-      this.availableShippingMethods = await this.expressOptions.getShippingMethods(opts);
+      this.availableShippingMethods =
+        await this.expressOptions.getShippingMethods(opts);
       return this.availableShippingMethods;
     }
-    
-    throw new Error('getShippingMethods not implemented');
+
+    throw new Error("getShippingMethods not implemented");
   }
 
   async setShippingMethod(opts: {
-    shippingOption: { id: string };
+    shippingMethod: { id: string };
   }): Promise<void> {
     if (this.expressOptions.onShippingMethodSelected) {
       await this.expressOptions.onShippingMethodSelected(opts);

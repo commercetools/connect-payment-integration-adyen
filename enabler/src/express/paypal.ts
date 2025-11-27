@@ -212,7 +212,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             (option) => option.selected === true
           );
           await me.setShippingMethod({
-            shippingOption: {
+            shippingMethod: {
               id: selectedOption[0].reference,
             },
           });
@@ -235,7 +235,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       onShippingOptionsChange: async (data, actions, component) => {
         try {
           await me.setShippingMethod({
-            shippingOption: {
+            shippingMethod: {
               id: data.selectedShippingOption.id,
             },
           });

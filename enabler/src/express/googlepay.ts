@@ -197,7 +197,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                   await me.getShippingOptions(shippingAddress.countryCode);
 
                 await me.setShippingMethod({
-                  shippingOption: {
+                  shippingMethod: {
                     id: paymentDataRequestUpdate.newShippingOptionParameters
                       .defaultSelectedOptionId,
                   },
@@ -221,7 +221,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
             if (callbackTrigger === "SHIPPING_OPTION") {
               try {
                 await me.setShippingMethod({
-                  shippingOption: {
+                  shippingMethod: {
                     id: shippingOptionData.id,
                   },
                 });
