@@ -88,7 +88,6 @@ export class CreatePaymentConverter {
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
 
-    const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
     return {
       ...requestData,
       amount: {
@@ -114,7 +113,6 @@ export class CreatePaymentConverter {
       ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
-      ...storedPaymentMethodsData,
     };
   }
 

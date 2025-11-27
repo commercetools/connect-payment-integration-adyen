@@ -116,7 +116,7 @@ export const adyenPaymentRoutes = async (
     Body: CreatePaymentRequestDTO;
     Reply: CreateExpressPaymentResponseDTO;
   }>(
-    '/payments/express',
+    '/paypal-express',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
@@ -184,7 +184,7 @@ export const adyenPaymentRoutes = async (
     Body: ConfirmPaymentRequestDTO;
     Reply: ConfirmPaymentResponseDTO;
   }>(
-    '/payments/express/details',
+    '/paypal-express/details',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
@@ -265,7 +265,7 @@ export const adyenPaymentRoutes = async (
   );
 
   fastify.post<{ Body: UpdatePayPalExpressPaymentRequestDTO; Reply: UpdatePayPalExpressPaymentResponseDTO }>(
-    '/paypal-order',
+    '/paypal-express/order',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },

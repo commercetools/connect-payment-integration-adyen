@@ -154,17 +154,14 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             channel: "Web",
           };
 
-          const response = await fetch(
-            this.processorUrl + "/payments/express",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": this.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            }
-          );
+          const response = await fetch(this.processorUrl + "/paypal-express", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Session-Id": this.sessionId,
+            },
+            body: JSON.stringify(reqData),
+          });
           const data = await response.json();
           this.pspReference = data.pspReference;
           this.paymentReference = data.paymentReference;
@@ -273,8 +270,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             paymentMethod: this.paymentMethod.type,
           };
           const url = this.processorUrl.endsWith("/")
-            ? `${this.processorUrl}payments/express/details`
-            : `${this.processorUrl}/payments/express/details`;
+            ? `${this.processorUrl}paypal-express/details`
+            : `${this.processorUrl}/paypal-express/details`;
 
           const response = await fetch(url, {
             method: "POST",
@@ -341,14 +338,17 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
 
   protected async updateOrder(payload: UpdateOrder): Promise<any> {
     try {
-      const response = await fetch(`${this.processorUrl}/paypal-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": this.sessionId,
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${this.processorUrl}/paypal-express/order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-Id": this.sessionId,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
       if (!response.ok) {
         throw new Error("something happened.");
       }
