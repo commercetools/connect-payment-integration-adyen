@@ -125,7 +125,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             // TODO: figure out how to pass shopperLocale here thats initOptions.locale
           };
 
-          const response = await fetch(this.processorUrl + "/payments", {
+          const response = await fetch(this.processorUrl + "/express-payments", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -180,6 +180,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             streetName: locality,
           },
         });
+        // TODO: handle error scenarios
 
         const shippingMethods = await this.fetchShippingMethods(countryCode);
         

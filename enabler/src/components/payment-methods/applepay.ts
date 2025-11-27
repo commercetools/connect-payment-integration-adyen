@@ -25,7 +25,7 @@ export class ApplePayBuilder extends AdyenBaseComponentBuilder {
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
       paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.applepay),
-      usesOwnCertificate: false,
+      usesOwnCertificate: this.usesOwnCertificate,
     });
     applePayComponent.init();
 
