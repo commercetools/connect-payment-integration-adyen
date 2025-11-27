@@ -79,6 +79,7 @@ export type CreateExpressPaymentResponseDTO = Pick<
 
 export type ConfirmPaymentRequestDTO = PaymentDetailsRequest & {
   paymentReference: string;
+  paymentMethod?: string;
 };
 
 export type ConfirmPaymentResponseDTO = Pick<

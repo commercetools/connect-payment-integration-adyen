@@ -169,6 +169,10 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           this.pspReference = data.pspReference;
           this.paymentReference = data.paymentReference;
           this.originalAmount = data.originalAmount;
+          this.paymentMethod = {
+            type: data.action.paymentMethodType,
+            name: "unknown",
+          };
 
           if (data.action) {
             component.handleAction(data.action);
@@ -266,6 +270,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           const requestData = {
             ...state.data,
             paymentReference: this.paymentReference,
+            paymentMethod: this.paymentMethod.type,
           };
           const url = this.processorUrl.endsWith("/")
             ? `${this.processorUrl}payments/express/details`

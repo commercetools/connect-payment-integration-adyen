@@ -507,23 +507,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
 
-    const data = this.confirmPaymentConverter.convertRequest({
-      data: opts.data,
-    });
-
-    let res!: PaymentDetailsResponse;
-    try {
-      res = await AdyenApi().PaymentsApi.paymentsDetails(data);
-    } catch (e) {
-      throw wrapAdyenError(e);
-    }
-
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
-      interfaceId: res.pspReference,
       paymentMethodInfo: {
         paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
-        method: res.paymentMethod?.type,
+        method: opts.data.paymentMethod,
       },
       ...(ctCart.customerId && {
         customer: {
@@ -535,17 +523,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         ctCart.anonymousId && {
           anonymousId: ctCart.anonymousId,
         }),
-      transactions: [
-        {
-          type: 'Authorization',
-          amount: {
-            centAmount: res.amount?.value || amountPlanned.centAmount,
-            currencyCode: res.amount?.currency || amountPlanned.currencyCode,
-          },
-          interactionId: res.pspReference,
-          state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
-        },
-      ],
     });
 
     ctCart = await this.ctCartService.addPayment({
@@ -556,16 +533,41 @@ export class AdyenPaymentService extends AbstractPaymentService {
       paymentId: ctPayment.id,
     });
 
+    const data = this.confirmPaymentConverter.convertRequest({
+      data: opts.data,
+    });
+
+    let res!: PaymentDetailsResponse;
+    try {
+      res = await AdyenApi().PaymentsApi.paymentsDetails(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+
+    const updatedPayment = await this.ctPaymentService.updatePayment({
+      id: ctPayment.id,
+      pspReference: res.pspReference,
+      transaction: {
+        type: 'Authorization',
+        amount: {
+          centAmount: res.amount?.value || ctPayment.amountPlanned.centAmount,
+          currencyCode: res.amount?.currency || ctPayment.amountPlanned.currencyCode,
+        },
+        interactionId: res.pspReference,
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
+      },
+    });
+
     log.info(`Payment confirmation processed.`, {
-      paymentId: ctPayment.id,
+      paymentId: updatedPayment.id,
       interactionId: res.pspReference,
       result: res.resultCode,
     });
 
     return {
       ...res,
-      paymentReference: ctPayment.id,
-      merchantReturnUrl: this.buildRedirectMerchantUrl(ctPayment.id, res.resultCode),
+      paymentReference: updatedPayment.id,
+      merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode),
     } as ConfirmPaymentResponseDTO;
   }
 
