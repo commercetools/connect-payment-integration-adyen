@@ -26,6 +26,19 @@ export interface PaymentComponentBuilder {
   build(config: ComponentOptions): PaymentComponent;
 }
 
+export type OnComplete = (opts: {
+  isSuccess: boolean;
+  paymentReference: string;
+  method: {
+    type: string;
+  };
+}) => void;
+
+export type OnError = (
+  error: any,
+  context?: { paymentReference?: string; method?: { type?: string } }
+) => void;
+
 export type EnablerOptions = {
   processorUrl: string;
   sessionId: string;
@@ -33,11 +46,8 @@ export type EnablerOptions = {
   currencyCode?: string;
   locale?: string;
   onActionRequired?: () => Promise<void>;
-  onComplete?: (result: PaymentResult) => void;
-  onError?: (
-    error: any,
-    context?: { paymentReference?: string; method?: { type?: string } }
-  ) => void;
+  onComplete?: OnComplete;
+  onError?: OnError;
 };
 
 export enum PaymentMethod {
@@ -254,14 +264,7 @@ export type ExpressOptions = {
     shippingAddress: ExpressAddressData;
     billingAddress: ExpressAddressData;
   }) => Promise<void>;
-  onComplete: (
-    opts: {
-      isSuccess: boolean;
-      paymentReference: string;
-      method: { type: string };
-    },
-    component: UIElement
-  ) => Promise<void>;
+  onComplete?: OnComplete;
 };
 
 export interface PaymentExpressBuilder {

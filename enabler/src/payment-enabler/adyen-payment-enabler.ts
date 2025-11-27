@@ -4,6 +4,7 @@ import {
   CocoStoredPaymentMethod,
   DropinType,
   EnablerOptions,
+  OnComplete,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
@@ -62,6 +63,7 @@ export type BaseOptions = {
   storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;
   setStorePaymentDetails?: (enabled: boolean) => void;
   setSessionId?: (sessionId: string) => void;
+  onComplete?: OnComplete;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
