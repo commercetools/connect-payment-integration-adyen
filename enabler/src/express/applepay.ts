@@ -96,11 +96,10 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         merchantId: this.paymentMethodConfig.merchantId,
         merchantName: this.paymentMethodConfig.merchantName,
       },
-      onPaymentCompleted: (_data, component) => {
-        // TODO: data contains resultCode and that should determine isSuccess
-        this.expressOptions.onComplete(
+      onPaymentCompleted: (data, component) => {
+        this.onComplete(
           {
-            isSuccess: true,
+            isSuccess: !!data.resultCode,
             paymentReference: this.paymentReference,
             method: this.paymentMethod,
           },
@@ -183,6 +182,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         });
 
         const shippingMethods = await this.fetchShippingMethods(countryCode);
+        
         const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
           shippingMethods[0]
         );
@@ -202,7 +202,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         const { shippingMethod } = event;
 
         await me.setShippingMethod({
-          shippingOption: {
+          shippingMethod: {
             id: shippingMethod.identifier,
           },
         });
@@ -217,7 +217,6 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         resolve(update);
       },
       onAuthorized: async (data, actions) => {
-        console.log(data)
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
           email: data.authorizedEvent.payment.shippingContact.emailAddress,
