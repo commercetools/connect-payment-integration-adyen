@@ -31,8 +31,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
     this.onComplete = baseOptions.onComplete;
   }
-
-  // TODO: validate other ExpressOptions fields exists before they are used.
+  
   build(config: ExpressOptions): GooglePayExpressComponent {
     const googlePayComponent = new GooglePayExpressComponent({
       adyenCheckout: this.adyenCheckout,
