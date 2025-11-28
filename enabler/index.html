@@ -141,7 +141,7 @@
       import { Enabler } from "/src/main.ts";
 
       async function fetchDevJwt() {
-        const response = await fetch("https://4bcd4b092a83.ngrok.app/jwt/token", {
+        const response = await fetch("http://localhost:9002/jwt/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
