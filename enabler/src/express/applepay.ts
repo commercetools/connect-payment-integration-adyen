@@ -4,6 +4,7 @@ import { DefaultAdyenExpressComponent } from "./base";
 import {
   PaymentExpressBuilder,
   ExpressOptions,
+  OnComplete,
 } from "../payment-enabler/payment-enabler";
 
 export class ApplePayExpressBuilder implements PaymentExpressBuilder {
@@ -14,6 +15,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
   private currencyCode: string;
   private paymentMethodConfig: { [key: string]: string };
   private usesOwnCertificate: boolean;
+  private onComplete: OnComplete;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -22,6 +24,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
+    this.onComplete = baseOptions.onComplete;
   }
 
   build(config: ExpressOptions): ApplePayExpressComponent {
@@ -34,6 +37,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
       currencyCode: this.currencyCode,
       paymentMethodConfig: this.paymentMethodConfig,
       usesOwnCertificate: this.usesOwnCertificate,
+      onComplete: config.onComplete || this.onComplete,
     });
     googlePayComponent.init();
 
@@ -57,6 +61,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
     usesOwnCertificate?: boolean;
+    onComplete: OnComplete;
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -65,6 +70,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
       countryCode: opts.countryCode,
       currencyCode: opts.currencyCode,
       paymentMethodConfig: opts.paymentMethodConfig,
+      onComplete: opts.onComplete,
     });
     this.usesOwnCertificate = opts.usesOwnCertificate;
     this.adyenCheckout = opts.adyenCheckout;
@@ -96,15 +102,12 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         merchantId: this.paymentMethodConfig.merchantId,
         merchantName: this.paymentMethodConfig.merchantName,
       },
-      onPaymentCompleted: (data, component) => {
-        this.onComplete(
-          {
-            isSuccess: !!data.resultCode,
-            paymentReference: this.paymentReference,
-            method: this.paymentMethod,
-          },
-          component
-        );
+      onPaymentCompleted: (data, _component) => {
+        this.onComplete({
+          isSuccess: !!data.resultCode,
+          paymentReference: this.paymentReference,
+          method: this.paymentMethod,
+        });
       },
       onClick: (resolve, reject) => {
         // TODO: we still need to implement Juans change in his branch
@@ -124,14 +127,17 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             countryCode: this.countryCode,
           };
 
-          const response = await fetch(this.processorUrl + "/express-payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
+          const response = await fetch(
+            this.processorUrl + "/express-payments",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": this.sessionId,
+              },
+              body: JSON.stringify(reqData),
+            }
+          );
           const data = await response.json();
 
           this.paymentMethod = data.paymentMethod;
@@ -182,7 +188,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         // TODO: handle error scenarios (set shipping address not working for example)
 
         const shippingMethods = await this.fetchShippingMethods(countryCode);
-        
+
         const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
           shippingMethods[0]
         );

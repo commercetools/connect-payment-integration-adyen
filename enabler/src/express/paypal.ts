@@ -9,6 +9,7 @@ import {
 } from "@adyen/adyen-web";
 import {
   ExpressOptions,
+  OnComplete,
   PaymentExpressBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
@@ -52,6 +53,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
   private countryCode: string;
   private currencyCode: string;
   private paymentMethodConfig: { [key: string]: string };
+  private onComplete: OnComplete;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -60,6 +62,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
+    this.onComplete = baseOptions.onComplete;
   }
 
   build(config: ExpressOptions): PayPalExpressComponent {
@@ -71,6 +74,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
       paymentMethodConfig: this.paymentMethodConfig,
+      onComplete: config.onComplete || this.onComplete,
     });
     paypalComponent.init();
 
@@ -94,6 +98,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    onComplete: OnComplete;
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -102,6 +107,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       countryCode: opts.countryCode,
       currencyCode: opts.currencyCode,
       paymentMethodConfig: opts.paymentMethodConfig,
+      onComplete: opts.onComplete,
     });
     this.adyenCheckout = opts.adyenCheckout;
   }
@@ -133,15 +139,12 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           })
           .catch(() => false);
       },
-      onPaymentCompleted: (data, component) => {
-        this.onComplete(
-          {
-            isSuccess: !!data.resultCode,
-            paymentReference: this.paymentReference,
-            method: this.paymentMethod,
-          },
-          component
-        );
+      onPaymentCompleted: (data, _component) => {
+        this.onComplete({
+          isSuccess: !!data.resultCode,
+          paymentReference: this.paymentReference,
+          method: this.paymentMethod,
+        });
       },
       onSubmit: async (
         state: SubmitData,
@@ -159,14 +162,17 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             name: "unknown",
           };
 
-          const response = await fetch(this.processorUrl + "/express-payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
+          const response = await fetch(
+            this.processorUrl + "/express-payments",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Session-Id": this.sessionId,
+              },
+              body: JSON.stringify(reqData),
+            }
+          );
           const data = await response.json();
           this.pspReference = data.pspReference;
           this.paymentReference = data.paymentReference;
