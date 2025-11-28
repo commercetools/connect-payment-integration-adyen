@@ -78,8 +78,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
       buttonType: "pay",
       buttonColor: "black",
       amount: {
-        currency: this.currencyCode,
-        value: 2500,
+        currency: this.expressOptions.initialAmount.currencyCode,
+        value: this.expressOptions.initialAmount.centAmount,
       },
       ...(this.usesOwnCertificate && {
         onValidateMerchant: this.onValidateMerchant.bind(this),
@@ -107,11 +107,11 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         );
       },
       onClick: (resolve, reject) => {
-        // TODO: inside here try to compute the initial amount and set it to a variable that will be used when these component is set as amount value lets see i it picks it
+        // TODO: we still need to implement Juans change in his branch
         return this.expressOptions
           .onPayButtonClick()
-          .then((sessionId: string) => {
-            this.sessionId = sessionId;
+          .then((res) => {
+            this.sessionId = res.sessionId;
             resolve();
           })
           .catch(() => reject());
@@ -122,7 +122,6 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             ...state.data,
             channel: "Web",
             countryCode: this.countryCode,
-            // TODO: figure out how to pass shopperLocale here thats initOptions.locale
           };
 
           const response = await fetch(this.processorUrl + "/express-payments", {
@@ -180,7 +179,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             streetName: locality,
           },
         });
-        // TODO: handle error scenarios
+        // TODO: handle error scenarios (set shipping address not working for example)
 
         const shippingMethods = await this.fetchShippingMethods(countryCode);
         

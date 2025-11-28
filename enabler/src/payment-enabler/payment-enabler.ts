@@ -266,7 +266,7 @@ export type ExpressOptions = {
     },
     component: UIElement
   ) => Promise<void>;
-  initialCartAmount: {
+  initialAmount: {
     centAmount: number;
     currencyCode: string;
   }
