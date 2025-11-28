@@ -28,7 +28,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
   }
 
   build(config: ExpressOptions): ApplePayExpressComponent {
-    const googlePayComponent = new ApplePayExpressComponent({
+    const applePayComponent = new ApplePayExpressComponent({
       adyenCheckout: this.adyenCheckout,
       componentOptions: config,
       processorUrl: this.processorUrl,
@@ -39,9 +39,9 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
       usesOwnCertificate: this.usesOwnCertificate,
       onComplete: config.onComplete || this.onComplete,
     });
-    googlePayComponent.init();
+    applePayComponent.init();
 
-    return googlePayComponent;
+    return applePayComponent;
   }
 }
 
