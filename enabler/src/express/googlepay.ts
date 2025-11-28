@@ -217,9 +217,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                   message: "Cannot ship to the selected address",
                   intent: "SHIPPING_ADDRESS",
                 };
-
-                resolve(paymentDataRequestUpdate);
-                return;
               }
             }
 

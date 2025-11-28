@@ -1,6 +1,6 @@
 import { ApplePay, ICore, PaymentMethod } from "@adyen/adyen-web";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
-import { DefaultAdyenExpressComponent } from "./base";
+import { DefaultAdyenExpressComponent, InitialPaymentData } from "./base";
 import {
   PaymentExpressBuilder,
   ExpressOptions,
@@ -110,7 +110,6 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         });
       },
       onClick: (resolve, reject) => {
-        // TODO: we still need to implement Juans change in his branch
         return this.expressOptions
           .onPayButtonClick()
           .then((res) => {
@@ -175,28 +174,48 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         _reject,
         event: ApplePayJS.ApplePayShippingContactSelectedEvent
       ) => {
+        const paymentData = await this.getInitialPaymentData();
         const { countryCode, locality, postalCode } = event.shippingContact;
+        let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
 
-        await me.setShippingAddress({
-          address: {
-            country: countryCode,
-            postalCode,
-            city: locality,
-            streetName: locality,
-          },
-        });
-        // TODO: handle error scenarios (set shipping address not working for example)
+        try {
+          await me.setShippingAddress({
+            address: {
+              country: countryCode,
+              postalCode,
+              city: locality,
+              streetName: locality,
+            },
+          });
 
-        const shippingMethods = await this.fetchShippingMethods(countryCode);
+          const shippingMethods = await this.fetchShippingMethods(countryCode);
 
-        const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
-          shippingMethods[0]
-        );
+          const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
+            shippingMethods[0],
+            paymentData
+          );
 
-        const update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {
-          ...updatedLineItemsWithTotal,
-          newShippingMethods: shippingMethods,
-        };
+          update = {
+            ...updatedLineItemsWithTotal,
+            newShippingMethods: shippingMethods,
+          };
+        } catch (err) {
+          update = {
+            newTotal: {
+              label: this.paymentMethodConfig.merchantName,
+              amount: this.centAmountToString(
+                paymentData.totalPrice.centAmount
+              ),
+            },
+            errors: [
+              new ApplePayError(
+                "shippingContactInvalid",
+                undefined,
+                "Cannot ship to the selected address"
+              ),
+            ],
+          };
+        }
 
         resolve(update);
       },
@@ -205,20 +224,42 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         _reject,
         event: ApplePayJS.ApplePayShippingMethodSelectedEvent
       ) => {
+        const paymentData = await this.getInitialPaymentData();
         const { shippingMethod } = event;
+        let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
 
-        await me.setShippingMethod({
-          shippingMethod: {
-            id: shippingMethod.identifier,
-          },
-        });
-        const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
-          shippingMethod
-        );
+        try {
+          await me.setShippingMethod({
+            shippingMethod: {
+              id: shippingMethod.identifier,
+            },
+          });
+          const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
+            shippingMethod,
+            paymentData
+          );
 
-        const update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {
-          ...updatedLineItemsWithTotal,
-        };
+          update = {
+            ...updatedLineItemsWithTotal,
+          };
+        } catch (err) {
+          update = {
+            newTotal: {
+              label: this.paymentMethodConfig.merchantName,
+              amount: this.centAmountToString(
+                paymentData.totalPrice.centAmount
+              ),
+            },
+            // TODO: to be improved
+            errors: [
+              new ApplePayError(
+                "unknown",
+                undefined,
+                "Cannot ship using the selected method"
+              ),
+            ],
+          };
+        }
 
         resolve(update);
       },
@@ -277,10 +318,9 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
   }
 
   private async getLineItemsWithNewTotal(
-    shippingMethod: ApplePayJS.ApplePayShippingMethod
+    shippingMethod: ApplePayJS.ApplePayShippingMethod,
+    paymentData: InitialPaymentData
   ): Promise<ApplePayJS.ApplePayShippingContactUpdate> {
-    const paymentData = await this.getInitialPaymentData();
-
     const lineItems: ApplePayJS.ApplePayLineItem[] = paymentData.lineItems.map(
       (lineItem) => ({
         label: lineItem.name,
