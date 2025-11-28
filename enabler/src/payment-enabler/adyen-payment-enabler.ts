@@ -4,6 +4,7 @@ import {
   CocoStoredPaymentMethod,
   DropinType,
   EnablerOptions,
+  OnComplete,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
@@ -38,6 +39,7 @@ import { SwishBuilder } from "../components/payment-methods/swish";
 import { VippsBuilder } from "../components/payment-methods/vipps";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
 import { PayPalExpressBuilder } from "../express/paypal";
+import { ApplePayExpressBuilder } from "../express/applepay";
 
 export type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
@@ -62,6 +64,7 @@ export type BaseOptions = {
   storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;
   setStorePaymentDetails?: (enabled: boolean) => void;
   setSessionId?: (sessionId: string) => void;
+  onComplete?: OnComplete;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
@@ -161,6 +164,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
     const supportedMethods = {
       googlepay: GooglePayExpressBuilder,
       paypal: PayPalExpressBuilder,
+      applepay: ApplePayExpressBuilder,
     };
 
     if (!(type in supportedMethods)) {

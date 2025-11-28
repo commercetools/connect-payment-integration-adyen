@@ -77,9 +77,9 @@ export class PaymentComponentsConverter {
         },
       ],
       express: [
-        // {
-        //   type: 'applepay',
-        // },
+        {
+          type: 'applepay',
+        },
         {
           type: 'googlepay',
         },
