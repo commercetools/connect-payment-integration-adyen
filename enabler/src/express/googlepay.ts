@@ -118,8 +118,8 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       onClick: (resolve, reject) => {
         return this.expressOptions
           .onPayButtonClick()
-          .then((sessionId: string) => {
-            this.setSessionId(sessionId);
+          .then((opts) => {
+            this.setSessionId(opts.sessionId);
             resolve();
           })
           .catch(() => reject());

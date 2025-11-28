@@ -238,9 +238,13 @@ export type ExpressAddressData = {
 export interface ExpressComponent {
   mount(selector: string): void;
 }
+type OnclickResponse = {
+  sessionId: string;
+}
+
 export type ExpressOptions = {
   allowedCountries?: string[];
-  onPayButtonClick: () => Promise<string>;
+  onPayButtonClick: () => Promise<OnclickResponse>;
   onShippingAddressSelected: (opts: {
     address: ExpressAddressData;
   }) => Promise<void>;
@@ -262,6 +266,10 @@ export type ExpressOptions = {
     },
     component: UIElement
   ) => Promise<void>;
+  initialCartAmount: {
+    centAmount: number;
+    currencyCode: string;
+  }
 };
 
 export interface PaymentExpressBuilder {

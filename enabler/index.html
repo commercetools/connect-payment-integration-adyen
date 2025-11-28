@@ -300,7 +300,9 @@
               ? {
                   onPayButtonClick: async () => {
                     console.log("onPaymentInit event received");
-                    return Promise.resolve(sessionIdGeneral);
+                    return Promise.resolve({
+                      sessionId: sessionIdGeneral
+                    });
                   },
                   onShippingAddressSelected: setShippingAddress,
                   getShippingMethods: getShippingMethods,

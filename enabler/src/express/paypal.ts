@@ -127,8 +127,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       onClick: () => {
         return this.expressOptions
           .onPayButtonClick()
-          .then((sessionId: string) => {
-            this.setSessionId(sessionId);
+          .then((opts) => {
+            this.setSessionId(opts.sessionId);
             return true;
           })
           .catch(() => false);
