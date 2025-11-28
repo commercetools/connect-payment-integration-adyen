@@ -10,6 +10,7 @@ import {
 import {
   ExpressOptions,
   OnComplete,
+  PaymentAmount,
   PaymentExpressBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
@@ -26,11 +27,6 @@ type PayPalShippingOption = {
   selected: boolean;
 };
 
-type PaymentAmount = {
-  centAmount: number;
-  currencyCode: string;
-  fractionDigits: number;
-};
 
 type UpdateOrder = {
   paymentReference?: string;

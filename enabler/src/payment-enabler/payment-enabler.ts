@@ -74,6 +74,12 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
 }
 
+export type PaymentAmount = {
+  centAmount: number;
+  currencyCode: string;
+  fractionDigits: number;
+};
+
 export const getPaymentMethodType = (
   adyenPaymentMethod: string
 ): PaymentMethod | undefined => {
@@ -267,10 +273,7 @@ export type ExpressOptions = {
     billingAddress: ExpressAddressData;
   }) => Promise<void>;
   onComplete?: OnComplete;
-  initialAmount: {
-    centAmount: number;
-    currencyCode: string;
-  };
+  initialAmount: PaymentAmount;
 };
 
 export interface PaymentExpressBuilder {
