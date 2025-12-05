@@ -1,3 +1,5 @@
+import { UIElement } from "@adyen/adyen-web";
+
 type CardPaymentState = {
   card?: {
     endDigits?: string;
@@ -7,7 +9,11 @@ type CardPaymentState = {
 };
 
 export interface PaymentComponent {
-  submit(): Promise<void>;
+  submit({
+    storePaymentDetails,
+  }: {
+    storePaymentDetails?: boolean;
+  }): Promise<void>;
   mount(selector: string): Promise<void>;
   showValidation?(): Promise<void>;
   isValid?(): Promise<boolean>;
@@ -23,12 +29,14 @@ export interface PaymentComponentBuilder {
 export type EnablerOptions = {
   processorUrl: string;
   sessionId: string;
+  countryCode?: string;
+  currencyCode?: string;
   locale?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: (result: PaymentResult) => void;
   onError?: (
     error: any,
-    context?: { paymentReference?: string; method?: { type?: string } },
+    context?: { paymentReference?: string; method?: { type?: string } }
   ) => void;
 };
 
@@ -42,6 +50,7 @@ export enum PaymentMethod {
   clearpay = "clearpay",
   dropin = "dropin",
   eps = "eps",
+  fpx = "molpay_ebanking_fpx_MY", // FPX Online banking Malaysia
   googlepay = "googlepay",
   ideal = "ideal",
   klarna_billie = "klarna_b2b", // Billie
@@ -58,7 +67,7 @@ export enum PaymentMethod {
 }
 
 export const getPaymentMethodType = (
-  adyenPaymentMethod: string,
+  adyenPaymentMethod: string
 ): PaymentMethod | undefined => {
   for (const enumKey in PaymentMethod) {
     if (PaymentMethod[enumKey] === adyenPaymentMethod) {
@@ -82,7 +91,28 @@ export type PaymentResult =
 
 export type ComponentOptions = {
   showPayButton?: boolean;
+  onPayButtonClick?: () => Promise<{ storePaymentDetails?: boolean }>;
+};
+
+export interface StoredComponent {
+  submit(): Promise<void>;
+  mount(selector: string): Promise<void>;
+  showValidation?(): Promise<void>;
+  isValid?(): Promise<boolean>;
+  isAvailable?(): Promise<boolean>;
+  remove(): Promise<void>;
+}
+
+export interface StoredComponentBuilder {
+  componentHasSubmit: boolean;
+  build(config: StoredComponentOptions): StoredComponent;
+}
+
+export type StoredComponentOptions = {
+  showPayButton?: boolean;
   onPayButtonClick?: () => Promise<void>;
+  id: string;
+  brands: string[];
 };
 
 export enum DropinType {
@@ -111,12 +141,45 @@ export interface PaymentDropinBuilder {
   build(config: DropinOptions): DropinComponent;
 }
 
+type BaseStoredDisplayOptions = {
+  logoUrl?: string;
+  [key: string]: unknown;
+};
+
+type BaseStoredPaymentMethod = {
+  id: string;
+  type: string;
+  createdAt: string; // ISO date string
+  isDefault: boolean;
+  displayOptions: BaseStoredDisplayOptions;
+};
+
+type StoredCardPaymentMethod = BaseStoredPaymentMethod & {
+  type: "card";
+  displayOptions: BaseStoredDisplayOptions & {
+    endDigits?: string;
+    brand?: {
+      key: string;
+    };
+    expiryMonth?: number;
+    expiryYear?: number;
+  };
+};
+
+export type StoredPaymentMethod =
+  | BaseStoredPaymentMethod
+  | StoredCardPaymentMethod;
+
+export type CocoStoredPaymentMethod = StoredPaymentMethod & {
+  token: string;
+};
+
 export interface PaymentEnabler {
   /**
    * @throws {Error}
    */
   createComponentBuilder: (
-    type: string,
+    type: string
   ) => Promise<PaymentComponentBuilder | never>;
 
   /**
@@ -125,6 +188,82 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createDropinBuilder: (
-    type: DropinType,
+    type: DropinType
   ) => Promise<PaymentDropinBuilder | never>;
+
+  createExpressBuilder: (
+    type: string
+  ) => Promise<PaymentExpressBuilder | never>;
+
+  createStoredPaymentMethodBuilder: (
+    type: string
+  ) => Promise<StoredComponentBuilder | never>;
+
+  isStoredPaymentMethodsEnabled: () => Promise<boolean>;
+
+  getStoredPaymentMethods: ({
+    allowedMethodTypes,
+  }: {
+    allowedMethodTypes: string[];
+  }) => Promise<{
+    storedPaymentMethods?: StoredPaymentMethod[];
+  }>;
+}
+
+export type ExpressShippingOptionData = {
+  id: string;
+  name: string;
+  description?: string;
+  isSelected?: boolean;
+  amount: {
+    centAmount: number;
+    currencyCode: string;
+  };
+};
+
+export type ExpressAddressData = {
+  country: string;
+  firstName?: string;
+  lastName?: string;
+  streetName?: string;
+  streetNumber?: string;
+  additionalStreetInfo?: string;
+  region?: string;
+  postalCode?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+};
+
+export interface ExpressComponent {
+  mount(selector: string): void;
+}
+export type ExpressOptions = {
+  allowedCountries?: string[];
+  onPayButtonClick: () => Promise<string>;
+  onShippingAddressSelected: (opts: {
+    address: ExpressAddressData;
+  }) => Promise<void>;
+  getShippingMethods: (opts: {
+    address: ExpressAddressData;
+  }) => Promise<ExpressShippingOptionData[]>;
+  onShippingMethodSelected: (opts: {
+    shippingMethod: { id: string };
+  }) => Promise<void>;
+  onPaymentSubmit: (opts: {
+    shippingAddress: ExpressAddressData;
+    billingAddress: ExpressAddressData;
+  }) => Promise<void>;
+  onComplete: (
+    opts: {
+      isSuccess: boolean;
+      paymentReference: string;
+      method: { type: string };
+    },
+    component: UIElement
+  ) => Promise<void>;
+};
+
+export interface PaymentExpressBuilder {
+  build(config: ExpressOptions): ExpressComponent;
 }

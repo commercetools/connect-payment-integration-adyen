@@ -5,6 +5,7 @@ import {
   AuthorityAuthorizationManager,
   CommercetoolsCartService,
   CommercetoolsOrderService,
+  CommercetoolsPaymentMethodService,
   CommercetoolsPaymentService,
   ContextProvider,
   JWTAuthenticationHook,
@@ -73,6 +74,7 @@ describe('/operations APIs', () => {
     ctCartService: jest.fn() as unknown as CommercetoolsCartService,
     ctPaymentService: jest.fn() as unknown as CommercetoolsPaymentService,
     ctOrderService: jest.fn() as unknown as CommercetoolsOrderService,
+    ctPaymentMethodService: jest.fn() as unknown as CommercetoolsPaymentMethodService,
   });
 
   beforeAll(async () => {
@@ -99,6 +101,8 @@ describe('/operations APIs', () => {
 
   describe('GET /operations/config', () => {
     test('it should return the Adyen client config', async () => {
+      jest.spyOn(spiedPaymentService, 'isStoredPaymentMethodsEnabled').mockResolvedValueOnce(true);
+
       //When
       const responseGetConfig = await app.inject({
         method: 'GET',
@@ -116,6 +120,9 @@ describe('/operations APIs', () => {
         environment: 'TEST',
         applePayConfig: {
           usesOwnCertificate: false,
+        },
+        storedPaymentMethodsConfig: {
+          isEnabled: true,
         },
       });
     });

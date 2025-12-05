@@ -18,6 +18,7 @@ export const config = {
   adyenClientKey: process.env.ADYEN_CLIENT_KEY || 'adyenClientKey',
   adyenApiKey: process.env.ADYEN_API_KEY || 'adyenApiKey',
   adyenHMACKey: process.env.ADYEN_NOTIFICATION_HMAC_KEY || 'adyenHMACKey',
+  adyenHMACTokenizationWebHooksKey: process.env.ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY || undefined,
   adyenLiveUrlPrefix: process.env.ADYEN_LIVE_URL_PREFIX || '',
   adyenMerchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT || 'adyenMerchantAccount',
   adyenApplePayOwnCerticate: process.env.ADYEN_APPLEPAY_OWN_CERTIFICATE
@@ -29,7 +30,12 @@ export const config = {
   adyenShopperStatement: process.env.ADYEN_SHOPPER_STATEMENT || '',
   adyenPaymentComponentsConfig: process.env.ADYEN_PAYMENT_COMPONENTS_CONFIG || '',
   merchantReturnUrl: process.env.MERCHANT_RETURN_URL || '',
+  adyenStoredPaymentMethodsEnabled: process.env.ADYEN_STORED_PAYMENT_METHODS_ENABLED || 'false',
+  adyenStoredPaymentMethodsPaymentInterface: process.env.ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE || 'adyen',
+  adyenStoredPaymentMethodsInterfaceAccount: process.env.ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT || undefined,
+  allowedOrigins: process.env.ALLOWED_ORIGINS,
 };
+
 export const getConfig = () => {
   return config;
 };

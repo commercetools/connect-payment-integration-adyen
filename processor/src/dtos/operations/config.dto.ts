@@ -9,6 +9,12 @@ export const ConfigResponseSchema = Type.Object({
     }),
   ),
   paymentComponentsConfig: Type.Optional(Type.Any()),
+  storedPaymentMethodsConfig: Type.Object(
+    {
+      isEnabled: Type.Boolean(),
+    },
+    { description: 'Is true when the feature flag is enabled as well when the current cart has an customerId set' },
+  ),
 });
 
 export type ConfigResponseSchemaDTO = Static<typeof ConfigResponseSchema>;

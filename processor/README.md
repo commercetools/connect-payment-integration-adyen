@@ -78,6 +78,8 @@ Make sure commercetools client credential have at least the following permission
 - `view_sessions`
 - `introspect_oauth_tokens`
 
+If the feature stored payment methods is enabled then the scopes must also include the scope: `manage_payment_methods`
+
 ```
 npm run dev
 ```
@@ -173,12 +175,17 @@ Checkout requires a webhook to be configured in Adyen. The following list of `ev
 
 Any other type of event will be silently ignored. For more information see the [Adyen webhook-types](https://docs.adyen.com/development-resources/webhooks/webhook-types/) documentation.
 
+If the feature stored payment methods is enabled then the webhook of type "Recurring tokens life cycle events" with the event type of "recurring.token.created" must also be enabled.
+
 ### Configuring the notifications in Adyen
 
 To configure notifications in Adyen, follow this [guide](https://docs.adyen.com/development-resources/webhooks/#set-up-webhooks-in-your-customer-area).
 
 In the webhook server's url, the following value must be set:
-`{processorUrl}/notifications` 
+`{processorUrl}/notifications`
+
+For the stored payment methods feature the url must be set as:
+`{processorUrl}/notifications/tokenization`
 
 `processorUrl` is the url of the connector once it has been installed. It can be retrieved from the Merchant Center, inside the installation details of the processor.
 The url looks like `https://service-[id].[region].commercetools.app`.
@@ -284,6 +291,17 @@ Receives Adyen's notifications so that the commercetools payment can be updated 
 
 The request body an [Adyen Webhook](https://docs.adyen.com/development-resources/webhooks/webhook-types/#webhook-structure).
 The requests are authenticated by validating the HMAC signature using the `ADYEN_NOTIFICATION_HMAC_KEY` environment variable.
+
+#### Response Parameters
+
+It returns a 200 `[accepted]` response to Adyen to indicate that the notification has been processed.
+
+`POST /notifications/tokenization`
+
+#### Request Parameters
+
+The request body an [Adyen Tokenization Webhook](https://docs.adyen.com/api-explorer/Tokenization-webhooks/1/post/recurring.token.created).
+The requests are authenticated by validating the HTTP header HMAC signature using the `ADYEN_NOTIFICATION_HMAC_KEY` if `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY` is not set. Otherwise the latter will be used.
 
 #### Response Parameters
 
@@ -400,7 +418,6 @@ The request payload is different based on different update operations:
 ```
 
 - Capture Payment
-
   - centAmount: Amount in the smallest indivisible unit of a currency. For example, 5 EUR is specified as 500 while 5 JPY is specified as 5.
   - currencyCode: Currency code compliant to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
 
@@ -417,7 +434,6 @@ The request payload is different based on different update operations:
   ```
 
 - Refund Payment
-
   - centAmount: Amount in the smallest indivisible unit of a currency. For example, 5 EUR is specified as 500 while 5 JPY is specified as 5.
   - currencyCode: Currency code compliant to [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217)
 
