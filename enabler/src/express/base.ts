@@ -1,15 +1,10 @@
-import {
-  AddressData,
-  ApplePay,
-  GooglePay,
-  PayPal,
-  UIElement,
-} from "@adyen/adyen-web";
+import { AddressData, ApplePay, GooglePay, PayPal } from "@adyen/adyen-web";
 import {
   ExpressAddressData,
   ExpressComponent,
   ExpressOptions,
   ExpressShippingOptionData,
+  OnComplete,
 } from "../payment-enabler/payment-enabler";
 
 export type ShippingMethodCost = {
@@ -41,6 +36,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected component: GooglePay | ApplePay | PayPal;
   protected availableShippingMethods: ExpressShippingOptionData[];
   protected paymentMethodConfig: { [key: string]: string };
+  protected onComplete: OnComplete;
 
   constructor(opts: {
     expressOptions: ExpressOptions;
@@ -49,6 +45,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    onComplete: OnComplete;
   }) {
     this.expressOptions = opts.expressOptions;
     this.processorUrl = opts.processorUrl;
@@ -56,6 +53,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     this.countryCode = opts.countryCode;
     this.currencyCode = opts.currencyCode;
     this.paymentMethodConfig = opts.paymentMethodConfig;
+    this.onComplete = opts.onComplete;
   }
 
   abstract init(): void;
@@ -98,16 +96,13 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     throw new Error("setShippingMethod not implemented");
   }
 
-  async onComplete(
-    opts: {
-      isSuccess: boolean;
-      paymentReference: string;
-      method: { type: string };
-    },
-    component: UIElement
-  ): Promise<void> {
+  async handleComplete(opts: {
+    isSuccess: boolean;
+    paymentReference: string;
+    method: { type: string };
+  }): Promise<void> {
     if (this.expressOptions.onComplete) {
-      await this.expressOptions.onComplete(opts, component);
+      await this.expressOptions.onComplete(opts);
       return;
     }
 

@@ -97,6 +97,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       currencyCode: this.initOptions.currencyCode,
       processorUrl: this.initOptions.processorUrl,
       sessionId: this.initOptions.sessionId,
+      onComplete: this.initOptions.onComplete,
     };
   }
 
