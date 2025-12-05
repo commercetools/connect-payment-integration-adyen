@@ -880,9 +880,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription, // Fixed since the type check is as such for the transaction API
     });
 
-    console.log(JSON.stringify({ cartId: ctCart.id, paymentId: newlyCreatedPayment.id, amountPlanned }, null, 3));
-    console.log(JSON.stringify(data, null, 3));
-
     try {
       res = await AdyenApi().PaymentsApi.payments(data);
     } catch (e) {
