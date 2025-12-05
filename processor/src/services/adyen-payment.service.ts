@@ -403,7 +403,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
-      token: '', // TODO: SCC-3662: (spm): send the token from the paymentMethod if payed with SPM for createPayment
+      ...('storedPaymentMethodId' in data.paymentMethod &&
+        data.paymentMethod.storedPaymentMethodId && {
+          paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
+        }),
     });
 
     log.info(`Payment authorization processed.`, {
@@ -446,7 +449,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
-      token: '', // TODO: SCC-3662: (spm): send the token from the paymentMethod if payed with SPM for confirmPayment
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -598,8 +600,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       const actions = await this.notificationTokenizationConverter.convert(opts);
 
-      // TODO: SCC-3662: (spm): fetch the payment using the "opts.data.eventId" (which is the pspReference, aka paymentId in CT) and set the token value with "opts.data.data.storedPaymentMethodId" or "actions.draft.token"
-
       if (actions.draft) {
         const doesTokenAlreadyExist = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
           customerId: actions.draft.customerId,
@@ -634,6 +634,27 @@ export class AdyenPaymentService extends AbstractPaymentService {
               method: newlyCreatedPaymentMethod.method,
             },
           });
+
+          // Ensure that the original payment that tokenised the payment-method for the first time also has the token value set in the paymentMethodInfo.token.value
+          const payments = await this.ctPaymentService.findPaymentsByInterfaceId({
+            interfaceId: opts.data.eventId,
+          });
+
+          if (payments.length === 1) {
+            await this.ctPaymentService.updatePayment({
+              id: payments[0].id,
+              paymentMethodInfo: {
+                token: {
+                  value: actions.draft.token,
+                },
+              },
+            });
+          } else {
+            log.warn('Found multiple payments for the given Adyen PsP reference which should not happen', {
+              notification: notificationLogObject,
+              payments: payments.map((pm) => pm.id),
+            });
+          }
         }
       }
     } catch (e) {
