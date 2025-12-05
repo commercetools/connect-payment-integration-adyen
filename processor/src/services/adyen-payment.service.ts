@@ -77,9 +77,8 @@ import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checko
 import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.config';
 import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
-import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
+import { convertAdyenCardBrandToCTFormat, convertPaymentMethodToAdyenFormat } from './converters/helper.converter';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
-import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
 
@@ -802,8 +801,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
     }
 
-    // TODO: SCC-3662: should we validate that the given cart is a recurring-order?
-
     if (!transactionDraft.paymentMethod) {
       throw new ErrorRequiredField('paymentMethod', {
         privateMessage: 'paymentMethod is not provided in the draft',
@@ -848,13 +845,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const newlyCreatedPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
+      checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
       paymentMethodInfo: {
-        paymentInterface: transactionDraft.paymentInterface, // TODO: SCC-3662: should we use paymentInterface or checkoutTransactionItemId?
-        // interfaceAccount TODO: SCC-3662: should the interfaceAccount be set, if yes to what value?
-        // method: paymentMethod.method, // TODO: SCC-3662: should the paymentMethod type be set? for example via paymentMethod.method?
+        paymentInterface: transactionDraft.paymentInterface,
         token: {
           value: paymentMethod.token.value,
         },
+        ...(paymentMethod.method && { method: convertPaymentMethodToAdyenFormat(paymentMethod.method) }),
       },
       customer: {
         typeId: 'customer',
@@ -877,7 +874,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       cart: ctCart,
       payment: newlyCreatedPayment,
       paymentMethod: paymentMethod,
-      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription, // Fixed since the type check is as such for the transaction API
     });
 
     try {
