@@ -13,6 +13,7 @@ import {
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
   PaymentMethod,
+  ErrorInvalidField,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -78,7 +79,9 @@ import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/store
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
+import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { randomUUID } from 'node:crypto';
+import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -400,6 +403,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
+      token: '', // TODO: SCC-3662: (spm): send the token from the paymentMethod if payed with SPM for createPayment
     });
 
     log.info(`Payment authorization processed.`, {
@@ -442,6 +446,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
+      token: '', // TODO: SCC-3662: (spm): send the token from the paymentMethod if payed with SPM for confirmPayment
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -592,6 +597,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     try {
       const actions = await this.notificationTokenizationConverter.convert(opts);
+
+      // TODO: SCC-3662: (spm): fetch the payment using the "opts.data.eventId" (which is the pspReference, aka paymentId in CT) and set the token value with "opts.data.data.storedPaymentMethodId" or "actions.draft.token"
 
       if (actions.draft) {
         const doesTokenAlreadyExist = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
@@ -747,6 +754,182 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     return response;
+  }
+
+  private async handleTransactionStoredPaymentMethodPurchase(
+    transactionDraft: TransactionDraftDTO,
+  ): Promise<TransactionResponseDTO> {
+    // Perform validations
+    if (!getStoredPaymentMethodsConfig().enabled) {
+      throw new ErrorInvalidOperation(
+        'The stored-payment-methods feature is disabled and thus cannot request an transaction using stored-payment-methods',
+      );
+    }
+
+    const ctCart = await this.ctCartService.getCart({ id: transactionDraft.cartId });
+
+    if (!ctCart.customerId) {
+      throw new ErrorRequiredField('customerId', {
+        privateMessage: 'customerId is not set on the cart',
+        privateFields: {
+          cart: {
+            id: ctCart.id,
+          },
+          checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
+          paymentInterface: transactionDraft.paymentInterface,
+        },
+      });
+    }
+
+    // TODO: SCC-3662: should we validate that the given cart is a recurring-order?
+
+    if (!transactionDraft.paymentMethod) {
+      throw new ErrorRequiredField('paymentMethod', {
+        privateMessage: 'paymentMethod is not provided in the draft',
+        privateFields: {
+          cart: {
+            id: ctCart.id,
+          },
+          checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
+          paymentInterface: transactionDraft.paymentInterface,
+        },
+      });
+    }
+
+    const paymentMethod = await this.ctPaymentMethodService.get({
+      id: transactionDraft.paymentMethod?.id,
+      customerId: ctCart.customerId,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+    });
+
+    if (!paymentMethod.token) {
+      throw new ErrorRequiredField('token', {
+        privateMessage: 'The "token" value is not set on the payment-method',
+        privateFields: {
+          cart: {
+            id: ctCart.id,
+          },
+          checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
+          paymentInterface: transactionDraft.paymentInterface,
+          paymentMethod: {
+            id: paymentMethod.id,
+          },
+        },
+      });
+    }
+
+    // Determine the amount that needs to be payed and setup the payment entity in CT
+    let amountPlanned = transactionDraft.amount;
+    if (!amountPlanned) {
+      amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+    }
+
+    const newlyCreatedPayment = await this.ctPaymentService.createPayment({
+      amountPlanned,
+      paymentMethodInfo: {
+        paymentInterface: transactionDraft.paymentInterface, // TODO: SCC-3662: should we use paymentInterface or checkoutTransactionItemId?
+        // interfaceAccount TODO: SCC-3662: should the interfaceAccount be set, if yes to what value?
+        // method: paymentMethod.method, // TODO: SCC-3662: should the paymentMethod type be set? for example via paymentMethod.method?
+        token: {
+          value: paymentMethod.token.value,
+        },
+      },
+      customer: {
+        typeId: 'customer',
+        id: ctCart.customerId,
+      },
+    });
+
+    await this.ctCartService.addPayment({
+      resource: {
+        id: ctCart.id,
+        version: ctCart.version,
+      },
+      paymentId: newlyCreatedPayment.id,
+    });
+
+    // Execute Authorization payment request to Adyen
+    let res: PaymentResponse;
+
+    const data = await this.createPaymentConverter.convertRequestStoredPaymentMethod({
+      cart: ctCart,
+      payment: newlyCreatedPayment,
+      paymentMethod: paymentMethod,
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription, // Fixed since the type check is as such for the transaction API
+    });
+
+    console.log(JSON.stringify({ cartId: ctCart.id, paymentId: newlyCreatedPayment.id, amountPlanned }, null, 3));
+    console.log(JSON.stringify(data, null, 3));
+
+    try {
+      res = await AdyenApi().PaymentsApi.payments(data);
+    } catch (e) {
+      throw wrapAdyenError(e);
+    }
+
+    // Handle the response from Adyen
+    const txState = this.convertAdyenResultCode(
+      res.resultCode as PaymentResponse.ResultCodeEnum,
+      this.isActionRequired(res),
+    );
+
+    const updatedPayment = await this.ctPaymentService.updatePayment({
+      id: newlyCreatedPayment.id,
+      pspReference: res.pspReference,
+      transaction: {
+        amount: amountPlanned,
+        type: 'Authorization',
+        state: txState,
+        interactionId: res.pspReference,
+      },
+      token: paymentMethod.token.value,
+    });
+
+    log.info("Payment authorization processed for 'transaction' stored payment method", {
+      paymentId: updatedPayment.id,
+      interactionId: res.pspReference,
+      result: res.resultCode,
+    });
+
+    if (txState === 'Failure') {
+      const reason = res.refusalReason ? `with reason "${res.refusalReason}"` : '';
+      return {
+        transactionStatus: {
+          errors: [
+            {
+              code: 'PaymentRejected',
+              message: `Payment '${newlyCreatedPayment.id}' has been rejected ${reason}"`,
+            },
+          ],
+          state: 'Failed',
+        },
+      };
+    }
+
+    if (txState === 'Success') {
+      return {
+        transactionStatus: {
+          errors: [],
+          state: 'Completed',
+        },
+      };
+    }
+
+    return {
+      transactionStatus: {
+        errors: [],
+        state: 'Pending',
+      },
+    };
+  }
+
+  async handleTransaction(transactionDraft: TransactionDraftDTO): Promise<TransactionResponseDTO> {
+    if (transactionDraft.type === 'StoredPaymentMethodPurchase') {
+      return await this.handleTransactionStoredPaymentMethodPurchase(transactionDraft);
+    }
+
+    throw new ErrorInvalidField('type', transactionDraft.type || '', 'StoredPaymentMethodPurchase');
   }
 
   /**
@@ -1143,7 +1326,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
   }
 
-  private convertAdyenResultCode(resultCode: PaymentResponse.ResultCodeEnum, isActionRequired: boolean): string {
+  private convertAdyenResultCode(
+    resultCode: PaymentResponse.ResultCodeEnum,
+    isActionRequired: boolean,
+  ): TransactionState {
     if (resultCode === PaymentResponse.ResultCodeEnum.Authorised) {
       return 'Success';
     } else if (

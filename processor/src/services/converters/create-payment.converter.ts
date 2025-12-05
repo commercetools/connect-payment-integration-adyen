@@ -1,7 +1,7 @@
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 
-import { config } from '../../config/config';
+import { config, getConfig } from '../../config/config';
 import {
   Cart,
   CurrencyConverters,
@@ -9,6 +9,7 @@ import {
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
   ErrorInternalConstraintViolated,
+  PaymentMethod,
 } from '@commercetools/connect-payments-sdk';
 import {
   buildReturnUrl,
@@ -24,6 +25,7 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 import { randomUUID } from 'node:crypto';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
+import { AdyenApi } from '../../clients/adyen.client';
 
 type ExpressPayment = {
   amountPlanned: PaymentAmount;
@@ -77,6 +79,60 @@ export class CreatePaymentConverter {
     };
   }
 
+  public async convertRequestStoredPaymentMethod(opts: {
+    cart: Cart;
+    payment: Payment;
+    paymentMethod: PaymentMethod;
+    futureOrderNumber?: string;
+    recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum;
+  }): Promise<PaymentRequest> {
+    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const shopperStatement = getShopperStatement();
+
+    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
+      opts.cart.customerId,
+      getConfig().adyenMerchantAccount,
+    );
+
+    const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+      (tokenDetails) => tokenDetails.id === opts.paymentMethod.token?.value,
+    );
+
+    return {
+      // START: paying with stored payment method specific values
+      recurringProcessingModel: opts.recurringProcessingModel,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.ContAuth, // when paying with an existing token/stored-payment-method then the shopperInteraction is always ContAuth
+      shopperReference: opts.cart.customerId,
+      paymentMethod: {
+        storedPaymentMethodId: opts.paymentMethod.token?.value,
+        brand: tokenDetailsFromAdyen?.brand,
+      },
+      // END: paying with stored payment method specific values
+      amount: {
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.payment.amountPlanned.centAmount,
+          currencyCode: opts.payment.amountPlanned.currencyCode,
+        }),
+        currency: opts.payment.amountPlanned.currencyCode,
+      },
+      reference: opts.payment.id,
+      merchantAccount: config.adyenMerchantAccount,
+      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      shopperEmail: opts.cart.customerEmail,
+      returnUrl: buildReturnUrl(opts.payment.id),
+      ...(opts.cart.billingAddress && {
+        billingAddress: populateCartAddress(opts.cart.billingAddress),
+      }),
+      ...(deliveryAddress && {
+        deliveryAddress: populateCartAddress(deliveryAddress),
+      }),
+      ...(opts.futureOrderNumber && { merchantOrderReference: opts.futureOrderNumber }),
+      applicationInfo: populateApplicationInfo(),
+      ...(shopperStatement && { shopperStatement }),
+    };
+  }
+
   public async convertExpressRequest(opts: {
     data: CreatePaymentRequestDTO;
     cart: Cart;
@@ -118,7 +174,7 @@ export class CreatePaymentConverter {
 
   public async populateStoredPaymentMethodsData(
     data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
-    cart: Pick<Cart, 'id' | 'customerId'>,
+    cart: Pick<Cart, 'id' | 'customerId' | 'origin' | 'lineItems' | 'customLineItems'>,
   ) {
     if (!getStoredPaymentMethodsConfig().enabled) {
       return;
@@ -185,12 +241,28 @@ export class CreatePaymentConverter {
       }
     }
 
+    // TODO: SCC-3662: validate this function and extract to the connect-payments-sdk
+    const isRecurringOrder = (
+      cart: Pick<Cart, 'id' | 'customerId' | 'origin' | 'lineItems' | 'customLineItems'>,
+    ): boolean => {
+      if (!cart.customerId) return false;
+      const cartOrigin = cart.origin === 'RecurringOrder';
+      const hasRecurringLineItems = cart.lineItems?.some((item) => item.recurrenceInfo);
+      const hasRecurringCustomLineItems = cart.customLineItems?.some((item) => item.recurrenceInfo);
+      return cartOrigin || hasRecurringLineItems || hasRecurringCustomLineItems;
+    };
+    const isCurrentCartRecurringOrder = isRecurringOrder(cart);
+
     const shopperInteraction = payWithExistingToken
       ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
       : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
 
+    const recurringProcessingModel = isCurrentCartRecurringOrder
+      ? PaymentRequest.RecurringProcessingModelEnum.Subscription
+      : PaymentRequest.RecurringProcessingModelEnum.CardOnFile;
+
     return {
-      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile, // always the same static value
+      recurringProcessingModel,
       shopperInteraction,
       shopperReference: customerReference,
       ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
