@@ -898,11 +898,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         state: txState,
         interactionId: res.pspReference,
       },
-      paymentMethodInfo: {
-        token: {
-          value: paymentMethod.token.value,
-        },
-      },
     });
 
     log.info("Payment authorization processed for 'transaction' stored payment method", {

@@ -1797,11 +1797,13 @@ describe('adyen-payment.service', () => {
   describe('handleTransaction', () => {
     const paymentInterface = 'paymentInterface';
     const interfaceAccount = 'interfaceAccount';
+
+    const merchantReference = 'merchantReference';
     const paymentId = '1056e308-de46-4d2f-ae2b-1b2ee9cb9d68';
     const paymentMethodId = '997ff5fb-838b-4978-bf47-37a7de565820';
-    const adyenTokenId = 'adyen-token-id-value';
-
     const customerId = '0e2a18f3-9f3b-4cef-83ab-6d892c95a0a8';
+
+    const adyenTokenId = 'adyen-token-id-value';
 
     const transactionDraft: TransactionDraftDTO = {
       cartId: 'fcd6bbc4-64a9-48b8-918e-bfa60d3d7495',
@@ -1936,14 +1938,128 @@ describe('adyen-payment.service', () => {
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(new ErrorRequiredField('token'));
       });
 
-      // validate if the updatePayment and/or the paments are set correctly
-      // validate that the token is stored on the payment.paymentMethodInfo.token.value
+      test('it should handle the "StoredPaymentMethodPurchase" transaction draft type', async () => {
+        // Arrange
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
 
-      test.todo('it should make an payment request to Adyen with an "Success" result');
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(customerId)
+          .buildRest<TCartRest>({}) as Cart;
 
-      test.todo('it should make an payment request to Adyen with an "Failure" result');
+        const paymentMethod: PaymentMethod = {
+          id: paymentMethodId,
+          createdAt: '',
+          lastModifiedAt: '',
+          paymentMethodStatus: 'Active',
+          version: 1,
+          default: false,
+          token: {
+            value: adyenTokenId,
+          },
+          method: 'card',
+        };
 
-      test.todo('it should make an payment request to Adyen with an "Pending" result');
+        const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>();
+
+        jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
+
+        jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
+        jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue({
+          ...cartRandom,
+          paymentInfo: {
+            payments: [
+              {
+                id: paymentId,
+                typeId: 'payment',
+              },
+            ],
+          },
+        });
+
+        jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+          merchantAccount: merchantReference,
+          shopperReference: customerId,
+          storedPaymentMethods: [
+            {
+              id: adyenTokenId,
+              type: 'scheme',
+              lastFour: '1234',
+              brand: 'visa',
+              expiryMonth: '03',
+              expiryYear: '30',
+            },
+          ],
+        });
+        jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+
+        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(paymentRandom);
+
+        // Process
+        const result = await paymentService.handleTransaction(transactionDraft);
+
+        // Assert
+        expect(DefaultPaymentService.prototype.createPayment).toHaveBeenCalledWith({
+          amountPlanned: {
+            centAmount: transactionDraft.amount!.centAmount,
+            currencyCode: transactionDraft.amount!.currencyCode,
+          },
+          checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
+          paymentMethodInfo: {
+            paymentInterface: transactionDraft.paymentInterface,
+            token: {
+              value: adyenTokenId,
+            },
+            method: 'scheme',
+          },
+          customer: {
+            typeId: 'customer',
+            id: customerId,
+          },
+        });
+
+        expect(DefaultCartService.prototype.addPayment).toHaveBeenCalledWith({
+          resource: {
+            id: cartRandom.id,
+            version: cartRandom.version,
+          },
+          paymentId: paymentId,
+        });
+
+        expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith({
+          id: paymentId,
+          pspReference: mockAdyenCreatePaymentResponse.pspReference,
+          transaction: {
+            amount: {
+              centAmount: transactionDraft.amount!.centAmount,
+              currencyCode: transactionDraft.amount!.currencyCode,
+            },
+            type: 'Authorization',
+            state: 'Pending',
+            interactionId: mockAdyenCreatePaymentResponse.pspReference,
+          },
+        });
+
+        expect(result).toStrictEqual({
+          transactionStatus: {
+            errors: [],
+            state: 'Pending',
+          },
+        });
+      });
     });
   });
 });

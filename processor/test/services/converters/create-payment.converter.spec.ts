@@ -400,6 +400,7 @@ describe('create-payment.converter', () => {
         .customerId(customerId)
         .customerEmail('johannes.vermeer@yahoo.com')
         .origin(origin)
+        .shippingMode('Single')
         .billingAddress({
           firstName: 'Johannes',
           lastName: 'Vermeer',
