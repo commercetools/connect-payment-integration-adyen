@@ -128,7 +128,7 @@ export class CreatePaymentConverter {
       merchantAccount: config.adyenMerchantAccount,
       countryCode: opts.cart.billingAddress?.country || opts.cart.country,
       shopperEmail: opts.cart.customerEmail,
-      returnUrl: buildReturnUrl(opts.payment.id),
+      returnUrl: '', // buildReturnUrl(opts.payment.id), TODO: SCC-3662: from a TS type perspective this is mandatory however paying with SPM does not involve redirecting the user to any url
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
       }),
