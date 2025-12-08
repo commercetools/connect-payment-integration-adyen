@@ -4,10 +4,16 @@ import * as Helpers from '../../../src/services/converters/helper.converter';
 import { Payment, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, type TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
-import { Cart, ErrorInternalConstraintViolated, ErrorRequiredField } from '@commercetools/connect-payments-sdk';
+import {
+  Cart,
+  ErrorInternalConstraintViolated,
+  ErrorRequiredField,
+  PaymentMethod,
+} from '@commercetools/connect-payments-sdk';
 import { paymentSDK } from '../../../src/payment-sdk';
 import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
 import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment-method.service';
+import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
 
 jest.spyOn(Helpers, 'buildReturnUrl').mockReturnValue('https://commercetools.com');
 
@@ -376,6 +382,140 @@ describe('create-payment.converter', () => {
         shopperReference: customerId,
         paymentMethod: paymentRequestDTO.paymentMethod,
       });
+    });
+  });
+
+  describe('convertRequestStoredPaymentMethod', () => {
+    const executeTest = async (origin: 'Merchant' | 'RecurringOrder') => {
+      const merchantReference = 'some-merchant-reference';
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const paymentMethodId = '23e979e0-6a1d-4920-8849-3c4c1d9f10f8';
+      const paymentId = 'be6d6779-342c-4c48-b7d8-77e3f8030feb';
+      const futureOrderNumber = 'futureOrderNumber-123';
+
+      const adyenTokenId = 'abcdefgh';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      const cartRandom = CartRest.random()
+        .customerId(customerId)
+        .customerEmail('johannes.vermeer@yahoo.com')
+        .origin(origin)
+        .billingAddress({
+          firstName: 'Johannes',
+          lastName: 'Vermeer',
+          streetName: 'Vlamingstraat',
+          streetNumber: '42',
+          additionalStreetInfo: '',
+          postalCode: '2611 KX',
+          city: 'Delft',
+          country: 'NL',
+          phone: '+16175245223',
+          region: 'South Holland',
+          email: 'Johannes.Vermeer@example.com',
+        })
+        .shippingAddress({
+          firstName: 'Johannes',
+          lastName: 'Vermeer',
+          streetName: 'Vlamingstraat',
+          streetNumber: '42',
+          additionalStreetInfo: '',
+          postalCode: '2611 KX',
+          city: 'Delft',
+          country: 'NL',
+          phone: '+16175245223',
+          region: 'South Holland',
+          email: 'Johannes.Vermeer@example.com',
+        })
+        .buildRest<TCartRest>({}) as Cart;
+
+      const paymentRandom = Payment.random().id(paymentId).buildRest<TPaymentRest>();
+
+      const paymentMethod: PaymentMethod = {
+        id: paymentMethodId,
+        createdAt: '',
+        lastModifiedAt: '',
+        paymentMethodStatus: 'Active',
+        version: 1,
+        default: false,
+        token: {
+          value: adyenTokenId,
+        },
+      };
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: merchantReference,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenTokenId,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+
+      const result = await converter.convertPaymentRequestStoredPaymentMethod({
+        cart: cartRandom,
+        payment: paymentRandom,
+        paymentMethod,
+        futureOrderNumber,
+      });
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: origin === 'Merchant' ? 'CardOnFile' : 'Subscription',
+        shopperInteraction: 'ContAuth',
+        shopperReference: '52a5774d-38c0-40b4-a2c6-512c5af6396e',
+        paymentMethod: {
+          storedPaymentMethodId: 'abcdefgh',
+          brand: 'visa',
+        },
+        amount: {
+          value: paymentRandom.amountPlanned.centAmount,
+          currency: paymentRandom.amountPlanned.currencyCode,
+        },
+        reference: 'be6d6779-342c-4c48-b7d8-77e3f8030feb',
+        merchantAccount: 'adyenMerchantAccount',
+        merchantOrderReference: 'futureOrderNumber-123',
+        countryCode: 'NL',
+        shopperEmail: 'johannes.vermeer@yahoo.com',
+        returnUrl: 'https://commercetools.com',
+        billingAddress: {
+          country: 'NL',
+          city: 'Delft',
+          street: 'Vlamingstraat',
+          houseNumberOrName: '42',
+          postalCode: '2611 KX',
+          stateOrProvince: 'South Holland',
+        },
+        deliveryAddress: {
+          country: 'NL',
+          city: 'Delft',
+          street: 'Vlamingstraat',
+          houseNumberOrName: '42',
+          postalCode: '2611 KX',
+          stateOrProvince: 'South Holland',
+        },
+        applicationInfo: {
+          externalPlatform: {
+            name: 'commercetools-connect',
+            integrator: 'commercetools',
+          },
+          merchantApplication: {
+            name: 'adyen-commercetools',
+          },
+        },
+      });
+    };
+
+    test('it should return the create-payment-request for Adyen when paying a cart with a stored payment method', async () => {
+      await executeTest('Merchant');
+    });
+
+    test('it should return the create-payment-request for Adyen when paying a cart with a stored payment method when the cart is considered a recurring-cart', async () => {
+      await executeTest('RecurringOrder');
     });
   });
 });

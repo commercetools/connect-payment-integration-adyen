@@ -871,7 +871,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     // Execute Authorization payment request to Adyen
     let res: PaymentResponse;
 
-    const data = await this.createPaymentConverter.convertRequestStoredPaymentMethod({
+    const data = await this.createPaymentConverter.convertPaymentRequestStoredPaymentMethod({
       cart: ctCart,
       payment: newlyCreatedPayment,
       paymentMethod: paymentMethod,

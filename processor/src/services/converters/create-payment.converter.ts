@@ -82,7 +82,7 @@ export class CreatePaymentConverter {
     };
   }
 
-  public async convertRequestStoredPaymentMethod(opts: {
+  public async convertPaymentRequestStoredPaymentMethod(opts: {
     cart: Cart;
     payment: Payment;
     paymentMethod: PaymentMethod;
