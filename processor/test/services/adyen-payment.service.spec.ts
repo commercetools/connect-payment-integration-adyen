@@ -28,9 +28,12 @@ import { MockAgent, setGlobalDispatcher } from 'undici';
 import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 
+import { Payment as PaymentRest, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import {
   Cart,
+  ErrorInvalidField,
+  ErrorInvalidOperation,
   ErrorRequiredField,
   Errorx,
   HealthCheckResult,
@@ -62,6 +65,7 @@ import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { StoredPaymentMethod } from '../../src/dtos/stored-payment-methods.dto';
 import * as StoredPaymentMethodsConfig from '../../src/config/stored-payment-methods.config';
 import { HttpClientException } from '@adyen/api-library';
+import { TransactionDraftDTO } from '../../src/dtos/operations/transaction.dto';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -1791,6 +1795,155 @@ describe('adyen-payment.service', () => {
   });
 
   describe('handleTransaction', () => {
-    // TODO: SCC-3662: add tests for the handlTransaction service handler
+    const paymentInterface = 'paymentInterface';
+    const interfaceAccount = 'interfaceAccount';
+    const paymentId = '1056e308-de46-4d2f-ae2b-1b2ee9cb9d68';
+    const paymentMethodId = '997ff5fb-838b-4978-bf47-37a7de565820';
+    const adyenTokenId = 'adyen-token-id-value';
+
+    const customerId = '0e2a18f3-9f3b-4cef-83ab-6d892c95a0a8';
+
+    const transactionDraft: TransactionDraftDTO = {
+      cartId: 'fcd6bbc4-64a9-48b8-918e-bfa60d3d7495',
+      checkoutTransactionItemId: 'ee64746c-327c-4732-b1d2-678ded3c760e',
+      paymentInterface: 'ee64746c-327c-4732-b1d2-678ded3c760e',
+      amount: {
+        centAmount: 1199,
+        currencyCode: 'EUR',
+      },
+      futureOrderNumber: 'future-order-number',
+      paymentMethod: {
+        id: 'f3850734-0da8-4c57-8009-2425991c12aa',
+      },
+      type: 'StoredPaymentMethodPurchase',
+    };
+
+    test('it should throw an ErrorInvalidField if the provided "type" value is unsupported', async () => {
+      const transactionDraft: TransactionDraftDTO = {
+        type: 'UnknownType',
+      } as unknown as TransactionDraftDTO;
+
+      expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+        new ErrorInvalidField('type', 'UnknownType', 'StoredPaymentMethodPurchase'),
+      );
+    });
+
+    test('it should throw an ErrorInvalidField if the "type" value is not provided', async () => {
+      const transactionDraft: TransactionDraftDTO = {} as unknown as TransactionDraftDTO;
+
+      expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+        new ErrorInvalidField('type', 'not-provided', 'StoredPaymentMethodPurchase'),
+      );
+    });
+
+    describe('StoredPaymentMethodPurchase', () => {
+      test('it should throw an ErrorInvalidOperation if the StoredPaymentMethods feature is not enabled', async () => {
+        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          new ErrorInvalidOperation(
+            'The stored-payment-methods feature is disabled and thus cannot request an transaction using stored-payment-methods',
+          ),
+        );
+      });
+
+      test('it should throw an ErrorRequiredField if the provided cart does not have an customerId set', async () => {
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
+
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(undefined)
+          .buildRest<TCartRest>({}) as Cart;
+
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+
+        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          new ErrorRequiredField('customerId'),
+        );
+      });
+
+      test('it should throw an ErrorRequiredField if the no paymentMethod reference is provided', async () => {
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
+
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(customerId)
+          .buildRest<TCartRest>({}) as Cart;
+
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+
+        const transactionDraftWithoutPaymentMethod: TransactionDraftDTO = {
+          ...transactionDraft,
+          paymentMethod: undefined,
+        };
+
+        expect(paymentService.handleTransaction(transactionDraftWithoutPaymentMethod)).rejects.toThrow(
+          new ErrorRequiredField('paymentMethod'),
+        );
+      });
+
+      test('it should throw an ErrorRequiredField if the paymentMethod referenced does not have an token value set', async () => {
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
+
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(customerId)
+          .buildRest<TCartRest>({}) as Cart;
+
+        const paymentMethod: PaymentMethod = {
+          id: paymentMethodId,
+          createdAt: '',
+          lastModifiedAt: '',
+          paymentMethodStatus: 'Active',
+          version: 1,
+          default: false,
+        };
+
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
+
+        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(new ErrorRequiredField('token'));
+      });
+
+      // validate if the updatePayment and/or the paments are set correctly
+      // validate that the token is stored on the payment.paymentMethodInfo.token.value
+
+      test.todo('it should make an payment request to Adyen with an "Success" result');
+
+      test.todo('it should make an payment request to Adyen with an "Failure" result');
+
+      test.todo('it should make an payment request to Adyen with an "Pending" result');
+    });
   });
 });

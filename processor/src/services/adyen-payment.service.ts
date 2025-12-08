@@ -898,7 +898,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
         state: txState,
         interactionId: res.pspReference,
       },
-      token: paymentMethod.token.value,
+      paymentMethodInfo: {
+        token: {
+          value: paymentMethod.token.value,
+        },
+      },
     });
 
     log.info("Payment authorization processed for 'transaction' stored payment method", {
@@ -944,7 +948,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       return await this.handleTransactionStoredPaymentMethodPurchase(transactionDraft);
     }
 
-    throw new ErrorInvalidField('type', transactionDraft.type || '', 'StoredPaymentMethodPurchase');
+    throw new ErrorInvalidField('type', transactionDraft.type || 'not-provided', 'StoredPaymentMethodPurchase');
   }
 
   /**
