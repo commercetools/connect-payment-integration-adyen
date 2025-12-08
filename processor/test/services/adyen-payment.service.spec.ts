@@ -536,7 +536,46 @@ describe('adyen-payment.service', () => {
     expect(result?.paymentReference).toStrictEqual('123456');
   });
 
-  // TODO: SCC-3662 for 'await adyenPaymentService.createPayment(createPaymentOpts);' add and/or update test to validate that the 'paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },' is set.
+  test('createSchemeCardPayment with stored payment method payment', async () => {
+    const storedPaymentMethodId = 'stored-payment-method-token-id';
+    const cardDetails: CardDetails = {
+      type: CardDetails.TypeEnum.Scheme,
+      storedPaymentMethodId,
+    };
+    const createPaymentOpts: { data: CreatePaymentRequestDTO } = {
+      data: {
+        paymentMethod: cardDetails,
+      },
+    };
+
+    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+
+    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
+
+    const result = await adyenPaymentService.createPayment(createPaymentOpts);
+
+    expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
+    expect(result?.paymentReference).toStrictEqual('123456');
+
+    expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: '123456',
+        paymentMethodInfo: {
+          token: {
+            value: storedPaymentMethodId,
+          },
+        },
+      }),
+    );
+  });
 
   test('createSchemeCardPayment', async () => {
     const cardDetails: CardDetails = {
