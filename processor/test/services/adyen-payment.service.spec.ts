@@ -34,6 +34,7 @@ import {
   ErrorRequiredField,
   Errorx,
   HealthCheckResult,
+  Payment,
   PaymentMethod,
 } from '@commercetools/connect-payments-sdk';
 import {
@@ -888,6 +889,33 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
+      const mockGetPaymentResult: Payment = {
+        id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
+        version: 1,
+        amountPlanned: {
+          type: 'centPrecision',
+          currencyCode: 'GBP',
+          centAmount: 120000,
+          fractionDigits: 2,
+        },
+        interfaceId: '92C12661DS923781G',
+        paymentMethodInfo: {
+          method: 'method',
+          name: { 'en-US': 'Debit Card', 'en-GB': 'Debit Card' },
+        },
+        paymentStatus: { interfaceText: 'Paid' },
+        transactions: [],
+        interfaceInteractions: [],
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValueOnce([mockGetPaymentResult]);
+
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+
       // When
       await paymentService.processNotificationTokenization({ data: notification });
 
@@ -898,6 +926,19 @@ describe('adyen-payment.service', () => {
         paymentInterface: 'adyen-payment-interface',
         interfaceAccount: 'adyen-interface-account',
         token: storedPaymentMethodId,
+      });
+
+      expect(DefaultPaymentService.prototype.findPaymentsByInterfaceId).toHaveBeenCalledWith({
+        interfaceId: notification.eventId,
+      });
+
+      expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith({
+        id: mockGetPaymentResult.id,
+        paymentMethodInfo: {
+          token: {
+            value: notification.data.storedPaymentMethodId,
+          },
+        },
       });
     });
 
@@ -968,6 +1009,33 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
+      const mockGetPaymentResult: Payment = {
+        id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
+        version: 1,
+        amountPlanned: {
+          type: 'centPrecision',
+          currencyCode: 'GBP',
+          centAmount: 120000,
+          fractionDigits: 2,
+        },
+        interfaceId: '92C12661DS923781G',
+        paymentMethodInfo: {
+          method: 'method',
+          name: { 'en-US': 'Debit Card', 'en-GB': 'Debit Card' },
+        },
+        paymentStatus: { interfaceText: 'Paid' },
+        transactions: [],
+        interfaceInteractions: [],
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValueOnce([mockGetPaymentResult]);
+
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+
       // When
       await paymentService.processNotificationTokenization({ data: notification });
 
@@ -978,6 +1046,19 @@ describe('adyen-payment.service', () => {
         paymentInterface: 'adyen-payment-interface',
         interfaceAccount: 'adyen-interface-account',
         token: storedPaymentMethodId,
+      });
+
+      expect(DefaultPaymentService.prototype.findPaymentsByInterfaceId).toHaveBeenCalledWith({
+        interfaceId: notification.eventId,
+      });
+
+      expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith({
+        id: mockGetPaymentResult.id,
+        paymentMethodInfo: {
+          token: {
+            value: notification.data.storedPaymentMethodId,
+          },
+        },
       });
     });
 

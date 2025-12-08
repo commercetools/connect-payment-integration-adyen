@@ -12,7 +12,7 @@ import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk
 jest.spyOn(Helpers, 'buildReturnUrl').mockReturnValue('https://commercetools.com');
 
 describe('create-payment.converter', () => {
-  const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+  const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
   test('should map over all required fields', async () => {
     const cartRandom = CartRest.random()
@@ -86,7 +86,7 @@ describe('create-payment.converter', () => {
     const interfaceAccount = 'interfaceAccount';
 
     test('it should return undefined if the feature is disabled', async () => {
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: false,
@@ -110,7 +110,7 @@ describe('create-payment.converter', () => {
     });
 
     test('it should return undefined if the the given type of payment method is not supported for tokenisation', async () => {
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -134,7 +134,7 @@ describe('create-payment.converter', () => {
     });
 
     test('it should return undefined if the customer does not want to tokenise for the first time NOR pay with an existing token', async () => {
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -159,7 +159,7 @@ describe('create-payment.converter', () => {
 
     test('it should return throw an "ErrorRequiredField" if no customerId is set on the cart', async () => {
       const storedPaymentMethodId = 'abcdefgh';
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -191,7 +191,7 @@ describe('create-payment.converter', () => {
     test('it should return throw an "ErrorInternalConstraintViolated" if the given tokenId does NOT belong to the customerId set on the cart', async () => {
       const storedPaymentMethodId = 'abcdefgh';
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -232,7 +232,7 @@ describe('create-payment.converter', () => {
 
     test('it should return the required stored payment methods data for tokenising for the first time', async () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -270,7 +270,7 @@ describe('create-payment.converter', () => {
     test('it should return the required stored payment methods data when paying with an tokenId', async () => {
       const storedPaymentMethodId = 'abcdefgh';
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
-      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService);
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -297,6 +297,81 @@ describe('create-payment.converter', () => {
 
       expect(result).toStrictEqual({
         recurringProcessingModel: 'CardOnFile',
+        shopperInteraction: 'ContAuth',
+        shopperReference: customerId,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should return the required stored payment methods data for tokenising for the first time when the cart is considered a recurring-cart', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true },
+          },
+        },
+      });
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(true);
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'scheme' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should return the required stored payment methods data when paying with an tokenId when the cart is considered a recurring-cart', async () => {
+      const storedPaymentMethodId = 'abcdefgh';
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true },
+          },
+        },
+      });
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(true);
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'scheme', storedPaymentMethodId },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
         shopperInteraction: 'ContAuth',
         shopperReference: customerId,
         paymentMethod: paymentRequestDTO.paymentMethod,

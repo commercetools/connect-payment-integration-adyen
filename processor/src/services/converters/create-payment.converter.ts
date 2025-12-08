@@ -10,6 +10,7 @@ import {
   ErrorRequiredField,
   ErrorInternalConstraintViolated,
   PaymentMethod,
+  CommercetoolsCartService,
 } from '@commercetools/connect-payments-sdk';
 import {
   buildReturnUrl,
@@ -33,9 +34,11 @@ type ExpressPayment = {
 };
 export class CreatePaymentConverter {
   private ctPaymentMethodService: CommercetoolsPaymentMethodService;
+  private ctCartService: CommercetoolsCartService;
 
-  constructor(ctPaymentMethodService: CommercetoolsPaymentMethodService) {
+  constructor(ctPaymentMethodService: CommercetoolsPaymentMethodService, ctCartService: CommercetoolsCartService) {
     this.ctPaymentMethodService = ctPaymentMethodService;
+    this.ctCartService = ctCartService;
   }
 
   public async convertRequest(opts: {
@@ -97,17 +100,7 @@ export class CreatePaymentConverter {
       (tokenDetails) => tokenDetails.id === opts.paymentMethod.token?.value,
     );
 
-    // TODO: SCC-3662: use the new function from the connect-payments-sdk once released to determine if the cart is a recurring-order.
-    const isRecurringOrder = (
-      cart: Pick<Cart, 'id' | 'customerId' | 'origin' | 'lineItems' | 'customLineItems'>,
-    ): boolean => {
-      if (!cart.customerId) return false;
-      const cartOrigin = cart.origin === 'RecurringOrder';
-      const hasRecurringLineItems = cart.lineItems?.some((item) => item.recurrenceInfo);
-      const hasRecurringCustomLineItems = cart.customLineItems?.some((item) => item.recurrenceInfo);
-      return cartOrigin || hasRecurringLineItems || hasRecurringCustomLineItems;
-    };
-    const isCurrentCartRecurringOrder = isRecurringOrder(opts.cart);
+    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(opts.cart);
 
     const recurringProcessingModel = isCurrentCartRecurringOrder
       ? PaymentRequest.RecurringProcessingModelEnum.Subscription
@@ -189,7 +182,7 @@ export class CreatePaymentConverter {
 
   public async populateStoredPaymentMethodsData(
     data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
-    cart: Pick<Cart, 'id' | 'customerId' | 'origin' | 'lineItems' | 'customLineItems'>,
+    cart: Cart,
   ) {
     if (!getStoredPaymentMethodsConfig().enabled) {
       return;
@@ -256,17 +249,7 @@ export class CreatePaymentConverter {
       }
     }
 
-    // TODO: SCC-3662: use the new function from the connect-payments-sdk once released to determine if the cart is a recurring-order.
-    const isRecurringOrder = (
-      cart: Pick<Cart, 'id' | 'customerId' | 'origin' | 'lineItems' | 'customLineItems'>,
-    ): boolean => {
-      if (!cart.customerId) return false;
-      const cartOrigin = cart.origin === 'RecurringOrder';
-      const hasRecurringLineItems = cart.lineItems?.some((item) => item.recurrenceInfo);
-      const hasRecurringCustomLineItems = cart.customLineItems?.some((item) => item.recurrenceInfo);
-      return cartOrigin || hasRecurringLineItems || hasRecurringCustomLineItems;
-    };
-    const isCurrentCartRecurringOrder = isRecurringOrder(cart);
+    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
 
     const shopperInteraction = payWithExistingToken
       ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens

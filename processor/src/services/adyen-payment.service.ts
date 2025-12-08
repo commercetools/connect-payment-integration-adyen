@@ -109,7 +109,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService, opts.ctPaymentMethodService);
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
-    this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService);
+    this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService, this.ctCartService);
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
     this.notificationConverter = new NotificationConverter(this.ctPaymentService);
     this.notificationTokenizationConverter = new NotificationTokenizationConverter();
@@ -649,8 +649,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
               },
             });
           } else {
-            log.warn('Found multiple payments for the given Adyen PsP reference which should not happen', {
+            log.warn('0 or more then 1 payments for the given Adyen PsP reference which should not happen', {
               notification: notificationLogObject,
+              paymentCount: payments.length,
               payments: payments.map((pm) => pm.id),
             });
           }
