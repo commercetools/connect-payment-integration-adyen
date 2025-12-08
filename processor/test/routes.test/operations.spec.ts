@@ -287,4 +287,8 @@ describe('/operations APIs', () => {
       );
     });
   });
+
+  describe('POST /operations/transactions', () => {
+    // TODO: SCC-3662: add basic test for the /operations/transactions API route (mostly to check if it exists or not)
+  });
 });

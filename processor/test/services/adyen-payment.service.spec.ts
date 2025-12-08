@@ -536,6 +536,8 @@ describe('adyen-payment.service', () => {
     expect(result?.paymentReference).toStrictEqual('123456');
   });
 
+  // TODO: SCC-3662 for 'await adyenPaymentService.createPayment(createPaymentOpts);' add and/or update test to validate that the 'paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },' is set.
+
   test('createSchemeCardPayment', async () => {
     const cardDetails: CardDetails = {
       type: CardDetails.TypeEnum.Scheme,
@@ -1747,5 +1749,9 @@ describe('adyen-payment.service', () => {
 
       expect(result).resolves.not.toThrow();
     });
+  });
+
+  describe('handleTransaction', () => {
+    // TODO: SCC-3662: add tests for the handlTransaction service handler
   });
 });
