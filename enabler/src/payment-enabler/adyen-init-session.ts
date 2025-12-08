@@ -119,7 +119,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         console.info("payment failed", result.resultCode);
       },
       onError: (error: AdyenCheckoutError, component: UIElement) => {
-        console.log(error);
         if (error.name === "CANCEL") {
           console.info("shopper canceled the payment attempt");
           component.setStatus("ready");
@@ -143,8 +142,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
               ? { storePaymentMethod: true }
               : {}),
           };
-
-          console.log(reqData);
 
           const response = await fetch(
             this.initOptions.processorUrl + "/payments",
