@@ -105,18 +105,12 @@ export type CreateApplePaySessionResponseDTO = {
 
 export type ExpressLineItemData = {
   name: string;
-  amount: {
-    centAmount: number;
-    currencyCode: string;
-  };
+  amount: PaymentAmount;
   type: string;
 };
 
 export type GetExpressPaymentDataResponseDTO = {
-  totalPrice: {
-    centAmount: number;
-    currencyCode: string;
-  };
+  totalPrice: PaymentAmount;
   lineItems: ExpressLineItemData[];
   currencyCode: string;
 };

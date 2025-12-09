@@ -919,6 +919,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       totalPrice: {
         currencyCode: ctCart.taxedPrice?.totalGross.currencyCode || ctCart.totalPrice.currencyCode,
         centAmount: ctCart.taxedPrice?.totalGross.centAmount || ctCart.totalPrice.centAmount,
+        fractionDigits: ctCart.taxedPrice?.totalGross.fractionDigits || ctCart.totalPrice.fractionDigits,
       },
       lineItems: [
         {
@@ -926,6 +927,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
           amount: {
             centAmount: ctCart.taxedPrice?.totalNet.centAmount || ctCart.totalPrice.centAmount,
             currencyCode: ctCart.taxedPrice?.totalNet.currencyCode || ctCart.totalPrice.currencyCode,
+            fractionDigits: ctCart.taxedPrice?.totalNet.fractionDigits || ctCart.totalPrice.fractionDigits,
           },
           type: 'SUBTOTAL',
         },
@@ -936,6 +938,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
                 amount: {
                   centAmount: ctCart.taxedPrice?.totalTax?.centAmount || 0,
                   currencyCode: ctCart.taxedPrice?.totalTax?.currencyCode || ctCart.totalPrice.currencyCode,
+                  fractionDigits: ctCart.taxedPrice?.totalTax?.fractionDigits || ctCart.totalPrice.fractionDigits,
                 },
                 type: 'TAX',
               },

@@ -94,6 +94,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         currency: this.expressOptions.initialAmount.currencyCode,
         value: this.expressOptions.initialAmount.centAmount,
       },
+      supportedCountries: this.expressOptions?.allowedCountries || [],
       ...(this.usesOwnCertificate && {
         onValidateMerchant: this.onValidateMerchant.bind(this),
       }),

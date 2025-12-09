@@ -141,8 +141,9 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected formatCurrency(opts: {
     centAmount: number;
     currencyCode: string;
+    fractionDigits: number;
   }): string {
-    const amount = opts.centAmount / 100;
+    const amount = opts.centAmount / Math.pow(10, opts.fractionDigits);
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: opts.currencyCode,

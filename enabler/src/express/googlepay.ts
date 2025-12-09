@@ -111,6 +111,11 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         allowedCountryCodes: this.expressOptions?.allowedCountries || [],
         phoneNumberRequired: true,
       },
+      countryCode: this.countryCode,
+      amount: {
+        currency: this.expressOptions.initialAmount.currencyCode,
+        value: this.expressOptions.initialAmount.centAmount,
+      },
       emailRequired: true,
       billingAddressRequired: true,
       billingAddressParameters: {

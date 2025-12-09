@@ -339,18 +339,6 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       },
     });
 
-    if (selectedOptionId) {
-      return shippingMethods.map((method) => ({
-        reference: method.id,
-        description: method.name,
-        type: "Shipping",
-        amount: {
-          currency: method.amount.currencyCode,
-          value: method.amount.centAmount,
-        },
-        selected: selectedOptionId === method.id ? true : false,
-      }));
-    }
 
     return shippingMethods.map((method) => ({
       reference: method.id,
@@ -358,9 +346,9 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       type: "Shipping",
       amount: {
         currency: method.amount.currencyCode,
-        value: method.amount.centAmount,
+        value: method.amount.centAmount, //TODO: i am thinking if we maybe need to map this value before sending it to adyen
       },
-      selected: method.isSelected ?? false,
+      // selected: (selectedOptionId === method.id) || (method.isSelected ?? false) HINT: last changes made today--> continue from here
     }));
   }
 }
