@@ -83,9 +83,11 @@ export class CreatePaymentConverter {
   }
 
   /**
-   * Creates a payment request payload to the Adyen payments API. Intended to be used in the `/operations/transactions` API.
+   * Creates a payment request payload to the Adyen payments API. Intended to be used in the `/operations/transactions` API for "server-to-server" types of payments.
+   *
+   * It can be extended in the future for "UnscheduledCardOnFile" type of payments.
    */
-  public async convertPaymentRequestStoredPaymentMethod(opts: {
+  public async convertPaymentRequestForRecurringTokenPayments(opts: {
     cart: Cart;
     payment: Payment;
     paymentMethod: PaymentMethod;
@@ -103,15 +105,10 @@ export class CreatePaymentConverter {
       (tokenDetails) => tokenDetails.id === opts.paymentMethod.token?.value,
     );
 
-    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(opts.cart);
-
-    const recurringProcessingModel = isCurrentCartRecurringOrder
-      ? PaymentRequest.RecurringProcessingModelEnum.Subscription
-      : PaymentRequest.RecurringProcessingModelEnum.CardOnFile;
-
     return {
       // START: paying with stored payment method specific values
-      recurringProcessingModel,
+      // When paying a recurring cart it will always be Subscription cause they are "server-to-server" payments. One-Off payments are always user initiated and follow the "normal" payment flow.
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription,
       shopperInteraction: PaymentRequest.ShopperInteractionEnum.ContAuth, // when paying with an existing token/stored-payment-method then the shopperInteraction is always ContAuth
       shopperReference: opts.cart.customerId,
       paymentMethod: {

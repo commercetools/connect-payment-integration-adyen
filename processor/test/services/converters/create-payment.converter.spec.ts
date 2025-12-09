@@ -256,6 +256,7 @@ describe('create-payment.converter', () => {
         .lineItems([])
         .customLineItems([])
         .customerId(customerId)
+        .origin('Customer')
         .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
@@ -294,6 +295,7 @@ describe('create-payment.converter', () => {
         .lineItems([])
         .customLineItems([])
         .customerId(customerId)
+        .origin('Customer')
         .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme', storedPaymentMethodId },
@@ -385,8 +387,8 @@ describe('create-payment.converter', () => {
     });
   });
 
-  describe('convertRequestStoredPaymentMethod', () => {
-    const executeTest = async (origin: 'Merchant' | 'RecurringOrder') => {
+  describe('convertPaymentRequestForRecurringTokenPayments', () => {
+    test('it should return the create-payment-request for Adyen recurring token payments', async () => {
       const merchantReference = 'some-merchant-reference';
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const paymentMethodId = '23e979e0-6a1d-4920-8849-3c4c1d9f10f8';
@@ -399,7 +401,6 @@ describe('create-payment.converter', () => {
       const cartRandom = CartRest.random()
         .customerId(customerId)
         .customerEmail('johannes.vermeer@yahoo.com')
-        .origin(origin)
         .shippingMode('Single')
         .billingAddress({
           firstName: 'Johannes',
@@ -458,7 +459,7 @@ describe('create-payment.converter', () => {
         ],
       });
 
-      const result = await converter.convertPaymentRequestStoredPaymentMethod({
+      const result = await converter.convertPaymentRequestForRecurringTokenPayments({
         cart: cartRandom,
         payment: paymentRandom,
         paymentMethod,
@@ -466,7 +467,7 @@ describe('create-payment.converter', () => {
       });
 
       expect(result).toStrictEqual({
-        recurringProcessingModel: origin === 'Merchant' ? 'CardOnFile' : 'Subscription',
+        recurringProcessingModel: 'Subscription',
         shopperInteraction: 'ContAuth',
         shopperReference: '52a5774d-38c0-40b4-a2c6-512c5af6396e',
         paymentMethod: {
@@ -509,14 +510,6 @@ describe('create-payment.converter', () => {
           },
         },
       });
-    };
-
-    test('it should return the create-payment-request for Adyen when paying a cart with a stored payment method', async () => {
-      await executeTest('Merchant');
-    });
-
-    test('it should return the create-payment-request for Adyen when paying a cart with a stored payment method when the cart is considered a recurring-cart', async () => {
-      await executeTest('RecurringOrder');
     });
   });
 });
