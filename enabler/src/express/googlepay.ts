@@ -284,7 +284,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       paymentData.lineItems.map((lineItem) => ({
         label: lineItem.name,
         type: this.convertToDisplayItemType(lineItem.type),
-        price: this.centAmountToString(lineItem.amount.centAmount),
+        price: this.centAmountToString(
+          lineItem.amount.centAmount,
+          lineItem.amount.fractionDigits
+        ),
       }));
 
     return {
@@ -292,7 +295,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       countryCode: this.countryCode,
       currencyCode: paymentData.currencyCode,
       totalPriceStatus: "FINAL",
-      totalPrice: this.centAmountToString(paymentData.totalPrice.centAmount),
+      totalPrice: this.centAmountToString(
+        paymentData.totalPrice.centAmount,
+        paymentData.totalPrice.fractionDigits
+      ),
       totalPriceLabel: "Total",
     };
   }

@@ -10,7 +10,7 @@ import {
 import {
   ExpressOptions,
   OnComplete,
-  PaymentAmount,
+  CTAmount,
   PaymentExpressBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
@@ -32,7 +32,7 @@ type UpdateOrder = {
   pspReference: string;
   paymentData: string;
   deliveryMethods: PayPalShippingOption[];
-  originalAmount: PaymentAmount;
+  originalAmount: CTAmount;
 };
 
 /**
@@ -82,7 +82,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
   private pspReference: string;
   private paymentReference: string;
   private shippingAddress: any;
-  private originalAmount: PaymentAmount;
+  private originalAmount: CTAmount;
   private paymentMethod: PaymentMethod;
 
   constructor(opts: {

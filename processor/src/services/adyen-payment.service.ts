@@ -13,6 +13,7 @@ import {
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
   PaymentMethod,
+  CurrencyConverters,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -79,6 +80,7 @@ import { NotificationTokenizationConverter } from './converters/notification-rec
 import { convertAdyenCardBrandToCTFormat } from './converters/helper.converter';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 import { randomUUID } from 'node:crypto';
+import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../constants/currencies';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -881,8 +883,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
         return {
           ...item,
           amount: {
+            value: CurrencyConverters.convertWithMapping({
+              mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+              amount: amountPlanned.centAmount - opts.data.originalAmount.centAmount,
+              currencyCode: amountPlanned.currencyCode,
+            }),
             currency: amountPlanned.currencyCode,
-            value: amountPlanned.centAmount - opts.data.originalAmount.centAmount,
           },
         };
       }

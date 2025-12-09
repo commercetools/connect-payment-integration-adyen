@@ -170,7 +170,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             newTotal: {
               label: this.paymentMethodConfig.merchantName,
               amount: this.centAmountToString(
-                paymentData.totalPrice.centAmount
+                paymentData.totalPrice.centAmount,
+                paymentData.totalPrice.fractionDigits
               ),
             },
             errors: [
@@ -215,7 +216,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             newTotal: {
               label: this.paymentMethodConfig.merchantName,
               amount: this.centAmountToString(
-                paymentData.totalPrice.centAmount
+                paymentData.totalPrice.centAmount,
+                paymentData.totalPrice.fractionDigits
               ),
             },
             errors: [
@@ -291,7 +293,10 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
     const lineItems: ApplePayJS.ApplePayLineItem[] = paymentData.lineItems.map(
       (lineItem) => ({
         label: lineItem.name,
-        amount: this.centAmountToString(lineItem.amount.centAmount),
+        amount: this.centAmountToString(
+          lineItem.amount.centAmount,
+          lineItem.amount.fractionDigits
+        ),
         type: "final",
       })
     );
@@ -306,7 +311,10 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
       newLineItems: lineItems,
       newTotal: {
         label: this.paymentMethodConfig.merchantName,
-        amount: this.centAmountToString(paymentData.totalPrice.centAmount),
+        amount: this.centAmountToString(
+          paymentData.totalPrice.centAmount,
+          paymentData.totalPrice.fractionDigits
+        ),
       },
     };
   }
@@ -323,7 +331,10 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
     return shippingsMethods.map((method) => ({
       label: method.name,
       detail: method.description,
-      amount: this.centAmountToString(method.amount.centAmount),
+      amount: this.centAmountToString(
+        method.amount.centAmount,
+        method.amount.fractionDigits
+      ),
       identifier: method.id,
     }));
   }
