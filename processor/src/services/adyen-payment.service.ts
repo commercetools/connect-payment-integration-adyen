@@ -816,7 +816,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     const paymentMethod = await this.ctPaymentMethodService.get({
-      id: transactionDraft.paymentMethod?.id,
+      id: transactionDraft.paymentMethod.id,
       customerId: ctCart.customerId,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
