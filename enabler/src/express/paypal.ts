@@ -9,6 +9,8 @@ import {
 } from "@adyen/adyen-web";
 import {
   ExpressOptions,
+  OnComplete,
+  PaymentAmount,
   PaymentExpressBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
@@ -23,12 +25,6 @@ type PayPalShippingOption = {
     value: number;
   };
   selected: boolean;
-};
-
-type PaymentAmount = {
-  centAmount: number;
-  currencyCode: string;
-  fractionDigits: number;
 };
 
 type UpdateOrder = {
@@ -52,6 +48,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
   private countryCode: string;
   private currencyCode: string;
   private paymentMethodConfig: { [key: string]: string };
+  private onComplete: OnComplete;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -60,6 +57,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
+    this.onComplete = baseOptions.onComplete;
   }
 
   build(config: ExpressOptions): PayPalExpressComponent {
@@ -71,6 +69,7 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
       paymentMethodConfig: this.paymentMethodConfig,
+      onComplete: config.onComplete || this.onComplete,
     });
     paypalComponent.init();
 
@@ -94,6 +93,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    onComplete: OnComplete;
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -102,6 +102,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       countryCode: opts.countryCode,
       currencyCode: opts.currencyCode,
       paymentMethodConfig: opts.paymentMethodConfig,
+      onComplete: opts.onComplete,
     });
     this.adyenCheckout = opts.adyenCheckout;
   }
@@ -114,10 +115,9 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       blockPayPalCreditButton: true,
       blockPayPalPayLaterButton: true,
       blockPayPalVenmoButton: true,
-      //HINT: To fix this problem https://docs.adyen.com/payment-methods/paypal/paypal-troubleshooting#expected-currency-from-order-api-call-to-be-usd-got-eur-please-ensure-you-are-passing-currencyeur-to-the-sdk-url, i had to predefine this amount value here
       amount: {
-        currency: this.currencyCode,
-        value: 2500,
+        currency: this.expressOptions.initialAmount.currencyCode,
+        value: this.expressOptions.initialAmount.centAmount,
       },
       countryCode: this.countryCode,
       configuration: {
@@ -127,71 +127,39 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       onClick: () => {
         return this.expressOptions
           .onPayButtonClick()
-          .then((sessionId: string) => {
-            this.setSessionId(sessionId);
+          .then((opts) => {
+            this.setSessionId(opts.sessionId);
             return true;
           })
           .catch(() => false);
       },
-      onPaymentCompleted: (data, component) => {
-        this.onComplete(
-          {
-            isSuccess: !!data.resultCode,
-            paymentReference: this.paymentReference,
-            method: this.paymentMethod,
-          },
-          component
-        );
+      onPaymentCompleted: (data, _component) => {
+        this.onComplete({
+          isSuccess: !!data.resultCode,
+          paymentReference: this.paymentReference,
+          method: this.paymentMethod,
+        });
       },
       onSubmit: async (
         state: SubmitData,
         component: UIElement,
         actions: SubmitActions
       ) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-          };
-
-          this.paymentMethod = {
-            type: state.data.paymentMethod.type,
-            name: "unknown",
-          };
-
-          const response = await fetch(this.processorUrl + "/express-payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
-          const data = await response.json();
-          this.pspReference = data.pspReference;
-          this.paymentReference = data.paymentReference;
-          this.originalAmount = data.originalAmount;
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (e) {
-          actions.reject(e);
-        }
+        return this.submit({
+          state,
+          component,
+          actions,
+          extraRequestData: { countryCode: this.countryCode },
+          onBeforeResolve: (data) => {
+            this.pspReference = data.pspReference;
+            this.paymentReference = data.paymentReference;
+            this.originalAmount = data.originalAmount;
+            this.paymentMethod = {
+              type: state.data.paymentMethod.type,
+              name: "unknown",
+            };
+          },
+        });
       },
       onShippingAddressChange: async (data, actions, component) => {
         try {

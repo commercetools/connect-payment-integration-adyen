@@ -1,6 +1,14 @@
-import { GooglePay, ICore, PaymentMethod } from "@adyen/adyen-web";
+import {
+  GooglePay,
+  ICore,
+  PaymentMethod,
+  SubmitActions,
+  SubmitData,
+  UIElement,
+} from "@adyen/adyen-web";
 import {
   ExpressOptions,
+  OnComplete,
   PaymentExpressBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
@@ -19,6 +27,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
   private countryCode: string;
   private currencyCode: string;
   private paymentMethodConfig: { [key: string]: string };
+  private onComplete: OnComplete;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -27,9 +36,9 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
+    this.onComplete = baseOptions.onComplete;
   }
 
-  // TODO: validate other ExpressOptions fields exists before they are used.
   build(config: ExpressOptions): GooglePayExpressComponent {
     const googlePayComponent = new GooglePayExpressComponent({
       adyenCheckout: this.adyenCheckout,
@@ -39,6 +48,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
       countryCode: this.countryCode,
       currencyCode: this.currencyCode,
       paymentMethodConfig: this.paymentMethodConfig,
+      onComplete: config.onComplete || this.onComplete,
     });
     googlePayComponent.init();
 
@@ -70,6 +80,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    onComplete: OnComplete;
   }) {
     super({
       expressOptions: opts.componentOptions,
@@ -78,6 +89,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       countryCode: opts.countryCode,
       currencyCode: opts.currencyCode,
       paymentMethodConfig: opts.paymentMethodConfig,
+      onComplete: opts.onComplete,
     });
     this.adyenCheckout = opts.adyenCheckout;
   }
@@ -105,70 +117,37 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         format: "FULL",
         phoneNumberRequired: true,
       },
-      onPaymentCompleted: (data, component) => {
-        this.onComplete(
-          {
-            isSuccess: !!data.resultCode,
-            paymentReference: this.paymentReference,
-            method: this.paymentMethod,
-          },
-          component
-        );
+      onPaymentCompleted: (data, _component) => {
+        this.onComplete({
+          isSuccess: !!data.resultCode,
+          paymentReference: this.paymentReference,
+          method: this.paymentMethod,
+        });
       },
       onClick: (resolve, reject) => {
         return this.expressOptions
           .onPayButtonClick()
-          .then((sessionId: string) => {
-            this.setSessionId(sessionId);
+          .then((opts) => {
+            this.setSessionId(opts.sessionId);
             resolve();
           })
           .catch(() => reject());
       },
-      onSubmit: async (state, component, actions) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-            countryCode: this.countryCode,
-          };
-
-          const response = await fetch(this.processorUrl + "/express-payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(reqData),
-          });
-          const data = await response.json();
-
-          this.paymentReference = data.paymentReference;
-          this.paymentMethod = data.paymentMethod;
-          if (!data.resultCode) {
-            actions.reject();
-            return;
-          }
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (error) {
-          actions.reject(error);
-        }
+      onSubmit: async (
+        state: SubmitData,
+        component: UIElement,
+        actions: SubmitActions
+      ) => {
+        return this.submit({
+          state,
+          component,
+          actions,
+          extraRequestData: { countryCode: this.countryCode },
+          onBeforeResolve: (data) => {
+            this.paymentReference = data.paymentReference;
+            this.paymentMethod = data.paymentMethod;
+          },
+        });
       },
       shippingOptionRequired: true,
       paymentDataCallbacks: {
@@ -211,9 +190,6 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
                   message: "Cannot ship to the selected address",
                   intent: "SHIPPING_ADDRESS",
                 };
-
-                resolve(paymentDataRequestUpdate);
-                return;
               }
             }
 
