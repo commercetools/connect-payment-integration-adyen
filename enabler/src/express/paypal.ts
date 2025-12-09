@@ -116,7 +116,6 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       blockPayPalCreditButton: true,
       blockPayPalPayLaterButton: true,
       blockPayPalVenmoButton: true,
-      //HINT: To fix this problem https://docs.adyen.com/payment-methods/paypal/paypal-troubleshooting#expected-currency-from-order-api-call-to-be-usd-got-eur-please-ensure-you-are-passing-currencyeur-to-the-sdk-url, i had to predefine this amount value here
       amount: {
         currency: this.expressOptions.initialAmount.currencyCode,
         value: this.expressOptions.initialAmount.centAmount,
