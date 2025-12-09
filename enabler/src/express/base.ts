@@ -1,4 +1,12 @@
-import { AddressData, ApplePay, GooglePay, PayPal } from "@adyen/adyen-web";
+import {
+  AddressData,
+  ApplePay,
+  GooglePay,
+  PayPal,
+  SubmitActions,
+  SubmitData,
+  UIElement,
+} from "@adyen/adyen-web";
 import {
   ExpressAddressData,
   ExpressComponent,
@@ -175,5 +183,53 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
 
   protected centAmountToString(centAmount: number): string {
     return (centAmount / 100).toFixed(2);
+  }
+
+  protected async submit(opts: {
+    state: SubmitData;
+    component: UIElement;
+    actions: SubmitActions;
+    extraRequestData: Record<string, any>;
+    onBeforeResolve?: (data: any) => void;
+  }) {
+    try {
+      const reqData = {
+        ...opts.state.data,
+        channel: "Web",
+        ...opts.extraRequestData,
+      };
+
+      const response = await fetch(this.processorUrl + "/express-payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-Id": this.sessionId,
+        },
+        body: JSON.stringify(reqData),
+      });
+
+      const data = await response.json();
+
+      if (opts.onBeforeResolve) {
+        opts.onBeforeResolve(data);
+      }
+
+      if (data.action) {
+        opts.component.handleAction(data.action);
+      } else {
+        const isSuccess =
+          opts.extraRequestData.resultCode === "Authorised" ||
+          data.resultCode === "Pending";
+
+        opts.component.setStatus(isSuccess ? "success" : "error");
+      }
+
+      opts.actions.resolve({
+        resultCode: data.resultCode,
+        action: data.action,
+      });
+    } catch (err) {
+      opts.actions.reject(err);
+    }
   }
 }

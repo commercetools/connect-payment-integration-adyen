@@ -27,7 +27,6 @@ type PayPalShippingOption = {
   selected: boolean;
 };
 
-
 type UpdateOrder = {
   paymentReference?: string;
   pspReference: string;
@@ -146,53 +145,21 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         component: UIElement,
         actions: SubmitActions
       ) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-          };
-
-          this.paymentMethod = {
-            type: state.data.paymentMethod.type,
-            name: "unknown",
-          };
-
-          const response = await fetch(
-            this.processorUrl + "/express-payments",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": this.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            }
-          );
-          const data = await response.json();
-          this.pspReference = data.pspReference;
-          this.paymentReference = data.paymentReference;
-          this.originalAmount = data.originalAmount;
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (e) {
-          actions.reject(e);
-        }
+        return this.submit({
+          state,
+          component,
+          actions,
+          extraRequestData: { countryCode: this.countryCode },
+          onBeforeResolve: (data) => {
+            this.pspReference = data.pspReference;
+            this.paymentReference = data.paymentReference;
+            this.originalAmount = data.originalAmount;
+            this.paymentMethod = {
+              type: state.data.paymentMethod.type,
+              name: "unknown",
+            };
+          },
+        });
       },
       onShippingAddressChange: async (data, actions, component) => {
         try {

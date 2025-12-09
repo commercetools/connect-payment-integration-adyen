@@ -1,4 +1,11 @@
-import { ApplePay, ICore, PaymentMethod } from "@adyen/adyen-web";
+import {
+  ApplePay,
+  ICore,
+  PaymentMethod,
+  SubmitActions,
+  SubmitData,
+  UIElement,
+} from "@adyen/adyen-web";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import { DefaultAdyenExpressComponent, InitialPaymentData } from "./base";
 import {
@@ -91,13 +98,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         onValidateMerchant: this.onValidateMerchant.bind(this),
       }),
       requiredBillingContactFields: ["postalAddress", "email", "name"],
-      requiredShippingContactFields: [
-        "postalAddress",
-        "name",
-        "phoneticName",
-        "email",
-        "phone",
-      ],
+      requiredShippingContactFields: ["postalAddress", "name", "email"],
       configuration: {
         merchantId: this.paymentMethodConfig.merchantId,
         merchantName: this.paymentMethodConfig.merchantName,
@@ -118,56 +119,21 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
           })
           .catch(() => reject());
       },
-      onSubmit: async (state, component, actions) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-            countryCode: this.countryCode,
-          };
-
-          const response = await fetch(
-            this.processorUrl + "/express-payments",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": this.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            }
-          );
-          const data = await response.json();
-
-          this.paymentMethod = data.paymentMethod;
-
-          this.paymentReference = data.paymentReference;
-          this.paymentMethod = data.paymentMethod;
-          if (!data.resultCode) {
-            actions.reject();
-            return;
-          }
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (error) {
-          actions.reject(error);
-        }
+      onSubmit: async (
+        state: SubmitData,
+        component: UIElement,
+        actions: SubmitActions
+      ) => {
+        return this.submit({
+          state,
+          component,
+          actions,
+          extraRequestData: { countryCode: this.countryCode },
+          onBeforeResolve: (data) => {
+            this.paymentReference = data.paymentReference;
+            this.paymentMethod = data.paymentMethod;
+          },
+        });
       },
       onShippingContactSelected: async (
         resolve,
@@ -176,7 +142,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
       ) => {
         const { countryCode, locality, postalCode } = event.shippingContact;
         let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
-        let paymentData: InitialPaymentData
+        let paymentData: InitialPaymentData;
 
         try {
           await me.setShippingAddress({

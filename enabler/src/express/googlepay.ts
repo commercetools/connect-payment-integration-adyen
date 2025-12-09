@@ -1,4 +1,11 @@
-import { GooglePay, ICore, PaymentMethod } from "@adyen/adyen-web";
+import {
+  GooglePay,
+  ICore,
+  PaymentMethod,
+  SubmitActions,
+  SubmitData,
+  UIElement,
+} from "@adyen/adyen-web";
 import {
   ExpressOptions,
   OnComplete,
@@ -31,7 +38,7 @@ export class GooglePayExpressBuilder implements PaymentExpressBuilder {
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
     this.onComplete = baseOptions.onComplete;
   }
-  
+
   build(config: ExpressOptions): GooglePayExpressComponent {
     const googlePayComponent = new GooglePayExpressComponent({
       adyenCheckout: this.adyenCheckout,
@@ -126,54 +133,21 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
           })
           .catch(() => reject());
       },
-      onSubmit: async (state, component, actions) => {
-        try {
-          const reqData = {
-            ...state.data,
-            channel: "Web",
-            countryCode: this.countryCode,
-          };
-
-          const response = await fetch(
-            this.processorUrl + "/express-payments",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": this.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            }
-          );
-          const data = await response.json();
-
-          this.paymentReference = data.paymentReference;
-          this.paymentMethod = data.paymentMethod;
-          if (!data.resultCode) {
-            actions.reject();
-            return;
-          }
-
-          if (data.action) {
-            component.handleAction(data.action);
-          } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-            } else {
-              component.setStatus("error");
-            }
-          }
-
-          actions.resolve({
-            resultCode: data.resultCode,
-            action: data.action,
-          });
-        } catch (error) {
-          actions.reject(error);
-        }
+      onSubmit: async (
+        state: SubmitData,
+        component: UIElement,
+        actions: SubmitActions
+      ) => {
+        return this.submit({
+          state,
+          component,
+          actions,
+          extraRequestData: { countryCode: this.countryCode },
+          onBeforeResolve: (data) => {
+            this.paymentReference = data.paymentReference;
+            this.paymentMethod = data.paymentMethod;
+          },
+        });
       },
       shippingOptionRequired: true,
       paymentDataCallbacks: {
