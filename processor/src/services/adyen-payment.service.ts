@@ -777,9 +777,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  private async handleTransactionStoredPaymentMethodPurchase(
-    transactionDraft: TransactionDraftDTO,
-  ): Promise<TransactionResponseDTO> {
+  private async handleTransactionRecurringType(transactionDraft: TransactionDraftDTO): Promise<TransactionResponseDTO> {
     // Perform validations
     if (!getStoredPaymentMethodsConfig().enabled) {
       throw new ErrorInvalidOperation(
@@ -939,11 +937,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   async handleTransaction(transactionDraft: TransactionDraftDTO): Promise<TransactionResponseDTO> {
-    if (transactionDraft.type === 'StoredPaymentMethodPurchase') {
-      return await this.handleTransactionStoredPaymentMethodPurchase(transactionDraft);
+    if (transactionDraft.type === 'Recurring') {
+      return await this.handleTransactionRecurringType(transactionDraft);
     }
 
-    throw new ErrorInvalidField('type', transactionDraft.type || 'not-provided', 'StoredPaymentMethodPurchase');
+    throw new ErrorInvalidField('type', transactionDraft.type || 'not-provided', 'Recurring');
   }
 
   /**

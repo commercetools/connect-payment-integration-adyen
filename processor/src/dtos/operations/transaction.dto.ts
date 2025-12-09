@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox';
 
-const TransactionTypes = Type.Union([Type.Literal('StoredPaymentMethodPurchase')]);
+const TransactionTypes = Type.Union([Type.Literal('Recurring')]);
 
 export const TransactionDraft = Type.Object({
   cartId: Type.String({ format: 'uuid' }),

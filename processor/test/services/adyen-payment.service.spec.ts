@@ -1817,7 +1817,7 @@ describe('adyen-payment.service', () => {
       paymentMethod: {
         id: 'f3850734-0da8-4c57-8009-2425991c12aa',
       },
-      type: 'StoredPaymentMethodPurchase',
+      type: 'Recurring',
     };
 
     test('it should throw an ErrorInvalidField if the provided "type" value is unsupported', async () => {
@@ -1826,7 +1826,7 @@ describe('adyen-payment.service', () => {
       } as unknown as TransactionDraftDTO;
 
       expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
-        new ErrorInvalidField('type', 'UnknownType', 'StoredPaymentMethodPurchase'),
+        new ErrorInvalidField('type', 'UnknownType', 'Recurring'),
       );
     });
 
@@ -1834,11 +1834,11 @@ describe('adyen-payment.service', () => {
       const transactionDraft: TransactionDraftDTO = {} as unknown as TransactionDraftDTO;
 
       expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
-        new ErrorInvalidField('type', 'not-provided', 'StoredPaymentMethodPurchase'),
+        new ErrorInvalidField('type', 'not-provided', 'Recurring'),
       );
     });
 
-    describe('StoredPaymentMethodPurchase', () => {
+    describe('Recurring', () => {
       test('it should throw an ErrorInvalidOperation if the StoredPaymentMethods feature is not enabled', async () => {
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
           new ErrorInvalidOperation(
@@ -1938,7 +1938,7 @@ describe('adyen-payment.service', () => {
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(new ErrorRequiredField('token'));
       });
 
-      test('it should handle the "StoredPaymentMethodPurchase" transaction draft type', async () => {
+      test('it should handle the "Recurring" transaction draft type', async () => {
         // Arrange
         jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,

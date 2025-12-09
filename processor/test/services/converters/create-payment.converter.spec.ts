@@ -482,7 +482,7 @@ describe('create-payment.converter', () => {
         merchantOrderReference: 'futureOrderNumber-123',
         countryCode: 'NL',
         shopperEmail: 'johannes.vermeer@yahoo.com',
-        returnUrl: 'https://commercetools.com',
+        returnUrl: '',
         billingAddress: {
           country: 'NL',
           city: 'Delft',
