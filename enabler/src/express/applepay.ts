@@ -174,9 +174,9 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         _reject,
         event: ApplePayJS.ApplePayShippingContactSelectedEvent
       ) => {
-        const paymentData = await this.getInitialPaymentData();
         const { countryCode, locality, postalCode } = event.shippingContact;
         let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
+        let paymentData: InitialPaymentData
 
         try {
           await me.setShippingAddress({
@@ -189,7 +189,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
           });
 
           const shippingMethods = await this.fetchShippingMethods(countryCode);
-
+          paymentData = await this.getInitialPaymentData();
           const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
             shippingMethods[0],
             paymentData
@@ -224,9 +224,9 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         _reject,
         event: ApplePayJS.ApplePayShippingMethodSelectedEvent
       ) => {
-        const paymentData = await this.getInitialPaymentData();
         const { shippingMethod } = event;
         let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
+        let paymentData: InitialPaymentData;
 
         try {
           await me.setShippingMethod({
@@ -234,6 +234,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
               id: shippingMethod.identifier,
             },
           });
+
+          paymentData = await this.getInitialPaymentData();
           const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
             shippingMethod,
             paymentData
@@ -250,7 +252,6 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
                 paymentData.totalPrice.centAmount
               ),
             },
-            // TODO: to be improved
             errors: [
               new ApplePayError(
                 "unknown",
