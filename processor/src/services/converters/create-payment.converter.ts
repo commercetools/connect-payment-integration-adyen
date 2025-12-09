@@ -82,6 +82,9 @@ export class CreatePaymentConverter {
     };
   }
 
+  /**
+   * Creates a payment request payload to the Adyen payments API. Intended to be used in the `/operations/transactions` API.
+   */
   public async convertPaymentRequestStoredPaymentMethod(opts: {
     cart: Cart;
     payment: Payment;
