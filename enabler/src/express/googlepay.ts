@@ -1,7 +1,7 @@
 import {
   GooglePay,
   ICore,
-  PaymentMethod,
+  RawPaymentMethod,
   SubmitActions,
   SubmitData,
   UIElement,
@@ -70,7 +70,7 @@ type GooglePayShippingOptions = {
 export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
   private paymentReference: string;
-  private paymentMethod: PaymentMethod;
+  private paymentMethod: RawPaymentMethod;
 
   constructor(opts: {
     adyenCheckout: ICore;

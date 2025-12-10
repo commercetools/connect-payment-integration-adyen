@@ -1,7 +1,7 @@
 import {
   ApplePay,
   ICore,
-  PaymentMethod,
+  RawPaymentMethod,
   SubmitActions,
   SubmitData,
   UIElement,
@@ -56,7 +56,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
   public finalAmount: number;
   private paymentReference: string;
-  private paymentMethod: PaymentMethod;
+  private paymentMethod: RawPaymentMethod;
   private usesOwnCertificate: boolean;
 
   constructor(opts: {

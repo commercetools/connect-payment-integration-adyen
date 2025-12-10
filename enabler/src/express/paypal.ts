@@ -1,7 +1,7 @@
 import {
   ICore,
   Intent,
-  PaymentMethod,
+  RawPaymentMethod,
   PayPal,
   SubmitActions,
   SubmitData,
@@ -83,7 +83,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
   private paymentReference: string;
   private shippingAddress: any;
   private originalAmount: CTAmount;
-  private paymentMethod: PaymentMethod;
+  private paymentMethod: RawPaymentMethod;
 
   constructor(opts: {
     adyenCheckout: ICore;
