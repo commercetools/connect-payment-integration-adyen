@@ -8,6 +8,7 @@ import {
   UIElement,
 } from "@adyen/adyen-web";
 import {
+  CTAmount,
   ExpressAddressData,
   ExpressComponent,
   ExpressOptions,
@@ -20,16 +21,10 @@ export type ShippingMethodCost = {
 };
 
 export type InitialPaymentData = {
-  totalPrice: {
-    centAmount: number;
-    currencyCode: string;
-  };
+  totalPrice: CTAmount;
   lineItems: {
     name: string;
-    amount: {
-      centAmount: number;
-      currencyCode: string;
-    };
+    amount: CTAmount;
     type: string;
   }[];
   currencyCode: string;
@@ -141,19 +136,14 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     }
   }
 
-  protected getShippingMethodCost(selectedShippingMethodId: string): string {
-    const selectedShippingMethod = this.availableShippingMethods.find(
-      (method) => method.id === selectedShippingMethodId
-    );
 
-    return this.centAmountToString(selectedShippingMethod.amount.centAmount);
-  }
-
+  // HINT: this is used to display currency with it's symbol. '10.00' -> $10.00
   protected formatCurrency(opts: {
     centAmount: number;
     currencyCode: string;
+    fractionDigits: number;
   }): string {
-    const amount = opts.centAmount / 100;
+    const amount = opts.centAmount / Math.pow(10, opts.fractionDigits);
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: opts.currencyCode,
@@ -181,8 +171,9 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     };
   }
 
-  protected centAmountToString(centAmount: number): string {
-    return (centAmount / 100).toFixed(2);
+  // HINT: this converts 1000 -> to 10.00 if fraction digit is 2
+  protected centAmountToString(centAmount: number, fractionDigits: number): string {
+    return (centAmount / 100).toFixed(fractionDigits);
   }
 
   protected async submit(opts: {

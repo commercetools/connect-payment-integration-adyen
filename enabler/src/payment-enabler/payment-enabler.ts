@@ -74,7 +74,7 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
 }
 
-export type PaymentAmount = {
+export type CTAmount = {
   centAmount: number;
   currencyCode: string;
   fractionDigits: number;
@@ -229,10 +229,7 @@ export type ExpressShippingOptionData = {
   name: string;
   description?: string;
   isSelected?: boolean;
-  amount: {
-    centAmount: number;
-    currencyCode: string;
-  };
+  amount: CTAmount;
 };
 
 export type ExpressAddressData = {
@@ -273,7 +270,7 @@ export type ExpressOptions = {
     billingAddress: ExpressAddressData;
   }) => Promise<void>;
   onComplete?: OnComplete;
-  initialAmount: PaymentAmount;
+  initialAmount: CTAmount;
 };
 
 export interface PaymentExpressBuilder {

@@ -15,6 +15,7 @@ import {
   OnlineBankingPL,
   AfterPay,
   MolPayEBankingMY,
+  BcmcMobile,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -39,7 +40,8 @@ type AdyenComponent =
   | Vipps
   | OnlineBankingPL
   | Swish
-  | AfterPay;
+  | AfterPay
+  | BcmcMobile;
 
 /**
  * Base Web Component

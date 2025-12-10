@@ -1,7 +1,7 @@
 import {
   GooglePay,
   ICore,
-  PaymentMethod,
+  RawPaymentMethod,
   SubmitActions,
   SubmitData,
   UIElement,
@@ -70,7 +70,7 @@ type GooglePayShippingOptions = {
 export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
   private paymentReference: string;
-  private paymentMethod: PaymentMethod;
+  private paymentMethod: RawPaymentMethod;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -110,6 +110,11 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       shippingAddressParameters: {
         allowedCountryCodes: this.expressOptions?.allowedCountries || [],
         phoneNumberRequired: true,
+      },
+      countryCode: this.countryCode,
+      amount: {
+        currency: this.expressOptions.initialAmount.currencyCode,
+        value: this.expressOptions.initialAmount.centAmount,
       },
       emailRequired: true,
       billingAddressRequired: true,
@@ -284,7 +289,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       paymentData.lineItems.map((lineItem) => ({
         label: lineItem.name,
         type: this.convertToDisplayItemType(lineItem.type),
-        price: this.centAmountToString(lineItem.amount.centAmount),
+        price: this.centAmountToString(
+          lineItem.amount.centAmount,
+          lineItem.amount.fractionDigits
+        ),
       }));
 
     return {
@@ -292,7 +300,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       countryCode: this.countryCode,
       currencyCode: paymentData.currencyCode,
       totalPriceStatus: "FINAL",
-      totalPrice: this.centAmountToString(paymentData.totalPrice.centAmount),
+      totalPrice: this.centAmountToString(
+        paymentData.totalPrice.centAmount,
+        paymentData.totalPrice.fractionDigits
+      ),
       totalPriceLabel: "Total",
     };
   }

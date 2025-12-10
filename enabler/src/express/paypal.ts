@@ -1,7 +1,7 @@
 import {
   ICore,
   Intent,
-  PaymentMethod,
+  RawPaymentMethod,
   PayPal,
   SubmitActions,
   SubmitData,
@@ -10,7 +10,7 @@ import {
 import {
   ExpressOptions,
   OnComplete,
-  PaymentAmount,
+  CTAmount,
   PaymentExpressBuilder,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
@@ -32,7 +32,7 @@ type UpdateOrder = {
   pspReference: string;
   paymentData: string;
   deliveryMethods: PayPalShippingOption[];
-  originalAmount: PaymentAmount;
+  originalAmount: CTAmount;
 };
 
 /**
@@ -82,8 +82,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
   private pspReference: string;
   private paymentReference: string;
   private shippingAddress: any;
-  private originalAmount: PaymentAmount;
-  private paymentMethod: PaymentMethod;
+  private originalAmount: CTAmount;
+  private paymentMethod: RawPaymentMethod;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -272,14 +272,15 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         const deliveryInformation =
           data.authorizedEvent.purchase_units[0]?.shipping;
 
+        const deliveryName = this.safelyParseShippingName(
+          deliveryInformation?.name?.full_name
+        );
+
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
           email: data.authorizedEvent.email,
-          firstName: deliveryInformation?.name?.full_name.split(" ")[0],
-          lastName: deliveryInformation?.name?.full_name
-            .split(" ")
-            .slice(1)
-            .join(" "),
+          firstName: deliveryName.firstName,
+          lastName: deliveryName.lastName,
           phoneNumber: data.authorizedEvent?.shippingAddress?.phoneNumber,
         });
 
@@ -334,23 +335,8 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     selectedOptionId?: string
   ): Promise<PayPalShippingOption[]> {
     const shippingMethods = await this.getShippingMethods({
-      address: {
-        country: countryCode,
-      },
+      address: { country: countryCode },
     });
-
-    if (selectedOptionId) {
-      return shippingMethods.map((method) => ({
-        reference: method.id,
-        description: method.name,
-        type: "Shipping",
-        amount: {
-          currency: method.amount.currencyCode,
-          value: method.amount.centAmount,
-        },
-        selected: selectedOptionId === method.id ? true : false,
-      }));
-    }
 
     return shippingMethods.map((method) => ({
       reference: method.id,
@@ -358,9 +344,28 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       type: "Shipping",
       amount: {
         currency: method.amount.currencyCode,
-        value: method.amount.centAmount,
+        value: method.amount.centAmount, //HINT: an iso to adyen mapping is done for this value in the processor before being sent to adyen.
       },
-      selected: method.isSelected ?? false,
+      selected:
+        selectedOptionId !== undefined
+          ? selectedOptionId === method.id
+          : method.isSelected ?? false,
     }));
+  }
+
+  private safelyParseShippingName(fullName?: string): {
+    firstName: string;
+    lastName: string;
+  } {
+    const parts = (fullName || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .split(" ")
+      .filter(Boolean);
+
+    return {
+      firstName: parts[0] || "",
+      lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+    };
   }
 }

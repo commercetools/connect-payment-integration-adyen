@@ -40,6 +40,7 @@ const getShippingMethods = async (opts) => {
     shippingMethod.amount = {
       centAmount: zoneRate.price.centAmount,
       currencyCode: zoneRate.price.currencyCode,
+      fractionDigits: zoneRate.price.fractionDigits
     };
 
     return shippingMethod;
