@@ -892,7 +892,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
           },
         };
       }
-      return item;
+      return {
+        ...item,
+        amount: {
+          value: CurrencyConverters.convertWithMapping({
+            mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+            amount: item.amount?.value as number,
+            currencyCode: item.amount?.currency as string,
+          }),
+          currency: item.amount?.currency as string,
+        },
+      };
     });
 
     const requestData: PaypalUpdateOrderRequest = {
@@ -901,7 +911,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
       pspReference: opts.data.pspReference,
       amount: {
         currency: amountPlanned.currencyCode,
-        value: amountPlanned.centAmount,
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: amountPlanned.centAmount,
+          currencyCode: amountPlanned.currencyCode,
+        }),
       },
     };
 
@@ -1249,7 +1263,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       cart: ctCart,
       payment: {
         amountPlanned: amountPlanned,
-        id: `ct-checkout-${randomUUID()}`,
+        id: `ct:checkout:${randomUUID()}`,
       },
     });
 
