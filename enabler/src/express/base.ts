@@ -3,13 +3,17 @@ import {
   ApplePay,
   GooglePay,
   PayPal,
+  SubmitActions,
+  SubmitData,
   UIElement,
 } from "@adyen/adyen-web";
 import {
+  CTAmount,
   ExpressAddressData,
   ExpressComponent,
   ExpressOptions,
   ExpressShippingOptionData,
+  OnComplete,
 } from "../payment-enabler/payment-enabler";
 
 export type ShippingMethodCost = {
@@ -17,16 +21,10 @@ export type ShippingMethodCost = {
 };
 
 export type InitialPaymentData = {
-  totalPrice: {
-    centAmount: number;
-    currencyCode: string;
-  };
+  totalPrice: CTAmount;
   lineItems: {
     name: string;
-    amount: {
-      centAmount: number;
-      currencyCode: string;
-    };
+    amount: CTAmount;
     type: string;
   }[];
   currencyCode: string;
@@ -41,6 +39,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected component: GooglePay | ApplePay | PayPal;
   protected availableShippingMethods: ExpressShippingOptionData[];
   protected paymentMethodConfig: { [key: string]: string };
+  protected onComplete: OnComplete;
 
   constructor(opts: {
     expressOptions: ExpressOptions;
@@ -49,6 +48,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     countryCode: string;
     currencyCode: string;
     paymentMethodConfig: { [key: string]: string };
+    onComplete: OnComplete;
   }) {
     this.expressOptions = opts.expressOptions;
     this.processorUrl = opts.processorUrl;
@@ -56,6 +56,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     this.countryCode = opts.countryCode;
     this.currencyCode = opts.currencyCode;
     this.paymentMethodConfig = opts.paymentMethodConfig;
+    this.onComplete = opts.onComplete;
   }
 
   abstract init(): void;
@@ -98,16 +99,13 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     throw new Error("setShippingMethod not implemented");
   }
 
-  async onComplete(
-    opts: {
-      isSuccess: boolean;
-      paymentReference: string;
-      method: { type: string };
-    },
-    component: UIElement
-  ): Promise<void> {
+  async handleComplete(opts: {
+    isSuccess: boolean;
+    paymentReference: string;
+    method: { type: string };
+  }): Promise<void> {
     if (this.expressOptions.onComplete) {
-      await this.expressOptions.onComplete(opts, component);
+      await this.expressOptions.onComplete(opts);
       return;
     }
 
@@ -138,19 +136,14 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     }
   }
 
-  protected getShippingMethodCost(selectedShippingMethodId: string): string {
-    const selectedShippingMethod = this.availableShippingMethods.find(
-      (method) => method.id === selectedShippingMethodId
-    );
 
-    return this.centAmountToString(selectedShippingMethod.amount.centAmount);
-  }
-
+  // HINT: this is used to display currency with it's symbol. '10.00' -> $10.00
   protected formatCurrency(opts: {
     centAmount: number;
     currencyCode: string;
+    fractionDigits: number;
   }): string {
-    const amount = opts.centAmount / 100;
+    const amount = opts.centAmount / Math.pow(10, opts.fractionDigits);
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: opts.currencyCode,
@@ -178,7 +171,56 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     };
   }
 
-  protected centAmountToString(centAmount: number): string {
-    return (centAmount / 100).toFixed(2);
+  // HINT: this converts 1000 -> to 10.00 if fraction digit is 2
+  protected centAmountToString(centAmount: number, fractionDigits: number): string {
+    return (centAmount / 100).toFixed(fractionDigits);
+  }
+
+  protected async submit(opts: {
+    state: SubmitData;
+    component: UIElement;
+    actions: SubmitActions;
+    extraRequestData: Record<string, any>;
+    onBeforeResolve?: (data: any) => void;
+  }) {
+    try {
+      const reqData = {
+        ...opts.state.data,
+        channel: "Web",
+        ...opts.extraRequestData,
+      };
+
+      const response = await fetch(this.processorUrl + "/express-payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Session-Id": this.sessionId,
+        },
+        body: JSON.stringify(reqData),
+      });
+
+      const data = await response.json();
+
+      if (opts.onBeforeResolve) {
+        opts.onBeforeResolve(data);
+      }
+
+      if (data.action) {
+        opts.component.handleAction(data.action);
+      } else {
+        const isSuccess =
+          opts.extraRequestData.resultCode === "Authorised" ||
+          data.resultCode === "Pending";
+
+        opts.component.setStatus(isSuccess ? "success" : "error");
+      }
+
+      opts.actions.resolve({
+        resultCode: data.resultCode,
+        action: data.action,
+      });
+    } catch (err) {
+      opts.actions.reject(err);
+    }
   }
 }

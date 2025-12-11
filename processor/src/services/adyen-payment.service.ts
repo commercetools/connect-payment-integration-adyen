@@ -14,6 +14,7 @@ import {
   ErrorRequiredField,
   PaymentMethod,
   ErrorInvalidField,
+  CurrencyConverters,
 } from '@commercetools/connect-payments-sdk';
 import {
   ConfirmPaymentRequestDTO,
@@ -81,6 +82,7 @@ import { convertAdyenCardBrandToCTFormat, convertPaymentMethodToAdyenFormat } fr
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
+import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../constants/currencies';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -1071,17 +1073,42 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
     const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
 
-    const enrichedDelivery = opts.data.deliveryMethods.map((item) => {
-      if (item.selected) {
+    const enrichedDelivery = opts.data.deliveryMethods.map((deliveryMethod) => {
+      if (deliveryMethod.selected) {
+        // HINT: this computation is a walk-around to a problem we have with paypal express. An initial order is created for example with total amount 854 cents
+        // If a delivery method causes a discount to be applied to the cart, the new total won't be same as the original amount + deliveryMethod.amount, which is a
+        // validation paypal does on their end thus leading to a 422 error.
+        //==>
+        // This computation below makes sure that if there is an extra discount applied due to the selected delivery method, that the discount is subtracted from the delivery amount.
+        // And thus passing this paypal total price validation. We can look into making this better in the future.
+        const discount =
+          opts.data.originalAmount.centAmount + (deliveryMethod.amount?.value || 0) - amountPlanned.centAmount;
+        const shippingAmountWithDiscount = (deliveryMethod.amount?.value || 0) - discount;
+
         return {
-          ...item,
+          ...deliveryMethod,
           amount: {
+            value: CurrencyConverters.convertWithMapping({
+              mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+              amount: shippingAmountWithDiscount,
+              currencyCode: amountPlanned.currencyCode,
+            }),
             currency: amountPlanned.currencyCode,
-            value: amountPlanned.centAmount - opts.data.originalAmount.centAmount,
           },
         };
       }
-      return item;
+
+      return {
+        ...deliveryMethod,
+        amount: {
+          value: CurrencyConverters.convertWithMapping({
+            mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+            amount: deliveryMethod.amount?.value as number,
+            currencyCode: deliveryMethod.amount?.currency as string,
+          }),
+          currency: deliveryMethod.amount?.currency as string,
+        },
+      };
     });
 
     const requestData: PaypalUpdateOrderRequest = {
@@ -1090,7 +1117,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
       pspReference: opts.data.pspReference,
       amount: {
         currency: amountPlanned.currencyCode,
-        value: amountPlanned.centAmount,
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: amountPlanned.centAmount,
+          currencyCode: amountPlanned.currencyCode,
+        }),
       },
     };
 
@@ -1108,6 +1139,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       totalPrice: {
         currencyCode: ctCart.taxedPrice?.totalGross.currencyCode || ctCart.totalPrice.currencyCode,
         centAmount: ctCart.taxedPrice?.totalGross.centAmount || ctCart.totalPrice.centAmount,
+        fractionDigits: ctCart.taxedPrice?.totalGross.fractionDigits || ctCart.totalPrice.fractionDigits,
       },
       lineItems: [
         {
@@ -1115,6 +1147,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
           amount: {
             centAmount: ctCart.taxedPrice?.totalNet.centAmount || ctCart.totalPrice.centAmount,
             currencyCode: ctCart.taxedPrice?.totalNet.currencyCode || ctCart.totalPrice.currencyCode,
+            fractionDigits: ctCart.taxedPrice?.totalNet.fractionDigits || ctCart.totalPrice.fractionDigits,
           },
           type: 'SUBTOTAL',
         },
@@ -1125,6 +1158,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
                 amount: {
                   centAmount: ctCart.taxedPrice?.totalTax?.centAmount || 0,
                   currencyCode: ctCart.taxedPrice?.totalTax?.currencyCode || ctCart.totalPrice.currencyCode,
+                  fractionDigits: ctCart.taxedPrice?.totalTax?.fractionDigits || ctCart.totalPrice.fractionDigits,
                 },
                 type: 'TAX',
               },
@@ -1438,7 +1472,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       cart: ctCart,
       payment: {
         amountPlanned: amountPlanned,
-        id: `ct-checkout-${randomUUID()}`,
+        id: `ct:checkout:${randomUUID()}`,
       },
     });
 
