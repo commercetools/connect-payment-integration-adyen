@@ -1,7 +1,7 @@
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { ThreeDSRequestData } from '@adyen/api-library/lib/src/typings/checkout/threeDSRequestData';
 
-import { config } from '../../config/config';
+import { config, getConfig } from '../../config/config';
 import {
   Cart,
   CurrencyConverters,
@@ -9,6 +9,8 @@ import {
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
   ErrorInternalConstraintViolated,
+  PaymentMethod,
+  CommercetoolsCartService,
 } from '@commercetools/connect-payments-sdk';
 import {
   buildReturnUrl,
@@ -24,6 +26,7 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 import { randomUUID } from 'node:crypto';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
+import { AdyenApi } from '../../clients/adyen.client';
 
 type ExpressPayment = {
   amountPlanned: PaymentAmount;
@@ -31,9 +34,11 @@ type ExpressPayment = {
 };
 export class CreatePaymentConverter {
   private ctPaymentMethodService: CommercetoolsPaymentMethodService;
+  private ctCartService: CommercetoolsCartService;
 
-  constructor(ctPaymentMethodService: CommercetoolsPaymentMethodService) {
+  constructor(ctPaymentMethodService: CommercetoolsPaymentMethodService, ctCartService: CommercetoolsCartService) {
     this.ctPaymentMethodService = ctPaymentMethodService;
+    this.ctCartService = ctCartService;
   }
 
   public async convertRequest(opts: {
@@ -74,6 +79,65 @@ export class CreatePaymentConverter {
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
       ...storedPaymentMethodsData,
+    };
+  }
+
+  /**
+   * Creates a payment request payload to the Adyen payments API. Intended to be used in the `/operations/transactions` API for "server-to-server" types of payments.
+   *
+   * It can be extended in the future for "UnscheduledCardOnFile" type of payments.
+   */
+  public async convertPaymentRequestForRecurringTokenPayments(opts: {
+    cart: Cart;
+    payment: Payment;
+    paymentMethod: PaymentMethod;
+    futureOrderNumber?: string;
+  }): Promise<PaymentRequest> {
+    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const shopperStatement = getShopperStatement();
+
+    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
+      opts.cart.customerId,
+      getConfig().adyenMerchantAccount,
+    );
+
+    const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+      (tokenDetails) => tokenDetails.id === opts.paymentMethod.token?.value,
+    );
+
+    return {
+      // START: paying with stored payment method specific values
+      // When paying a recurring cart it will always be Subscription cause they are "server-to-server" payments. One-Off payments are always user initiated and follow the "normal" payment flow.
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.ContAuth, // when paying with an existing token/stored-payment-method then the shopperInteraction is always ContAuth
+      shopperReference: opts.cart.customerId,
+      paymentMethod: {
+        storedPaymentMethodId: opts.paymentMethod.token?.value,
+        brand: tokenDetailsFromAdyen?.brand,
+      },
+      // END: paying with stored payment method specific values
+      amount: {
+        value: CurrencyConverters.convertWithMapping({
+          mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
+          amount: opts.payment.amountPlanned.centAmount,
+          currencyCode: opts.payment.amountPlanned.currencyCode,
+        }),
+        currency: opts.payment.amountPlanned.currencyCode,
+      },
+      reference: opts.payment.id,
+      merchantAccount: config.adyenMerchantAccount,
+      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      shopperEmail: opts.cart.customerEmail,
+      returnUrl: '', // TS and adyen payment API has this property as mandatory. However when paying via server to server (aka Subscription) this has no effect.
+      ...(opts.cart.billingAddress && {
+        billingAddress: populateCartAddress(opts.cart.billingAddress),
+      }),
+      ...(deliveryAddress && {
+        deliveryAddress: populateCartAddress(deliveryAddress),
+      }),
+      ...(opts.futureOrderNumber && { merchantOrderReference: opts.futureOrderNumber }),
+      applicationInfo: populateApplicationInfo(),
+      ...(shopperStatement && { shopperStatement }),
     };
   }
 
@@ -118,7 +182,7 @@ export class CreatePaymentConverter {
 
   public async populateStoredPaymentMethodsData(
     data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
-    cart: Pick<Cart, 'id' | 'customerId'>,
+    cart: Cart,
   ) {
     if (!getStoredPaymentMethodsConfig().enabled) {
       return;
@@ -185,12 +249,18 @@ export class CreatePaymentConverter {
       }
     }
 
+    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
+
     const shopperInteraction = payWithExistingToken
       ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
       : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
 
+    const recurringProcessingModel = isCurrentCartRecurringOrder
+      ? PaymentRequest.RecurringProcessingModelEnum.Subscription
+      : PaymentRequest.RecurringProcessingModelEnum.CardOnFile;
+
     return {
-      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile, // always the same static value
+      recurringProcessingModel,
       shopperInteraction,
       shopperReference: customerReference,
       ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
