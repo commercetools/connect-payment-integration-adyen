@@ -39,6 +39,7 @@ import {
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
   getCartIdFromContext,
+  getCheckoutTransactionItemIdFromContext,
   getMerchantReturnUrlFromContext,
   getPaymentInterfaceFromContext,
 } from '../libs/fastify/context/context';
@@ -292,6 +293,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       paymentMethodInfo: {
         paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
       },
+      checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
       ...(ctCart.customerId && {
         customer: {
           typeId: 'customer',
@@ -357,6 +359,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
           paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
           method: opts.data.paymentMethod?.type,
         },
+        checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
         ...(ctCart.customerId && {
           customer: {
             typeId: 'customer',
@@ -487,6 +490,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
         method: opts.data.paymentMethod,
       },
+      checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
       ...(ctCart.customerId && {
         customer: {
           typeId: 'customer',
@@ -1522,6 +1526,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
           paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
           method: payload.paymentMethod?.type,
         },
+        checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
         ...(ctCart.customerId && {
           customer: {
             typeId: 'customer',

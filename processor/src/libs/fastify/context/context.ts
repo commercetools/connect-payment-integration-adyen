@@ -54,6 +54,11 @@ export const getPaymentInterfaceFromContext = (): string | undefined => {
   return paymentSdk.getPaymentInterfaceFromContext(contextData);
 };
 
+export const getCheckoutTransactionItemIdFromContext = (): string | undefined => {
+  const contextData = getRequestContext() as ContextData;
+  return paymentSdk.getCheckoutTransactionItemIdFromContext(contextData);
+};
+
 export const getProcessorUrlFromContext = (): string => {
   const contextData = getRequestContext() as ContextData;
   return paymentSdk.getProcessorUrlFromContext(contextData) as string;
