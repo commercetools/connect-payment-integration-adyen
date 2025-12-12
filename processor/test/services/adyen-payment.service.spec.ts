@@ -28,7 +28,7 @@ import { MockAgent, setGlobalDispatcher } from 'undici';
 import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
 
-import { Payment as PaymentRest, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
+import { PaymentRest, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import {
   Cart,
@@ -2050,6 +2050,7 @@ describe('adyen-payment.service', () => {
             type: 'Authorization',
             state: 'Pending',
             interactionId: mockAdyenCreatePaymentResponse.pspReference,
+            interfaceId: mockAdyenCreatePaymentResponse.pspReference,
           },
         });
 
