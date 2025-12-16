@@ -254,6 +254,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
           .onPaymentSubmit({
             shippingAddress,
             billingAddress,
+            customerEmail:
+              data.authorizedEvent.payment.shippingContact.emailAddress,
           })
           .then(() => actions.resolve())
           .catch((error) => {

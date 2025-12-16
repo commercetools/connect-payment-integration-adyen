@@ -268,6 +268,7 @@ export type ExpressOptions = {
   onPaymentSubmit: (opts: {
     shippingAddress: ExpressAddressData;
     billingAddress: ExpressAddressData;
+    customerEmail: string;
   }) => Promise<void>;
   onComplete?: OnComplete;
   initialAmount: CTAmount;
