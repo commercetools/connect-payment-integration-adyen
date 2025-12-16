@@ -107,6 +107,21 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     this.adyenCheckout = opts.adyenCheckout;
   }
 
+  private validateShippingAddressCountry(data?: {
+    shippingAddress?: { countryCode: string };
+  }): boolean {
+    if (!data?.shippingAddress?.countryCode) return false;
+    if (
+      !this.expressOptions.allowedCountries ||
+      this.expressOptions.allowedCountries.length === 0
+    ) {
+      return true;
+    }
+    return this.expressOptions.allowedCountries.includes(
+      data.shippingAddress.countryCode
+    );
+  }
+
   init(): void {
     const me = this;
 
@@ -162,6 +177,9 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         });
       },
       onShippingAddressChange: async (data, actions, component) => {
+        if (!this.validateShippingAddressCountry(data)) {
+          return actions.reject(data.errors.COUNTRY_ERROR);
+        }
         try {
           await me.setShippingAddress({
             address: {
@@ -199,7 +217,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           const updatedOrder = await me.updateOrder(payload);
           component.updatePaymentData(updatedOrder.paymentData);
         } catch (err) {
-          return actions.reject(data.errors.COUNTRY_ERROR);
+          return actions.reject(data.errors.ADDRESS_ERROR);
         }
       },
       onShippingOptionsChange: async (data, actions, component) => {
@@ -276,9 +294,11 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           deliveryInformation?.name?.full_name
         );
 
+        const customerEmail = data.authorizedEvent.payer.email_address;
+
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
-          email: data.authorizedEvent.email,
+          email: customerEmail,
           firstName: deliveryName.firstName,
           lastName: deliveryName.lastName,
           phoneNumber: data.authorizedEvent?.shippingAddress?.phoneNumber,
@@ -286,7 +306,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
 
         const billingAddress = this.convertAddress({
           address: data.billingAddress,
-          email: data.authorizedEvent.payer.email_address,
+          email: customerEmail,
           firstName: data.authorizedEvent.payer?.name?.given_name || "",
           lastName: data.authorizedEvent.payer?.name?.surname || "",
           phoneNumber:
@@ -297,6 +317,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           .onPaymentSubmit({
             shippingAddress,
             billingAddress,
+            customerEmail,
           })
           .then(() => actions.resolve())
           .catch(() => {

@@ -234,9 +234,11 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         resolve(update);
       },
       onAuthorized: async (data, actions) => {
+        const customerEmail =
+          data.authorizedEvent.payment.shippingContact.emailAddress;
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
-          email: data.authorizedEvent.payment.shippingContact.emailAddress,
+          email: customerEmail,
           firstName: data.authorizedEvent.payment.shippingContact.givenName,
           lastName: data.authorizedEvent.payment.shippingContact.familyName,
           phoneNumber: data.authorizedEvent.payment.shippingContact.phoneNumber,
@@ -254,6 +256,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
           .onPaymentSubmit({
             shippingAddress,
             billingAddress,
+            customerEmail,
           })
           .then(() => actions.resolve())
           .catch((error) => {

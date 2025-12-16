@@ -223,13 +223,14 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
         },
       },
       onAuthorized: (data, actions) => {
+        const customerEmail = data.authorizedEvent.email;
         const shippedToFullName = data.authorizedEvent.shippingAddress.name;
         const payerFullName =
           data.authorizedEvent.paymentMethodData.info?.billingAddress?.name;
 
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
-          email: data.authorizedEvent.email,
+          email: customerEmail,
           firstName: shippedToFullName.split(" ")[0],
           lastName: shippedToFullName.split(" ").slice(1).join(" "),
           phoneNumber: data.authorizedEvent?.shippingAddress?.phoneNumber,
@@ -237,7 +238,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
 
         const billingAddress = this.convertAddress({
           address: data.billingAddress,
-          email: data.authorizedEvent.email,
+          email: customerEmail,
           firstName: payerFullName.split("")[0],
           lastName: payerFullName.split(" ").slice(1).join(" "),
           phoneNumber:
@@ -249,6 +250,7 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
           .onPaymentSubmit({
             shippingAddress,
             billingAddress,
+            customerEmail,
           })
           .then(() => actions.resolve())
           .catch((error) => {
