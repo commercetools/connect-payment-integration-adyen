@@ -95,6 +95,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         value: this.expressOptions.initialAmount.centAmount,
       },
       supportedCountries: this.expressOptions?.allowedCountries || [],
+      // TODO: add support for expressPage...to be set by spa to be used for tracking analytics.
+      // TODO: totalPriceStatus: 'pending', // instead of showing an initial amount which would change after delivery method is added, causing the user to see two different values...apple will show price pending instead until after the computation. Lets discuss
       ...(this.usesOwnCertificate && {
         onValidateMerchant: this.onValidateMerchant.bind(this),
       }),
@@ -171,8 +173,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             newTotal: {
               label: this.paymentMethodConfig.merchantName,
               amount: this.centAmountToString(
-                paymentData.totalPrice.centAmount,
-                paymentData.totalPrice.fractionDigits
+                paymentData?.totalPrice?.centAmount || this.expressOptions.initialAmount.centAmount, // If the error being handled was thrown by the call to getInitialPaymentData() this will fail, thus why the fallback
+                paymentData?.totalPrice?.fractionDigits || this.expressOptions.initialAmount.fractionDigits
               ),
             },
             errors: [
@@ -217,8 +219,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
             newTotal: {
               label: this.paymentMethodConfig.merchantName,
               amount: this.centAmountToString(
-                paymentData.totalPrice.centAmount,
-                paymentData.totalPrice.fractionDigits
+                paymentData?.totalPrice?.centAmount || this.expressOptions.initialAmount.centAmount, // If the error being handled was thrown by the call to getInitialPaymentData() this will fail, thus why the fallback
+                paymentData?.totalPrice?.fractionDigits || this.expressOptions.initialAmount.fractionDigits
               ),
             },
             errors: [

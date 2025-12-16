@@ -128,6 +128,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
           },
         }
       );
+      
       const data = await response.json();
       return data as InitialPaymentData;
     } catch (error) {
