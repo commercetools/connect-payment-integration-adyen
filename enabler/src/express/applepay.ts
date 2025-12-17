@@ -95,8 +95,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         value: this.expressOptions.initialAmount.centAmount,
       },
       supportedCountries: this.expressOptions?.allowedCountries || [],
-      // TODO: add support for expressPage...to be set by spa to be used for tracking analytics.
-      // TODO: totalPriceStatus: 'pending', // instead of showing an initial amount which would change after delivery method is added, causing the user to see two different values...apple will show price pending instead until after the computation. Lets discuss
+      totalPriceStatus: 'pending', // HINT: instead of showing an initial amount which is definitely going to change after delivery method is selected, apple pay will show 'Amount pending', after which it updates automatically.
+      // TODO: add support for expressPage...to be set by spa to be used for analytics.
       ...(this.usesOwnCertificate && {
         onValidateMerchant: this.onValidateMerchant.bind(this),
       }),
