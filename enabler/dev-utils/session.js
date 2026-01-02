@@ -71,6 +71,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "vipps",
         "clearpay",
         "mbway",
+        "trustly",
       ], // add here your allowed methods for development purposes
     }),
   };

@@ -78,6 +78,9 @@ export class PaymentComponentsConverter {
         {
           type: 'mbway',
         },
+        {
+          type: 'trustly',
+        },
       ],
       express: [
         {
