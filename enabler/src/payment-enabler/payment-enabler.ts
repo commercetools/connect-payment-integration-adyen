@@ -72,6 +72,7 @@ export enum PaymentMethod {
   twint = "twint",
   vipps = "vipps",
   mobilepay = "mobilepay",
+  mbway = "mbway",
 }
 
 export type CTAmount = {
