@@ -16,6 +16,7 @@ import {
   AfterPay,
   MolPayEBankingMY,
   BcmcMobile,
+  MBWay,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -41,7 +42,8 @@ type AdyenComponent =
   | OnlineBankingPL
   | Swish
   | AfterPay
-  | BcmcMobile;
+  | BcmcMobile
+  | MBWay;
 
 /**
  * Base Web Component
@@ -71,7 +73,7 @@ export abstract class AdyenBaseComponentBuilder
   abstract build(config: ComponentOptions): PaymentComponent;
 
   protected resolvePaymentComponentConfigOverride(
-    paymentMethod: string,
+    paymentMethod: string
   ): Record<string, any> {
     return this.paymentComponentsConfigOverride?.[paymentMethod] ?? {};
   }
@@ -142,7 +144,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
 
   private isPaymentMethodAllowed(): boolean {
     return this.adyenCheckout.paymentMethodsResponse.paymentMethods.some(
-      (paymentMethod) => paymentMethod.type === this.paymentMethod,
+      (paymentMethod) => paymentMethod.type === this.paymentMethod
     );
   }
 }

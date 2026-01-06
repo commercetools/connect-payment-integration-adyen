@@ -75,6 +75,9 @@ export class PaymentComponentsConverter {
         {
           type: 'clearpay',
         },
+        {
+          type: 'mbway',
+        },
       ],
       express: [
         {
