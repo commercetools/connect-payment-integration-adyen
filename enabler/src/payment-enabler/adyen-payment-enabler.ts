@@ -41,6 +41,7 @@ import { ClearpayBuilder } from "../components/payment-methods/clearpay";
 import { PayPalExpressBuilder } from "../express/paypal";
 import { ApplePayExpressBuilder } from "../express/applepay";
 import { MBWayBuilder } from "../components/payment-methods/mbway";
+import { TrustlyBuilder } from "../components/payment-methods/trustly";
 
 export type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
@@ -123,6 +124,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       afterpay: AfterPayBuilder,
       clearpay: ClearpayBuilder,
       mbway: MBWayBuilder,
+      trustly: TrustlyBuilder,
     };
 
     if (!(type in supportedMethods)) {

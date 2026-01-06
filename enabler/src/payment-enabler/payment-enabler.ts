@@ -73,6 +73,7 @@ export enum PaymentMethod {
   vipps = "vipps",
   mobilepay = "mobilepay",
   mbway = "mbway",
+  trustly="trustly"
 }
 
 export type CTAmount = {
