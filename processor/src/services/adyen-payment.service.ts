@@ -237,8 +237,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
             const { adyenApplePayOwnMerchantId, adyenApplePayOwnDisplayName, adyenApplePayOwnMerchantDomain } = config;
             status =
               adyenApplePayOwnMerchantId?.length > 0 &&
-                adyenApplePayOwnDisplayName?.length > 0 &&
-                adyenApplePayOwnMerchantDomain?.length > 0
+              adyenApplePayOwnDisplayName?.length > 0 &&
+              adyenApplePayOwnMerchantDomain?.length > 0
                 ? 'UP'
                 : 'DOWN';
           }
@@ -306,8 +306,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       }),
       ...(!ctCart.customerId &&
         ctCart.anonymousId && {
-        anonymousId: ctCart.anonymousId,
-      }),
+          anonymousId: ctCart.anonymousId,
+        }),
     });
 
     const updatedCart = await this.ctCartService.addPayment({
@@ -371,8 +371,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
         }),
         ...(!ctCart.customerId &&
           ctCart.anonymousId && {
-          anonymousId: ctCart.anonymousId,
-        }),
+            anonymousId: ctCart.anonymousId,
+          }),
       });
 
       ctCart = await this.ctCartService.addPayment({
@@ -418,8 +418,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       },
       ...('storedPaymentMethodId' in data.paymentMethod &&
         data.paymentMethod.storedPaymentMethodId && {
-        paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
-      }),
+          paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
+        }),
       ...(paymentMethodInfoCustomFieldsDraft
         ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
         : {}),
@@ -521,8 +521,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       }),
       ...(!ctCart.customerId &&
         ctCart.anonymousId && {
-        anonymousId: ctCart.anonymousId,
-      }),
+          anonymousId: ctCart.anonymousId,
+        }),
     });
 
     ctCart = await this.ctCartService.addPayment({
@@ -1179,16 +1179,16 @@ export class AdyenPaymentService extends AbstractPaymentService {
         },
         ...(ctCart.taxedPrice
           ? [
-            {
-              name: 'Tax',
-              amount: {
-                centAmount: ctCart.taxedPrice?.totalTax?.centAmount || 0,
-                currencyCode: ctCart.taxedPrice?.totalTax?.currencyCode || ctCart.totalPrice.currencyCode,
-                fractionDigits: ctCart.taxedPrice?.totalTax?.fractionDigits || ctCart.totalPrice.fractionDigits,
+              {
+                name: 'Tax',
+                amount: {
+                  centAmount: ctCart.taxedPrice?.totalTax?.centAmount || 0,
+                  currencyCode: ctCart.taxedPrice?.totalTax?.currencyCode || ctCart.totalPrice.currencyCode,
+                  fractionDigits: ctCart.taxedPrice?.totalTax?.fractionDigits || ctCart.totalPrice.fractionDigits,
+                },
+                type: 'TAX',
               },
-              type: 'TAX',
-            },
-          ]
+            ]
           : []),
       ],
       currencyCode: ctCart.taxedPrice?.totalGross.currencyCode || ctCart.totalPrice.currencyCode,
@@ -1556,8 +1556,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
         }),
         ...(!ctCart.customerId &&
           ctCart.anonymousId && {
-          anonymousId: ctCart.anonymousId,
-        }),
+            anonymousId: ctCart.anonymousId,
+          }),
       });
 
       ctCart = await this.ctCartService.addPayment({

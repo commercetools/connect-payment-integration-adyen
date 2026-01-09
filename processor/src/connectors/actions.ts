@@ -8,5 +8,5 @@ export async function createCheckoutCustomType(): Promise<void> {
     return;
   }
 
-  await paymentSDK.ctCustomTypeService.createOrUpdatePredefinedCheckoutType();
+  await paymentSDK.ctCustomTypeService.createOrUpdatePredefinedPaymentMethodTypes();
 }

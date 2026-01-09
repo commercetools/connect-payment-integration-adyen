@@ -58,7 +58,10 @@ export class NotificationTokenizationConverter {
     recurringTokenOperationData: RecurringTokenStoreOperation,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
     const tokenDetailsFromAdyen = await this.getAdyenTokenDetails(recurringTokenOperationData);
-    const paymentMethodConvertedToCT = await this.mapNotificationPaymentMethodTypeToCTType(recurringTokenOperationData, tokenDetailsFromAdyen);
+    const paymentMethodConvertedToCT = await this.mapNotificationPaymentMethodTypeToCTType(
+      recurringTokenOperationData,
+      tokenDetailsFromAdyen,
+    );
     const customFields = this.getCustomFieldsForDraft(tokenDetailsFromAdyen);
 
     return {
@@ -67,11 +70,13 @@ export class NotificationTokenizationConverter {
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
       token: recurringTokenOperationData.storedPaymentMethodId,
-      customFields
+      customFields,
     };
   }
 
-  private async getAdyenTokenDetails(recurringTokenOperationData: RecurringTokenStoreOperation): Promise<StoredPaymentMethodResource | undefined> {
+  private async getAdyenTokenDetails(
+    recurringTokenOperationData: RecurringTokenStoreOperation,
+  ): Promise<StoredPaymentMethodResource | undefined> {
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
       recurringTokenOperationData.shopperReference,
       getConfig().adyenMerchantAccount,
@@ -85,8 +90,8 @@ export class NotificationTokenizationConverter {
   }
 
   /**
- * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit".
- */
+   * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit".
+   */
   private async mapNotificationPaymentMethodTypeToCTType(
     recurringTokenOperationData: RecurringTokenStoreOperation,
     storedPaymentMethodResource?: StoredPaymentMethodResource,
@@ -102,7 +107,9 @@ export class NotificationTokenizationConverter {
     return convertPaymentMethodFromAdyenFormat(storedPaymentMethodResource.type);
   }
 
-  private getCustomFieldsForDraft(storedPaymentMethodResource?: StoredPaymentMethodResource): CustomFieldsDraft | undefined {
+  private getCustomFieldsForDraft(
+    storedPaymentMethodResource?: StoredPaymentMethodResource,
+  ): CustomFieldsDraft | undefined {
     if (!getConfig().adyenStorePaymentMethodDetailsEnabled || !storedPaymentMethodResource) {
       return undefined;
     }
