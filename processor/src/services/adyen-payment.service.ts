@@ -420,9 +420,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         data.paymentMethod.storedPaymentMethodId && {
           paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
         }),
-      ...(paymentMethodInfoCustomFieldsDraft
-        ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
-        : {}),
+      ...(paymentMethodInfoCustomFieldsDraft && { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }),
     });
 
     log.info(`Payment authorization processed.`, {
@@ -473,9 +471,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
-      ...(paymentMethodInfoCustomFieldsDraft
-        ? { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }
-        : {}),
+      ...(paymentMethodInfoCustomFieldsDraft && { paymentMethodInfoCustomFields: paymentMethodInfoCustomFieldsDraft }),
     });
 
     log.info(`Payment confirmation processed.`, {
