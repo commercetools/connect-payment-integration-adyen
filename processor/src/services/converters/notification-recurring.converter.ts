@@ -1,4 +1,8 @@
-import { TokenizationCreatedDetailsNotificationRequest } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/tokenizationCreatedDetailsNotificationRequest';
+import {
+  RecurringTokenStoreOperation,
+  TokenizationAlreadyExistingDetailsNotificationRequest,
+  TokenizationCreatedDetailsNotificationRequest,
+} from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/models';
 
 import {
   CommercetoolsPaymentMethodTypes,
@@ -27,6 +31,10 @@ export class NotificationTokenizationConverter {
 
     if (opts.data.type === TokenizationCreatedDetailsNotificationRequest.TypeEnum.RecurringTokenCreated) {
       response.draft = await this.processRecurringTokenCreated(opts.data);
+    } else if (
+      opts.data.type === TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting
+    ) {
+      response.draft = await this.processRecurringTokenAlreadyExists(opts.data);
     } else {
       throw new UnsupportedNotificationError({ notificationEvent: opts.data.type });
     }
@@ -37,39 +45,74 @@ export class NotificationTokenizationConverter {
   private async processRecurringTokenCreated(
     notification: TokenizationCreatedDetailsNotificationRequest,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
-    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
-      notification.data.shopperReference,
-      getConfig().adyenMerchantAccount,
-    );
+    return await this.buildDraftFromNotificationData(notification.data);
+  }
 
-    const storedPaymentMethodResourceFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
-      (spm) => notification.data.storedPaymentMethodId === spm.id,
-    );
+  private async processRecurringTokenAlreadyExists(
+    notification: TokenizationAlreadyExistingDetailsNotificationRequest,
+  ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
+    return await this.buildDraftFromNotificationData(notification.data);
+  }
 
-    const method = await this.mapNotificationPaymentMethodTypeToCTType(
-      notification,
-      storedPaymentMethodResourceFromAdyen,
-    );
-
-    let customFields: CustomFieldsDraft | undefined;
-
-    if (getConfig().adyenStorePaymentMethodDetailsEnabled && storedPaymentMethodResourceFromAdyen) {
-      customFields = await this.mapCustomFieldDetails(storedPaymentMethodResourceFromAdyen);
-    }
+  private async buildDraftFromNotificationData(
+    recurringTokenOperationData: RecurringTokenStoreOperation,
+  ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
+    const tokenDetailsFromAdyen = await this.getAdyenTokenDetails(recurringTokenOperationData);
+    const paymentMethodConvertedToCT = await this.mapNotificationPaymentMethodTypeToCTType(recurringTokenOperationData, tokenDetailsFromAdyen);
+    const customFields = this.getCustomFieldsForDraft(tokenDetailsFromAdyen);
 
     return {
-      customerId: notification.data.shopperReference,
-      method,
+      customerId: recurringTokenOperationData.shopperReference,
+      method: paymentMethodConvertedToCT,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-      token: notification.data.storedPaymentMethodId,
-      customFields,
+      token: recurringTokenOperationData.storedPaymentMethodId,
+      customFields
     };
   }
 
-  private async mapCustomFieldDetails(
+  private async getAdyenTokenDetails(recurringTokenOperationData: RecurringTokenStoreOperation): Promise<StoredPaymentMethodResource | undefined> {
+    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
+      recurringTokenOperationData.shopperReference,
+      getConfig().adyenMerchantAccount,
+    );
+
+    const storedPaymentMethodDetail = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+      (spm) => recurringTokenOperationData.storedPaymentMethodId === spm.id,
+    );
+
+    return storedPaymentMethodDetail;
+  }
+
+  /**
+ * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit".
+ */
+  private async mapNotificationPaymentMethodTypeToCTType(
+    recurringTokenOperationData: RecurringTokenStoreOperation,
+    storedPaymentMethodResource?: StoredPaymentMethodResource,
+  ): Promise<string> {
+    if (!storedPaymentMethodResource || !storedPaymentMethodResource.type) {
+      log.warn(
+        'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
+      );
+
+      return recurringTokenOperationData.type;
+    }
+
+    return convertPaymentMethodFromAdyenFormat(storedPaymentMethodResource.type);
+  }
+
+  private getCustomFieldsForDraft(storedPaymentMethodResource?: StoredPaymentMethodResource): CustomFieldsDraft | undefined {
+    if (!getConfig().adyenStorePaymentMethodDetailsEnabled || !storedPaymentMethodResource) {
+      return undefined;
+    }
+
+    return this.mapCustomFieldDetails(storedPaymentMethodResource);
+  }
+
+  private mapCustomFieldDetails(
     storedPaymentMethodResource: StoredPaymentMethodResource,
-  ): Promise<CustomFieldsDraft | undefined> {
+  ): CustomFieldsDraft | undefined {
     switch (storedPaymentMethodResource.type) {
       case 'scheme': {
         const lastFourDigits = storedPaymentMethodResource.lastFour;
@@ -88,23 +131,5 @@ export class NotificationTokenizationConverter {
         return undefined;
       }
     }
-  }
-
-  /**
-   * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit". Use the information from Adyen to get the correct type.
-   */
-  private async mapNotificationPaymentMethodTypeToCTType(
-    notification: TokenizationCreatedDetailsNotificationRequest,
-    storedPaymentMethodResource?: StoredPaymentMethodResource,
-  ): Promise<string> {
-    if (!storedPaymentMethodResource || !storedPaymentMethodResource.type) {
-      log.warn(
-        'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
-      );
-
-      return notification.data.type;
-    }
-
-    return convertPaymentMethodFromAdyenFormat(storedPaymentMethodResource.type);
   }
 }

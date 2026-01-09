@@ -17,12 +17,19 @@ import {
   NotificationRequestDTO,
   PaymentMethodsRequestDTO,
   PaymentMethodsResponseDTO,
+  GetExpressPaymentDataResponseDTO,
+  GetExpressConfigResponseDTO,
+  GetExpressConfigRequestDTO,
+  UpdatePayPalExpressPaymentRequestDTO,
+  UpdatePayPalExpressPaymentResponseDTO,
+  CreateExpressPaymentResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 import { StoredPaymentMethodsResponseSchema } from '../dtos/stored-payment-methods.dto';
 import { HmacHeaderAuthHook } from '../libs/fastify/hooks/hmac-header-auth.hook';
 import { Type } from '@sinclair/typebox';
+import { corsAuthHook } from '../libs/fastify/cors/cors';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
@@ -82,7 +89,10 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.post<{ Body: CreatePaymentRequestDTO; Reply: CreatePaymentResponseDTO }>(
+  fastify.post<{
+    Body: CreatePaymentRequestDTO;
+    Reply: CreatePaymentResponseDTO;
+  }>(
     '/payments',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
@@ -95,6 +105,29 @@ export const adyenPaymentRoutes = async (
       validateCardData(data);
 
       const resp = await opts.paymentService.createPayment({
+        data,
+      });
+
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.post<{
+    Body: CreatePaymentRequestDTO;
+    Reply: CreateExpressPaymentResponseDTO;
+  }>(
+    '/express-payments',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const data: CreatePaymentRequestDTO = {
+        ...request.body,
+        ...(request.clientIp && { shopperIP: request.clientIp }),
+      };
+      validateCardData(data);
+
+      const resp = await opts.paymentService.createExpressPayment({
         data,
       });
 
@@ -131,13 +164,32 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.post<{ Body: ConfirmPaymentRequestDTO; Reply: ConfirmPaymentResponseDTO }>(
+  fastify.post<{
+    Body: ConfirmPaymentRequestDTO;
+    Reply: ConfirmPaymentResponseDTO;
+  }>(
     '/payments/details',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
       const res = await opts.paymentService.confirmPayment({
+        data: request.body,
+      });
+      return reply.status(200).send(res);
+    },
+  );
+
+  fastify.post<{
+    Body: ConfirmPaymentRequestDTO;
+    Reply: ConfirmPaymentResponseDTO;
+  }>(
+    '/express-payments/details',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const res = await opts.paymentService.confirmExpressPayment({
         data: request.body,
       });
       return reply.status(200).send(res);
@@ -209,6 +261,44 @@ export const adyenPaymentRoutes = async (
       await opts.paymentService.deleteStoredPaymentMethodViaCart(id);
 
       return reply.status(200).send();
+    },
+  );
+
+  fastify.post<{ Body: UpdatePayPalExpressPaymentRequestDTO; Reply: UpdatePayPalExpressPaymentResponseDTO }>(
+    '/paypal-express/order',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.updatePayPalExpressOrder({
+        data: request.body,
+      });
+
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.get<{ Reply: GetExpressPaymentDataResponseDTO }>(
+    '/express-payment-data',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (_request, reply) => {
+      const resp = await opts.paymentService.getExpressPaymentData();
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.post<{ Body: GetExpressConfigRequestDTO; Reply: GetExpressConfigResponseDTO }>(
+    '/express-config',
+    {
+      preHandler: [corsAuthHook()],
+    },
+    async (request, reply) => {
+      const response = await opts.paymentService.expressConfig({
+        data: request.body,
+      });
+      return reply.status(200).send(response);
     },
   );
 };

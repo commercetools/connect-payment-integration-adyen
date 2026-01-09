@@ -33,6 +33,7 @@ export const config = {
   adyenStoredPaymentMethodsEnabled: process.env.ADYEN_STORED_PAYMENT_METHODS_ENABLED || 'false',
   adyenStoredPaymentMethodsPaymentInterface: process.env.ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE || 'adyen',
   adyenStoredPaymentMethodsInterfaceAccount: process.env.ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT || undefined,
+  allowedOrigins: process.env.ALLOWED_ORIGINS,
   adyenStorePaymentMethodDetailsEnabled: process.env.ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED === 'true',
 };
 

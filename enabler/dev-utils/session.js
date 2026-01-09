@@ -1,11 +1,12 @@
 const projectKey = __VITE_CTP_PROJECT_KEY__;
+let oAuthToken = null;
 
 const fetchCoCoOAuthToken = async () => {
   const myHeaders = new Headers();
 
   myHeaders.append(
     "Authorization",
-    `Basic ${btoa(`${__VITE_CTP_CLIENT_ID__}:${__VITE_CTP_CLIENT_SECRET__}`)}`,
+    `Basic ${btoa(`${__VITE_CTP_CLIENT_ID__}:${__VITE_CTP_CLIENT_SECRET__}`)}`
   );
   myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
 
@@ -39,7 +40,9 @@ const fetchCoCoOAuthToken = async () => {
 };
 
 const getSessionId = async (cartId, isDropin = false) => {
-  const oAuthToken = await fetchCoCoOAuthToken();
+  if (!oAuthToken) {
+    oAuthToken = await fetchCoCoOAuthToken();
+  }
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,
@@ -67,6 +70,8 @@ const getSessionId = async (cartId, isDropin = false) => {
         "twint",
         "vipps",
         "clearpay",
+        "mbway",
+        "trustly",
       ], // add here your allowed methods for development purposes
     }),
   };

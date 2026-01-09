@@ -74,6 +74,9 @@ deployAs:
         - key: ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT
           description: The payment method interface account value used in the commerceotools payment methods.
           required: false
+        - key: ALLOWED_ORIGINS
+          description: This field is primarily required for using express payment methods. If you have / plan to use an express payment integration with commercetools checkout, please provide this value. If you have multiple values, it should be comma separated.
+          required: false
         - key: ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED
           description: If set to "true" then displayable payment method details will be stored on the payment.paymentMethodInfo and payment-method entities. Default value is "false".
           required: false

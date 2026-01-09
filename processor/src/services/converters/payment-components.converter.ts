@@ -75,6 +75,23 @@ export class PaymentComponentsConverter {
         {
           type: 'clearpay',
         },
+        {
+          type: 'mbway',
+        },
+        {
+          type: 'trustly',
+        },
+      ],
+      express: [
+        {
+          type: 'applepay',
+        },
+        {
+          type: 'googlepay',
+        },
+        {
+          type: 'paypal',
+        },
       ],
     };
   }

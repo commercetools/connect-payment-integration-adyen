@@ -1,24 +1,14 @@
-import {
-  AdditionalDetailsActions,
-  AdditionalDetailsData,
-  AdyenCheckoutError,
-  ICore,
-  PaymentCompletedData,
-  PaymentFailedData,
-  SubmitActions,
-  SubmitData,
-  UIElement,
-  AdyenCheckout,
-} from "@adyen/adyen-web";
+import { ICore } from "@adyen/adyen-web";
 import "@adyen-css";
 import {
   CocoStoredPaymentMethod,
   DropinType,
   EnablerOptions,
-  getPaymentMethodType,
+  OnComplete,
   PaymentComponentBuilder,
   PaymentDropinBuilder,
   PaymentEnabler,
+  PaymentExpressBuilder,
   StoredComponentBuilder,
 } from "./payment-enabler";
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
@@ -36,28 +26,24 @@ import { DropinEmbeddedBuilder } from "../dropin/dropin-embedded";
 import { SepaBuilder } from "../components/payment-methods/sepadirectdebit";
 import { BancontactMobileBuilder } from "../components/payment-methods/bancontactcard-mobile";
 import { KlarnaBillieBuilder } from "../components/payment-methods/klarna-billie";
+import { GooglePayExpressBuilder } from "../express/googlepay";
+import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
+import { AdyenInitWithSessionFlow } from "./adyen-init-session";
+import { AdyenInitWithAdvancedFlow } from "./adyen-init-advanced";
+import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { BlikBuilder } from "../components/payment-methods/blik";
+import { FPXBuilder } from "../components/payment-methods/fpx";
+import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
 import { Przelewy24Builder } from "../components/payment-methods/przelewy24";
 import { SwishBuilder } from "../components/payment-methods/swish";
 import { VippsBuilder } from "../components/payment-methods/vipps";
-import { MobilePayBuilder } from "../components/payment-methods/mobilepay";
-import { convertToAdyenLocale } from "../converters/locale.converter";
-import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { ClearpayBuilder } from "../components/payment-methods/clearpay";
-import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
-import { FPXBuilder } from "../components/payment-methods/fpx";
+import { PayPalExpressBuilder } from "../express/paypal";
+import { ApplePayExpressBuilder } from "../express/applepay";
+import { MBWayBuilder } from "../components/payment-methods/mbway";
+import { TrustlyBuilder } from "../components/payment-methods/trustly";
 
-class AdyenInitError extends Error {
-  sessionId: string;
-  constructor(message: string, sessionId: string) {
-    super(message);
-    this.name = "AdyenInitError";
-    this.message = message;
-    this.sessionId = sessionId;
-  }
-}
-
-type AdyenEnablerOptions = EnablerOptions & {
+export type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
 };
 
@@ -70,284 +56,50 @@ export type BaseOptions = {
   adyenCheckout: ICore;
   sessionId: string;
   processorUrl: string;
+  countryCode?: string;
+  currencyCode?: string;
   applePayConfig?: {
     usesOwnCertificate: boolean;
   };
+  paymentMethodConfig?: { [key: string]: string };
   paymentComponentsConfigOverride?: Record<string, any>;
-  storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
-  setStorePaymentDetails: (enabled: boolean) => void;
+  storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;
+  setStorePaymentDetails?: (enabled: boolean) => void;
+  setSessionId?: (sessionId: string) => void;
+  onComplete?: OnComplete;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
-  setupData: Promise<{ baseOptions: BaseOptions }>;
-  private storePaymentDetails = false;
+  private adyenInitWithSessionFlow: AdyenInitWithSessionFlow;
+  private adyenInitWithAdvancedFlow: AdyenInitWithAdvancedFlow;
+  private sessionFlowBaseOptions: Promise<BaseOptions> | null = null;
+  private advancedFlowBaseOptions: Promise<BaseOptions> | null = null;
 
   constructor(options: AdyenEnablerOptions) {
-    this.setupData = AdyenPaymentEnabler._Setup(
-      options,
-      this.getStorePaymentDetails,
-      this.setStorePaymentDetails,
-    );
+    this.adyenInitWithSessionFlow = new AdyenInitWithSessionFlow(options);
+    this.adyenInitWithAdvancedFlow = new AdyenInitWithAdvancedFlow(options);
   }
 
-  private static _Setup = async (
-    options: AdyenEnablerOptions,
-    getStorePaymentDetails: () => boolean,
-    setStorePaymentDetails: (enabled: boolean) => void,
-  ): Promise<{ baseOptions: BaseOptions }> => {
-    const adyenLocale = convertToAdyenLocale(options.locale || "en-US");
-
-    const [sessionResponse, configResponse] = await Promise.all([
-      fetch(options.processorUrl + "/sessions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": options.sessionId,
-        },
-        body: JSON.stringify({
-          shopperLocale: adyenLocale,
-        }),
-      }),
-      fetch(options.processorUrl + "/operations/config", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": options.sessionId,
-        },
-      }),
-    ]);
-
-    const handleError = (error: any, component: UIElement) => {
-      if (options.onError) {
-        options.onError(error, {
-          paymentReference,
-          method: { type: getPaymentMethodType(component?.props?.type) },
-        });
-      }
-    };
-    const handleComplete = (isSuccess: boolean, component: UIElement) => {
-      if (options.onComplete) {
-        options.onComplete({
-          isSuccess,
-          paymentReference,
-          method: { type: getPaymentMethodType(component?.props?.type) },
-        });
-      }
-    };
-
-    const [sessionJson, configJson] = await Promise.all([
-      sessionResponse.json(),
-      configResponse.json(),
-    ]);
-
-    let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
-    if (configJson.storedPaymentMethodsConfig.isEnabled === true) {
-      const response = await fetch(
-        options.processorUrl + "/stored-payment-methods",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Session-Id": options.sessionId,
-          },
-        },
-      );
-
-      const storedPaymentMethods: {
-        storedPaymentMethods: CocoStoredPaymentMethod[];
-      } = await response.json();
-
-      storedPaymentMethodsList = storedPaymentMethods.storedPaymentMethods;
+  private async getSessionFlowBaseOptions(): Promise<BaseOptions> {
+    if (!this.sessionFlowBaseOptions) {
+      this.sessionFlowBaseOptions = this.adyenInitWithSessionFlow.init();
     }
+    return this.sessionFlowBaseOptions;
+  }
 
-    const { sessionData: data, paymentReference } = sessionJson;
-
-    if (!data || !data.id) {
-      throw new AdyenInitError(
-        "Not able to initialize Adyen, session data missing",
-        options.sessionId,
-      );
-    } else {
-      const adyenCheckout = await AdyenCheckout({
-        onPaymentCompleted: (
-          result: PaymentCompletedData,
-          _component: UIElement,
-        ) => {
-          console.info("payment completed", result.resultCode);
-        },
-        onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
-          handleComplete(false, _component);
-          console.info("payment failed", result.resultCode);
-        },
-        onError: (error: AdyenCheckoutError, component: UIElement) => {
-          if (error.name === "CANCEL") {
-            console.info("shopper canceled the payment attempt");
-            component.setStatus("ready");
-          } else {
-            console.error(error.name, error.message, error.stack, component);
-          }
-          handleError(error, component);
-        },
-        onSubmit: async (
-          state: SubmitData,
-          component: UIElement,
-          actions: SubmitActions,
-        ) => {
-          try {
-            const reqData = {
-              ...state.data,
-              shopperLocale: adyenLocale,
-              channel: "Web",
-              paymentReference,
-              ...(getStorePaymentDetails() ? { storePaymentMethod: true } : {}),
-            };
-
-            const response = await fetch(options.processorUrl + "/payments", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": options.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            });
-            const data = await response.json();
-            if (data.action) {
-              if (
-                ["threeDS2", "qrCode"].includes(data.action.type) &&
-                options.onActionRequired
-              ) {
-                options.onActionRequired({ type: "fullscreen" });
-              }
-              component.handleAction(data.action);
-            } else {
-              if (
-                data.resultCode === "Authorised" ||
-                data.resultCode === "Pending"
-              ) {
-                component.setStatus("success");
-                handleComplete(true, component);
-              } else {
-                handleComplete(false, component);
-                component.setStatus("error");
-              }
-            }
-
-            actions.resolve({
-              resultCode: data.resultCode,
-              action: data.action,
-            });
-          } catch (e) {
-            handleError(e, component);
-            component.setStatus("ready");
-            actions.reject(e);
-          }
-        },
-        onAdditionalDetails: async (
-          state: AdditionalDetailsData,
-          component: UIElement,
-          actions: AdditionalDetailsActions,
-        ) => {
-          try {
-            const requestData = {
-              ...state.data,
-              paymentReference,
-            };
-            const url = options.processorUrl.endsWith("/")
-              ? `${options.processorUrl}payments/details`
-              : `${options.processorUrl}/payments/details`;
-
-            const response = await fetch(url, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": options.sessionId,
-              },
-              body: JSON.stringify(requestData),
-            });
-            const data = await response.json();
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
-              component.setStatus("success");
-              handleComplete(true, component);
-            } else {
-              handleComplete(false, component);
-              component.setStatus("error");
-            }
-            actions.resolve({ resultCode: data.resultCode });
-          } catch (e) {
-            console.error("Not able to submit the payment details", e);
-            handleError(e, component);
-            component.setStatus("ready");
-            actions.reject();
-          }
-        },
-        analytics: {
-          enabled: true,
-        },
-
-        locale: adyenLocale,
-        environment: configJson.environment,
-        clientKey: configJson.clientKey,
-        session: {
-          id: data.id,
-          sessionData: data.sessionData,
-        },
-      });
-
-      return {
-        baseOptions: {
-          adyenCheckout: adyenCheckout,
-          sessionId: options.sessionId,
-          processorUrl: options.processorUrl,
-          ...(configJson.applePayConfig && {
-            applePayConfig: configJson.applePayConfig,
-          }),
-          ...(configJson.paymentComponentsConfig && {
-            paymentComponentsConfigOverride: configJson.paymentComponentsConfig,
-          }),
-          storedPaymentMethodsConfig: {
-            isEnabled: configJson.storedPaymentMethodsConfig.isEnabled,
-            storedPaymentMethods: storedPaymentMethodsList,
-          },
-          setStorePaymentDetails,
-        },
-      };
+  private async getAdvancedFlowBaseOptions(): Promise<BaseOptions> {
+    if (!this.advancedFlowBaseOptions) {
+      this.advancedFlowBaseOptions = this.adyenInitWithAdvancedFlow.init();
     }
-  };
-
-  async getStoredPaymentMethods({ allowedMethodTypes }) {
-    const setupData = await this.setupData;
-
-    const storedPaymentMethods =
-      setupData.baseOptions.storedPaymentMethodsConfig.storedPaymentMethods
-        .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
-        .filter((method) => allowedMethodTypes.includes(method.type));
-
-    return { storedPaymentMethods };
+    return this.advancedFlowBaseOptions;
   }
 
-  async isStoredPaymentMethodsEnabled(): Promise<boolean> {
-    const setupData = await this.setupData;
-    return setupData.baseOptions.storedPaymentMethodsConfig.isEnabled;
-  }
-
-  setStorePaymentDetails = (enabled: boolean): void => {
-    this.storePaymentDetails = enabled;
-  };
-
-  getStorePaymentDetails = (): boolean => {
-    return this.storePaymentDetails;
-  };
-
-  async createComponentBuilder(
-    type: string,
-  ): Promise<PaymentComponentBuilder | never> {
-    const setupData = await this.setupData;
-    if (!setupData) {
+  async createComponentBuilder(type: string): Promise<PaymentComponentBuilder> {
+    const baseOptions = await this.getSessionFlowBaseOptions();
+    if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
+
     const supportedMethods = {
       applepay: ApplePayBuilder,
       bancontactcard: BancontactCardBuilder,
@@ -371,27 +123,76 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       mobilepay: MobilePayBuilder,
       afterpay: AfterPayBuilder,
       clearpay: ClearpayBuilder,
+      mbway: MBWayBuilder,
+      trustly: TrustlyBuilder,
     };
 
-    if (!Object.keys(supportedMethods).includes(type)) {
+    if (!(type in supportedMethods)) {
       throw new Error(
-        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+        `Component type not supported: ${type}. Supported types: ${Object.keys(
+          supportedMethods
+        ).join(", ")}`
       );
     }
-    return new supportedMethods[type](setupData.baseOptions);
+
+    return new supportedMethods[type](baseOptions);
   }
 
-  async createStoredPaymentMethodBuilder(
-    type: string,
-  ): Promise<StoredComponentBuilder | never> {
-    const setupData = await this.setupData;
-    if (!setupData) {
+  async createDropinBuilder(type: DropinType): Promise<PaymentDropinBuilder> {
+    const baseOptions = await this.getSessionFlowBaseOptions();
+    if (!baseOptions.adyenCheckout) {
       throw new Error("AdyenPaymentEnabler not initialized");
     }
 
-    if (!setupData.baseOptions.storedPaymentMethodsConfig.isEnabled) {
+    const supportedMethods = { embedded: DropinEmbeddedBuilder };
+
+    if (!(type in supportedMethods)) {
       throw new Error(
-        "Stored payment methods is not enabled and thus cannot be used to build a new component",
+        `Dropin type not supported: ${type}. Supported types: ${Object.keys(
+          supportedMethods
+        ).join(", ")}`
+      );
+    }
+
+    return new supportedMethods[type](baseOptions);
+  }
+
+  async createExpressBuilder(type: string): Promise<PaymentExpressBuilder> {
+    const baseOptions = await this.getAdvancedFlowBaseOptions();
+    const paymentMethodConfig =
+      this.adyenInitWithAdvancedFlow.getPaymentMethodConfig(type);
+    if (!baseOptions.adyenCheckout) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+
+    const supportedMethods = {
+      googlepay: GooglePayExpressBuilder,
+      paypal: PayPalExpressBuilder,
+      applepay: ApplePayExpressBuilder,
+    };
+
+    if (!(type in supportedMethods)) {
+      throw new Error(
+        `Express checkout type not supported: ${type}. Supported types: ${Object.keys(
+          supportedMethods
+        ).join(", ")}`
+      );
+    }
+
+    return new supportedMethods[type]({ ...baseOptions, paymentMethodConfig });
+  }
+
+  async createStoredPaymentMethodBuilder(
+    type: string
+  ): Promise<StoredComponentBuilder | never> {
+    const baseOptions = await this.getSessionFlowBaseOptions();
+    if (!baseOptions.adyenCheckout) {
+      throw new Error("AdyenPaymentEnabler not initialized");
+    }
+
+    if (!baseOptions.storedPaymentMethodsConfig?.isEnabled) {
+      throw new Error(
+        "Stored payment methods is not enabled and thus cannot be used to build a new component"
       );
     }
 
@@ -401,30 +202,27 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     if (!Object.keys(supportedMethods).includes(type)) {
       throw new Error(
-        `Component type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
+        `Component type not supported: ${type}. Supported types: ${Object.keys(
+          supportedMethods
+        ).join(", ")}`
       );
     }
 
-    return new supportedMethods[type](setupData.baseOptions);
+    return new supportedMethods[type](baseOptions);
   }
 
-  async createDropinBuilder(
-    type: DropinType,
-  ): Promise<PaymentDropinBuilder | never> {
-    const setupData = await this.setupData;
-    if (!setupData) {
-      throw new Error("AdyenPaymentEnabler not initialized");
-    }
+  async isStoredPaymentMethodsEnabled(): Promise<boolean> {
+    const baseOptions = await this.getSessionFlowBaseOptions();
+    return baseOptions.storedPaymentMethodsConfig?.isEnabled;
+  }
 
-    const supportedMethods = {
-      embedded: DropinEmbeddedBuilder,
-    };
-    if (!Object.keys(supportedMethods).includes(type)) {
-      throw new Error(
-        `Dropin type not supported: ${type}. Supported types: ${Object.keys(supportedMethods).join(", ")}`,
-      );
-    }
+  async getStoredPaymentMethods({ allowedMethodTypes }) {
+    const baseOptions = await this.getSessionFlowBaseOptions();
+    const storedPaymentMethods =
+      baseOptions.storedPaymentMethodsConfig.storedPaymentMethods
+        .map(({ token, ...storedPaymentMethod }) => storedPaymentMethod)
+        .filter((method) => allowedMethodTypes.includes(method.type));
 
-    return new supportedMethods[type](setupData.baseOptions);
+    return { storedPaymentMethods };
   }
 }
