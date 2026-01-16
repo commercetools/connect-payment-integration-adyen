@@ -4,6 +4,9 @@ deployAs:
   - name: processor
     applicationType: service
     endpoint: /
+    scripts:
+      postDeploy: npm install && npm run connector:post-deploy
+      preUndeploy: npm install && npm run connector:pre-undeploy
     configuration:
       standardConfiguration:
         - key: CTP_PROJECT_KEY
@@ -73,6 +76,9 @@ deployAs:
           required: false
         - key: ALLOWED_ORIGINS
           description: This field is primarily required for using express payment methods. If you have / plan to use an express payment integration with commercetools checkout, please provide this value. If you have multiple values, it should be comma separated.
+          required: false
+        - key: ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED
+          description: If set to "true" then displayable payment method details will be stored on the payment.paymentMethodInfo and payment-method entities. Default value is "false".
           required: false
 
       securedConfiguration:
