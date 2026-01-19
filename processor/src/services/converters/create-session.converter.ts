@@ -7,6 +7,7 @@ import {
   mapCoCoCartItemsToAdyenLineItems,
   populateApplicationInfo,
   getShopperStatement,
+  getCountryCodeFromCart,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
@@ -39,7 +40,7 @@ export class CreateSessionConverter {
       },
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
-      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      countryCode: getCountryCodeFromCart(opts.cart),
       returnUrl: buildReturnUrl(opts.payment.id),
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
       ...(allowedPaymentMethods.length > 0 && { allowedPaymentMethods }),
