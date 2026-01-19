@@ -41,7 +41,6 @@ import {
   getCartIdFromContext,
   getCheckoutTransactionItemIdFromContext,
   getMerchantReturnUrlFromContext,
-  getPaymentInterfaceFromContext,
 } from '../libs/fastify/context/context';
 import { CreateSessionConverter } from './converters/create-session.converter';
 import { CreatePaymentConverter } from './converters/create-payment.converter';
@@ -291,7 +290,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       paymentMethodInfo: {
-        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+        paymentInterface: getConfig().paymentInterface,
       },
       checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
       ...(ctCart.customerId && {
@@ -356,7 +355,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       ctPayment = await this.ctPaymentService.createPayment({
         amountPlanned,
         paymentMethodInfo: {
-          paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          paymentInterface: getConfig().paymentInterface,
           method: opts.data.paymentMethod?.type,
         },
         checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
@@ -491,7 +490,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       paymentMethodInfo: {
-        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+        paymentInterface: getConfig().paymentInterface,
         method: opts.data.paymentMethod,
       },
       checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
@@ -1533,7 +1532,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       ctPayment = await this.ctPaymentService.createPayment({
         amountPlanned,
         paymentMethodInfo: {
-          paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          paymentInterface: getConfig().paymentInterface,
           method: payload.paymentMethod?.type,
         },
         checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
