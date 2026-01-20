@@ -6,11 +6,15 @@ import {
   CurrencyConverters,
   CommercetoolsPaymentService,
   Payment,
+  CustomFieldsDraft,
+  GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { paymentMethodConfig } from '../../config/payment-method.config';
 import { NotificationUpdatePayment } from '../types/service.type';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
+import { convertAdyenCardBrandToCTFormat } from './helper.converter';
+import { getConfig } from '../../config/config';
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
@@ -165,12 +169,56 @@ export class NotificationConverter {
   public async convert(opts: { data: NotificationRequestDTO }): Promise<NotificationUpdatePayment> {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 
+    const paymentMethodInfoCustomFieldsDraft = this.convertNotificationItemToCustomType(item);
+
     return {
       merchantReference: item.merchantReference,
       pspReference: item.originalReference || item.pspReference,
       paymentMethod: item.paymentMethod,
       transactions: await this.populateTransactions(item),
+      paymentMethodInfoCustomField: paymentMethodInfoCustomFieldsDraft,
     };
+  }
+
+  private convertNotificationItemToCustomType(item: NotificationRequestItem): CustomFieldsDraft | undefined {
+    if (!getConfig().adyenStorePaymentMethodDetailsEnabled) {
+      return undefined;
+    }
+
+    const isAuthorisation = item.eventCode === NotificationRequestItem.EventCodeEnum.Authorisation;
+    const isSuccess = item.success === NotificationRequestItem.SuccessEnum.True;
+    const shoudGatherCustomFieldDraft = isAuthorisation && isSuccess;
+
+    if (!shoudGatherCustomFieldDraft) {
+      return undefined;
+    }
+
+    switch (item.paymentMethod) {
+      case 'scheme': {
+        const lastFourDigits = item.additionalData?.cardSummary; // Needs to be enabled in "Additional data" settings in Adyen.
+        const expiryDate = item.additionalData?.expiryDate; // returned as: '6/2016'. Needs to be enabled in "Additional data" settings in Adyen.
+        const brand = item.additionalData?.brand;
+
+        let expiryMonth: string | undefined = undefined;
+        let expiryYear: string | undefined = undefined;
+
+        if (expiryDate) {
+          const expireMonthAndYear = expiryDate.split('/');
+          expiryMonth = expireMonthAndYear[0];
+          expiryYear = expireMonthAndYear[1];
+        }
+
+        return GenerateCardDetailsCustomFieldsDraft({
+          brand: convertAdyenCardBrandToCTFormat(brand),
+          lastFour: lastFourDigits,
+          expiryMonth: Number(expiryMonth),
+          expiryYear: Number(expiryYear),
+        });
+      }
+      default: {
+        return undefined;
+      }
+    }
   }
 
   private async populateTransactions(item: NotificationRequestItem): Promise<TransactionData[]> {

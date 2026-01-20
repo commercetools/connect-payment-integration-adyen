@@ -13,8 +13,6 @@ import {
   CommercetoolsPaymentMethodService,
   ErrorRequiredField,
   PaymentMethod,
-  CustomFieldsDraft,
-  GenerateCardDetailsCustomFieldsDraft,
   ErrorInvalidField,
   CurrencyConverters,
 } from '@commercetools/connect-payments-sdk';
@@ -401,12 +399,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    let paymentMethodInfoCustomFieldsDraft: CustomFieldsDraft | undefined;
-
-    if (getConfig().adyenStorePaymentMethodDetailsEnabled && txState === 'Success') {
-      paymentMethodInfoCustomFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
-    }
-
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -420,7 +412,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         data.paymentMethod.storedPaymentMethodId && {
           paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
         }),
-      ...(paymentMethodInfoCustomFieldsDraft && { paymentMethodInfo: { custom: paymentMethodInfoCustomFieldsDraft } }),
     });
 
     log.info(`Payment authorization processed.`, {
@@ -456,12 +447,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const txState = this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false);
 
-    let paymentMethodInfoCustomFieldsDraft: CustomFieldsDraft | undefined;
-
-    if (getConfig().adyenStorePaymentMethodDetailsEnabled && txState === 'Success') {
-      paymentMethodInfoCustomFieldsDraft = this.convertAdyenPaymentsResultToCustomType(res);
-    }
-
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -471,7 +456,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference,
         state: txState,
       },
-      ...(paymentMethodInfoCustomFieldsDraft && { paymentMethodInfo: { custom: paymentMethodInfoCustomFieldsDraft } }),
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -578,6 +562,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
           id: payment.id,
           pspReference: updateData.pspReference,
           transaction: tx,
+          ...(updateData.paymentMethodInfoCustomField && {
+            paymentMethodInfo: { custom: updateData.paymentMethodInfoCustomField },
+          }),
         });
 
         log.info('Payment updated after processing the notification', {
@@ -1607,34 +1594,5 @@ export class AdyenPaymentService extends AbstractPaymentService {
         ? { merchantReturnUrl: this.buildRedirectMerchantUrl(updatedPayment.id, res.resultCode) }
         : {}),
     } as CreatePaymentResponseDTO;
-  }
-
-  private convertAdyenPaymentsResultToCustomType(response: PaymentResponse): CustomFieldsDraft | undefined {
-    switch (response.paymentMethod?.type) {
-      case 'scheme': {
-        const lastFourDigits = response.additionalData?.cardSummary;
-        const expiryDate = response.additionalData?.expiryDate; // returned as: '6/2016'
-        const brand = response.paymentMethod.brand;
-
-        let expiryMonth: string | undefined = undefined;
-        let expiryYear: string | undefined = undefined;
-
-        if (expiryDate) {
-          const expireMonthAndYear = expiryDate.split('/');
-          expiryMonth = expireMonthAndYear[0];
-          expiryYear = expireMonthAndYear[1];
-        }
-
-        return GenerateCardDetailsCustomFieldsDraft({
-          brand: convertAdyenCardBrandToCTFormat(brand),
-          lastFour: lastFourDigits,
-          expiryMonth: Number(expiryMonth),
-          expiryYear: Number(expiryYear),
-        });
-      }
-      default: {
-        return undefined;
-      }
-    }
   }
 }
