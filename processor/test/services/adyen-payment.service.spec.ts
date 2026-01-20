@@ -126,7 +126,7 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(22);
+    expect(result?.components).toHaveLength(24);
     expect(result?.components[0]?.type).toStrictEqual('afterpay');
     expect(result?.components[1]?.type).toStrictEqual('applepay');
     expect(result?.components[2]?.type).toStrictEqual('bancontactcard');
@@ -149,6 +149,8 @@ describe('adyen-payment.service', () => {
     expect(result?.components[19]?.type).toStrictEqual('twint');
     expect(result?.components[20]?.type).toStrictEqual('vipps');
     expect(result?.components[21]?.type).toStrictEqual('clearpay');
+    expect(result?.components[22]?.type).toStrictEqual('mbway');
+    expect(result?.components[23]?.type).toStrictEqual('trustly');
   });
 
   test('getStatus', async () => {

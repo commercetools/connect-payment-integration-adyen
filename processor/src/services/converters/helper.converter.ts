@@ -430,3 +430,18 @@ export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
 
   return ADYEN_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
 };
+
+/**
+ * From the given cart it returns the countryCode (if present) based on the following order of checks:
+ * 1. `cart.billingAddress.country`
+ * 2. `cart.shippingAddress.country`
+ * 3. `cart.country`
+ *
+ * Each field is optional on the cart.
+ *
+ * @param cart the cart to try and fetcht the countryCode from
+ * @returns the country code or undefined if it cannot be found
+ */
+export const getCountryCodeFromCart = (cart: Cart): string | undefined => {
+  return cart.billingAddress?.country || cart.shippingAddress?.country || cart.country;
+};
