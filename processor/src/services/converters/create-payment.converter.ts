@@ -18,6 +18,7 @@ import {
   populateApplicationInfo,
   populateCartAddress,
   mapCoCoCartItemsToAdyenLineItems,
+  getCountryCodeFromCart,
   extractShopperName,
 } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
@@ -66,7 +67,7 @@ export class CreatePaymentConverter {
       },
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
-      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      countryCode: getCountryCodeFromCart(opts.cart),
       shopperEmail: opts.cart.customerEmail,
       returnUrl: buildReturnUrl(opts.payment.id),
       ...(opts.cart.billingAddress && {
@@ -128,7 +129,7 @@ export class CreatePaymentConverter {
       },
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
-      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      countryCode: getCountryCodeFromCart(opts.cart),
       shopperEmail: opts.cart.customerEmail,
       returnUrl: '', // TS and adyen payment API has this property as mandatory. However when paying via server to server (aka Subscription) this has no effect.
       ...(opts.cart.billingAddress && {
@@ -167,7 +168,7 @@ export class CreatePaymentConverter {
       },
       reference: opts.payment.id,
       merchantAccount: config.adyenMerchantAccount,
-      countryCode: opts.cart.billingAddress?.country || opts.cart.country,
+      countryCode: getCountryCodeFromCart(opts.cart),
       shopperEmail: opts.cart.customerEmail,
       returnUrl: buildReturnUrl(opts.payment.id),
       ...(opts.cart.billingAddress && {

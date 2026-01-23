@@ -247,7 +247,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       locale: adyenLocale,
       environment: configJson.environment,
       clientKey: configJson.clientKey,
-      countryCode: this.initOptions.countryCode,
       session: {
         id: data.id,
         sessionData: data.sessionData,
@@ -273,7 +272,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       adyenCheckout,
       sessionId: this.initOptions.sessionId,
       processorUrl: this.initOptions.processorUrl,
-      countryCode: this.initOptions.countryCode,
       currencyCode: this.initOptions.currencyCode,
       applePayConfig: this.applePayConfig,
       paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,

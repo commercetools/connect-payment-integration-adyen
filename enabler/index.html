@@ -253,14 +253,22 @@
         const paymentMethods = await res.json();
 
         const sessionIdGeneral = await getSessionId(cartId, false);
+        const sessionIdExpress = await getSessionId(cartId, false);
         const sessionIdDropin = await getSessionId(cartId, true);
 
         const enablerGeneral = new Enabler({
           processorUrl: __VITE_PROCESSOR_URL__,
           sessionId: sessionIdGeneral,
           currencyCode: "EUR",
+        });
+        
+        const enablerExpress = new Enabler({
+          processorUrl: __VITE_PROCESSOR_URL__,
+          sessionId: sessionIdExpress,
+          currencyCode: "EUR",
           countryCode: "DE",
         });
+
         const enablerDropin = new Enabler({
           processorUrl: __VITE_PROCESSOR_URL__,
           sessionId: sessionIdDropin,
@@ -270,15 +278,27 @@
 
         async function registerMethod(category, type, meta) {
           const methodId = `${category}-${type}`;
-          const enabler =
-            category === "dropin" ? enablerDropin : enablerGeneral;
+
+          let enabler;
+          if (category === "dropin") {
+            enabler = enablerDropin;
+          } else if (category === "express") {
+            enabler = enablerExpress;
+          } else {
+            enabler = enablerGeneral;
+          }
+
           let builder;
-          if (category === "dropin")
+          if (category === "dropin") {
             builder = await enabler.createDropinBuilder(type);
-          else if (category === "express")
+          }
+          else if (category === "express") {
             builder = await enabler.createExpressBuilder(type);
-          else if (category === "component")
+          }
+          else if (category === "component") {
             builder = await enabler.createComponentBuilder(type);
+          }
+
           const component = await builder.build({
             showPayButton: !builder.componentHasSubmit,
             ...(builder.componentHasSubmit
