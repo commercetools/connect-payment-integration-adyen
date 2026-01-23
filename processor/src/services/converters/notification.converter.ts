@@ -169,14 +169,12 @@ export class NotificationConverter {
   public async convert(opts: { data: NotificationRequestDTO }): Promise<NotificationUpdatePayment> {
     const item = opts.data.notificationItems[0].NotificationRequestItem;
 
-    const paymentMethodInfoCustomFieldsDraft = this.convertNotificationItemToCustomType(item);
-
     return {
       merchantReference: item.merchantReference,
       pspReference: item.originalReference || item.pspReference,
       paymentMethod: item.paymentMethod,
       transactions: await this.populateTransactions(item),
-      paymentMethodInfoCustomField: paymentMethodInfoCustomFieldsDraft,
+      paymentMethodInfoCustomField: this.convertNotificationItemToCustomType(item),
     };
   }
 
@@ -193,32 +191,40 @@ export class NotificationConverter {
       return undefined;
     }
 
-    switch (item.paymentMethod) {
-      case 'scheme': {
-        const lastFourDigits = item.additionalData?.cardSummary; // Needs to be enabled in "Additional data" settings in Adyen.
-        const expiryDate = item.additionalData?.expiryDate; // returned as: '6/2016'. Needs to be enabled in "Additional data" settings in Adyen.
-        const brand = item.additionalData?.brand;
-
-        let expiryMonth: string | undefined = undefined;
-        let expiryYear: string | undefined = undefined;
-
-        if (expiryDate) {
-          const expireMonthAndYear = expiryDate.split('/');
-          expiryMonth = expireMonthAndYear[0];
-          expiryYear = expireMonthAndYear[1];
-        }
-
-        return GenerateCardDetailsCustomFieldsDraft({
-          brand: convertAdyenCardBrandToCTFormat(brand),
-          lastFour: lastFourDigits,
-          expiryMonth: Number(expiryMonth),
-          expiryYear: Number(expiryYear),
-        });
-      }
-      default: {
-        return undefined;
-      }
+    if (!item.paymentMethod) {
+      return undefined;
     }
+
+    const schemeBrands = ['visa', 'maestro', 'amex']; // expand where needed
+    const isSchemePayment = schemeBrands.includes(item.paymentMethod);
+
+    if (isSchemePayment) {
+      return this.convertSchemePaymentToCustomField(item);
+    }
+
+    return undefined;
+  }
+
+  private convertSchemePaymentToCustomField(item: NotificationRequestItem): CustomFieldsDraft {
+    const lastFourDigits = item.additionalData?.cardSummary; // Needs to be enabled in "Additional data" settings in Adyen.
+    const expiryDate = item.additionalData?.expiryDate; // Needs to be enabled in "Additional data" settings in Adyen. Returned as: '6/2016'.
+    const brand = item.additionalData?.paymentMethod; // The paymentMethod property contains the brand of the card and not the paymentMethodType `scheme`. Instead its visa, amex, etc.
+
+    let expiryMonth: string | undefined = undefined;
+    let expiryYear: string | undefined = undefined;
+
+    if (expiryDate) {
+      const expireMonthAndYear = expiryDate.split('/');
+      expiryMonth = expireMonthAndYear[0];
+      expiryYear = expireMonthAndYear[1];
+    }
+
+    return GenerateCardDetailsCustomFieldsDraft({
+      brand: convertAdyenCardBrandToCTFormat(brand),
+      lastFour: lastFourDigits,
+      expiryMonth: Number(expiryMonth),
+      expiryYear: Number(expiryYear),
+    });
   }
 
   private async populateTransactions(item: NotificationRequestItem): Promise<TransactionData[]> {

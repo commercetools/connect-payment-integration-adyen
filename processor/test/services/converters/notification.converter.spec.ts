@@ -6,6 +6,20 @@ import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.erro
 import { paymentSDK } from '../../../src/payment-sdk';
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
 import { mockUpdatePaymentResult, mockGetPaymentResult } from '../../utils/mock-payment-data';
+import * as Config from '../../../src/config/config';
+
+interface FlexibleConfig {
+  [key: string]: unknown; // Adjust the type according to your config values
+}
+
+function setupMockConfig(keysAndValues: FlexibleConfig) {
+  const mockConfig: FlexibleConfig = {};
+  Object.keys(keysAndValues).forEach((key) => {
+    mockConfig[key] = keysAndValues[key];
+  });
+
+  jest.spyOn(Config, 'getConfig').mockReturnValue(mockConfig as any);
+}
 
 describe('notification.converter', () => {
   const converter = new NotificationConverter(paymentSDK.ctPaymentService);
@@ -915,6 +929,279 @@ describe('notification.converter', () => {
           interactionId: pspReference,
         },
       ],
+    });
+  });
+
+  describe('store payment method details via custom fields', () => {
+    test("should not return custom fields if it's disabled", async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: false });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+                paymentMethod: 'visa',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+    });
+
+    test('should not return custom fields if the Notification is not of type Authorisation', async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+                paymentMethod: 'visa',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Capture,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+    });
+
+    test('should not return custom fields if the Notification is not of success attribute is set to false', async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+                paymentMethod: 'visa',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.False,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+    });
+
+    test('should not return custom fields if the Notification.paymentMethod attribute is undefined', async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+                paymentMethod: 'visa',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+    });
+
+    test('should not return custom fields provided Notification.paymentMethod attribute contains a value for which no mapping exists', async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'unknown-payment-method';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+                paymentMethod: 'visa',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+    });
+
+    test('convert a successful card payment notification which includes paymentMethodInfo custom fields', async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+                paymentMethod: 'visa',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result).toEqual({
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
+          },
+        ],
+        paymentMethodInfoCustomField: {
+          fields: {
+            brand: 'Visa',
+            expiryMonth: 12,
+            expiryYear: 2012,
+            lastFour: '7777',
+          },
+          type: {
+            key: 'commercetools-checkout-card-details',
+            typeId: 'type',
+          },
+        },
+      });
     });
   });
 });
