@@ -195,14 +195,63 @@ export class NotificationConverter {
       return undefined;
     }
 
-    const schemeBrands = ['visa', 'maestro', 'amex']; // expand where needed
-    const isSchemePayment = schemeBrands.includes(item.paymentMethod);
+    const isSchemePayment = this.isSchemeCardBrand(item.paymentMethod);
 
     if (isSchemePayment) {
       return this.convertSchemePaymentToCustomField(item);
     }
 
     return undefined;
+  }
+
+  /**
+   * Function to evaluate if the given text is one of the Adyen supported creditcard/scheme brands.
+   *
+   * @see https://docs.adyen.com/payment-methods/cards/custom-card-integration#supported-card-types
+   *
+   * @param text the text to validate against
+   * @returns true if the given text is one of the Adyen supported creditcard/scheme brands
+   */
+  private isSchemeCardBrand(text: string): boolean {
+    const schemeBrands = [
+      'amex',
+      'argencard',
+      'bcmc',
+      'bijcard',
+      'cabal',
+      'cartebancaire',
+      'codensa',
+      'cup',
+      'dankort',
+      'diners',
+      'discover',
+      'electron',
+      'elo',
+      'forbrugsforeningen',
+      'hiper',
+      'hipercard',
+      'jcb',
+      'karenmillen',
+      'laser',
+      'maestro',
+      'maestrouk',
+      'mc',
+      'mcalphabankbonus',
+      'mir',
+      'naranja',
+      'oasis',
+      'rupay',
+      'shopping',
+      'solo',
+      'troy',
+      'uatp',
+      'visa',
+      'visaalphabankbonus',
+      'visadankort',
+      'warehouse',
+    ];
+
+    return schemeBrands.includes(text);
   }
 
   private convertSchemePaymentToCustomField(item: NotificationRequestItem): CustomFieldsDraft {
