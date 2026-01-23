@@ -445,8 +445,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
-    const txState = this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false);
-
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -454,7 +452,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
         interactionId: res.pspReference,
-        state: txState,
+        state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
 
