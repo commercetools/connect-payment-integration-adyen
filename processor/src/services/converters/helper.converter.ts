@@ -430,3 +430,17 @@ export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
 
   return ADYEN_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
 };
+
+export const extractShopperName = (cart: Cart): { firstName: string; lastName: string } | undefined => {
+  const { billingAddress, shippingAddress } = cart;
+  const firstName = billingAddress?.firstName ?? shippingAddress?.firstName;
+  const lastName = billingAddress?.lastName ?? shippingAddress?.lastName;
+
+  if (!firstName || !lastName) {
+    return undefined;
+  }
+  return {
+    firstName: firstName ?? '',
+    lastName: lastName ?? '',
+  };
+};

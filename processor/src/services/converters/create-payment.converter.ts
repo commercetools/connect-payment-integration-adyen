@@ -18,6 +18,7 @@ import {
   populateApplicationInfo,
   populateCartAddress,
   mapCoCoCartItemsToAdyenLineItems,
+  extractShopperName,
 } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
@@ -51,7 +52,7 @@ export class CreatePaymentConverter {
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
-
+    const shopperName = extractShopperName(opts.cart);
     const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
     return {
       ...requestData,
@@ -79,6 +80,7 @@ export class CreatePaymentConverter {
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
       ...storedPaymentMethodsData,
+      ...(shopperName && { shopperName }),
     };
   }
 
@@ -151,6 +153,7 @@ export class CreatePaymentConverter {
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
+    const shopperName = extractShopperName(opts.cart);
 
     return {
       ...requestData,
@@ -177,6 +180,7 @@ export class CreatePaymentConverter {
       ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
+      ...(shopperName && { shopperName }),
     };
   }
 
@@ -305,30 +309,25 @@ export class CreatePaymentConverter {
 
   private populateAfterpayData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
     const { billingAddress, shippingAddress } = cart;
-
+    const shopperName = extractShopperName(cart);
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
 
     return {
       shopperReference: cart.customerId ?? cart.anonymousId ?? randomUUID(),
-      shopperName: {
-        firstName: billingAddress?.firstName ?? shippingAddress?.firstName ?? '',
-        lastName: billingAddress?.lastName ?? shippingAddress?.lastName ?? '',
-      },
+      ...(shopperName && { shopperName }),
       telephoneNumber: (billingAddress?.phone || shippingAddress?.phone) ?? undefined,
       lineItems,
     };
   }
 
   private populateKlarnaB2BData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
+    const shopperName = extractShopperName(cart);
     const { billingAddress } = cart;
-    const { firstName, lastName, company } = billingAddress || {};
+    const { company } = billingAddress || {};
 
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
     return {
-      shopperName: {
-        firstName: firstName ?? '',
-        lastName: lastName ?? '',
-      },
+      ...(shopperName && { shopperName }),
       company: {
         name: company ?? '',
       },

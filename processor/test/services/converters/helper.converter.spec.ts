@@ -10,6 +10,7 @@ import {
   mapCoCoDiscountOnTotalPriceToAdyenLineItem,
   convertAdyenCardBrandToCTFormat,
   convertCTCardBrandToAdyenFormat,
+  extractShopperName,
 } from '../../../src/services/converters/helper.converter';
 import { Address as AdyenAddress } from '@adyen/api-library/lib/src/typings/checkout/address';
 import { Address } from '@commercetools/connect-payments-sdk';
@@ -430,5 +431,46 @@ describe('helper.converter', () => {
 
     expect(cocoCartWithDiscountsApplied.lineItems).toHaveLength(1);
     expect(sum).toEqual(cartTotalPrice);
+  });
+
+  test('should extract shopper name from billing or shipping address', () => {
+    const cartWithBilling = {
+      ...CoCoCartSimpleJSON,
+      billingAddress: {
+        firstName: 'John',
+        lastName: 'Doe',
+        country: 'US',
+      },
+      shippingAddress: {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        country: 'ES',
+      },
+    } as Cart;
+
+    const cartWithShippingOnly = {
+      ...CoCoCartSimpleJSON,
+      billingAddress: undefined,
+      shippingAddress: {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        country: 'ES',
+      },
+    } as Cart;
+
+    const cartWithoutAddresses = {
+      ...CoCoCartSimpleJSON,
+      billingAddress: undefined,
+      shippingAddress: undefined,
+    } as Cart;
+    expect(extractShopperName(cartWithBilling)).toEqual({
+      firstName: cartWithBilling.billingAddress?.firstName,
+      lastName: cartWithBilling.billingAddress?.lastName,
+    });
+    expect(extractShopperName(cartWithShippingOnly)).toEqual({
+      firstName: cartWithShippingOnly.shippingAddress?.firstName,
+      lastName: cartWithShippingOnly.shippingAddress?.lastName,
+    });
+    expect(extractShopperName(cartWithoutAddresses)).toBeUndefined();
   });
 });
