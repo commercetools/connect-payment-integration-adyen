@@ -46,6 +46,7 @@ const getSessionId = async (cartId, isDropin = false) => {
 
   const sessionMetadata = {
     processorUrl: __VITE_PROCESSOR_URL__,
+    // checkoutTransactionItemId: "006bfd77-03dd-4fdf-be5a-f6eb6714d361", // if desired for local testing set this value
     ...(!isDropin && {
       allowedPaymentMethods: [
         "afterpay",
