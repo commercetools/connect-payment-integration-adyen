@@ -39,8 +39,8 @@ import {
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import {
   getCartIdFromContext,
+  getCheckoutTransactionItemIdFromContext,
   getMerchantReturnUrlFromContext,
-  getPaymentInterfaceFromContext,
 } from '../libs/fastify/context/context';
 import { CreateSessionConverter } from './converters/create-session.converter';
 import { CreatePaymentConverter } from './converters/create-payment.converter';
@@ -294,8 +294,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       paymentMethodInfo: {
-        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+        paymentInterface: getConfig().paymentInterface,
       },
+      checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
       ...(ctCart.customerId && {
         customer: {
           typeId: 'customer',
@@ -358,9 +359,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       ctPayment = await this.ctPaymentService.createPayment({
         amountPlanned,
         paymentMethodInfo: {
-          paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          paymentInterface: getConfig().paymentInterface,
           method: opts.data.paymentMethod?.type,
         },
+        checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
         ...(ctCart.customerId && {
           customer: {
             typeId: 'customer',
@@ -405,7 +407,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       transaction: {
         type: 'Authorization', //TODO: is there any case where this could be a direct charge?
         amount: ctPayment.amountPlanned,
-        interactionId: res.pspReference,
+        interactionId: res.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: res.pspReference,
         state: txState,
       },
       ...('storedPaymentMethodId' in data.paymentMethod &&
@@ -417,6 +420,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     log.info(`Payment authorization processed.`, {
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
+      interfaceId: res.pspReference,
       result: res.resultCode,
     });
 
@@ -451,7 +455,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       transaction: {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
-        interactionId: res.pspReference,
+        interactionId: res.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
@@ -459,6 +464,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     log.info(`Payment confirmation processed.`, {
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
+      interfaceId: res.pspReference,
       result: res.resultCode,
     });
 
@@ -488,9 +494,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       paymentMethodInfo: {
-        paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+        paymentInterface: getConfig().paymentInterface,
         method: opts.data.paymentMethod,
       },
+      checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
       ...(ctCart.customerId && {
         customer: {
           typeId: 'customer',
@@ -531,7 +538,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
           centAmount: res.amount?.value || ctPayment.amountPlanned.centAmount,
           currencyCode: res.amount?.currency || ctPayment.amountPlanned.currencyCode,
         },
-        interactionId: res.pspReference,
+        interactionId: res.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
     });
@@ -539,6 +547,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     log.info(`Payment confirmation processed.`, {
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
+      interfaceId: res.pspReference,
       result: res.resultCode,
     });
 
@@ -903,13 +912,15 @@ export class AdyenPaymentService extends AbstractPaymentService {
         amount: amountPlanned,
         type: 'Authorization',
         state: txState,
-        interactionId: res.pspReference,
+        interactionId: res.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: res.pspReference,
       },
     });
 
     log.info("Payment authorization processed for 'transaction' stored payment method", {
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
+      interfaceId: res.pspReference,
       result: res.resultCode,
     });
 
@@ -1261,7 +1272,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       transaction: {
         type: transactionType,
         amount,
-        interactionId: response.pspReference,
+        interactionId: response.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: response.pspReference,
         state: this.convertPaymentModificationOutcomeToState(PaymentModificationStatus.RECEIVED),
       },
     });
@@ -1492,6 +1504,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     log.info(`Payment initiated with adyen.`, {
       interactionId: res.pspReference,
+      interfaceId: res.pspReference,
       result: res.resultCode,
     });
 
@@ -1526,9 +1539,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       ctPayment = await this.ctPaymentService.createPayment({
         amountPlanned,
         paymentMethodInfo: {
-          paymentInterface: getPaymentInterfaceFromContext() || 'adyen',
+          paymentInterface: getConfig().paymentInterface,
           method: payload.paymentMethod?.type,
         },
+        checkoutTransactionItemId: getCheckoutTransactionItemIdFromContext(),
         ...(ctCart.customerId && {
           customer: {
             typeId: 'customer',
@@ -1574,7 +1588,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       transaction: {
         type: 'Authorization',
         amount: ctPayment.amountPlanned,
-        interactionId: res.pspReference,
+        interactionId: res.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: res.pspReference,
         state: txState,
       },
     });
@@ -1582,6 +1597,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     log.info(`Payment authorization processed.`, {
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
+      interfaceId: res.pspReference,
       result: res.resultCode,
     });
 

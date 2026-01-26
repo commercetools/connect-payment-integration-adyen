@@ -49,9 +49,9 @@ export const getAllowedPaymentMethodsFromContext = (): string[] => {
   return paymentSdk.getAllowedPaymentMethodsFromContext(contextData) as string[];
 };
 
-export const getPaymentInterfaceFromContext = (): string | undefined => {
+export const getCheckoutTransactionItemIdFromContext = (): string | undefined => {
   const contextData = getRequestContext() as ContextData;
-  return paymentSdk.getPaymentInterfaceFromContext(contextData);
+  return paymentSdk.getCheckoutTransactionItemIdFromContext(contextData);
 };
 
 export const getProcessorUrlFromContext = (): string => {
