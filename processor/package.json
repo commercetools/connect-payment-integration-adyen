@@ -14,8 +14,8 @@
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
     "test:coverage": "jest --detectOpenHandles --coverage",
-    "connector:post-deploy": "node src/connectors/post-deploy.ts",
-    "connector:pre-undeploy": "node src/connectors/pre-undeploy.ts"
+    "connector:post-deploy": "node dist/connectors/post-deploy.js",
+    "connector:pre-undeploy": "node dist/connectors/pre-undeploy.js"
   },
   "keywords": [],
   "author": "",

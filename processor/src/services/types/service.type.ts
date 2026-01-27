@@ -1,7 +1,8 @@
-import { TransactionData } from '@commercetools/connect-payments-sdk';
+import { CustomFieldsDraft, TransactionData } from '@commercetools/connect-payments-sdk';
 export type NotificationUpdatePayment = {
   merchantReference: string;
   pspReference?: string;
   transactions: TransactionData[];
   paymentMethod?: string;
+  paymentMethodInfoCustomField?: CustomFieldsDraft;
 };

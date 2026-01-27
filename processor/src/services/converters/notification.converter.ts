@@ -6,11 +6,15 @@ import {
   CurrencyConverters,
   CommercetoolsPaymentService,
   Payment,
+  CustomFieldsDraft,
+  GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { paymentMethodConfig } from '../../config/payment-method.config';
 import { NotificationUpdatePayment } from '../types/service.type';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
+import { convertAdyenCardBrandToCTFormat } from './helper.converter';
+import { getConfig } from '../../config/config';
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
@@ -170,7 +174,106 @@ export class NotificationConverter {
       pspReference: item.originalReference || item.pspReference,
       paymentMethod: item.paymentMethod,
       transactions: await this.populateTransactions(item),
+      paymentMethodInfoCustomField: this.convertNotificationItemToCustomType(item),
     };
+  }
+
+  private convertNotificationItemToCustomType(item: NotificationRequestItem): CustomFieldsDraft | undefined {
+    if (!getConfig().adyenStorePaymentMethodDetailsEnabled) {
+      return undefined;
+    }
+
+    const isAuthorisation = item.eventCode === NotificationRequestItem.EventCodeEnum.Authorisation;
+    const isSuccess = item.success === NotificationRequestItem.SuccessEnum.True;
+    const shoudGatherCustomFieldDraft = isAuthorisation && isSuccess;
+
+    if (!shoudGatherCustomFieldDraft) {
+      return undefined;
+    }
+
+    if (!item.paymentMethod) {
+      return undefined;
+    }
+
+    const isSchemePayment = this.isSchemeCardBrand(item.paymentMethod);
+
+    if (isSchemePayment) {
+      return this.convertSchemePaymentToCustomField(item);
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Function to evaluate if the given text is one of the Adyen supported creditcard/scheme brands.
+   *
+   * @see https://docs.adyen.com/payment-methods/cards/custom-card-integration#supported-card-types
+   *
+   * @param text the text to validate against
+   * @returns true if the given text is one of the Adyen supported creditcard/scheme brands
+   */
+  private isSchemeCardBrand(text: string): boolean {
+    const schemeBrands = [
+      'amex',
+      'argencard',
+      'bcmc',
+      'bijcard',
+      'cabal',
+      'cartebancaire',
+      'codensa',
+      'cup',
+      'dankort',
+      'diners',
+      'discover',
+      'electron',
+      'elo',
+      'forbrugsforeningen',
+      'hiper',
+      'hipercard',
+      'jcb',
+      'karenmillen',
+      'laser',
+      'maestro',
+      'maestrouk',
+      'mc',
+      'mcalphabankbonus',
+      'mir',
+      'naranja',
+      'oasis',
+      'rupay',
+      'shopping',
+      'solo',
+      'troy',
+      'uatp',
+      'visa',
+      'visaalphabankbonus',
+      'visadankort',
+      'warehouse',
+    ];
+
+    return schemeBrands.includes(text);
+  }
+
+  private convertSchemePaymentToCustomField(item: NotificationRequestItem): CustomFieldsDraft {
+    const lastFourDigits = item.additionalData?.cardSummary; // Needs to be enabled in "Additional data" settings in Adyen.
+    const expiryDate = item.additionalData?.expiryDate; // Needs to be enabled in "Additional data" settings in Adyen. Returned as: '6/2016'.
+    const brand = item.additionalData?.paymentMethod; // The paymentMethod property contains the brand of the card and not the paymentMethodType `scheme`. Instead its visa, amex, etc.
+
+    let expiryMonth: string | undefined = undefined;
+    let expiryYear: string | undefined = undefined;
+
+    if (expiryDate) {
+      const expireMonthAndYear = expiryDate.split('/');
+      expiryMonth = expireMonthAndYear[0];
+      expiryYear = expireMonthAndYear[1];
+    }
+
+    return GenerateCardDetailsCustomFieldsDraft({
+      brand: convertAdyenCardBrandToCTFormat(brand),
+      lastFour: lastFourDigits,
+      expiryMonth: Number(expiryMonth),
+      expiryYear: Number(expiryYear),
+    });
   }
 
   private async populateTransactions(item: NotificationRequestItem): Promise<TransactionData[]> {

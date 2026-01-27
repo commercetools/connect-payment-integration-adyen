@@ -35,6 +35,7 @@ export const config = {
   adyenStoredPaymentMethodsInterfaceAccount: process.env.ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT || undefined,
   allowedOrigins: process.env.ALLOWED_ORIGINS,
   paymentInterface: process.env.ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE || 'checkout-adyen',
+  adyenStorePaymentMethodDetailsEnabled: process.env.ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED === 'true',
 };
 
 export const getConfig = () => {

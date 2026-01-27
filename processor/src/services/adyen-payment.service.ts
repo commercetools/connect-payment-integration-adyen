@@ -190,6 +190,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
       requiredPermissions.push('manage_payment_methods');
     }
 
+    if (getConfig().adyenStorePaymentMethodDetailsEnabled) {
+      requiredPermissions.push('manage_types');
+    }
+
     const handler = await statusHandler({
       timeout: config.healthCheckTimeout,
       log: appLogger,
@@ -565,6 +569,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
           id: payment.id,
           pspReference: updateData.pspReference,
           transaction: tx,
+          ...(updateData.paymentMethodInfoCustomField && {
+            paymentMethodInfo: { custom: updateData.paymentMethodInfoCustomField },
+          }),
         });
 
         log.info('Payment updated after processing the notification', {

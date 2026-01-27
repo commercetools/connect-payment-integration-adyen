@@ -16,8 +16,13 @@
     - [stored payment methods](#stored-payment-methods)
       - [Setting up stored payment methods](#setting-up-stored-payment-methods)
       - [CT payment-methods and Adyen tokens](#ct-payment-methods-and-adyen-tokens)
-  - [Development](#development) - [Configuration steps](#configuration-steps) - [1. Environment Variable Setup](#1-environment-variable-setup) - [2. Spin Up Components via Docker Compose](#2-spin-up-components-via-docker-compose)
-  <!--toc:end-->
+    - [Save displayable payment method details](#save-displayable-payment-method-details)
+      - [Considerations](#considerations)
+      - [Configuration](#configuration)
+  - [Development](#development)
+    - [Configuration steps](#configuration-steps)
+      - [1. Environment Variable Setup](#1-environment-variable-setup)
+      - [2. Spin Up Components via Docker Compose](#2-spin-up-components-via-docker-compose)
 
 This repository provides a [connect](https://docs.commercetools.com/connect) for integration to Adyen payment service provider (PSP).
 
@@ -271,6 +276,34 @@ Currently supported payment-methods for storing: (for both web-components and dr
 When a payment method is tokenized for the first time Adyen will send a new notification stating that the payment method has been tokenized. The processor handles the notification by creating a new payment-method in CT. The payment-method is attached to the `cart.customerId` as well as the `paymentInterface` and `interfaceAccount` are set based on the previously configured env values.
 
 The next time the same customer goes through Checkout (either using drop-ins or web-components) they will see the stored payment method as a option to pay with.
+
+### Save displayable payment method details
+
+This feature will ensure that on the `payment.paymentMethodInfo` and the `payment-methods` entities the `custom` property is filled with the specific payment details.
+
+Currently supported payment-methods are:
+
+- card
+
+#### Considerations
+
+The payment method details are stored as custom fields. See [CT docs](https://docs.commercetools.com/api/projects/custom-fields) for more information. Specifically on the:
+
+- `payment.paymentMethodInfo`. (not on the `payment` entity itself)
+- `payment-method`
+
+At any point in time entities can only have one custom-type applied. Thus if this feature is enabled it will `set` the payment method details overwriting anything that already exists.
+
+#### Configuration
+
+1. ensure the configured commercetools API client has the scope `manage_types`.
+   1. the health check will fail if the API client does not have this scope but the feature is enabled
+2. In Adyen configure the following settings. (see [Adyen docs](https://help.adyen.com/en_US/knowledge/ecommerce-integrations/integrations-basics/how-do-i-configure-additionaldata-in-the-payments-or-authorisze-response).)
+   1. In `Additional Data` check the `Card Summary` in order for Adyen to return the last four digits of the card
+   2. In `Additional Data` check the `Expire date` in order for Adyen to return the expiration date of the card
+3. set the `ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED` environment variable to `true`.
+   1. this will create the predefined Checkout custom-types the next time the connector is re-deployed.
+   2. enables the feature during runtime.
 
 ## Development
 

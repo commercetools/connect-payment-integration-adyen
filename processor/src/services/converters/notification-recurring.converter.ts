@@ -4,15 +4,20 @@ import {
   TokenizationCreatedDetailsNotificationRequest,
 } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/models';
 
-import { CommercetoolsPaymentMethodTypes } from '@commercetools/connect-payments-sdk';
+import {
+  CommercetoolsPaymentMethodTypes,
+  CustomFieldsDraft,
+  GenerateCardDetailsCustomFieldsDraft,
+} from '@commercetools/connect-payments-sdk';
 
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
-import { convertPaymentMethodFromAdyenFormat } from './helper.converter';
+import { convertAdyenCardBrandToCTFormat, convertPaymentMethodFromAdyenFormat } from './helper.converter';
 import { AdyenApi } from '../../clients/adyen.client';
 import { getConfig } from '../../config/config';
 import { log } from '../../libs/logger';
+import { StoredPaymentMethodResource } from '@adyen/api-library/lib/src/typings/checkout/storedPaymentMethodResource';
 
 export type NotificationTokenizationConverterResponse = {
   draft?: CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft;
@@ -52,34 +57,46 @@ export class NotificationTokenizationConverter {
   private async buildDraftFromNotificationData(
     recurringTokenOperationData: RecurringTokenStoreOperation,
   ): Promise<CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft> {
-    const method = await this.mapNotificationPaymentMethodTypeToCTType(recurringTokenOperationData);
+    const tokenDetailsFromAdyen = await this.getAdyenTokenDetails(recurringTokenOperationData);
+    const paymentMethodConvertedToCT = await this.mapNotificationPaymentMethodTypeToCTType(
+      recurringTokenOperationData,
+      tokenDetailsFromAdyen,
+    );
+    const customFields = this.getCustomFieldsForDraft(tokenDetailsFromAdyen);
 
     return {
       customerId: recurringTokenOperationData.shopperReference,
-      method,
+      method: paymentMethodConvertedToCT,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
       token: recurringTokenOperationData.storedPaymentMethodId,
+      customFields,
     };
   }
 
-  /**
-   * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit".
-   * So we need to fetch the values via the API before we can map it to CT values.
-   */
-  private async mapNotificationPaymentMethodTypeToCTType(
+  private async getAdyenTokenDetails(
     recurringTokenOperationData: RecurringTokenStoreOperation,
-  ): Promise<string> {
+  ): Promise<StoredPaymentMethodResource | undefined> {
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
       recurringTokenOperationData.shopperReference,
       getConfig().adyenMerchantAccount,
     );
 
-    const detailFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
+    const storedPaymentMethodDetail = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
       (spm) => recurringTokenOperationData.storedPaymentMethodId === spm.id,
     );
 
-    if (!detailFromAdyen || !detailFromAdyen.type) {
+    return storedPaymentMethodDetail;
+  }
+
+  /**
+   * The notification.data.type value is not "scheme" or "afterpaytouch" but instead it's for example "visapremiumdebit".
+   */
+  private async mapNotificationPaymentMethodTypeToCTType(
+    recurringTokenOperationData: RecurringTokenStoreOperation,
+    storedPaymentMethodResource?: StoredPaymentMethodResource,
+  ): Promise<string> {
+    if (!storedPaymentMethodResource || !storedPaymentMethodResource.type) {
       log.warn(
         'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
       );
@@ -87,6 +104,39 @@ export class NotificationTokenizationConverter {
       return recurringTokenOperationData.type;
     }
 
-    return convertPaymentMethodFromAdyenFormat(detailFromAdyen.type);
+    return convertPaymentMethodFromAdyenFormat(storedPaymentMethodResource.type);
+  }
+
+  private getCustomFieldsForDraft(
+    storedPaymentMethodResource?: StoredPaymentMethodResource,
+  ): CustomFieldsDraft | undefined {
+    if (!getConfig().adyenStorePaymentMethodDetailsEnabled || !storedPaymentMethodResource) {
+      return undefined;
+    }
+
+    return this.mapCustomFieldDetails(storedPaymentMethodResource);
+  }
+
+  private mapCustomFieldDetails(
+    storedPaymentMethodResource: StoredPaymentMethodResource,
+  ): CustomFieldsDraft | undefined {
+    switch (storedPaymentMethodResource.type) {
+      case 'scheme': {
+        const lastFourDigits = storedPaymentMethodResource.lastFour;
+        const expiryMonth = storedPaymentMethodResource.expiryMonth;
+        const expiryYear = storedPaymentMethodResource.expiryYear;
+        const brand = storedPaymentMethodResource.brand;
+
+        return GenerateCardDetailsCustomFieldsDraft({
+          brand: convertAdyenCardBrandToCTFormat(brand),
+          lastFour: lastFourDigits,
+          expiryMonth: Number(expiryMonth),
+          expiryYear: Number(expiryYear),
+        });
+      }
+      default: {
+        return undefined;
+      }
+    }
   }
 }
