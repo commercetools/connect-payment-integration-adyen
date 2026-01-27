@@ -8,5 +8,14 @@ export async function createCheckoutCustomType(): Promise<void> {
     return;
   }
 
-  await paymentSDK.ctCustomTypeService.createOrUpdatePredefinedPaymentMethodTypes();
+  log.info('Creating payment custom types if not existing...');
+
+  try {
+    const paymentMethodsTypes = await paymentSDK.ctCustomTypeService.createOrUpdatePredefinedPaymentMethodTypes();
+    paymentMethodsTypes.forEach((type) => {
+      log.info('Created (if not existing) payment method custom type', { typeId: type.id, typeKey: type.key });
+    });
+  } catch (error) {
+    log.error('Error creating payment custom types', { error });
+  }
 }
