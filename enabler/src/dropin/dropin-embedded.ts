@@ -32,6 +32,8 @@ import {
   Vipps,
   AfterPay,
   MolPayEBankingMY,
+  Trustly,
+  MBWay,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -174,6 +176,8 @@ export class DropinComponents implements DropinComponent {
         Twint,
         Vipps,
         AfterPay,
+        Trustly,
+        MBWay
       ],
       paymentMethodsConfiguration: {
         applepay: {
@@ -299,6 +303,16 @@ export class DropinComponents implements DropinComponent {
             }
           },
         },
+        trustly: {
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.trustly)
+          ],
+        },
+        mbway: {
+          ...this.dropinConfigOverride[
+            getPaymentMethodType(PaymentMethod.mbway)
+          ],
+        }
       },
     });
   }
