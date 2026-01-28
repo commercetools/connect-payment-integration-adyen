@@ -310,25 +310,21 @@ export class CreatePaymentConverter {
 
   private populateAfterpayData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
     const { billingAddress, shippingAddress } = cart;
-    const shopperName = extractShopperName(cart);
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
 
     return {
       shopperReference: cart.customerId ?? cart.anonymousId ?? randomUUID(),
-      ...(shopperName && { shopperName }),
       telephoneNumber: (billingAddress?.phone || shippingAddress?.phone) ?? undefined,
       lineItems,
     };
   }
 
   private populateKlarnaB2BData(cart: Cart, paymentMethodType: string): Partial<PaymentRequest> {
-    const shopperName = extractShopperName(cart);
     const { billingAddress } = cart;
     const { company } = billingAddress || {};
 
     const lineItems = mapCoCoCartItemsToAdyenLineItems(cart, paymentMethodType);
     return {
-      ...(shopperName && { shopperName }),
       company: {
         name: company ?? '',
       },

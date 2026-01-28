@@ -45,6 +45,10 @@ describe('create-payment.converter', () => {
       merchantAccount: 'adyenMerchantAccount',
       countryCode: cartRandom.country,
       shopperEmail: cartRandom.customerEmail,
+      shopperName: {
+        firstName: '',
+        lastName: '',
+      },
       returnUrl: 'https://commercetools.com',
       applicationInfo: {
         externalPlatform: {

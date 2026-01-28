@@ -471,6 +471,9 @@ describe('helper.converter', () => {
       firstName: cartWithShippingOnly.shippingAddress?.firstName,
       lastName: cartWithShippingOnly.shippingAddress?.lastName,
     });
-    expect(extractShopperName(cartWithoutAddresses)).toBeUndefined();
+    expect(extractShopperName(cartWithoutAddresses)).toEqual({
+      firstName: '',
+      lastName: '',
+    });
   });
 });

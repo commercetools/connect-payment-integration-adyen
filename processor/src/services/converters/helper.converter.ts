@@ -450,10 +450,6 @@ export const extractShopperName = (cart: Cart): { firstName: string; lastName: s
   const { billingAddress, shippingAddress } = cart;
   const firstName = billingAddress?.firstName ?? shippingAddress?.firstName;
   const lastName = billingAddress?.lastName ?? shippingAddress?.lastName;
-
-  if (!firstName || !lastName) {
-    return undefined;
-  }
   return {
     firstName: firstName ?? '',
     lastName: lastName ?? '',
