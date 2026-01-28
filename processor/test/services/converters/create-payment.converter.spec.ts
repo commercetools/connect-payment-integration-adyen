@@ -45,6 +45,10 @@ describe('create-payment.converter', () => {
       merchantAccount: 'adyenMerchantAccount',
       countryCode: cartRandom.country,
       shopperEmail: cartRandom.customerEmail,
+      shopperName: {
+        firstName: '',
+        lastName: '',
+      },
       returnUrl: 'https://commercetools.com',
       applicationInfo: {
         externalPlatform: {
@@ -58,6 +62,66 @@ describe('create-payment.converter', () => {
     };
 
     expect(result).toStrictEqual(expected);
+  });
+
+  test('should extract shopper name from billing address if it is present in the cart', async () => {
+    const cartRandom = CartRest.random()
+      .lineItems([])
+      .customLineItems([])
+      .billingAddress({
+        firstName: 'John',
+        lastName: 'Doe',
+        country: 'US',
+      })
+      .buildRest<TCartRest>({}) as Cart;
+    const paymentRandom = Payment.random().buildRest<TPaymentRest>();
+    const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
+
+    const result = await converter.convertRequest({
+      data: paymentRequestDTO,
+      cart: cartRandom,
+      payment: paymentRandom,
+    });
+
+    expect(result).toStrictEqual(
+      expect.objectContaining({
+        shopperName: {
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      }),
+    );
+  });
+
+  test('should extract shopper name from shipping address if billing address is omitted', async () => {
+    const cartRandom = CartRest.random()
+      .lineItems([])
+      .customLineItems([])
+      .shippingAddress({
+        firstName: 'Jane',
+        lastName: 'Doe',
+        country: 'ES',
+      })
+      .buildRest<TCartRest>({
+        omitFields: ['billingAddress'],
+      }) as Cart;
+    const paymentRandom = Payment.random().buildRest<TPaymentRest>();
+    const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
+
+    const result = await converter.convertRequest({
+      data: paymentRequestDTO,
+      cart: cartRandom,
+      payment: paymentRandom,
+    });
+
+    expect(result).toStrictEqual(
+      expect.objectContaining({
+        shopperName: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+      }),
+    );
   });
 
   test('should set the additional data for afterpaytouch', async () => {

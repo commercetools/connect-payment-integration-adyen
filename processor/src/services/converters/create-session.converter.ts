@@ -8,6 +8,7 @@ import {
   populateApplicationInfo,
   getShopperStatement,
   getCountryCodeFromCart,
+  extractShopperName,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
@@ -27,6 +28,7 @@ export class CreateSessionConverter {
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
+    const shopperName = extractShopperName(opts.cart);
 
     return {
       ...opts.data,
@@ -55,6 +57,7 @@ export class CreateSessionConverter {
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
+      ...(shopperName && { shopperName }),
       ...(getStoredPaymentMethodsConfig().enabled &&
         opts.cart.customerId && {
           shopperReference: opts.cart.customerId,

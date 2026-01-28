@@ -445,3 +445,13 @@ export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
 export const getCountryCodeFromCart = (cart: Cart): string | undefined => {
   return cart.billingAddress?.country || cart.shippingAddress?.country || cart.country;
 };
+
+export const extractShopperName = (cart: Cart): { firstName: string; lastName: string } | undefined => {
+  const { billingAddress, shippingAddress } = cart;
+  const firstName = billingAddress?.firstName ?? shippingAddress?.firstName;
+  const lastName = billingAddress?.lastName ?? shippingAddress?.lastName;
+  return {
+    firstName: firstName ?? '',
+    lastName: lastName ?? '',
+  };
+};
