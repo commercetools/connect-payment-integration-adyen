@@ -12,13 +12,13 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.28.0",
+    "@adyen/adyen-web": "6.30.0",
     "serve": "14.2.5"
   },
   "devDependencies": {
-    "@types/node": "25.0.7",
+    "@types/node": "25.1.0",
     "jest": "30.2.0",
-    "sass": "1.97.2",
+    "sass": "1.97.3",
     "ts-jest": "29.4.6",
     "typescript": "5.9.3",
     "vite": "7.3.1",
