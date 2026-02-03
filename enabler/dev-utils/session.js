@@ -59,6 +59,7 @@ const getSessionId = async (cartId, isDropin = false) => {
         "fpx",
         "googlepay",
         "ideal",
+        "ideal_wero",
         "klarna_billie",
         "klarna_pay_later",
         "klarna_pay_now",

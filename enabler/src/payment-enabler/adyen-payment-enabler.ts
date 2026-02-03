@@ -14,7 +14,7 @@ import {
 import { ApplePayBuilder } from "../components/payment-methods/applepay";
 import { CardBuilder } from "../components/payment-methods/card";
 import { GooglepayBuilder } from "../components/payment-methods/googlepay";
-import { IdealBuilder } from "../components/payment-methods/ideal";
+import { IdealWeroBuilder } from "../components/payment-methods/ideal";
 import { PaypalBuilder } from "../components/payment-methods/paypal";
 import { KlarnaPayNowBuilder } from "../components/payment-methods/klarna-pay-now";
 import { KlarnaPayLaterBuilder } from "../components/payment-methods/klarna-pay-later";
@@ -109,7 +109,8 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       eps: EPSBuilder,
       fpx: FPXBuilder,
       googlepay: GooglepayBuilder,
-      ideal: IdealBuilder,
+      ideal: IdealWeroBuilder,
+      ideal_wero: IdealWeroBuilder,
       klarna_billie: KlarnaBillieBuilder,
       klarna_pay_later: KlarnaPayLaterBuilder,
       klarna_pay_now: KlarnaPayNowBuilder,

@@ -61,6 +61,7 @@ export enum PaymentMethod {
   fpx = "molpay_ebanking_fpx_MY", // FPX Online banking Malaysia
   googlepay = "googlepay",
   ideal = "ideal",
+  ideal_wero = "ideal_wero",
   klarna_billie = "klarna_b2b", // Billie
   klarna_pay_later = "klarna", // Pay later
   klarna_pay_now = "klarna_paynow", // Pay now

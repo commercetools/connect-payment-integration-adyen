@@ -13,27 +13,27 @@ import { ICore, Redirect } from "@adyen/adyen-web";
  * https://docs.adyen.com/payment-methods/ideal/web-component/
  */
 
-export class IdealBuilder extends AdyenBaseComponentBuilder {
+export class IdealWeroBuilder extends AdyenBaseComponentBuilder {
   constructor(baseOptions: BaseOptions) {
-    super(PaymentMethod.ideal, baseOptions);
+    super(PaymentMethod.ideal_wero, baseOptions);
   }
 
   build(config: ComponentOptions): PaymentComponent {
-    const idealComponent = new IdealComponent({
+    const idealWeroComponent = new IdealWeroComponent({
       paymentMethod: this.paymentMethod,
 
       adyenCheckout: this.adyenCheckout,
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
-      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.ideal),
+      paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.ideal_wero),
     });
-    idealComponent.init();
-    return idealComponent;
+    idealWeroComponent.init();
+    return idealWeroComponent;
   }
 }
 
-export class IdealComponent extends DefaultAdyenComponent {
+export class IdealWeroComponent extends DefaultAdyenComponent {
   constructor(opts: {
     paymentMethod: PaymentMethod;
     adyenCheckout: ICore;

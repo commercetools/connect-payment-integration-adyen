@@ -40,6 +40,9 @@ export class PaymentComponentsConverter {
           type: 'ideal',
         },
         {
+          type: 'ideal_wero',
+        },
+        {
           type: 'klarna_billie', // klarna_b2b
         },
         {
