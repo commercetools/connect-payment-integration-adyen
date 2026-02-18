@@ -122,12 +122,23 @@ const mergePaymentMethodConfig = (
 });
 
 /**
+ * Cached payment method configuration.
+ * Initialized once on module load.
+ */
+let cachedConfig: PaymentMethodConfig | null = null;
+
+/**
  * Gets the merged payment method configuration.
  *
  * Merges the default configuration with any overrides from the ADYEN_PAYMENT_METHODS_CONFIG
  * environment variable. Environment variable values take precedence over defaults.
+ * The configuration is cached after the first call.
  *
  * @returns The merged payment method configuration
  */
-export const getPaymentMethodConfig = (): PaymentMethodConfig =>
-  mergePaymentMethodConfig(defaultPaymentMethodConfig, parsePaymentMethodConfigFromEnv());
+export const getPaymentMethodConfig = (): PaymentMethodConfig => {
+  if (cachedConfig === null) {
+    cachedConfig = mergePaymentMethodConfig(defaultPaymentMethodConfig, parsePaymentMethodConfigFromEnv());
+  }
+  return cachedConfig;
+};
