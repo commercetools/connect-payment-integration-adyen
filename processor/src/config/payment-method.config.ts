@@ -56,54 +56,61 @@ export const defaultPaymentMethodConfig: PaymentMethodConfig = {
 };
 
 /**
+ * Safely parses a JSON string and returns the result or null on failure.
+ */
+const parseJSON = <T>(json: string): T | null => {
+  try {
+    return JSON.parse(json) as T;
+  } catch (error) {
+    log.warn('Failed to parse JSON for ADYEN_PAYMENT_METHODS_CONFIG', { error, value: json });
+    return null;
+  }
+};
+
+/**
+ * Type guard to check if a value is a valid payment method entry.
+ */
+const isValidPaymentMethodEntry = (value: unknown): value is PaymentMethodConfig[string] => {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).supportSeparateCapture === 'boolean'
+  );
+};
+
+/**
  * Parses and validates the ADYEN_PAYMENT_METHODS_CONFIG environment variable.
- * 
+ *
  * The environment variable must be a JSON string with the following structure:
  * {
  *   "paymentMethodKey": {
  *     "supportSeparateCapture": boolean
  *   }
  * }
- * 
+ *
  * @returns Parsed payment method configuration, or empty object if parsing fails or env var is not set
- * @throws No exceptions; invalid configurations are logged and ignored
+ * @throws No exceptions; invalid entries are logged and ignored
  */
 const parsePaymentMethodConfigFromEnv = (): PaymentMethodConfig => {
-  const rawConfig = process.env.ADYEN_PAYMENT_METHODS_CONFIG;
-  if (!rawConfig) {
+  const config = process.env.ADYEN_PAYMENT_METHODS_CONFIG;
+  const parsed = parseJSON<Record<string, unknown>>(config || '{}');
+
+  if (!parsed) {
     return {};
   }
 
-  try {
-    const parsed = JSON.parse(rawConfig);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      log.warn('Invalid ADYEN_PAYMENT_METHODS_CONFIG; expected a JSON object.', { value: rawConfig });
-      return {};
+  const result: PaymentMethodConfig = {};
+
+  for (const [key, value] of Object.entries(parsed)) {
+    if (isValidPaymentMethodEntry(value)) {
+      result[key] = value;
+    } else {
+      log.warn('Ignoring invalid payment method config entry', { key, value });
     }
-
-    const parsedEntries = Object.entries(parsed as Record<string, unknown>);
-    return parsedEntries.reduce<PaymentMethodConfig>((acc, [key, value]) => {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        log.warn('Ignoring payment method config entry; expected an object.', { key, value });
-        return acc;
-      }
-
-      const methodConfig = value as PaymentMethodConfig;
-      if (typeof methodConfig.supportSeparateCapture !== 'boolean') {
-        log.warn('Ignoring payment method config entry; supportSeparateCapture must be boolean.', {
-          key,
-          value,
-        });
-        return acc;
-      }
-
-      acc[key] = { supportSeparateCapture: methodConfig.supportSeparateCapture };
-      return acc;
-    }, {});
-  } catch (error) {
-    log.warn('Failed to parse ADYEN_PAYMENT_METHODS_CONFIG; using defaults.', { error, value: rawConfig });
-    return {};
   }
+
+  return result;
 };
 
 const mergePaymentMethodConfig = (
@@ -116,10 +123,10 @@ const mergePaymentMethodConfig = (
 
 /**
  * Gets the merged payment method configuration.
- * 
+ *
  * Merges the default configuration with any overrides from the ADYEN_PAYMENT_METHODS_CONFIG
  * environment variable. Environment variable values take precedence over defaults.
- * 
+ *
  * @returns The merged payment method configuration
  */
 export const getPaymentMethodConfig = (): PaymentMethodConfig =>
