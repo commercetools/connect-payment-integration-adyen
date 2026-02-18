@@ -152,6 +152,10 @@ deployAs:
           description: Session API URL
           required: true
           default: https://session.europe-west1.gcp.commercetools.com
+        - key: CTP_CHECKOUT_URL
+          description: Checkout API URL (example - https://checkout.europe-west1.gcp.commercetools.com).
+          required: true
+          default: https://checkout.europe-west1.gcp.commercetools.com
         - key: CTP_CLIENT_ID
           description: commercetools client ID with manage_payments, manage_orders, view_sessions, view_api_clients, manage_checkout_payment_intents & introspect_oauth_tokens scopes
           required: true
