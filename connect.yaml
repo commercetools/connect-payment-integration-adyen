@@ -69,6 +69,9 @@ deployAs:
         - key: ADYEN_PAYMENT_COMPONENTS_CONFIG
           description: 'Adyen payment components configuration in JSON String format. For example: {"paypal":{"blockPayPalVenmoButton":false}}. Please refer to the Adyen documentation for more details.'
           required: false
+        - key: ADYEN_PAYMENT_METHODS_CONFIG
+          description: 'Adyen payment methods configuration in JSON String format. This can be used to provide additional configuration for specific payment methods. For example: {"bcmc":{"supportSeparateCapture":true}, "bcmc_mobile":{"supportSeparateCapture":true}}. Please refer to the Adyen documentation for more details.'
+          required: false
         - key: ADYEN_STORED_PAYMENT_METHODS_ENABLED
           description: If set to "true" then the stored payment methods feature is enabled. Default value is "false".
           required: false
