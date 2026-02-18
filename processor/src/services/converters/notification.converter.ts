@@ -10,7 +10,7 @@ import {
   GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
-import { paymentMethodConfig } from '../../config/payment-method.config';
+import { getPaymentMethodConfig } from '../../config/payment-method.config';
 import { NotificationUpdatePayment } from '../types/service.type';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
 import { convertAdyenCardBrandToCTFormat } from './helper.converter';
@@ -316,6 +316,7 @@ export class NotificationConverter {
   }
 
   private isSeparateCaptureSupported(item: NotificationRequestItem): boolean {
+    const paymentMethodConfig = getPaymentMethodConfig();
     if (item.paymentMethod && paymentMethodConfig[item.paymentMethod]) {
       return paymentMethodConfig[item.paymentMethod].supportSeparateCapture;
     }
