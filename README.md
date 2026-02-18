@@ -19,6 +19,11 @@
     - [Save displayable payment method details](#save-displayable-payment-method-details)
       - [Considerations](#considerations)
       - [Configuration](#configuration)
+    - [Payment methods configuration overrides](#payment-methods-configuration-overrides)
+      - [Problem](#problem)
+      - [Solution](#solution)
+      - [Configuration](#configuration)
+      - [Behavior](#behavior)
   - [Development](#development)
     - [Configuration steps](#configuration-steps)
       - [1. Environment Variable Setup](#1-environment-variable-setup)
@@ -197,6 +202,9 @@ deployAs:
         - key: ADYEN_PAYMENT_COMPONENTS_CONFIG
           description: Adyen payment components configuration in JSON String format. For example: {"paypal":{"blockPayPalVenmoButton":false}}. Please refer to the Adyen documentation for more details.
           required: false
+        - key: ADYEN_PAYMENT_METHODS_CONFIG
+          description: Payment methods configuration overrides in JSON String format. For example: {"bcmc":{"supportSeparateCapture":false}}.
+          required: false
         - key: ADYEN_STORED_PAYMENT_METHODS_ENABLED
           description: If set to "true" then the stored payment methods feature is enabled. Default value is "false".
           required: false
@@ -247,6 +255,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`: The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
 - `ADYEN_SHOPPER_STATEMENT`: The text to be shown on the shopper's bank statement. For more information, see [Adyen's reference](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement).
+- `ADYEN_PAYMENT_METHODS_CONFIG`: Payment methods configuration overrides in JSON format to control specific payment method behaviors such as the separate capture capability. This is useful when Adyen is configured with immediate capture, preventing the receipt of capture webhooks.
 - `ADYEN_STORED_PAYMENT_METHODS_ENABLED`: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false". Default it's "false".
 - `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE`: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
 - `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT`: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
@@ -308,6 +317,78 @@ At any point in time entities can only have one custom-type applied. Thus if thi
 3. set the `ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED` environment variable to `true`.
    1. this will create the predefined Checkout custom-types the next time the connector is re-deployed.
    2. enables the feature during runtime.
+
+### Payment methods configuration overrides
+
+#### Problem
+
+Some payment methods don't support separate capture (manual capture), meaning Adyen immediately captures the funds after authorization without sending a capture webhook. Additionally, some payment methods that do support separate capture may have immediate capture configured in the Adyen console.
+
+In both scenarios, **Adyen does not send the `CAPTURE` webhook event** to notify the connector that the payment has been captured. This causes the commercetools payment state to become **out of sync** with the actual Adyen payment status, as commercetools is unaware that the funds have been captured.
+
+#### Solution
+
+The connector maintains a static list of payment methods and their capture behavior. When the authorization confirmation is received for methods with `supportSeparateCapture: false`, the connector automatically creates a `Charge` transaction in commercetools to keep the payment status in sync with Adyen.
+
+However, certain payment methods (e.g., Bancontact/`bcmc`) can have this behavior overridden on a per-merchant basis. To allow users to adjust the capture behavior without code changes or connector releases, the configuration has been externalized.
+
+#### Configuration
+
+Use the `ADYEN_PAYMENT_METHODS_CONFIG` environment variable to override payment method configurations.
+
+**Format**: JSON string with payment method configurations.
+
+**Merging logic**: The environment variable values take precedence over the hardcoded defaults.
+
+**Error handling**: Malformed JSON is logged as a warning and ignored; the default configuration is used.
+
+**Structure**: The configuration object follows this schema:
+
+```typescript
+{
+  [adyenPaymentMethodCode: string]: {
+    supportSeparateCapture: boolean;
+  }
+}
+```
+
+- **Key**: The Adyen payment method code (e.g., `bcmc`, `ideal`, `eps`). See Adyen's technical documentation for more details.
+- **Value**: An object with a `supportSeparateCapture` property (boolean)
+  - `true`: The payment method supports manual/deferred capture
+  - `false`: The payment method uses immediate capture only
+
+**Default configuration**: The following payment methods use immediate capture by default:
+
+```json
+{
+  "bcmc": { "supportSeparateCapture": false },
+  "bcmc_mobile": { "supportSeparateCapture": false },
+  "blik": { "supportSeparateCapture": false },
+  "eps": { "supportSeparateCapture": false },
+  "ideal": { "supportSeparateCapture": false },
+  "molpay_ebanking_fpx_MY": { "supportSeparateCapture": false },
+  "onlineBanking_PL": { "supportSeparateCapture": false },
+  "swish": { "supportSeparateCapture": false }
+}
+```
+
+**Important**: Ensure payment method configurations are accurate and aligned with your Adyen merchant account setup. Incorrect configuration may cause the commercetools payment state to become out of sync with the actual Adyen payment status. **Misconfiguration is the responsibility of the merchant, not the connector.**
+
+##### Example: Enabling manual capture for Bancontact
+
+By default, Bancontact (`bcmc` and `bcmc_mobile`) uses immediate capture. However, Adyen Support can enable "Deferred sales" (separate/manual capture) for eligible merchants and MCCs. Once enabled on the Adyen side, configure the connector to recognize this:
+
+```json
+{
+  "bcmc": { "supportSeparateCapture": true },
+  "bcmc_mobile": { "supportSeparateCapture": true }
+}
+```
+
+#### Behavior
+
+- **If `supportSeparateCapture` is `false`**: The connector automatically creates a `Charge` transaction upon receiving the authorization confirmation, immediately synchronizing the payment state with Adyen's immediate capture.
+- **If `supportSeparateCapture` is `true`**: The connector waits for the `CAPTURE` webhook from Adyen before creating the `Charge` transaction, supporting manual/deferred capture workflows.
 
 ## Development
 
