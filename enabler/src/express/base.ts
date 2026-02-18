@@ -163,7 +163,8 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
       firstName: opts.firstName,
       lastName: opts.lastName,
       streetName: opts.address.street,
-      streetNumber: opts.address.houseNumberOrName,
+      // Remove Adyen's default value for street number
+      streetNumber: opts.address.houseNumberOrName === "ZZ" ? "" : opts.address.houseNumberOrName,
       region: opts.address.stateOrProvince,
       postalCode: opts.address.postalCode,
       city: opts.address.city,
