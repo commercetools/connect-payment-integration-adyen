@@ -33,7 +33,7 @@
     "@fastify/type-provider-typebox": "6.1.0",
     "@sinclair/typebox": "0.33",
     "dotenv": "17.3.1",
-    "fastify": "5.7.4",
+    "fastify": "5.8.3",
     "fastify-plugin": "5.1.0"
   },
   "devDependencies": {
