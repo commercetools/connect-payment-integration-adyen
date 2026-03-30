@@ -144,7 +144,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         event: ApplePayJS.ApplePayShippingContactSelectedEvent
       ) => {
         const { countryCode, locality, postalCode } = event.shippingContact;
-        let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
+        let update: ApplePayJS.ApplePayShippingContactUpdate = {} as ApplePayJS.ApplePayShippingContactUpdate;
         let paymentData: InitialPaymentData;
 
         try {
@@ -195,7 +195,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         event: ApplePayJS.ApplePayShippingMethodSelectedEvent
       ) => {
         const { shippingMethod } = event;
-        let update: Partial<ApplePayJS.ApplePayShippingContactUpdate> = {};
+        let update: ApplePayJS.ApplePayShippingMethodUpdate = {} as ApplePayJS.ApplePayShippingMethodUpdate;
         let paymentData: InitialPaymentData;
 
         try {
@@ -223,13 +223,6 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
                 paymentData?.totalPrice?.fractionDigits || this.expressOptions.initialAmount.fractionDigits
               ),
             },
-            errors: [
-              new ApplePayError(
-                "unknown",
-                undefined,
-                "Cannot ship using the selected method"
-              ),
-            ],
           };
         }
 
