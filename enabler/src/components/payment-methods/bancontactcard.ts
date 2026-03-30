@@ -59,6 +59,11 @@ export class BancontactCardComponent extends DefaultAdyenComponent {
         }
       },
     });
+
+    this.component.props = {
+      ...this.component.props,
+      showStoreDetailsCheckbox: false
+    };
   }
 
   async showValidation() {
