@@ -88,7 +88,7 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
 
     this.component = new ApplePay(this.adyenCheckout, {
       isExpress: true,
-      buttonType: this.expressOptions.styles?.applepay?.buttonType || 'buy',
+      buttonType: this.expressOptions.styles?.applepay?.buttonType || 'pay',
       buttonColor: this.expressOptions.styles?.applepay?.buttonColor || "black",
       amount: {
         currency: this.expressOptions.initialAmount.currencyCode,
