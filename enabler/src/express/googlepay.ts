@@ -99,8 +99,11 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
 
     this.component = new GooglePay(this.adyenCheckout, {
       isExpress: true,
-      buttonType: "pay",
-      buttonSizeMode: "fill",
+      buttonType: this.expressOptions.styles?.googlepay?.buttonType || 'pay',
+      buttonSizeMode: this.expressOptions.styles?.googlepay?.buttonSizeMode || "fill",
+      buttonColor: this.expressOptions.styles?.googlepay?.buttonColor || "default",
+      buttonLocale: this.expressOptions.styles?.googlepay?.buttonLocale || 'en',
+      buttonRadius: this.expressOptions.styles?.googlepay?.buttonRadius,
       configuration: {
         gatewayMerchantId: this.paymentMethodConfig.gatewayMerchantId,
         merchantId: this.paymentMethodConfig.merchantId,

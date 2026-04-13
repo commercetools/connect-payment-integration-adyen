@@ -139,6 +139,15 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         merchantId: this.paymentMethodConfig.merchantId,
         intent: this.paymentMethodConfig.intent as Intent,
       },
+      style: this.expressOptions.styles?.paypal ? {
+        color: this.expressOptions.styles?.paypal.buttonColor || undefined,
+        layout: this.expressOptions.styles?.paypal.buttonLayout || undefined,
+        shape: this.expressOptions.styles?.paypal.buttonShape || undefined,
+        label: this.expressOptions.styles?.paypal.buttonLabel || undefined,
+        height: this.expressOptions.styles?.paypal.buttonHeight || undefined,
+        disableMaxWidth: !!this.expressOptions.styles?.paypal.buttonWidth,
+        tagline: this.expressOptions.styles?.paypal.buttonTagline ?? undefined,
+      }: undefined,
       onClick: () => {
         return this.expressOptions
           .onPayButtonClick()

@@ -274,8 +274,40 @@ export type ExpressOptions = {
   }) => Promise<void>;
   onComplete?: OnComplete;
   initialAmount: CTAmount;
+  styles?: ExpressPaymentStylingOverrides;
 };
 
 export interface PaymentExpressBuilder {
   build(config: ExpressOptions): ExpressComponent;
+}
+
+export type ExpressGooglePayStyling = {
+  buttonType?: 'buy' | 'book' | 'donate' | 'checkout' | 'order' | 'pay' | 'plain' | 'subscribe';
+  buttonColor?: 'black' | 'white' | 'default';
+  buttonLocale?: string;
+  buttonRadius?: number;
+  buttonSizeMode?: 'fill' | undefined;
+}
+
+export type ExpressApplePayStyling = {
+  buttonType?: 'plain' | 'buy' | 'add-money' | 'book' | 'donate' | 'check-out' | 'contribute' | 'continue' | 'order' | 'reload' | 'rent' | 'set-up' | 'subscribe' | 'support' | 'tip' | 'top-up';
+  buttonColor?: 'black' | 'white' | 'white-outline';
+}
+
+export type ExpressPaypalStyling = {
+  buttonLayout?: 'horizontal' | 'vertical';
+  buttonColor?: 'blue' | 'gold' | 'silver' | 'black' | 'white';
+  buttonShape?: 'rect' | 'pill';
+  buttonRadius?: number;  // Maps to borderRadius prop of paypal
+  buttonLabel?: 'paypal' | 'checkout' | 'pay' | 'buynow' ;
+  buttonHeight?: number;  // Number should be between 25 and 55, maps to height prop of paypal buttons. Disable MaxHeight when using this prop
+  buttonWidth?: number; // Maps to width prop of paypal buttons, only used for horizontal layout. Disable MaxWidth when using this prop
+  buttonType?: 'paypal' | 'checkout' | 'buynow' | 'pay' | 'installment'; // Maps to style.label
+  buttonTagline?: boolean; // Maps to style.tagline
+}
+
+export type ExpressPaymentStylingOverrides = {
+  googlepay?: ExpressGooglePayStyling;
+  applepay?: ExpressApplePayStyling;
+  paypal?: ExpressPaypalStyling;
 }
