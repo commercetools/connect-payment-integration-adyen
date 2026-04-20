@@ -1973,7 +1973,7 @@ describe('adyen-payment.service', () => {
           method: 'card',
         };
 
-        const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>();
+        const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>() as Payment;
 
         jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);

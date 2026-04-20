@@ -1,13 +1,14 @@
 import { CreatePaymentConverter } from '../../../src/services/converters/create-payment.converter';
 import { describe, test, expect, jest } from '@jest/globals';
 import * as Helpers from '../../../src/services/converters/helper.converter';
-import { Payment, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
+import { PaymentRest, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, type TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 import {
   Cart,
   ErrorInternalConstraintViolated,
   ErrorRequiredField,
+  Payment,
   PaymentMethod,
 } from '@commercetools/connect-payments-sdk';
 import { paymentSDK } from '../../../src/payment-sdk';
@@ -27,7 +28,7 @@ describe('create-payment.converter', () => {
       .buildRest<TCartRest>({
         omitFields: ['billingAddress', 'shippingAddress'],
       }) as Cart;
-    const paymentRandom = Payment.random().buildRest<TPaymentRest>();
+    const paymentRandom = PaymentRest.random().buildRest<TPaymentRest>({}) as Payment;
     const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
 
     const result = await converter.convertRequest({
@@ -74,7 +75,7 @@ describe('create-payment.converter', () => {
         country: 'US',
       })
       .buildRest<TCartRest>({}) as Cart;
-    const paymentRandom = Payment.random().buildRest<TPaymentRest>();
+    const paymentRandom = PaymentRest.random().buildRest<TPaymentRest>({}) as Payment;
     const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
 
     const result = await converter.convertRequest({
@@ -105,7 +106,7 @@ describe('create-payment.converter', () => {
       .buildRest<TCartRest>({
         omitFields: ['billingAddress'],
       }) as Cart;
-    const paymentRandom = Payment.random().buildRest<TPaymentRest>();
+    const paymentRandom = PaymentRest.random().buildRest<TPaymentRest>({}) as Payment;
     const paymentRequestDTO: CreatePaymentRequestDTO = {} as CreatePaymentRequestDTO;
 
     const result = await converter.convertRequest({
@@ -126,7 +127,7 @@ describe('create-payment.converter', () => {
 
   test('should set the additional data for afterpaytouch', async () => {
     const cartRandom = CartRest.random().customLineItems([]).buildRest<TCartRest>({}) as Cart;
-    const paymentRandom = Payment.random().buildRest<TPaymentRest>();
+    const paymentRandom = PaymentRest.random().buildRest<TPaymentRest>({}) as Payment;
     const paymentRequestDTO: CreatePaymentRequestDTO = {
       paymentMethod: { type: 'afterpaytouch' },
     } as CreatePaymentRequestDTO;
@@ -494,7 +495,7 @@ describe('create-payment.converter', () => {
         })
         .buildRest<TCartRest>({}) as Cart;
 
-      const paymentRandom = Payment.random().id(paymentId).buildRest<TPaymentRest>();
+      const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>({}) as Payment;
 
       const paymentMethod: PaymentMethod = {
         id: paymentMethodId,
