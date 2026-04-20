@@ -545,6 +545,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     log.info(`Payment confirmation processed.`, {
+      cartId: ctCart.id,
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
       interfaceId: res.pspReference,
