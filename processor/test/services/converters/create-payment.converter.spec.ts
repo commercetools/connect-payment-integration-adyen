@@ -463,37 +463,41 @@ describe('create-payment.converter', () => {
       const adyenTokenId = 'abcdefgh';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
-      const cartRandom = CartRest.random()
-        .customerId(customerId)
-        .customerEmail('johannes.vermeer@yahoo.com')
-        .shippingMode('Single')
-        .billingAddress({
-          firstName: 'Johannes',
-          lastName: 'Vermeer',
-          streetName: 'Vlamingstraat',
-          streetNumber: '42',
-          additionalStreetInfo: '',
-          postalCode: '2611 KX',
-          city: 'Delft',
-          country: 'NL',
-          phone: '+16175245223',
-          region: 'South Holland',
-          email: 'Johannes.Vermeer@example.com',
-        })
-        .shippingAddress({
-          firstName: 'Johannes',
-          lastName: 'Vermeer',
-          streetName: 'Vlamingstraat',
-          streetNumber: '42',
-          additionalStreetInfo: '',
-          postalCode: '2611 KX',
-          city: 'Delft',
-          country: 'NL',
-          phone: '+16175245223',
-          region: 'South Holland',
-          email: 'Johannes.Vermeer@example.com',
-        })
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom: Cart = {
+        ...(CartRest.random()
+          .customerId(customerId)
+          .customerEmail('johannes.vermeer@yahoo.com')
+          .shippingMode('Single')
+          .billingAddress({
+            firstName: 'Johannes',
+            lastName: 'Vermeer',
+            streetName: 'Vlamingstraat',
+            streetNumber: '42',
+            additionalStreetInfo: '',
+            postalCode: '2611 KX',
+            city: 'Delft',
+            country: 'NL',
+            phone: '16175245223',
+            region: 'South Holland',
+            email: 'Johannes.Vermeer@example.com',
+          })
+          .shippingAddress({
+            firstName: 'Johannes',
+            lastName: 'Vermeer',
+            streetName: 'Vlamingstraat',
+            streetNumber: '42',
+            additionalStreetInfo: '',
+            postalCode: '2611 KX',
+            city: 'Delft',
+            country: 'NL',
+            phone: '16175245223',
+            region: 'South Holland',
+            email: 'Johannes.Vermeer@example.com',
+          })
+          .lineItems([])
+          .customLineItems([])
+          .buildRest<TCartRest>({}) as Cart),
+      };
 
       const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>({}) as Payment;
 

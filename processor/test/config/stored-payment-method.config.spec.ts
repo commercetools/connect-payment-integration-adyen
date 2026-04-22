@@ -1,3 +1,4 @@
+import { describe, expect, test } from '@jest/globals';
 import { getStoredPaymentMethodsConfig } from '../../src/config/stored-payment-methods.config';
 
 describe('stored-payment-methods.config', () => {

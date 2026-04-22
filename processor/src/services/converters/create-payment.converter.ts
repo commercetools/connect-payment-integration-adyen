@@ -55,6 +55,7 @@ export class CreatePaymentConverter {
     const shopperStatement = getShopperStatement();
     const shopperName = extractShopperName(opts.cart);
     const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(opts.cart, opts.data.paymentMethod?.type);
     return {
       ...requestData,
       amount: {
@@ -77,6 +78,7 @@ export class CreatePaymentConverter {
         deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
+      ...(lineItems.length > 0 && { lineItems }),
       ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
@@ -98,6 +100,7 @@ export class CreatePaymentConverter {
   }): Promise<PaymentRequest> {
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(opts.cart);
 
     const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
       opts.cart.customerId,
@@ -139,6 +142,7 @@ export class CreatePaymentConverter {
         deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       ...(opts.futureOrderNumber && { merchantOrderReference: opts.futureOrderNumber }),
+      ...(lineItems.length > 0 && { lineItems }),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
     };
@@ -155,6 +159,7 @@ export class CreatePaymentConverter {
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
     const shopperName = extractShopperName(opts.cart);
+    const lineItems = mapCoCoCartItemsToAdyenLineItems(opts.cart, opts.data.paymentMethod?.type);
 
     return {
       ...requestData,
@@ -178,6 +183,7 @@ export class CreatePaymentConverter {
         deliveryAddress: populateCartAddress(deliveryAddress),
       }),
       ...(futureOrderNumber && { merchantOrderReference: futureOrderNumber }),
+      ...(lineItems.length > 0 && { lineItems }),
       ...this.populateAdditionalPaymentMethodData(opts.data, opts.cart),
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
@@ -277,14 +283,6 @@ export class CreatePaymentConverter {
     switch (data?.paymentMethod?.type) {
       case 'scheme':
         return this.populateAdditionalCardData();
-      case 'klarna':
-      case 'klarna_paynow':
-      case 'klarna_account':
-      case 'paypal': {
-        return {
-          lineItems: mapCoCoCartItemsToAdyenLineItems(cart, data.paymentMethod.type),
-        };
-      }
       // clearpay is the same as afterpaytouch
       case 'clearpay':
       case 'afterpaytouch': {
