@@ -17,6 +17,7 @@ import {
   MolPayEBankingMY,
   BcmcMobile,
   MBWay,
+  Econtext,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -43,7 +44,8 @@ type AdyenComponent =
   | Swish
   | AfterPay
   | BcmcMobile
-  | MBWay;
+  | MBWay
+  | Econtext;
 
 /**
  * Base Web Component

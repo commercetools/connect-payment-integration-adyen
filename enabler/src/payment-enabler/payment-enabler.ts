@@ -1,3 +1,5 @@
+import { SupportedExpressMethod, SupportedMethod, SupportedStoredMethod } from "./constants";
+
 type CardPaymentState = {
   card?: {
     endDigits?: string;
@@ -73,7 +75,8 @@ export enum PaymentMethod {
   vipps = "vipps",
   mobilepay = "mobilepay",
   mbway = "mbway",
-  trustly="trustly"
+  trustly="trustly",
+  jcs= "jcs",
 }
 
 export type CTAmount = {
@@ -86,7 +89,7 @@ export const getPaymentMethodType = (
   adyenPaymentMethod: string
 ): PaymentMethod | undefined => {
   for (const enumKey in PaymentMethod) {
-    if (PaymentMethod[enumKey] === adyenPaymentMethod) {
+    if (PaymentMethod[enumKey as keyof typeof PaymentMethod] === adyenPaymentMethod) {
       return enumKey as PaymentMethod;
     }
   }
@@ -195,7 +198,7 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createComponentBuilder: (
-    type: string
+    type: SupportedMethod
   ) => Promise<PaymentComponentBuilder | never>;
 
   /**
@@ -208,11 +211,11 @@ export interface PaymentEnabler {
   ) => Promise<PaymentDropinBuilder | never>;
 
   createExpressBuilder: (
-    type: string
+    type: SupportedExpressMethod
   ) => Promise<PaymentExpressBuilder | never>;
 
   createStoredPaymentMethodBuilder: (
-    type: string
+    type: SupportedStoredMethod
   ) => Promise<StoredComponentBuilder | never>;
 
   isStoredPaymentMethodsEnabled: () => Promise<boolean>;
