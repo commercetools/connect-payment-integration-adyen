@@ -48,8 +48,7 @@ export class CreatePaymentConverter {
     cart: Cart;
     payment: Payment;
   }): Promise<PaymentRequest> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { paymentReference: _, ...requestData } = opts.data;
+    const requestData = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
@@ -154,7 +153,7 @@ export class CreatePaymentConverter {
     payment: ExpressPayment;
   }): Promise<PaymentRequest> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { paymentReference: _, ...requestData } = opts.data;
+    const requestData = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();

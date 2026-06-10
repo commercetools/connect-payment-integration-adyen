@@ -112,19 +112,6 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
   }
 
   async remove() {
-    const url = this.processorUrl.endsWith("/")
-      ? `${this.processorUrl}stored-payment-methods/${this.usedCocoStoredPaymentMethod.id}`
-      : `${this.processorUrl}/stored-payment-methods/${this.usedCocoStoredPaymentMethod.id}`;
-
-    const response = await fetch(url, {
-      method: "DELETE",
-      headers: {
-        "X-Session-Id": this.sessionId,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("failed for some reason");
-    }
+    await this.apiClient.deleteStoredPaymentMethod(this.usedCocoStoredPaymentMethod.id);
   }
 }

@@ -25,6 +25,7 @@ import {
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
+import { ProcessorApiClient } from '../api/processor-api.client';
 
 type AdyenComponent =
   | Card
@@ -88,6 +89,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
   protected processorUrl: string;
   protected paymentComponentConfigOverride: Record<string, any>;
   protected setStorePaymentDetails?: (enabled: boolean) => void;
+  protected apiClient: ProcessorApiClient;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
@@ -105,6 +107,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     this.processorUrl = opts.processorUrl;
     this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
     this.setStorePaymentDetails = opts.setStorePaymentDetails;
+    this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
   }
   abstract init(): void;
 

@@ -14,6 +14,9 @@ import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/che
 import { PaypalUpdateOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderResponse';
 import { DeliveryMethod } from '@adyen/api-library/lib/src/typings/checkout/deliveryMethod';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
+import { BalanceCheckResponse } from '@adyen/api-library/lib/src/typings/checkout/balanceCheckResponse';
+import { CreateOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/createOrderResponse';
+import { CancelOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/cancelOrderResponse';
 
 export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'merchantAccount'>;
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
@@ -42,7 +45,6 @@ export type CreateSessionRequestDTO = Omit<
 
 export type CreateSessionResponseDTO = {
   sessionData: CreateCheckoutSessionResponse;
-  paymentReference: string;
 };
 
 export type CreatePaymentRequestDTO = Omit<
@@ -56,13 +58,11 @@ export type CreatePaymentRequestDTO = Omit<
   | 'reference'
   | 'shopperReference'
   | 'recurringProcessingModel'
-> & {
-  paymentReference?: string;
-};
+>;
 
 export type CreatePaymentResponseDTO = Pick<
   PaymentResponse,
-  'action' | 'resultCode' | 'threeDS2ResponseData' | 'threeDS2Result' | 'threeDSPaymentData'
+  'action' | 'resultCode' | 'threeDS2ResponseData' | 'threeDS2Result' | 'threeDSPaymentData' | 'order'
 > & {
   paymentReference: string;
   merchantReturnUrl?: string;
@@ -121,3 +121,18 @@ export type UpdatePayPalExpressPaymentRequestDTO = Pick<PaypalUpdateOrderRequest
 };
 
 export type UpdatePayPalExpressPaymentResponseDTO = PaypalUpdateOrderResponse;
+
+export type GiftCardBalanceRequestDTO = {
+  paymentMethod: Record<string, string>;
+};
+
+export type GiftCardBalanceResponseDTO = BalanceCheckResponse;
+
+export type CreateOrderResponseDTO = CreateOrderResponse;
+
+export type CancelOrderRequestDTO = {
+  orderData: string;
+  pspReference: string;
+};
+
+export type CancelOrderResponseDTO = CancelOrderResponse;

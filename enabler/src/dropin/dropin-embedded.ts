@@ -10,6 +10,7 @@ import {
   BaseOptions,
   StoredPaymentMethodsConfig,
 } from "../payment-enabler/adyen-payment-enabler";
+import { ProcessorApiClient } from "../api/processor-api.client";
 import {
   ICore,
   SubmitActions,
@@ -34,6 +35,7 @@ import {
   MolPayEBankingMY,
   Trustly,
   MBWay,
+  Giftcard,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -77,9 +79,8 @@ export class DropinComponents implements DropinComponent {
   private adyenCheckout: ICore;
   private dropinOptions: DropinOptions;
   private dropinConfigOverride: Record<string, any>;
-  private processorUrl: string;
-  private sessionId: string;
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
+  private apiClient: ProcessorApiClient;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -93,8 +94,7 @@ export class DropinComponents implements DropinComponent {
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
     this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
-    this.processorUrl = opts.processorUrl;
-    this.sessionId = opts.sessionId;
+    this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
 
     this.overrideOnSubmit();
   }
@@ -108,45 +108,27 @@ export class DropinComponents implements DropinComponent {
       showRemovePaymentMethodButton: this.storedPaymentMethodsConfig.isEnabled,
       filterStoredPaymentMethods: (storedPaymentMethods) => {
         return storedPaymentMethods.filter((spm) => {
-          const ctStoredPaymentMethod =
-            this.storedPaymentMethodsConfig.storedPaymentMethods.find(
-              (ctSpm) => ctSpm.token === spm.id,
-            );
+          const ctStoredPaymentMethod = this.storedPaymentMethodsConfig.storedPaymentMethods.find(
+            (ctSpm) => ctSpm.token === spm.id,
+          );
 
           return ctStoredPaymentMethod !== undefined;
         });
       },
-      onDisableStoredPaymentMethod: async (
-        storedPaymentMethod,
-        resolve,
-        reject,
-      ) => {
-        const ctStoredPaymentMethod =
-          this.storedPaymentMethodsConfig.storedPaymentMethods.find((spm) => {
-            return spm.token === storedPaymentMethod;
-          });
+      onDisableStoredPaymentMethod: async (storedPaymentMethod, resolve, reject) => {
+        const ctStoredPaymentMethod = this.storedPaymentMethodsConfig.storedPaymentMethods.find((spm) => {
+          return spm.token === storedPaymentMethod;
+        });
 
         if (!ctStoredPaymentMethod) {
-          console.log(
-            "Drop-in component return an token id which is not known",
-          );
+          console.log("Drop-in component return an token id which is not known");
           return reject();
         }
 
-        const url = this.processorUrl.endsWith("/")
-          ? `${this.processorUrl}stored-payment-methods/${ctStoredPaymentMethod.id}`
-          : `${this.processorUrl}/stored-payment-methods/${ctStoredPaymentMethod.id}`;
-
-        const response = await fetch(url, {
-          method: "DELETE",
-          headers: {
-            "X-Session-Id": this.sessionId,
-          },
-        });
-
-        if (response.ok) {
+        try {
+          await this.apiClient.deleteStoredPaymentMethod(ctStoredPaymentMethod.id);
           return resolve();
-        } else {
+        } catch {
           return reject();
         }
       },
@@ -177,16 +159,15 @@ export class DropinComponents implements DropinComponent {
         Vipps,
         AfterPay,
         Trustly,
-        MBWay
+        MBWay,
+        Giftcard,
       ],
       paymentMethodsConfiguration: {
         applepay: {
           buttonType: "pay" as any, // "pay" type is not included in Adyen's types, try to force it
           buttonColor: "black",
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.applepay)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.applepay)],
           // Configuration that can not be overridden
           onClick: (resolve, reject) => {
             if (this.dropinOptions.onPayButtonClick) {
@@ -200,25 +181,19 @@ export class DropinComponents implements DropinComponent {
         },
         bcmc: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.bancontactcard)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.bancontactcard)],
           // Configuration that can not be overridden
         },
         bcmc_mobile: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.bancontactmobile)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.bancontactmobile)],
           // Configuration that can not be overridden
         },
         card: {
           hasHolderName: true,
           holderNameRequired: true,
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.card)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)],
           // Configuration that can not be overridden
           enableStoreDetails: this.storedPaymentMethodsConfig.isEnabled,
         },
@@ -226,9 +201,7 @@ export class DropinComponents implements DropinComponent {
           buttonType: "pay",
           buttonSizeMode: "fill",
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.googlepay)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.googlepay)],
           // Configuration that can not be overridden
           onClick: (resolve, reject) => {
             if (this.dropinOptions.onPayButtonClick) {
@@ -242,30 +215,22 @@ export class DropinComponents implements DropinComponent {
         },
         klarna_b2b: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.klarna_billie)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_billie)],
           // Configuration that can not be overridden
         },
         klarna: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.klarna_pay_later)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_pay_later)],
           // Configuration that can not be overridden
         },
         klarna_paynow: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.klarna_pay_now)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_pay_now)],
           // Configuration that can not be overridden
         },
         klarna_account: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.klarna_pay_overtime)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.klarna_pay_overtime)],
           // Configuration that can not be overridden
         },
         molpay_ebanking_fpx_MY: {
@@ -275,9 +240,7 @@ export class DropinComponents implements DropinComponent {
         },
         onlineBanking_PL: {
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.przelewy24)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.przelewy24)],
           // Configuration that can not be overridden
         },
         paypal: {
@@ -285,9 +248,7 @@ export class DropinComponents implements DropinComponent {
           blockPayPalPayLaterButton: true,
           blockPayPalVenmoButton: true,
           // Override the default config with the one provided by the user
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.paypal)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.paypal)],
           // Configuration that can not be overridden
           style: {
             disableMaxWidth: true,
@@ -304,15 +265,11 @@ export class DropinComponents implements DropinComponent {
           },
         },
         trustly: {
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.trustly)
-          ],
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.trustly)],
         },
         mbway: {
-          ...this.dropinConfigOverride[
-            getPaymentMethodType(PaymentMethod.mbway)
-          ],
-        }
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.mbway)],
+        },
       },
     });
   }
@@ -322,23 +279,17 @@ export class DropinComponents implements DropinComponent {
   }
 
   async submit(): Promise<void> {
-    throw new Error(
-      "Method not available. Submit is managed by the Dropin component.",
-    );
+    throw new Error("Method not available. Submit is managed by the Dropin component.");
   }
 
   private overrideOnSubmit() {
     const parentOnSubmit = this.adyenCheckout.options.onSubmit;
 
-    this.adyenCheckout.options.onSubmit = async (
-      state: SubmitData,
-      component: Dropin,
-      actions: SubmitActions,
-    ) => {
+    this.adyenCheckout.options.onSubmit = async (state: SubmitData, component: Dropin, actions: SubmitActions) => {
       const paymentMethod = state.data.paymentMethod.type;
-      const hasOnClick =
-        component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
-      if (!hasOnClick && this.dropinOptions.onPayButtonClick) {
+      const hasOnClick = component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
+      const isGiftCardResubmit = paymentMethod === 'giftcard' && !!state.data.order;
+      if (!hasOnClick && !isGiftCardResubmit && this.dropinOptions.onPayButtonClick) {
         try {
           await this.dropinOptions.onPayButtonClick();
         } catch (e) {

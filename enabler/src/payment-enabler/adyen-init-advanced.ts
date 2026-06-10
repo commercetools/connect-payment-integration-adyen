@@ -8,6 +8,7 @@ import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AdyenInit } from "./adyen-init-session";
 import { AdyenEnablerOptions, BaseOptions } from "./adyen-payment-enabler";
 import { getPaymentMethodType } from "./payment-enabler";
+import { ProcessorApiClient } from '../api/processor-api.client';
 
 class AdyenInitError extends Error {
   sessionId: string;
@@ -20,11 +21,13 @@ class AdyenInitError extends Error {
 
 export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private initOptions: AdyenEnablerOptions;
+  private apiClient: ProcessorApiClient;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private expressPaymentMethodsConfig: Map<string, { [key: string]: string }>;
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
+    this.apiClient = new ProcessorApiClient({ processorUrl: initOptions.processorUrl, sessionId: initOptions.sessionId });
     this.expressPaymentMethodsConfig = new Map();
   }
 
@@ -33,33 +36,11 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       this.initOptions.locale || "en-US"
     );
 
-    const [configResponse] = await Promise.all([
-      fetch(`${this.initOptions.processorUrl}/express-config`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          countryCode: this.initOptions.countryCode,
-        }),
-      }),
-    ]);
-
-    if (!configResponse.ok) {
-      throw new AdyenInitError(
-        configResponse.status === 403
-          ? "Unauthorized error fetching express config"
-          : "Not able to initialize Adyen"
-      );
-    }
-
-    const [configJson] = await Promise.all([configResponse.json()]);
-
-    if (!configJson.methods) {
-      throw new AdyenInitError(
-        "Not able to initialize Adyen",
-        this.initOptions.sessionId
-      );
+    let configJson: Awaited<ReturnType<ProcessorApiClient['getExpressConfig']>>;
+    try {
+      configJson = await this.apiClient.getExpressConfig({ countryCode: this.initOptions.countryCode });
+    } catch {
+      throw new AdyenInitError('Not able to initialize Adyen', this.initOptions.sessionId);
     }
 
     configJson.methods.forEach((method: any) => {
@@ -108,7 +89,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private handleError(opts: { error: any; component: UIElement }) {
     if (this.initOptions.onError) {
       this.initOptions.onError(opts.error, {
-        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+        method: opts.component?.props?.type ? { type: getPaymentMethodType(opts.component.props.type) } : undefined,
       });
     }
   }
@@ -122,7 +103,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
       this.initOptions.onComplete({
         isSuccess: opts.isSuccess,
         paymentReference: opts?.paymentReference,
-        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+        method: { type: getPaymentMethodType(opts.component.props?.type) },
       });
     }
   }

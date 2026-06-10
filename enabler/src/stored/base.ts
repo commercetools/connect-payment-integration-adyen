@@ -10,6 +10,7 @@ import {
   BaseOptions,
   StoredPaymentMethodsConfig,
 } from "../payment-enabler/adyen-payment-enabler";
+import { ProcessorApiClient } from '../api/processor-api.client';
 
 type AdyenComponent = Card; // We can add more components as needed
 
@@ -57,6 +58,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
   protected paymentComponentConfigOverride: Record<string, any>;
   protected storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   protected usedCocoStoredPaymentMethod: CocoStoredPaymentMethod;
+  protected apiClient: ProcessorApiClient;
 
   constructor(opts: {
     paymentMethod: PaymentMethod;
@@ -74,6 +76,7 @@ export abstract class DefaultAdyenStoredComponent implements StoredComponent {
     this.processorUrl = opts.processorUrl;
     this.paymentComponentConfigOverride = opts.paymentComponentConfigOverride;
     this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
+    this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
   }
 
   abstract init(options: { id: string }): void;

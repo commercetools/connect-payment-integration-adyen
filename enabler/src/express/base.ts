@@ -8,27 +8,21 @@ import {
   UIElement,
 } from "@adyen/adyen-web";
 import {
-  CTAmount,
   ExpressAddressData,
   ExpressComponent,
   ExpressOptions,
   ExpressShippingOptionData,
   OnComplete,
 } from "../payment-enabler/payment-enabler";
+import { ProcessorApiClient } from '../api/processor-api.client';
+import { ExpressPaymentDataResponse } from '../api/processor-api.type';
 
 export type ShippingMethodCost = {
   [key: string]: string;
 };
 
-export type InitialPaymentData = {
-  totalPrice: CTAmount;
-  lineItems: {
-    name: string;
-    amount: CTAmount;
-    type: string;
-  }[];
-  currencyCode: string;
-};
+// Re-export for backwards compatibility with subclasses that reference InitialPaymentData
+export type InitialPaymentData = ExpressPaymentDataResponse;
 
 export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected processorUrl: string;
@@ -40,6 +34,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
   protected availableShippingMethods: ExpressShippingOptionData[];
   protected paymentMethodConfig: { [key: string]: string };
   protected onComplete: OnComplete;
+  protected apiClient: ProcessorApiClient;
 
   constructor(opts: {
     expressOptions: ExpressOptions;
@@ -57,6 +52,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     this.currencyCode = opts.currencyCode;
     this.paymentMethodConfig = opts.paymentMethodConfig;
     this.onComplete = opts.onComplete;
+    this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
   }
 
   abstract init(): void;
@@ -114,23 +110,12 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
 
   protected setSessionId(sessionId): void {
     this.sessionId = sessionId;
+    this.apiClient = new ProcessorApiClient({ processorUrl: this.processorUrl, sessionId });
   }
 
   protected async getInitialPaymentData(): Promise<InitialPaymentData> {
     try {
-      const response = await fetch(
-        `${this.processorUrl}/express-payment-data`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Session-Id": this.sessionId,
-          },
-        }
-      );
-      
-      const data = await response.json();
-      return data as InitialPaymentData;
+      return await this.apiClient.getExpressPaymentData();
     } catch (error) {
       console.error("## getPaymentData - critical error", error);
       throw error;
@@ -192,16 +177,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
         ...opts.extraRequestData,
       };
 
-      const response = await fetch(this.processorUrl + "/express-payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": this.sessionId,
-        },
-        body: JSON.stringify(reqData),
-      });
-
-      const data = await response.json();
+      const data = await this.apiClient.createExpressPayment(reqData);
 
       if (opts.onBeforeResolve) {
         opts.onBeforeResolve(data);

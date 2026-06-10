@@ -19,6 +19,7 @@ import {
   CocoStoredPaymentMethod,
   getPaymentMethodType,
 } from "./payment-enabler";
+import { ProcessorApiClient } from '../api/processor-api.client';
 
 export interface AdyenInit {
   init(type: string): Promise<BaseOptions>;
@@ -35,6 +36,7 @@ class AdyenInitError extends Error {
 
 export class AdyenInitWithSessionFlow implements AdyenInit {
   private initOptions: AdyenEnablerOptions;
+  private apiClient: ProcessorApiClient;
   private applePayConfig?: { usesOwnCertificate: boolean };
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private paymentComponentsConfigOverride?: Record<string, any>;
@@ -42,6 +44,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
+    this.apiClient = new ProcessorApiClient({ processorUrl: initOptions.processorUrl, sessionId: initOptions.sessionId });
   }
 
   async init(): Promise<BaseOptions> {
@@ -49,52 +52,20 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       this.initOptions.locale || "en-US"
     );
 
-    const [sessionResponse, configResponse] = await Promise.all([
-      fetch(`${this.initOptions.processorUrl}/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": this.initOptions.sessionId,
-        },
-        body: JSON.stringify({
-          shopperLocale: adyenLocale,
-        }),
-      }),
-      fetch(`${this.initOptions.processorUrl}/operations/config`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Session-Id": this.initOptions.sessionId,
-        },
-      }),
-    ]);
-
     const [sessionJson, configJson] = await Promise.all([
-      sessionResponse.json(),
-      configResponse.json(),
+      this.apiClient.createSession({ shopperLocale: adyenLocale }),
+      this.apiClient.getConfig(),
     ]);
 
+    let orderAmount: { value: number; currency: string } | undefined;
     let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
     if (configJson.storedPaymentMethodsConfig?.isEnabled === true) {
-      const response = await fetch(
-        this.initOptions.processorUrl + "/stored-payment-methods",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Session-Id": this.initOptions.sessionId,
-          },
-        }
-      );
-
-      const storedPaymentMethods: {
-        storedPaymentMethods: CocoStoredPaymentMethod[];
-      } = await response.json();
-
+      const storedPaymentMethods = await this.apiClient.getStoredPaymentMethods();
       storedPaymentMethodsList = storedPaymentMethods.storedPaymentMethods;
     }
 
-    const { sessionData: data, paymentReference } = sessionJson;
+    const { sessionData: data } = sessionJson;
+    let paymentReference = '';
 
     if (!data || !data.id) {
       throw new AdyenInitError(
@@ -132,29 +103,19 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         component: UIElement,
         actions: SubmitActions
       ) => {
+
         try {
           const reqData = {
             ...state.data,
             shopperLocale: adyenLocale,
             channel: "Web",
-            paymentReference,
             ...(this.getStorePaymentDetails()
               ? { storePaymentMethod: true }
               : {}),
           };
 
-          const response = await fetch(
-            this.initOptions.processorUrl + "/payments",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Session-Id": this.initOptions.sessionId,
-              },
-              body: JSON.stringify(reqData),
-            }
-          );
-          const data = await response.json();
+          const data = await this.apiClient.createPayment(reqData);
+          paymentReference = data.paymentReference;
           if (data.action) {
             if (
               ["threeDS2", "qrCode"].includes(data.action.type) &&
@@ -187,6 +148,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
           actions.resolve({
             resultCode: data.resultCode,
             action: data.action,
+            ...(data.order?.orderData && { order: data.order }),
           });
         } catch (e) {
           this.handleError({ error: e, component, paymentReference });
@@ -200,23 +162,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         actions: AdditionalDetailsActions
       ) => {
         try {
-          const requestData = {
-            ...state.data,
-            paymentReference,
-          };
-          const url = this.initOptions.processorUrl.endsWith("/")
-            ? `${this.initOptions.processorUrl}payments/details`
-            : `${this.initOptions.processorUrl}/payments/details`;
-
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.initOptions.sessionId,
-            },
-            body: JSON.stringify(requestData),
-          });
-          const data = await response.json();
+          const data = await this.apiClient.confirmPaymentDetails({ ...state.data, paymentReference });
           if (
             data.resultCode === "Authorised" ||
             data.resultCode === "Pending"
@@ -241,6 +187,38 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
           this.handleError({ error: e, component, paymentReference });
           component.setStatus("ready");
           actions.reject();
+        }
+      },
+      onBalanceCheck: async (resolve, reject, data) => {
+        try {
+          const result = await this.apiClient.checkGiftCardBalance(data);
+          resolve(result);
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error(String(e)));
+        }
+      },
+      onOrderRequest: async (resolve, reject) => {
+        try {
+          const order = await this.apiClient.createOrder();
+          orderAmount = order.amount;
+          resolve({
+            orderData: order.orderData,
+            pspReference: order.pspReference ?? '',
+            remainingAmount: order.remainingAmount,
+          });
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error(String(e)));
+        }
+      },
+      onOrderCancel: async (data, actions) => {
+        try {
+          await this.apiClient.cancelOrder({
+            orderData: data.order.orderData,
+            pspReference: data.order.pspReference,
+          });
+          actions.resolve({ amount: orderAmount! });
+        } catch {
+          actions.reject('Failed to cancel gift card order');
         }
       },
       analytics: { enabled: true },
@@ -288,7 +266,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     if (this.initOptions.onError) {
       this.initOptions.onError(opts.error, {
         paymentReference: opts.paymentReference,
-        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+        method: opts.component?.props?.type ? { type: getPaymentMethodType(opts.component.props.type) } : undefined,
       });
     }
   }
@@ -302,7 +280,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       this.initOptions.onComplete({
         isSuccess: opts.isSuccess,
         paymentReference: opts.paymentReference,
-        method: { type: getPaymentMethodType(opts.component?.props?.type) },
+        method: { type: getPaymentMethodType(opts.component.props?.type) },
       });
     }
   }

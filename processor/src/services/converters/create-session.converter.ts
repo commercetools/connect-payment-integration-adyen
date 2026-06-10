@@ -11,7 +11,7 @@ import {
   extractShopperName,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
-import { Cart, CurrencyConverters, Payment } from '@commercetools/connect-payments-sdk';
+import { Cart, CurrencyConverters } from '@commercetools/connect-payments-sdk';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
@@ -22,7 +22,7 @@ export class CreateSessionConverter {
   public convertRequest(opts: {
     data: CreateSessionRequestDTO;
     cart: Cart;
-    payment: Payment;
+    amountPlanned: { centAmount: number; currencyCode: string };
   }): CreateCheckoutSessionRequest {
     const allowedPaymentMethods = convertAllowedPaymentMethodsToAdyenFormat();
     const futureOrderNumber = getFutureOrderNumberFromContext();
@@ -35,15 +35,15 @@ export class CreateSessionConverter {
       amount: {
         value: CurrencyConverters.convertWithMapping({
           mapping: CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING,
-          amount: opts.payment.amountPlanned.centAmount,
-          currencyCode: opts.payment.amountPlanned.currencyCode,
+          amount: opts.amountPlanned.centAmount,
+          currencyCode: opts.amountPlanned.currencyCode,
         }),
-        currency: opts.payment.amountPlanned.currencyCode,
+        currency: opts.amountPlanned.currencyCode,
       },
-      reference: opts.payment.id,
+      reference: opts.cart.id,
       merchantAccount: config.adyenMerchantAccount,
       countryCode: getCountryCodeFromCart(opts.cart),
-      returnUrl: buildReturnUrl(opts.payment.id),
+      returnUrl: buildReturnUrl(opts.cart.id),
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
       ...(allowedPaymentMethods.length > 0 && { allowedPaymentMethods }),
       lineItems: mapCoCoCartItemsToAdyenLineItems(opts.cart),

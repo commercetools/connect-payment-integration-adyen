@@ -266,23 +266,9 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
     reject: Function,
     validationUrl: string
   ) {
-    fetch(`${this.processorUrl}/applepay-sessions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Session-Id": this.sessionId,
-      },
-      body: JSON.stringify({
-        validationUrl,
-      }),
-    })
-      .then((res) => res.json())
-      .then((merchantSession) => {
-        resolve(merchantSession);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+    this.apiClient.createApplePaySession({ validationUrl })
+      .then((merchantSession) => { resolve(merchantSession); })
+      .catch((error) => { reject(error); });
   }
 
   private async getLineItemsWithNewTotal(
