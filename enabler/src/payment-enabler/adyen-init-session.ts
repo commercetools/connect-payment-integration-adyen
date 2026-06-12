@@ -105,11 +105,14 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
           } else {
             if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
               component.setStatus("success");
-              this.handleComplete({
-                isSuccess: true,
-                component: component,
-                paymentReference,
-              });
+              const isPartialPayment = (data.order?.remainingAmount?.value ?? 0) > 0;
+              if (!isPartialPayment) {
+                this.handleComplete({
+                  isSuccess: true,
+                  component: component,
+                  paymentReference,
+                });
+              }
             } else {
               this.handleComplete({
                 isSuccess: false,
