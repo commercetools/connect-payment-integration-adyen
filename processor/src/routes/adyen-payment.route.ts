@@ -23,6 +23,11 @@ import {
   UpdatePayPalExpressPaymentRequestDTO,
   UpdatePayPalExpressPaymentResponseDTO,
   CreateExpressPaymentResponseDTO,
+  GiftCardBalanceRequestDTO,
+  GiftCardBalanceResponseDTO,
+  CreateOrderResponseDTO,
+  CancelOrderRequestDTO,
+  CancelOrderResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
@@ -261,6 +266,42 @@ export const adyenPaymentRoutes = async (
       await opts.paymentService.deleteStoredPaymentMethodViaCart(id);
 
       return reply.status(200).send();
+    },
+  );
+
+  fastify.post<{ Body: GiftCardBalanceRequestDTO; Reply: GiftCardBalanceResponseDTO }>(
+    '/paymentMethods/balance',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.checkGiftCardBalance({
+        data: request.body,
+      });
+
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.post<{ Reply: CreateOrderResponseDTO }>(
+    '/orders',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (_request, reply) => {
+      const resp = await opts.paymentService.createOrder();
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.post<{ Body: CancelOrderRequestDTO; Reply: CancelOrderResponseDTO }>(
+    '/orders/cancel',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.paymentService.cancelOrder({ data: request.body });
+      return reply.status(200).send(resp);
     },
   );
 

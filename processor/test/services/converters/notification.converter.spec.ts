@@ -59,22 +59,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Authorization',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a successful ideal payment notification', async () => {
@@ -108,31 +110,33 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Authorization',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-        {
-          type: 'Charge',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+          {
+            type: 'Charge',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a failure ideal payment notification', async () => {
@@ -166,22 +170,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Authorization',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a expired payment notification', async () => {
@@ -219,22 +225,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Authorization',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a successful card capture notification', async () => {
@@ -272,22 +280,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Charge',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Charge',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a capture notification with success=false', async () => {
@@ -325,22 +335,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Charge',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Charge',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a failed card capture notification', async () => {
@@ -378,22 +390,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Charge',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Charge',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a successful card cancellation notification', async () => {
@@ -431,22 +445,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'CancelAuthorization',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'CancelAuthorization',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a failed card cancellation notification', async () => {
@@ -484,22 +500,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'CancelAuthorization',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'CancelAuthorization',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a successful card refund notification', async () => {
@@ -537,22 +555,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Refund',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Refund',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a failed card refund notification', async () => {
@@ -590,22 +610,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Refund',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Refund',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a refund failed notification', async () => {
@@ -643,22 +665,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Refund',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Refund',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a chargeback notification', async () => {
@@ -696,22 +720,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Chargeback',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Chargeback',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert an offer closed notification', async () => {
@@ -749,22 +775,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'Authorization',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 10000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 10000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   test('convert a non supported event notification', async () => {
@@ -847,31 +875,33 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'CancelAuthorization',
-          state: 'Failure',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 1000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'CancelAuthorization',
+            state: 'Failure',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 1000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-        {
-          type: 'Refund',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 1000,
+          {
+            type: 'Refund',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 1000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
   test('convert a cancelORrefund event notification (where modification.action === cancel)', async () => {
     jest
@@ -914,22 +944,24 @@ describe('notification.converter', () => {
     const result = await converter.convert({ data: notification });
 
     // Assert
-    expect(result).toEqual({
-      merchantReference,
-      pspReference,
-      paymentMethod,
-      transactions: [
-        {
-          type: 'CancelAuthorization',
-          state: 'Success',
-          amount: {
-            currencyCode: 'EUR',
-            centAmount: 1000,
+    expect(result).toEqual([
+      {
+        merchantReference,
+        pspReference,
+        paymentMethod,
+        transactions: [
+          {
+            type: 'CancelAuthorization',
+            state: 'Success',
+            amount: {
+              currencyCode: 'EUR',
+              centAmount: 1000,
+            },
+            interactionId: pspReference,
           },
-          interactionId: pspReference,
-        },
-      ],
-    });
+        ],
+      },
+    ]);
   });
 
   describe('store payment method details via custom fields', () => {
@@ -971,7 +1003,7 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+      expect(result[0].paymentMethodInfoCustomField).toBeUndefined();
     });
 
     test('should not return custom fields if the Notification is not of type Authorisation', async () => {
@@ -1012,7 +1044,7 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+      expect(result[0].paymentMethodInfoCustomField).toBeUndefined();
     });
 
     test('should not return custom fields if the Notification is not of success attribute is set to false', async () => {
@@ -1053,7 +1085,7 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+      expect(result[0].paymentMethodInfoCustomField).toBeUndefined();
     });
 
     test('should not return custom fields if the Notification.paymentMethod attribute is undefined', async () => {
@@ -1092,7 +1124,7 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+      expect(result[0].paymentMethodInfoCustomField).toBeUndefined();
     });
 
     test('should not return custom fields provided Notification.paymentMethod attribute contains a value for which no mapping exists', async () => {
@@ -1133,7 +1165,7 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result.paymentMethodInfoCustomField).toBeUndefined();
+      expect(result[0].paymentMethodInfoCustomField).toBeUndefined();
     });
 
     test('convert a successful card payment notification which includes paymentMethodInfo custom fields', async () => {
@@ -1174,34 +1206,316 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result).toEqual({
-        merchantReference,
-        pspReference,
-        paymentMethod,
+      expect(result).toEqual([
+        {
+          merchantReference,
+          pspReference,
+          paymentMethod,
+          transactions: [
+            {
+              type: 'Authorization',
+              state: 'Success',
+              amount: {
+                currencyCode: 'EUR',
+                centAmount: 10000,
+              },
+              interactionId: pspReference,
+            },
+          ],
+          paymentMethodInfoCustomField: {
+            fields: {
+              brand: 'Visa',
+              expiryMonth: 12,
+              expiryYear: 2012,
+              lastFour: '7777',
+            },
+            type: {
+              key: 'commercetools-checkout-card-details',
+              typeId: 'type',
+            },
+          },
+        },
+      ]);
+    });
+  });
+
+  describe('ORDER_CLOSED event', () => {
+    test('returns [] when success=true (silent ignore)', async () => {
+      // Arrange
+      const merchantReference = 'some-merchant-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'order-1-pspReference': 'some-psp',
+                'order-1-paymentAmount': 'EUR 50.00',
+              },
+              amount: { currency: 'EUR', value: 5000 },
+              eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference: 'ORDER_PSP',
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    test('returns Refund when success=false and CT payment has a successful Charge transaction', async () => {
+      // Arrange
+      const mockPaymentWithCharge = {
+        ...mockUpdatePaymentResult,
+        interfaceId: 'GIFT_CARD_PSP',
+        transactions: [
+          {
+            type: 'Charge',
+            state: 'Success',
+            id: 'tx-1',
+            amount: { centAmount: 5000, currencyCode: 'EUR' },
+          },
+        ],
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockPaymentWithCharge] as any);
+
+      const merchantReference = 'some-merchant-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'order-1-pspReference': 'GIFT_CARD_PSP',
+                'order-1-paymentAmount': 'EUR 50.00',
+                'order-1-paymentMethod': 'givex',
+              },
+              amount: { currency: 'EUR', value: 5000 },
+              eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference: 'ORDER_PSP',
+              success: NotificationRequestItem.SuccessEnum.False,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result).toEqual([
+        {
+          merchantReference,
+          pspReference: 'GIFT_CARD_PSP',
+          transactions: [
+            {
+              type: 'Refund',
+              state: 'Success',
+              amount: { centAmount: 5000, currencyCode: 'EUR' },
+              interactionId: 'ORDER_PSP',
+            },
+          ],
+        },
+      ]);
+    });
+
+    test('returns CancelAuthorization when success=false and CT payment has only Authorization (no Charge)', async () => {
+      // Arrange
+      const mockPaymentWithAuthOnly = {
+        ...mockUpdatePaymentResult,
+        interfaceId: 'GIFT_CARD_PSP',
         transactions: [
           {
             type: 'Authorization',
             state: 'Success',
-            amount: {
-              currencyCode: 'EUR',
-              centAmount: 10000,
-            },
-            interactionId: pspReference,
+            id: 'tx-1',
+            amount: { centAmount: 5000, currencyCode: 'EUR' },
           },
         ],
-        paymentMethodInfoCustomField: {
-          fields: {
-            brand: 'Visa',
-            expiryMonth: 12,
-            expiryYear: 2012,
-            lastFour: '7777',
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockPaymentWithAuthOnly] as any);
+
+      const merchantReference = 'some-merchant-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'order-1-pspReference': 'GIFT_CARD_PSP',
+                'order-1-paymentAmount': 'EUR 50.00',
+                'order-1-paymentMethod': 'givex',
+              },
+              amount: { currency: 'EUR', value: 5000 },
+              eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference: 'ORDER_PSP',
+              success: NotificationRequestItem.SuccessEnum.False,
+            },
           },
-          type: {
-            key: 'commercetools-checkout-card-details',
-            typeId: 'type',
-          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result).toEqual([
+        {
+          merchantReference,
+          pspReference: 'GIFT_CARD_PSP',
+          transactions: [
+            {
+              type: 'CancelAuthorization',
+              state: 'Success',
+              amount: { centAmount: 5000, currencyCode: 'EUR' },
+              interactionId: 'ORDER_PSP',
+            },
+          ],
         },
-      });
+      ]);
+    });
+
+    test('returns [] when success=false but CT payment is not found', async () => {
+      // Arrange
+      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([]);
+
+      const merchantReference = 'some-merchant-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'order-1-pspReference': 'UNKNOWN_PSP',
+                'order-1-paymentAmount': 'EUR 50.00',
+              },
+              amount: { currency: 'EUR', value: 5000 },
+              eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference: 'ORDER_PSP',
+              success: NotificationRequestItem.SuccessEnum.False,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    test('returns multiple NotificationUpdatePayment objects for multiple partial payments', async () => {
+      // Arrange
+      const mockPaymentWithCharge = {
+        ...mockUpdatePaymentResult,
+        interfaceId: 'GIFT_CARD_PSP_1',
+        transactions: [
+          {
+            type: 'Charge',
+            state: 'Success',
+            id: 'tx-1',
+            amount: { centAmount: 3000, currencyCode: 'EUR' },
+          },
+        ],
+      };
+      const mockPaymentWithAuthOnly = {
+        ...mockUpdatePaymentResult,
+        interfaceId: 'GIFT_CARD_PSP_2',
+        transactions: [
+          {
+            type: 'Authorization',
+            state: 'Success',
+            id: 'tx-2',
+            amount: { centAmount: 2000, currencyCode: 'EUR' },
+          },
+        ],
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValueOnce([mockPaymentWithCharge] as any)
+        .mockResolvedValueOnce([mockPaymentWithAuthOnly] as any);
+
+      const merchantReference = 'some-merchant-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'order-1-pspReference': 'GIFT_CARD_PSP_1',
+                'order-1-paymentAmount': 'EUR 30.00',
+                'order-1-paymentMethod': 'givex',
+                'order-2-pspReference': 'GIFT_CARD_PSP_2',
+                'order-2-paymentAmount': 'EUR 20.00',
+                'order-2-paymentMethod': 'givex',
+              },
+              amount: { currency: 'EUR', value: 5000 },
+              eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference: 'ORDER_PSP',
+              success: NotificationRequestItem.SuccessEnum.False,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result).toEqual([
+        {
+          merchantReference,
+          pspReference: 'GIFT_CARD_PSP_1',
+          transactions: [
+            {
+              type: 'Refund',
+              state: 'Success',
+              amount: { centAmount: 3000, currencyCode: 'EUR' },
+              interactionId: 'ORDER_PSP',
+            },
+          ],
+        },
+        {
+          merchantReference,
+          pspReference: 'GIFT_CARD_PSP_2',
+          transactions: [
+            {
+              type: 'CancelAuthorization',
+              state: 'Success',
+              amount: { centAmount: 2000, currencyCode: 'EUR' },
+              interactionId: 'ORDER_PSP',
+            },
+          ],
+        },
+      ]);
     });
   });
 });

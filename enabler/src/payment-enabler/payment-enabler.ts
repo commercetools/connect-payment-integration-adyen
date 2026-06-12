@@ -82,15 +82,15 @@ export type CTAmount = {
   fractionDigits: number;
 };
 
-export const getPaymentMethodType = (
-  adyenPaymentMethod: string
-): PaymentMethod | undefined => {
-  for (const enumKey in PaymentMethod) {
-    if (PaymentMethod[enumKey] === adyenPaymentMethod) {
-      return enumKey as PaymentMethod;
-    }
+export const getPaymentMethodType = (adyenPaymentMethod: string | undefined): PaymentMethod => {
+  if (!adyenPaymentMethod) {
+    throw new Error('Adyen payment method type is undefined');
   }
-  return undefined;
+  const entry = Object.entries(PaymentMethod).find(([, value]) => value === adyenPaymentMethod);
+  if (!entry) {
+    throw new Error(`Unknown Adyen payment method type: "${adyenPaymentMethod}"`);
+  }
+  return entry[0] as PaymentMethod;
 };
 
 export type PaymentResult =

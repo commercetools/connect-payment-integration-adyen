@@ -37,6 +37,7 @@ export const config = {
   allowedOrigins: process.env.ALLOWED_ORIGINS,
   paymentInterface: process.env.ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE || 'checkout-adyen',
   adyenStorePaymentMethodDetailsEnabled: process.env.ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED === 'true',
+  adyenOrderExpiryMinutes: parseInt(process.env.ADYEN_ORDER_EXPIRY_MINUTES || '60', 10),
 };
 
 export const getConfig = () => {

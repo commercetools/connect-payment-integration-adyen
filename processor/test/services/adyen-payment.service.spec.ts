@@ -674,7 +674,6 @@ describe('adyen-payment.service', () => {
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
     const result = await adyenPaymentService.createSession(createSessionOpts);
     expect(result.sessionData).toBeDefined();
-    expect(result.paymentReference).toBeDefined();
     expect(result?.sessionData.id).toStrictEqual('12345');
     expect(result?.sessionData.merchantAccount).toStrictEqual('123456');
     expect(result?.sessionData.reference).toStrictEqual('123456');
@@ -682,7 +681,6 @@ describe('adyen-payment.service', () => {
     expect(result?.sessionData?.amount.currency).toStrictEqual('USD');
     expect(result?.sessionData?.amount.value).toStrictEqual(150000);
     expect(result?.sessionData.expiresAt).toStrictEqual(new Date('2024-12-31T00:00:00.000Z'));
-    expect(result.paymentReference).toStrictEqual('123456');
   });
 
   describe('createApplePaySession', () => {

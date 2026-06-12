@@ -12,6 +12,7 @@ import {
 } from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
+  getCheckoutTransactionItemIdFromContext,
   getCtSessionIdFromContext,
   getProcessorUrlFromContext,
 } from '../../libs/fastify/context/context';
@@ -455,3 +456,43 @@ export const extractShopperName = (cart: Cart): { firstName: string; lastName: s
     lastName: lastName ?? '',
   };
 };
+
+export function isGiftCardSplitPayment(data: { paymentMethod?: { type?: string }; order?: unknown }): boolean {
+  return data.paymentMethod?.type === 'giftcard' && data.order != null;
+}
+
+/**
+ * Marker appended to checkoutTransactionItemId when a connector processes
+ * multiple CT payments for the same checkout transaction item (e.g. gift card
+ * partial payment + remaining credit card payment).
+ *
+ * All payments in the split share the same base checkoutTransactionItemId;
+ * the marker signals to the checkout platform that more payments may follow
+ * for this item without the connector needing to track any state.
+ */
+const SPLIT_PAYMENT_MARKER = '#split';
+
+/**
+ * Resolves the checkoutTransactionItemId for a CT payment in the context of
+ * the commercetools Checkout (CTC) integration.
+ *
+ * Standard flow:   checkoutTransactionItemId = "uuid"           (no marker)
+ * Split payment:   checkoutTransactionItemId = "uuid#split"     (marker appended)
+ *
+ * All payments in a split share the same base UUID so CTC can associate them
+ * with the same transaction item. The marker is stripped by the checkout before
+ * querying — see the design decision comment on SPLIT_PAYMENT_MARKER above.
+ */
+export function buildCheckoutTransactionItemId(paymentData: {
+  paymentMethod?: { type?: string };
+  order?: unknown;
+}): string | undefined {
+  const baseId = getCheckoutTransactionItemIdFromContext();
+  if (!baseId) return baseId;
+
+  if (isGiftCardSplitPayment(paymentData) || paymentData.order != null) {
+    return `${baseId}${SPLIT_PAYMENT_MARKER}`;
+  }
+
+  return baseId;
+}

@@ -15,6 +15,7 @@ import {
 } from "../payment-enabler/payment-enabler";
 import { BaseOptions } from "../payment-enabler/adyen-payment-enabler";
 import { DefaultAdyenExpressComponent } from "./base";
+import { UpdatePaypalOrderRequest } from "../api/processor-api.type";
 
 type PayPalShippingOption = {
   reference: string;
@@ -25,14 +26,6 @@ type PayPalShippingOption = {
     value: number;
   };
   selected: boolean;
-};
-
-type UpdateOrder = {
-  paymentReference?: string;
-  pspReference: string;
-  paymentData: string;
-  deliveryMethods: PayPalShippingOption[];
-  originalAmount: CTAmount;
 };
 
 /**
@@ -79,11 +72,11 @@ export class PayPalExpressBuilder implements PaymentExpressBuilder {
 
 export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
   private adyenCheckout: ICore;
-  private pspReference: string;
-  private paymentReference: string;
+  private pspReference!: string;
+  private paymentReference!: string;
   private shippingAddress: any;
-  private originalAmount: CTAmount;
-  private paymentMethod: RawPaymentMethod;
+  private originalAmount!: CTAmount;
+  private paymentMethod!: RawPaymentMethod;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -107,19 +100,12 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     this.adyenCheckout = opts.adyenCheckout;
   }
 
-  private validateShippingAddressCountry(data?: {
-    shippingAddress?: { countryCode: string };
-  }): boolean {
+  private validateShippingAddressCountry(data?: { shippingAddress?: { countryCode: string } }): boolean {
     if (!data?.shippingAddress?.countryCode) return false;
-    if (
-      !this.expressOptions.allowedCountries ||
-      this.expressOptions.allowedCountries.length === 0
-    ) {
+    if (!this.expressOptions.allowedCountries || this.expressOptions.allowedCountries.length === 0) {
       return true;
     }
-    return this.expressOptions.allowedCountries.includes(
-      data.shippingAddress.countryCode
-    );
+    return this.expressOptions.allowedCountries.includes(data.shippingAddress.countryCode);
   }
 
   init(): void {
@@ -155,11 +141,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           method: this.paymentMethod,
         });
       },
-      onSubmit: async (
-        state: SubmitData,
-        component: UIElement,
-        actions: SubmitActions
-      ) => {
+      onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
         return this.submit({
           state,
           component,
@@ -189,16 +171,12 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
             },
           });
 
-          const shippingOptions = await me.getShippingOptions(
-            data.shippingAddress.countryCode
-          );
+          const shippingOptions = await me.getShippingOptions(data.shippingAddress.countryCode);
 
           this.shippingAddress = data.shippingAddress;
 
           // set the default shipping option at this point in the cart.
-          const selectedOption = shippingOptions.filter(
-            (option) => option.selected === true
-          );
+          const selectedOption = shippingOptions.filter((option) => option.selected === true);
           await me.setShippingMethod({
             shippingMethod: {
               id: selectedOption[0].reference,
@@ -209,7 +187,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           const payload = {
             paymentReference: this.paymentReference,
             pspReference: this.pspReference,
-            paymentData: component.paymentData,
+            paymentData: component.paymentData ?? "",
             deliveryMethods: shippingOptions,
             originalAmount: this.originalAmount,
           };
@@ -231,13 +209,13 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           // fetch all shipping methods
           const shippingOptions = await me.getShippingOptions(
             this.shippingAddress.countryCode,
-            data.selectedShippingOption.id
+            data.selectedShippingOption.id,
           );
 
           const payload = {
             paymentReference: this.paymentReference,
             pspReference: this.pspReference,
-            paymentData: component.paymentData,
+            paymentData: component.paymentData ?? "",
             deliveryMethods: shippingOptions,
             originalAmount: this.originalAmount,
           };
@@ -251,32 +229,17 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
       },
       onAdditionalDetails: async (state, component, actions) => {
         try {
-          const requestData = {
+          const data = await this.apiClient.confirmExpressPaymentDetails({
             ...state.data,
             paymentReference: this.paymentReference,
             paymentMethod: this.paymentMethod.type,
-          };
-          const url = this.processorUrl.endsWith("/")
-            ? `${this.processorUrl}express-payments/details`
-            : `${this.processorUrl}/express-payments/details`;
-
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": this.sessionId,
-            },
-            body: JSON.stringify(requestData),
           });
-
-          const data = await response.json();
           this.paymentReference = data.paymentReference;
-          this.paymentMethod = data.paymentMethod;
+          if (data.paymentMethod) {
+            this.paymentMethod = data.paymentMethod;
+          }
 
-          if (
-            data.resultCode === "Authorised" ||
-            data.resultCode === "Pending"
-          ) {
+          if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
             component.setStatus("success");
           } else {
             component.setStatus("error");
@@ -287,12 +250,9 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         }
       },
       onAuthorized: async (data, actions) => {
-        const deliveryInformation =
-          data.authorizedEvent.purchase_units[0]?.shipping;
+        const deliveryInformation = data.authorizedEvent.purchase_units[0]?.shipping;
 
-        const deliveryName = this.safelyParseShippingName(
-          deliveryInformation?.name?.full_name
-        );
+        const deliveryName = this.safelyParseShippingName(deliveryInformation?.name?.full_name);
 
         const customerEmail = data.authorizedEvent.payer.email_address;
 
@@ -309,8 +269,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
           email: customerEmail,
           firstName: data.authorizedEvent.payer?.name?.given_name || "",
           lastName: data.authorizedEvent.payer?.name?.surname || "",
-          phoneNumber:
-            data.authorizedEvent.payer.phone?.phone_number?.national_number,
+          phoneNumber: data.authorizedEvent.payer.phone?.phone_number?.national_number,
         });
 
         this.expressOptions
@@ -327,34 +286,11 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     });
   }
 
-  protected async updateOrder(payload: UpdateOrder): Promise<any> {
-    try {
-      const response = await fetch(
-        `${this.processorUrl}/paypal-express/order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Session-Id": this.sessionId,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("something happened.");
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      throw error;
-    }
+  protected async updateOrder(payload: UpdatePaypalOrderRequest): Promise<any> {
+    return this.apiClient.updatePaypalOrder(payload);
   }
 
-  private async getShippingOptions(
-    countryCode: string,
-    selectedOptionId?: string
-  ): Promise<PayPalShippingOption[]> {
+  private async getShippingOptions(countryCode: string, selectedOptionId?: string): Promise<PayPalShippingOption[]> {
     const shippingMethods = await this.getShippingMethods({
       address: { country: countryCode },
     });
@@ -367,10 +303,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
         currency: method.amount.currencyCode,
         value: method.amount.centAmount, //HINT: an iso to adyen mapping is done for this value in the processor before being sent to adyen.
       },
-      selected:
-        selectedOptionId !== undefined
-          ? selectedOptionId === method.id
-          : method.isSelected ?? false,
+      selected: selectedOptionId !== undefined ? selectedOptionId === method.id : (method.isSelected ?? false),
     }));
   }
 
@@ -378,11 +311,7 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
     firstName: string;
     lastName: string;
   } {
-    const parts = (fullName || "")
-      .trim()
-      .replace(/\s+/g, " ")
-      .split(" ")
-      .filter(Boolean);
+    const parts = (fullName || "").trim().replace(/\s+/g, " ").split(" ").filter(Boolean);
 
     return {
       firstName: parts[0] || "",
