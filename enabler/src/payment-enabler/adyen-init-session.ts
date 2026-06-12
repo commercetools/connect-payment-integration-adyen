@@ -9,17 +9,10 @@ import {
   SubmitData,
   UIElement,
 } from "@adyen/adyen-web";
-import {
-  AdyenEnablerOptions,
-  BaseOptions,
-  StoredPaymentMethodsConfig,
-} from "./adyen-payment-enabler";
+import { AdyenEnablerOptions, BaseOptions, StoredPaymentMethodsConfig } from "./adyen-payment-enabler";
 import { convertToAdyenLocale } from "../converters/locale.converter";
-import {
-  CocoStoredPaymentMethod,
-  getPaymentMethodType,
-} from "./payment-enabler";
-import { ProcessorApiClient } from '../api/processor-api.client';
+import { CocoStoredPaymentMethod, DropinType, getPaymentMethodType } from "./payment-enabler";
+import { ProcessorApiClient } from "../api/processor-api.client";
 
 export interface AdyenInit {
   init(type: string): Promise<BaseOptions>;
@@ -44,13 +37,14 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
-    this.apiClient = new ProcessorApiClient({ processorUrl: initOptions.processorUrl, sessionId: initOptions.sessionId });
+    this.apiClient = new ProcessorApiClient({
+      processorUrl: initOptions.processorUrl,
+      sessionId: initOptions.sessionId,
+    });
   }
 
   async init(): Promise<BaseOptions> {
-    const adyenLocale = convertToAdyenLocale(
-      this.initOptions.locale || "en-US"
-    );
+    const adyenLocale = convertToAdyenLocale(this.initOptions.locale || "en-US");
 
     const [sessionJson, configJson] = await Promise.all([
       this.apiClient.createSession({ shopperLocale: adyenLocale }),
@@ -65,20 +59,14 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     }
 
     const { sessionData: data } = sessionJson;
-    let paymentReference = '';
+    let paymentReference = "";
 
     if (!data || !data.id) {
-      throw new AdyenInitError(
-        "Not able to initialize Adyen, session data missing",
-        this.initOptions.sessionId
-      );
+      throw new AdyenInitError("Not able to initialize Adyen, session data missing", this.initOptions.sessionId);
     }
 
     const adyenCheckout = await AdyenCheckout({
-      onPaymentCompleted: (
-        result: PaymentCompletedData,
-        _component: UIElement
-      ) => {
+      onPaymentCompleted: (result: PaymentCompletedData, _component: UIElement) => {
         console.info("payment completed", result.resultCode);
       },
       onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
@@ -98,37 +86,24 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         }
         this.handleError({ error, component, paymentReference });
       },
-      onSubmit: async (
-        state: SubmitData,
-        component: UIElement,
-        actions: SubmitActions
-      ) => {
-
+      onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
         try {
           const reqData = {
             ...state.data,
             shopperLocale: adyenLocale,
             channel: "Web",
-            ...(this.getStorePaymentDetails()
-              ? { storePaymentMethod: true }
-              : {}),
+            ...(this.getStorePaymentDetails() ? { storePaymentMethod: true } : {}),
           };
 
           const data = await this.apiClient.createPayment(reqData);
           paymentReference = data.paymentReference;
           if (data.action) {
-            if (
-              ["threeDS2", "qrCode"].includes(data.action.type) &&
-              this.initOptions.onActionRequired
-            ) {
+            if (["threeDS2", "qrCode"].includes(data.action.type) && this.initOptions.onActionRequired) {
               this.initOptions.onActionRequired({ type: "fullscreen" });
             }
             component.handleAction(data.action);
           } else {
-            if (
-              data.resultCode === "Authorised" ||
-              data.resultCode === "Pending"
-            ) {
+            if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
               component.setStatus("success");
               this.handleComplete({
                 isSuccess: true,
@@ -159,14 +134,11 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       onAdditionalDetails: async (
         state: AdditionalDetailsData,
         component: UIElement,
-        actions: AdditionalDetailsActions
+        actions: AdditionalDetailsActions,
       ) => {
         try {
           const data = await this.apiClient.confirmPaymentDetails({ ...state.data, paymentReference });
-          if (
-            data.resultCode === "Authorised" ||
-            data.resultCode === "Pending"
-          ) {
+          if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
             component.setStatus("success");
             this.handleComplete({
               isSuccess: true,
@@ -203,7 +175,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
           orderAmount = order.amount;
           resolve({
             orderData: order.orderData,
-            pspReference: order.pspReference ?? '',
+            pspReference: order.pspReference ?? "",
             remainingAmount: order.remainingAmount,
           });
         } catch (e) {
@@ -218,7 +190,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
           });
           actions.resolve({ amount: orderAmount! });
         } catch {
-          actions.reject('Failed to cancel gift card order');
+          actions.reject("Failed to cancel gift card order");
         }
       },
       analytics: { enabled: true },
@@ -258,31 +230,31 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     };
   }
 
-  private handleError(opts: {
-    error: any;
-    component: UIElement;
-    paymentReference: string;
-  }) {
-    if (this.initOptions.onError) {
-      this.initOptions.onError(opts.error, {
-        paymentReference: opts.paymentReference,
-        method: opts.component?.props?.type ? { type: getPaymentMethodType(opts.component.props.type) } : undefined,
-      });
+  private resolveMethodType(component: UIElement): string {
+    try {
+      if (component?.props?.isDropin) return DropinType.embedded;
+      return getPaymentMethodType(component?.props?.type);
+    } catch {
+      return "unknown";
     }
   }
 
-  private handleComplete(opts: {
-    isSuccess: boolean;
-    component: UIElement;
-    paymentReference: string;
-  }) {
-    if (this.initOptions.onComplete) {
-      this.initOptions.onComplete({
-        isSuccess: opts.isSuccess,
-        paymentReference: opts.paymentReference,
-        method: { type: getPaymentMethodType(opts.component.props?.type) },
-      });
-    }
+  private handleError(opts: { error: any; component: UIElement; paymentReference: string }) {
+    if (!this.initOptions.onError) return;
+    const methodType = this.resolveMethodType(opts.component);
+    this.initOptions.onError(opts.error, {
+      paymentReference: opts.paymentReference,
+      ...(methodType && { method: { type: methodType } }),
+    });
+  }
+
+  private handleComplete(opts: { isSuccess: boolean; component: UIElement; paymentReference: string }) {
+    if (!this.initOptions.onComplete) return;
+    this.initOptions.onComplete({
+      isSuccess: opts.isSuccess,
+      paymentReference: opts.paymentReference,
+      method: { type: this.resolveMethodType(opts.component) },
+    });
   }
 
   setStorePaymentDetails = (enabled: boolean): void => {
