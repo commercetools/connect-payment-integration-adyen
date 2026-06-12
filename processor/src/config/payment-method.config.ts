@@ -53,6 +53,19 @@ export const defaultPaymentMethodConfig: PaymentMethodConfig = {
   swish: {
     supportSeparateCapture: false,
   },
+  //  -- Gift cards --
+  givex: {
+    supportSeparateCapture: false,
+  },
+  svs: {
+    supportSeparateCapture: false,
+  },
+  valuelink: {
+    supportSeparateCapture: false,
+  },
+  genericgiftcard: {
+    supportSeparateCapture: false,
+  },
 };
 
 /**

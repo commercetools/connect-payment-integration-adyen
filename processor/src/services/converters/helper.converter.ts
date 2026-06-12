@@ -483,9 +483,10 @@ const SPLIT_PAYMENT_MARKER = '#split';
  * with the same transaction item. The marker is stripped by the checkout before
  * querying — see the design decision comment on SPLIT_PAYMENT_MARKER above.
  */
-export function buildCheckoutTransactionItemId(
-  paymentData: { paymentMethod?: { type?: string }; order?: unknown },
-): string | undefined {
+export function buildCheckoutTransactionItemId(paymentData: {
+  paymentMethod?: { type?: string };
+  order?: unknown;
+}): string | undefined {
   const baseId = getCheckoutTransactionItemIdFromContext();
   if (!baseId) return baseId;
 

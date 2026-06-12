@@ -23,6 +23,9 @@ export class CreateOrderConverter {
         currency: amountPlanned.currencyCode,
       },
       reference: opts.cart.id,
+      // Configurable expiry window for split payments (ADYEN_ORDER_EXPIRY_MINUTES, default 60).
+      // When the order expires Adyen sends an ORDER_CLOSED webhook which we use to clean up the CT payment.
+      expiresAt: new Date(Date.now() + config.adyenOrderExpiryMinutes * 60 * 1000).toISOString(),
     };
   }
 }

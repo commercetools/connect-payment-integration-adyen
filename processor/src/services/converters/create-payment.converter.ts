@@ -152,7 +152,6 @@ export class CreatePaymentConverter {
     cart: Cart;
     payment: ExpressPayment;
   }): Promise<PaymentRequest> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const requestData = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });

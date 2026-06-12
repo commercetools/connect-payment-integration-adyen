@@ -529,26 +529,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
   public async processNotification(opts: { data: NotificationRequestDTO }): Promise<void> {
     log.info('Processing notification', { notification: JSON.stringify(opts.data) });
     try {
-      const updateData = await this.notificationConverter.convert(opts);
-      const payment = await this.getPaymentFromNotification(updateData);
+      const updateDataList = await this.notificationConverter.convert(opts);
 
-      for (const tx of updateData.transactions) {
-        const updatedPayment = await this.ctPaymentService.updatePayment({
-          id: payment.id,
-          pspReference: updateData.pspReference,
-          transaction: tx,
-          ...(updateData.paymentMethodInfoCustomField && {
-            paymentMethodInfo: { custom: updateData.paymentMethodInfoCustomField },
-          }),
-        });
-
-        log.info('Payment updated after processing the notification', {
-          paymentId: updatedPayment.id,
-          version: updatedPayment.version,
-          pspReference: updateData.pspReference,
-          paymentMethod: updateData.paymentMethod,
-          transaction: JSON.stringify(tx),
-        });
+      for (const updateData of updateDataList) {
+        await this.applyNotificationUpdate(updateData);
       }
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {
@@ -1446,6 +1430,27 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * @param data
    * @returns A payment instance
    */
+  private async applyNotificationUpdate(updateData: NotificationUpdatePayment): Promise<void> {
+    const payment = await this.getPaymentFromNotification(updateData);
+    for (const tx of updateData.transactions) {
+      const updatedPayment = await this.ctPaymentService.updatePayment({
+        id: payment.id,
+        pspReference: updateData.pspReference,
+        transaction: tx,
+        ...(updateData.paymentMethodInfoCustomField && {
+          paymentMethodInfo: { custom: updateData.paymentMethodInfoCustomField },
+        }),
+      });
+      log.info('Payment updated after processing the notification', {
+        paymentId: updatedPayment.id,
+        version: updatedPayment.version,
+        pspReference: updateData.pspReference,
+        paymentMethod: updateData.paymentMethod,
+        transaction: JSON.stringify(tx),
+      });
+    }
+  }
+
   private async getPaymentFromNotification(data: NotificationUpdatePayment): Promise<Payment> {
     const interfaceId = data.pspReference;
     let payment!: Payment;
@@ -1514,13 +1519,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   private async processOtherExpressMethods(payload: CreatePaymentRequestDTO): Promise<CreateExpressPaymentResponseDTO> {
-    let ctCart, ctPayment;
+    let ctCart;
     ctCart = await this.ctCartService.getCart({
       id: getCartIdFromContext(),
     });
 
     const amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
-    ctPayment = await this.ctPaymentService.createPayment({
+    const ctPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       paymentMethodInfo: {
         paymentInterface: getConfig().paymentInterface,

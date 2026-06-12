@@ -287,7 +287,7 @@ export class DropinComponents implements DropinComponent {
 
     this.adyenCheckout.options.onSubmit = async (state: SubmitData, component: Dropin, actions: SubmitActions) => {
       const paymentMethod = state.data.paymentMethod.type;
-      const hasOnClick = component.props.paymentMethodsConfiguration[paymentMethod]?.onClick;
+      const hasOnClick = component.props.paymentMethodsConfiguration?.[paymentMethod]?.onClick;
       const isGiftCardResubmit = paymentMethod === 'giftcard' && !!state.data.order;
       if (!hasOnClick && !isGiftCardResubmit && this.dropinOptions.onPayButtonClick) {
         try {

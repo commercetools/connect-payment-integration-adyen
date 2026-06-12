@@ -19,98 +19,118 @@ import { getConfig } from '../../config/config';
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
 
-  private manageAuthorizationTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Authorization',
-      state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-    ...(item.success === NotificationRequestItem.SuccessEnum.True && !this.isSeparateCaptureSupported(item)
-      ? [
-          {
-            type: 'Charge',
-            state: 'Success',
-            amount: this.populateAmount(item),
-            interactionId: item.pspReference,
-          },
-        ]
-      : []),
-  ];
+  constructor(ctPaymentService: CommercetoolsPaymentService) {
+    this.ctPaymentService = ctPaymentService;
+  }
 
-  private manageExpireTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Authorization',
-      state: 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  public async convert(opts: { data: NotificationRequestDTO }): Promise<NotificationUpdatePayment[]> {
+    const item = opts.data.notificationItems[0].NotificationRequestItem;
+    return this.populatePaymentUpdates(item);
+  }
 
-  private manageOfferClosedTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Authorization',
-      state: 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private buildSingleUpdate(
+    item: NotificationRequestItem,
+    transactions: TransactionData[],
+    paymentMethodInfoCustomField?: CustomFieldsDraft,
+  ): NotificationUpdatePayment[] {
+    return [
+      {
+        merchantReference: item.merchantReference,
+        pspReference: item.originalReference || item.pspReference,
+        paymentMethod: item.paymentMethod,
+        transactions,
+        paymentMethodInfoCustomField,
+      },
+    ];
+  }
 
-  private manageCaptureTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Charge',
-      state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private manageAuthorizationTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(
+      item,
+      [
+        {
+          type: 'Authorization',
+          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+          amount: this.populateAmount(item),
+          interactionId: item.pspReference,
+        },
+        ...(item.success === NotificationRequestItem.SuccessEnum.True && !this.isSeparateCaptureSupported(item)
+          ? [{ type: 'Charge', state: 'Success', amount: this.populateAmount(item), interactionId: item.pspReference }]
+          : []),
+      ],
+      this.convertNotificationItemToCustomType(item),
+    );
 
-  private manageCaptureFailedTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Charge',
-      state: 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private manageExpireTransactionData = async (item: NotificationRequestItem): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      { type: 'Authorization', state: 'Failure', amount: this.populateAmount(item), interactionId: item.pspReference },
+    ]);
 
-  private manageCancelAuthorizationTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'CancelAuthorization',
-      state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private manageOfferClosedTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      { type: 'Authorization', state: 'Failure', amount: this.populateAmount(item), interactionId: item.pspReference },
+    ]);
 
-  private manageRefundTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Refund',
-      state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private manageCaptureTransactionData = async (item: NotificationRequestItem): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      {
+        type: 'Charge',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ]);
 
-  private manageRefundFailedTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Refund',
-      state: 'Failure',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private manageCaptureFailedTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      { type: 'Charge', state: 'Failure', amount: this.populateAmount(item), interactionId: item.pspReference },
+    ]);
 
-  private manageChargebackTransactionData = async (item: NotificationRequestItem) => [
-    {
-      type: 'Chargeback',
-      state: 'Success',
-      amount: this.populateAmount(item),
-      interactionId: item.pspReference,
-    },
-  ];
+  private manageCancelAuthorizationTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      {
+        type: 'CancelAuthorization',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ]);
 
-  private manageCancelOrRefundTransactionData = async (item: NotificationRequestItem) => {
+  private manageRefundTransactionData = async (item: NotificationRequestItem): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      {
+        type: 'Refund',
+        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure',
+        amount: this.populateAmount(item),
+        interactionId: item.pspReference,
+      },
+    ]);
+
+  private manageRefundFailedTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      { type: 'Refund', state: 'Failure', amount: this.populateAmount(item), interactionId: item.pspReference },
+    ]);
+
+  private manageChargebackTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> =>
+    this.buildSingleUpdate(item, [
+      { type: 'Chargeback', state: 'Success', amount: this.populateAmount(item), interactionId: item.pspReference },
+    ]);
+
+  private manageCancelOrRefundTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> => {
     const action = item.additionalData?.['modification.action'];
     const interfaceId = item.originalReference || item.pspReference;
     const payment = await this.findPayment(interfaceId, item.merchantReference);
@@ -122,33 +142,83 @@ export class NotificationConverter {
     // we need to fail the initial transaction created and create a new transaction reflecting the operation taken by adyen.
     // If the check is falsey and adyen actually performs a cancel operation, we simply update the cancel transaction we have in coco from 'pending' to 'success | failure' depending
     // on state returned by adyen
-    if (isMismatchedType) {
-      return [
-        {
-          type: existingReverseTransaction?.type || 'CancelAuthorization',
-          state: 'Failure',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        },
-        {
-          type: transactionType,
-          state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
-          amount: this.populateAmount(item),
-          interactionId: item.pspReference,
-        },
-      ];
-    }
-    return [
-      {
-        type: transactionType,
-        state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
-        amount: this.populateAmount(item),
-        interactionId: item.pspReference,
-      },
-    ];
+    const transactions = isMismatchedType
+      ? [
+          {
+            type: existingReverseTransaction?.type || 'CancelAuthorization',
+            state: 'Failure',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+          {
+            type: transactionType,
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ]
+      : [
+          {
+            type: transactionType,
+            state: item.success === NotificationRequestItem.SuccessEnum.True ? 'Success' : 'Failure ',
+            amount: this.populateAmount(item),
+            interactionId: item.pspReference,
+          },
+        ];
+    return this.buildSingleUpdate(item, transactions);
   };
+
+  private manageOrderClosedTransactionData = async (
+    item: NotificationRequestItem,
+  ): Promise<NotificationUpdatePayment[]> => {
+    // success: true — order closed after all payments completed.
+    // Individual AUTHORISATION webhooks already processed each payment. Nothing to do.
+    if (item.success === NotificationRequestItem.SuccessEnum.True) {
+      return [];
+    }
+
+    // success: false — order expired or was cancelled. Adyen automatically refunds gift card partial
+    // payments but does not send individual REFUND webhooks for them. We use ORDER_CLOSED as the
+    // trigger to mark each partial payment as reversed in commercetools.
+    const results: NotificationUpdatePayment[] = [];
+    let n = 1;
+    while (item.additionalData?.[`order-${n}-pspReference`]) {
+      const partialPspReference = item.additionalData[`order-${n}-pspReference`] as string;
+      const payments = await this.ctPaymentService.findPaymentsByInterfaceId({ interfaceId: partialPspReference });
+      const ctPayment = payments[0];
+
+      if (ctPayment) {
+        const hasSuccessfulCharge = ctPayment.transactions.some((tx) => tx.type === 'Charge' && tx.state === 'Success');
+        const transactionType = hasSuccessfulCharge ? 'Refund' : 'CancelAuthorization';
+        const originalTx = ctPayment.transactions.find(
+          (tx) => (tx.type === 'Charge' || tx.type === 'Authorization') && tx.state === 'Success',
+        );
+
+        results.push({
+          merchantReference: item.merchantReference,
+          pspReference: partialPspReference,
+          transactions: [
+            {
+              type: transactionType,
+              state: 'Success',
+              amount: originalTx?.amount ?? this.populateAmount(item),
+              interactionId: item.pspReference,
+            },
+          ],
+        });
+      }
+
+      n++;
+    }
+
+    return results;
+  };
+
   private POPULATE_TRANSACTIONS_MAPPER: Partial<
-    Record<NotificationRequestItem.EventCodeEnum, (item: NotificationRequestItem) => Promise<TransactionData[]>>
+    Record<
+      NotificationRequestItem.EventCodeEnum,
+      (item: NotificationRequestItem) => Promise<NotificationUpdatePayment[]>
+    >
   > = {
     [NotificationRequestItem.EventCodeEnum.Authorisation]: this.manageAuthorizationTransactionData,
     [NotificationRequestItem.EventCodeEnum.Expire]: this.manageExpireTransactionData,
@@ -160,23 +230,8 @@ export class NotificationConverter {
     [NotificationRequestItem.EventCodeEnum.RefundFailed]: this.manageRefundFailedTransactionData,
     [NotificationRequestItem.EventCodeEnum.Chargeback]: this.manageChargebackTransactionData,
     [NotificationRequestItem.EventCodeEnum.CancelOrRefund]: this.manageCancelOrRefundTransactionData,
+    [NotificationRequestItem.EventCodeEnum.OrderClosed]: this.manageOrderClosedTransactionData,
   };
-
-  constructor(ctPaymentService: CommercetoolsPaymentService) {
-    this.ctPaymentService = ctPaymentService;
-  }
-
-  public async convert(opts: { data: NotificationRequestDTO }): Promise<NotificationUpdatePayment> {
-    const item = opts.data.notificationItems[0].NotificationRequestItem;
-
-    return {
-      merchantReference: item.merchantReference,
-      pspReference: item.originalReference || item.pspReference,
-      paymentMethod: item.paymentMethod,
-      transactions: await this.populateTransactions(item),
-      paymentMethodInfoCustomField: this.convertNotificationItemToCustomType(item),
-    };
-  }
 
   private convertNotificationItemToCustomType(item: NotificationRequestItem): CustomFieldsDraft | undefined {
     if (!getConfig().adyenStorePaymentMethodDetailsEnabled) {
@@ -276,7 +331,7 @@ export class NotificationConverter {
     });
   }
 
-  private async populateTransactions(item: NotificationRequestItem): Promise<TransactionData[]> {
+  private async populatePaymentUpdates(item: NotificationRequestItem): Promise<NotificationUpdatePayment[]> {
     const transactionsMapper = this.POPULATE_TRANSACTIONS_MAPPER[item.eventCode];
     if (!transactionsMapper) {
       throw new UnsupportedNotificationError({ notificationEvent: item.eventCode.toString() });

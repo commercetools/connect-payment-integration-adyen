@@ -87,6 +87,9 @@ deployAs:
         - key: ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED
           description: If set to "true" then displayable payment method details will be stored on the payment.paymentMethodInfo and payment-method entities. Default value is "false".
           required: false
+        - key: ADYEN_ORDER_EXPIRY_MINUTES
+          description: Number of minutes before an Adyen Order expires for split payments (e.g. gift card + remaining method). When the order expires, Adyen sends an ORDER_CLOSED webhook to cancel the pending split. Default value is "60".
+          required: false
 
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
