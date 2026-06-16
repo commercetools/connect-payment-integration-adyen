@@ -108,8 +108,7 @@ export class AdyenOrderService {
 function isPaymentApproved(payment: Payment): boolean {
   const wasReverted = payment.transactions.some(
     (tx: Transaction) =>
-      (tx.type === 'CancelAuthorization' || tx.type === 'Refund') &&
-      (tx.state === 'Success' || tx.state === 'Pending'),
+      (tx.type === 'CancelAuthorization' || tx.type === 'Refund') && (tx.state === 'Success' || tx.state === 'Pending'),
   );
   if (wasReverted) return false;
 

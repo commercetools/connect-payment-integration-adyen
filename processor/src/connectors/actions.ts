@@ -9,7 +9,10 @@ export async function createCheckoutCustomType(): Promise<void> {
     log.info('Creating Adyen order details custom type if not existing...');
     try {
       const orderDetailsType = await paymentSDK.ctCustomTypeService.createOrUpdate(AdyenOrderDetailsTypeDraft);
-      log.info('Created (if not existing) Adyen order details custom type', { typeId: orderDetailsType.id, typeKey: orderDetailsType.key });
+      log.info('Created (if not existing) Adyen order details custom type', {
+        typeId: orderDetailsType.id,
+        typeKey: orderDetailsType.key,
+      });
     } catch (error) {
       log.error('Error creating Adyen order details custom type', { error });
     }
@@ -28,7 +31,10 @@ export async function createCheckoutCustomType(): Promise<void> {
     });
 
     const giftCardType = await paymentSDK.ctCustomTypeService.createOrUpdate(GiftCardDetailsTypeDraft);
-    log.info('Created (if not existing) gift card details custom type', { typeId: giftCardType.id, typeKey: giftCardType.key });
+    log.info('Created (if not existing) gift card details custom type', {
+      typeId: giftCardType.id,
+      typeKey: giftCardType.key,
+    });
   } catch (error) {
     log.error('Error creating payment method custom types', { error });
   }

@@ -694,7 +694,9 @@ describe('adyen-payment.service', () => {
     test('when adyenPartialPaymentsEnabled is disabled: uses SDK getPlannedPaymentAmount and does not cancel orders', async () => {
       setupMockConfig({});
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      const plannedAmountSpy = jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      const plannedAmountSpy = jest
+        .spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount')
+        .mockResolvedValue(mockGetPaymentAmount);
       const cancelSpy = jest.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
 
       const service = new AdyenPaymentService(opts);
@@ -708,7 +710,9 @@ describe('adyen-payment.service', () => {
       jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenPartialPaymentsEnabled: true } as any);
       const cartWithExpand = { ...mockGetCartResultShippingModeSimple(), paymentInfo: undefined };
       jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartWithExpand);
-      const plannedAmountSpy = jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      const plannedAmountSpy = jest
+        .spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount')
+        .mockResolvedValue(mockGetPaymentAmount);
       const cancelSpy = jest.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
 
       const service = new AdyenPaymentService(opts);
@@ -2114,7 +2118,15 @@ describe('adyen-payment.service', () => {
       ...mockGetPaymentResult,
       id: 'payment-1',
       amountPlanned: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 },
-      transactions: [{ id: 'tx-1', type: 'Authorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T00:00:00Z' }],
+      transactions: [
+        {
+          id: 'tx-1',
+          type: 'Authorization',
+          state: 'Success',
+          amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 },
+          timestamp: '2024-01-01T00:00:00Z',
+        },
+      ],
       ...overrides,
     });
 
@@ -2152,7 +2164,12 @@ describe('adyen-payment.service', () => {
     });
 
     test('does not deduct approved payments that carry adyenOrderData (gift card orders being cancelled)', () => {
-      const payment = approvedPayment({ custom: { type: { typeId: 'type', id: 'ct' }, fields: { adyenOrderData: 'order-data', adyenOrderPspReference: 'ORDER-PSP-1' } } });
+      const payment = approvedPayment({
+        custom: {
+          type: { typeId: 'type', id: 'ct' },
+          fields: { adyenOrderData: 'order-data', adyenOrderPspReference: 'ORDER-PSP-1' },
+        },
+      });
       const result = service.calculateRemainingAmount(cartWithPayments([payment]));
       expect(result.centAmount).toBe(10000);
     });
@@ -2160,8 +2177,20 @@ describe('adyen-payment.service', () => {
     test('does not deduct reverted payments (Authorization followed by CancelAuthorization in Success)', () => {
       const payment = approvedPayment({
         transactions: [
-          { id: 'tx-auth', type: 'Authorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T00:00:00Z' },
-          { id: 'tx-cancel', type: 'CancelAuthorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T01:00:00Z' },
+          {
+            id: 'tx-auth',
+            type: 'Authorization',
+            state: 'Success',
+            amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 },
+            timestamp: '2024-01-01T00:00:00Z',
+          },
+          {
+            id: 'tx-cancel',
+            type: 'CancelAuthorization',
+            state: 'Success',
+            amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 },
+            timestamp: '2024-01-01T01:00:00Z',
+          },
         ],
       });
       const result = service.calculateRemainingAmount(cartWithPayments([payment]));
@@ -2175,11 +2204,16 @@ describe('adyen-payment.service', () => {
     });
 
     test('deducts multiple approved non-order payments independently', () => {
-      const p1 = approvedPayment({ id: 'p1', amountPlanned: { type: 'centPrecision', centAmount: 1000, currencyCode: 'USD', fractionDigits: 2 } });
-      const p2 = approvedPayment({ id: 'p2', amountPlanned: { type: 'centPrecision', centAmount: 3000, currencyCode: 'USD', fractionDigits: 2 } });
+      const p1 = approvedPayment({
+        id: 'p1',
+        amountPlanned: { type: 'centPrecision', centAmount: 1000, currencyCode: 'USD', fractionDigits: 2 },
+      });
+      const p2 = approvedPayment({
+        id: 'p2',
+        amountPlanned: { type: 'centPrecision', centAmount: 3000, currencyCode: 'USD', fractionDigits: 2 },
+      });
       const result = service.calculateRemainingAmount(cartWithPayments([p1, p2]));
       expect(result.centAmount).toBe(10000 - 1000 - 3000);
     });
   });
-
 });

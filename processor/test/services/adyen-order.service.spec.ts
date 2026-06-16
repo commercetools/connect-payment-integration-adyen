@@ -123,8 +123,19 @@ describe('adyen-order.service', () => {
     const approvedPaymentWithOrder = (id: string, pspReference: string, orderData: string): Payment => ({
       ...mockGetPaymentResult,
       id,
-      transactions: [{ id: `tx-${id}`, type: 'Authorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 5000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T00:00:00Z' }],
-      custom: { type: { typeId: 'type', id: 'custom-type-id' }, fields: { adyenOrderData: orderData, adyenOrderPspReference: pspReference } },
+      transactions: [
+        {
+          id: `tx-${id}`,
+          type: 'Authorization',
+          state: 'Success',
+          amount: { type: 'centPrecision', centAmount: 5000, currencyCode: 'USD', fractionDigits: 2 },
+          timestamp: '2024-01-01T00:00:00Z',
+        },
+      ],
+      custom: {
+        type: { typeId: 'type', id: 'custom-type-id' },
+        fields: { adyenOrderData: orderData, adyenOrderPspReference: pspReference },
+      },
     });
 
     const cartWithPayments = (payments: Payment[]): Cart => ({
@@ -145,7 +156,15 @@ describe('adyen-order.service', () => {
       // Approved payment but no adyenOrderData custom field
       const payment: Payment = {
         ...mockGetPaymentResult,
-        transactions: [{ id: 'tx-1', type: 'Authorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 5000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T00:00:00Z' }],
+        transactions: [
+          {
+            id: 'tx-1',
+            type: 'Authorization',
+            state: 'Success',
+            amount: { type: 'centPrecision', centAmount: 5000, currencyCode: 'USD', fractionDigits: 2 },
+            timestamp: '2024-01-01T00:00:00Z',
+          },
+        ],
       };
       const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
@@ -159,7 +178,10 @@ describe('adyen-order.service', () => {
       const payment: Payment = {
         ...mockGetPaymentResult,
         transactions: [],
-        custom: { type: { typeId: 'type', id: 'custom-type-id' }, fields: { adyenOrderData: 'order-data', adyenOrderPspReference: 'ORDER-PSP-1' } },
+        custom: {
+          type: { typeId: 'type', id: 'custom-type-id' },
+          fields: { adyenOrderData: 'order-data', adyenOrderPspReference: 'ORDER-PSP-1' },
+        },
       };
       const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
@@ -203,7 +225,8 @@ describe('adyen-order.service', () => {
     test('should log error and continue when a cancellation fails', async () => {
       const p1 = approvedPaymentWithOrder('payment-1', 'ORDER-PSP-1', 'order-data-1');
       const p2 = approvedPaymentWithOrder('payment-2', 'ORDER-PSP-2', 'order-data-2');
-      jest.spyOn(orderService, 'cancelOrder')
+      jest
+        .spyOn(orderService, 'cancelOrder')
         .mockRejectedValueOnce(new Error('Adyen failure'))
         .mockResolvedValueOnce(mockCancelResponse);
 

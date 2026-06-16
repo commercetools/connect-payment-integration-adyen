@@ -259,7 +259,9 @@ export class NotificationConverter {
 
     const isGiftCard = this.isGiftCardBrand(item.paymentMethod);
     if (isGiftCard) {
-      return GenerateGiftCardDetailsCustomFieldsDraft({ brand: convertAdyenGiftCardBrandToCTFormat(item.paymentMethod) });
+      return GenerateGiftCardDetailsCustomFieldsDraft({
+        brand: convertAdyenGiftCardBrandToCTFormat(item.paymentMethod),
+      });
     }
 
     return undefined;
