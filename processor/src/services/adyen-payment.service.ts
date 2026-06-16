@@ -15,7 +15,11 @@ import {
   PaymentMethod,
   ErrorInvalidField,
   CurrencyConverters,
+  CustomFieldsDraft,
+  FieldContainer,
 } from '@commercetools/connect-payments-sdk';
+import { AdyenOrderService } from './adyen-order.service';
+import { CheckoutOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/checkoutOrderResponse';
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
@@ -37,15 +41,13 @@ import {
   CreateExpressPaymentResponseDTO,
   GiftCardBalanceRequestDTO,
   GiftCardBalanceResponseDTO,
-  CancelOrderRequestDTO,
-  CancelOrderResponseDTO,
-  CreateOrderResponseDTO,
 } from '../dtos/adyen-payment.dto';
 import { AdyenApi, isAdyenApiError, wrapAdyenError } from '../clients/adyen.client';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 import {
   getCartIdFromContext,
   getCheckoutTransactionItemIdFromContext,
+  getGiftCardPlannedCentAmountFromContext,
   getMerchantReturnUrlFromContext,
 } from '../libs/fastify/context/context';
 import { CreateSessionConverter } from './converters/create-session.converter';
@@ -75,8 +77,6 @@ import { CancelPaymentConverter } from './converters/cancel-payment.converter';
 import { RefundPaymentConverter } from './converters/refund-payment.converter';
 import { ReversePaymentConverter } from './converters/reverse-payment.converter';
 import { BalanceCheckConverter } from './converters/balance-check.converter';
-import { CreateOrderConverter } from './converters/create-order.converter';
-import { CancelOrderConverter } from './converters/cancel-order.converter';
 import { log } from '../libs/logger';
 import { ApplePayPaymentSessionError, UnsupportedNotificationError } from '../errors/adyen-api.error';
 import { fetch as undiciFetch, Agent, Dispatcher } from 'undici';
@@ -93,6 +93,11 @@ import {
   convertPaymentMethodToAdyenFormat,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
+import {
+  AdyenOrderDetailsTypeDraft,
+  AdyenOrderDetailsTypeKey,
+  GenerateAdyenOrderDetailsCustomFieldsDraft,
+} from '../custom-types/adyen-order-details';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
@@ -106,6 +111,7 @@ export type AdyenPaymentServiceOptions = {
   ctPaymentService: CommercetoolsPaymentService;
   ctOrderService: CommercetoolsOrderService;
   ctPaymentMethodService: CommercetoolsPaymentMethodService;
+  orderService: AdyenOrderService;
 };
 
 export class AdyenPaymentService extends AbstractPaymentService {
@@ -121,11 +127,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private refundPaymentConverter: RefundPaymentConverter;
   private reversePaymentConverter: ReversePaymentConverter;
   private balanceCheckConverter: BalanceCheckConverter;
-  private createOrderConverter: CreateOrderConverter;
-  private cancelOrderConverter: CancelOrderConverter;
+  private orderService: AdyenOrderService;
 
   constructor(opts: AdyenPaymentServiceOptions) {
     super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService, opts.ctPaymentMethodService);
+    this.orderService = opts.orderService;
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
     this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService, this.ctCartService);
@@ -137,8 +143,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     this.capturePaymentConverter = new CapturePaymentConverter(this.ctCartService, this.ctOrderService);
     this.refundPaymentConverter = new RefundPaymentConverter();
     this.balanceCheckConverter = new BalanceCheckConverter();
-    this.createOrderConverter = new CreateOrderConverter(this.ctCartService);
-    this.cancelOrderConverter = new CancelOrderConverter();
     this.reversePaymentConverter = new ReversePaymentConverter();
   }
 
@@ -306,8 +310,21 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   async createSession(opts: { data: CreateSessionRequestDTO }): Promise<CreateSessionResponseDTO> {
-    const ctCart = await this.ctCartService.getCart({ id: getCartIdFromContext() });
-    const amountPlanned = await this.ctCartService.getPlannedPaymentAmount({ cart: ctCart });
+    const ctCart = await this.ctCartService.getCart({
+      id: getCartIdFromContext(),
+      expand: ['paymentInfo.payments[*]'],
+    });
+
+    // When partial payments are enabled, optimistically cancel any active Adyen orders (gift card
+    // orders that have been partially applied but not yet fully settled). The session amount is
+    // computed excluding those gift card payments — we assume the ORDER_CLOSED webhook will arrive
+    // and finalise the cancellation. Payments without adyenOrderData (e.g. regular card payments)
+    // are still deducted as they represent settled amounts.
+    if (getConfig().adyenPartialPaymentsEnabled) {
+      await this.orderService.cancelCartActiveOrders(ctCart);
+    }
+
+    const amountPlanned = await this.getPaymentPlannedAmount(ctCart);
 
     const adyenRequestData = this.createSessionConverter.convertRequest({
       data: opts.data,
@@ -323,6 +340,54 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } catch (e) {
       throw wrapAdyenError(e);
     }
+  }
+
+  private async getPaymentPlannedAmount(cart: Cart): Promise<PaymentAmount> {
+    if (getConfig().adyenPartialPaymentsEnabled) {
+      return this.calculateRemainingAmount(cart);
+    }
+    return this.ctCartService.getPlannedPaymentAmount({ cart });
+  }
+
+  /**
+   * Calculates the remaining amount to be paid in the session after optimistic order cancellation.
+   * Only deducts approved payments that do NOT carry adyenOrderData — i.e. settled non-gift-card
+   * payments. Gift card payments with an active Adyen order are excluded because their orders are
+   * being cancelled and the actual deduction will happen once the ORDER_CLOSED webhook arrives.
+   */
+  public calculateRemainingAmount(cart: Cart): PaymentAmount {
+    const basePrice = cart.taxedPrice?.totalGross ?? cart.totalPrice;
+    const giftCardCentAmount = getGiftCardPlannedCentAmountFromContext();
+
+    const paidCentAmount = (cart.paymentInfo?.payments ?? [])
+      .map((ref) => ref.obj)
+      .filter(
+        (payment): payment is Payment =>
+          payment !== undefined &&
+          this.isPaymentApproved(payment) &&
+          payment.custom?.fields?.['adyenOrderData'] === undefined,
+      )
+      .reduce((sum, payment) => sum + payment.amountPlanned.centAmount, 0);
+
+    return {
+      centAmount: basePrice.centAmount - paidCentAmount - giftCardCentAmount,
+      currencyCode: basePrice.currencyCode,
+      fractionDigits: basePrice.fractionDigits,
+    };
+  }
+
+  private isPaymentApproved(payment: Payment): boolean {
+    const wasReverted = payment.transactions.some(
+      (tx) =>
+        (tx.type === 'CancelAuthorization' || tx.type === 'Refund') &&
+        (tx.state === 'Success' || tx.state === 'Pending'),
+    );
+    if (wasReverted) return false;
+
+    return payment.transactions.some(
+      (tx) =>
+        (tx.state === 'Success' || tx.state === 'Pending') && (tx.type === 'Authorization' || tx.type === 'Charge'),
+    );
   }
 
   public async createPayment(opts: { data: CreatePaymentRequestDTO }): Promise<CreatePaymentResponseDTO> {
@@ -368,6 +433,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
+    const orderCustomFields =
+      getConfig().adyenPartialPaymentsEnabled && res.order
+        ? await this.buildAdyenOrderCustomFields(ctPayment, res.order)
+        : {};
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -382,6 +452,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         data.paymentMethod.storedPaymentMethodId && {
           paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
         }),
+      ...orderCustomFields,
     });
 
     log.info(`Payment authorization processed.`, {
@@ -1353,35 +1424,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return response;
   }
 
-  async createOrder(): Promise<CreateOrderResponseDTO> {
-    const ctCart = await this.ctCartService.getCart({ id: getCartIdFromContext() });
-
-    const request = await this.createOrderConverter.convertRequest({ cart: ctCart });
-
-    log.info('Creating Adyen order for multi payments', { cartId: ctCart.id });
-
-    try {
-      const response = await AdyenApi().OrdersApi.orders(request);
-      log.info('Adyen order created for multi payments', { pspReference: response.pspReference });
-      return response;
-    } catch (e) {
-      throw wrapAdyenError(e);
-    }
-  }
-
-  async cancelOrder(opts: { data: CancelOrderRequestDTO }): Promise<CancelOrderResponseDTO> {
-    const request = this.cancelOrderConverter.convertRequest({ data: opts.data });
-
-    log.info('Cancelling Adyen order.', { pspReference: opts.data.pspReference });
-    try {
-      const response = await AdyenApi().OrdersApi.cancelOrder(request);
-      log.info('Adyen order cancelled.', { pspReference: response.pspReference });
-      return response;
-    } catch (e) {
-      throw wrapAdyenError(e);
-    }
-  }
-
   private convertAdyenResultCode(
     resultCode: PaymentResponse.ResultCodeEnum,
     isActionRequired: boolean,
@@ -1407,6 +1449,54 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   private isActionRequired(data: PaymentResponse): boolean {
     return data.action?.type !== undefined;
+  }
+
+  /**
+   * Builds the custom field update for storing Adyen Order data on a commercetools payment.
+   *
+   * If the payment has no custom type, returns `customFields` (setCustomType) using our own type.
+   * If the payment already has our type, refreshes it via `customFields`.
+   * If the payment has a merchant-owned custom type, adds our field definitions to that type
+   * (idempotent) and returns `customFieldValues` (setCustomField) so the merchant's type is
+   * preserved and not replaced.
+   */
+  private async buildAdyenOrderCustomFields(
+    ctPayment: Payment,
+    order: CheckoutOrderResponse,
+  ): Promise<{ customFields?: CustomFieldsDraft; customFieldValues?: FieldContainer }> {
+    if (!ctPayment.custom) {
+      return {
+        customFields: GenerateAdyenOrderDetailsCustomFieldsDraft({
+          adyenOrderData: order.orderData,
+          adyenOrderPspReference: order.pspReference,
+        }),
+      };
+    }
+
+    // Payment already has a custom type from the merchant — fetch it by ID to get its key,
+    // then add our fields to it rather than replacing it
+    const existingType = await paymentSDK.ctCustomTypeService.getById(ctPayment.custom.type.id);
+
+    if (existingType.key === AdyenOrderDetailsTypeKey) {
+      return {
+        customFields: GenerateAdyenOrderDetailsCustomFieldsDraft({
+          adyenOrderData: order.orderData,
+          adyenOrderPspReference: order.pspReference,
+        }),
+      };
+    }
+
+    await paymentSDK.ctCustomTypeService.createOrUpdate({
+      ...AdyenOrderDetailsTypeDraft,
+      key: existingType.key,
+    });
+
+    return {
+      customFieldValues: {
+        adyenOrderData: order.orderData,
+        adyenOrderPspReference: order.pspReference,
+      },
+    };
   }
 
   private buildRedirectMerchantUrl(

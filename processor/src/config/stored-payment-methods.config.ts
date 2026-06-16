@@ -26,7 +26,7 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
   }
 
   storedPaymentMethodsConfigValidated = {
-    enabled: getConfig().adyenStoredPaymentMethodsEnabled === 'true',
+    enabled: getConfig().adyenStoredPaymentMethodsEnabled,
     config: {
       paymentInterface: getConfig().adyenStoredPaymentMethodsPaymentInterface,
       interfaceAccount: getConfig().adyenStoredPaymentMethodsInterfaceAccount,

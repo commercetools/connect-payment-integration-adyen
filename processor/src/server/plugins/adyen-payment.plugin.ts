@@ -6,6 +6,7 @@ import { app } from '../app';
 export default async function (server: FastifyInstance) {
   await server.register(adyenPaymentRoutes, {
     paymentService: app.services.paymentService,
+    orderService: app.services.orderService,
     sessionHeaderAuthHook: paymentSDK.sessionHeaderAuthHookFn,
     sessionQueryParamAuthHook: paymentSDK.sessionQueryParamAuthHookFn,
     hmacAuthHook: app.hooks.hmacAuthHook,

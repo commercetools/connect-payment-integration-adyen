@@ -29,6 +29,7 @@ import {
   CancelOrderRequestDTO,
   CancelOrderResponseDTO,
 } from '../dtos/adyen-payment.dto';
+import { AdyenOrderService } from '../services/adyen-order.service';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
 import { StoredPaymentMethodsResponseSchema } from '../dtos/stored-payment-methods.dto';
@@ -38,6 +39,7 @@ import { corsAuthHook } from '../libs/fastify/cors/cors';
 
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
+  orderService: AdyenOrderService;
   sessionHeaderAuthHook: SessionHeaderAuthenticationHook;
   sessionQueryParamAuthHook: SessionQueryParamAuthenticationHook;
   hmacAuthHook: HmacAuthHook;
@@ -289,7 +291,7 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (_request, reply) => {
-      const resp = await opts.paymentService.createOrder();
+      const resp = await opts.orderService.createOrder();
       return reply.status(200).send(resp);
     },
   );
@@ -300,7 +302,7 @@ export const adyenPaymentRoutes = async (
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
     },
     async (request, reply) => {
-      const resp = await opts.paymentService.cancelOrder({ data: request.body });
+      const resp = await opts.orderService.cancelOrder({ data: request.body });
       return reply.status(200).send(resp);
     },
   );

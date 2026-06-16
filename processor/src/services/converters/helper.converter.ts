@@ -21,6 +21,7 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
 import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
 import { config } from '../../config/config';
+import { GIFT_CARD_BRANDS } from '../../config/payment-method.config';
 
 /**
  * These payment methods require product line item discounts to be send seperately as a new (negative value) line item
@@ -430,6 +431,21 @@ export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
   }
 
   return ADYEN_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
+};
+
+const ADYEN_GIFT_CARD_BRAND_TO_CT_MAPPING: Record<string, string> = Object.fromEntries(
+  GIFT_CARD_BRANDS.map((brand) => [brand, brand.charAt(0).toUpperCase() + brand.slice(1)]),
+);
+
+/**
+ * Converts an Adyen gift card brand to the CT style. Will return "Unknown" if the brand is not recognised.
+ */
+export const convertAdyenGiftCardBrandToCTFormat = (brand?: string): string => {
+  if (!brand) {
+    return 'Unknown';
+  }
+
+  return ADYEN_GIFT_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
 };
 
 /**

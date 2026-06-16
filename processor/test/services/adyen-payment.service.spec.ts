@@ -27,6 +27,7 @@ import * as StatusHandler from '@commercetools/connect-payments-sdk/dist/api/han
 import { MockAgent, setGlobalDispatcher } from 'undici';
 import * as Config from '../../src/config/config';
 import { AdyenPaymentService, AdyenPaymentServiceOptions } from '../../src/services/adyen-payment.service';
+import { AdyenOrderService } from '../../src/services/adyen-order.service';
 
 import { PaymentRest, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
@@ -87,6 +88,7 @@ describe('adyen-payment.service', () => {
     ctPaymentService: paymentSDK.ctPaymentService,
     ctOrderService: paymentSDK.ctOrderService,
     ctPaymentMethodService: paymentSDK.ctPaymentMethodService,
+    orderService: new AdyenOrderService({ ctCartService: paymentSDK.ctCartService }),
   };
 
   const paymentService = new AdyenPaymentService(opts);
@@ -654,33 +656,69 @@ describe('adyen-payment.service', () => {
     expect(result.paymentMethods).toHaveLength(0);
   });
 
-  test('createSession', async () => {
-    const createSessionOpts: { data: CreateSessionRequestDTO } = {
-      data: {},
-    };
+  describe('createSession', () => {
+    beforeEach(() => {
+      jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+      jest.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('session-123');
+      jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue([]);
+      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(0);
+      jest.spyOn(PaymentsApi.prototype, 'sessions').mockResolvedValue(mockAdyenCreateSessionResponse);
+    });
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    test('returns session data', async () => {
+      const createSessionOpts: { data: CreateSessionRequestDTO } = {
+        data: {},
+      };
 
-    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['applepay']);
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
-    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-    jest.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('123456789');
+      jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+      jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['applepay']);
 
-    jest.spyOn(PaymentsApi.prototype, 'sessions').mockResolvedValue(mockAdyenCreateSessionResponse);
+      jest.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('123456789');
 
-    const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
-    const result = await adyenPaymentService.createSession(createSessionOpts);
-    expect(result.sessionData).toBeDefined();
-    expect(result?.sessionData.id).toStrictEqual('12345');
-    expect(result?.sessionData.merchantAccount).toStrictEqual('123456');
-    expect(result?.sessionData.reference).toStrictEqual('123456');
-    expect(result?.sessionData.returnUrl).toStrictEqual('http://127.0.0.1');
-    expect(result?.sessionData?.amount.currency).toStrictEqual('USD');
-    expect(result?.sessionData?.amount.value).toStrictEqual(150000);
-    expect(result?.sessionData.expiresAt).toStrictEqual(new Date('2024-12-31T00:00:00.000Z'));
+      const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
+      const result = await adyenPaymentService.createSession(createSessionOpts);
+      expect(result.sessionData).toBeDefined();
+      expect(result?.sessionData.id).toStrictEqual('12345');
+      expect(result?.sessionData.merchantAccount).toStrictEqual('123456');
+      expect(result?.sessionData.reference).toStrictEqual('123456');
+      expect(result?.sessionData.returnUrl).toStrictEqual('http://127.0.0.1');
+      expect(result?.sessionData?.amount.currency).toStrictEqual('USD');
+      expect(result?.sessionData?.amount.value).toStrictEqual(150000);
+      expect(result?.sessionData.expiresAt).toStrictEqual(new Date('2024-12-31T00:00:00.000Z'));
+    });
+
+    test('when adyenPartialPaymentsEnabled is disabled: uses SDK getPlannedPaymentAmount and does not cancel orders', async () => {
+      setupMockConfig({});
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      const plannedAmountSpy = jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      const cancelSpy = jest.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
+
+      const service = new AdyenPaymentService(opts);
+      await service.createSession({ data: {} });
+
+      expect(cancelSpy).not.toHaveBeenCalled();
+      expect(plannedAmountSpy).toHaveBeenCalled();
+    });
+
+    test('when adyenPartialPaymentsEnabled is enabled: cancels active orders and uses calculateRemainingAmount', async () => {
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenPartialPaymentsEnabled: true } as any);
+      const cartWithExpand = { ...mockGetCartResultShippingModeSimple(), paymentInfo: undefined };
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartWithExpand);
+      const plannedAmountSpy = jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      const cancelSpy = jest.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
+
+      const service = new AdyenPaymentService(opts);
+      const calcSpy = jest.spyOn(service, 'calculateRemainingAmount').mockReturnValue(mockGetPaymentAmount);
+      await service.createSession({ data: {} });
+
+      expect(cancelSpy).toHaveBeenCalledWith(cartWithExpand);
+      expect(calcSpy).toHaveBeenCalledWith(cartWithExpand);
+      expect(plannedAmountSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('createApplePaySession', () => {
@@ -2063,4 +2101,85 @@ describe('adyen-payment.service', () => {
       });
     });
   });
+
+  describe('calculateRemainingAmount', () => {
+    const service = new AdyenPaymentService(opts);
+
+    const baseCart = () => ({
+      ...mockGetCartResultShippingModeSimple(),
+      totalPrice: { type: 'centPrecision' as const, centAmount: 10000, currencyCode: 'USD', fractionDigits: 2 },
+    });
+
+    const approvedPayment = (overrides: Partial<Payment> = {}): Payment => ({
+      ...mockGetPaymentResult,
+      id: 'payment-1',
+      amountPlanned: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 },
+      transactions: [{ id: 'tx-1', type: 'Authorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T00:00:00Z' }],
+      ...overrides,
+    });
+
+    const cartWithPayments = (payments: Payment[]): Cart => ({
+      ...baseCart(),
+      paymentInfo: { payments: payments.map((p) => ({ typeId: 'payment' as const, id: p.id, obj: p })) },
+    });
+
+    beforeEach(() => {
+      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(0);
+    });
+
+    test('returns full totalPrice when cart has no payments', () => {
+      const result = service.calculateRemainingAmount(baseCart());
+      expect(result).toEqual({ centAmount: 10000, currencyCode: 'USD', fractionDigits: 2 });
+    });
+
+    test('uses taxedPrice.totalGross when available instead of totalPrice', () => {
+      const cart: Cart = {
+        ...baseCart(),
+        taxedPrice: {
+          totalNet: { type: 'centPrecision', centAmount: 8000, currencyCode: 'USD', fractionDigits: 2 },
+          totalGross: { type: 'centPrecision', centAmount: 9600, currencyCode: 'USD', fractionDigits: 2 },
+          taxPortions: [],
+        },
+      };
+      const result = service.calculateRemainingAmount(cart);
+      expect(result.centAmount).toBe(9600);
+    });
+
+    test('deducts approved payments without adyenOrderData', () => {
+      const payment = approvedPayment();
+      const result = service.calculateRemainingAmount(cartWithPayments([payment]));
+      expect(result.centAmount).toBe(10000 - 2000);
+    });
+
+    test('does not deduct approved payments that carry adyenOrderData (gift card orders being cancelled)', () => {
+      const payment = approvedPayment({ custom: { type: { typeId: 'type', id: 'ct' }, fields: { adyenOrderData: 'order-data', adyenOrderPspReference: 'ORDER-PSP-1' } } });
+      const result = service.calculateRemainingAmount(cartWithPayments([payment]));
+      expect(result.centAmount).toBe(10000);
+    });
+
+    test('does not deduct reverted payments (Authorization followed by CancelAuthorization in Success)', () => {
+      const payment = approvedPayment({
+        transactions: [
+          { id: 'tx-auth', type: 'Authorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T00:00:00Z' },
+          { id: 'tx-cancel', type: 'CancelAuthorization', state: 'Success', amount: { type: 'centPrecision', centAmount: 2000, currencyCode: 'USD', fractionDigits: 2 }, timestamp: '2024-01-01T01:00:00Z' },
+        ],
+      });
+      const result = service.calculateRemainingAmount(cartWithPayments([payment]));
+      expect(result.centAmount).toBe(10000);
+    });
+
+    test('deducts giftCardCentAmount from context', () => {
+      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(500);
+      const result = service.calculateRemainingAmount(baseCart());
+      expect(result.centAmount).toBe(10000 - 500);
+    });
+
+    test('deducts multiple approved non-order payments independently', () => {
+      const p1 = approvedPayment({ id: 'p1', amountPlanned: { type: 'centPrecision', centAmount: 1000, currencyCode: 'USD', fractionDigits: 2 } });
+      const p2 = approvedPayment({ id: 'p2', amountPlanned: { type: 'centPrecision', centAmount: 3000, currencyCode: 'USD', fractionDigits: 2 } });
+      const result = service.calculateRemainingAmount(cartWithPayments([p1, p2]));
+      expect(result.centAmount).toBe(10000 - 1000 - 3000);
+    });
+  });
+
 });

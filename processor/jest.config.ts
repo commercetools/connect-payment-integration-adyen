@@ -5,8 +5,9 @@ module.exports = {
   testEnvironment: 'node',
   setupFiles: ['./src/jest.setup.ts'],
   roots: ['./test'],
-  // @faker-js/faker is published as ESM only; default Jest ignores node_modules transforms.
-  transformIgnorePatterns: ['/node_modules/(?!@faker-js/faker/)'],
+  // @faker-js/faker and composable-commerce-test-data are ESM-only packages.
+  // In pnpm the store path uses '+' as a separator, so we match both variants.
+  transformIgnorePatterns: ['/node_modules/\\.pnpm/(?!(@faker-js|@commercetools\\+composable-commerce-test-data))'],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',

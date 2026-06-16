@@ -90,6 +90,9 @@ deployAs:
         - key: ADYEN_ORDER_EXPIRY_MINUTES
           description: Number of minutes before an Adyen Order expires for split payments (e.g. gift card + remaining method). When the order expires, Adyen sends an ORDER_CLOSED webhook to cancel the pending split. Default value is "60".
           required: false
+        - key: ADYEN_PARTIAL_PAYMENTS_ENABLED
+          description: If set to "true" then partial payments (split payments using Adyen Orders API, e.g. gift cards) are enabled. When enabled, the connector creates the required custom type to store Adyen Order data on CT payments. Only supported with the Drop-in component. Default value is "false".
+          required: false
 
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
