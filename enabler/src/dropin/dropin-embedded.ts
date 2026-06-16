@@ -270,6 +270,9 @@ export class DropinComponents implements DropinComponent {
         mbway: {
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.mbway)],
         },
+        zip: {
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.zip)],
+        },
       },
     });
   }

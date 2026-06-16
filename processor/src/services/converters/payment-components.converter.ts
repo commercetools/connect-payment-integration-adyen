@@ -81,6 +81,9 @@ export class PaymentComponentsConverter {
         {
           type: 'trustly',
         },
+        {
+          type: 'zip',
+        },
       ],
       express: [
         {
