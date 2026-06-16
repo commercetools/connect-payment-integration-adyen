@@ -1,4 +1,5 @@
 import * as paymentSdk from '@commercetools/connect-payments-sdk';
+import { getGiftCardPlannedAmountFromContext as sdkGetGiftCardPlannedAmountFromContext } from '@commercetools/connect-payments-sdk/dist/api/context/request-context.helper';
 import { fastifyRequestContext, requestContext } from '@fastify/request-context';
 import { randomUUID } from 'crypto';
 import { FastifyInstance, FastifyRequest } from 'fastify';
@@ -67,6 +68,11 @@ export const getMerchantReturnUrlFromContext = (): string | undefined => {
 export const getFutureOrderNumberFromContext = (): string | undefined => {
   const contextData = getRequestContext() as ContextData;
   return paymentSdk.getFutureOrderNumberFromContext(contextData);
+};
+
+export const getGiftCardPlannedCentAmountFromContext = (): number => {
+  const contextData = getRequestContext() as ContextData;
+  return sdkGetGiftCardPlannedAmountFromContext(contextData)?.centAmount ?? 0;
 };
 
 export const requestContextPlugin = fp(async (fastify: FastifyInstance) => {

@@ -261,6 +261,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT`: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
 - `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY`: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
 - `ADYEN_ORDER_EXPIRY_MINUTES`: Number of minutes before an Adyen Order expires for split payments (e.g. gift card + remaining method). When the order expires, Adyen sends an `ORDER_CLOSED` webhook which cancels the pending split and automatically refunds any partial payments. Default value is `60`.
+- `ADYEN_PARTIAL_PAYMENTS_ENABLED`: If set to `"true"` then partial payments (split payments via the Adyen Orders API, e.g. gift cards) are enabled. When enabled, the connector creates a custom type to store Adyen Order data (`adyenOrderData`, `adyenOrderPspReference`) on the CT `payment` resource. Only supported with the **Drop-in** component. Default value is `"false"`.
 
 ## Feature
 
@@ -298,6 +299,8 @@ This feature will ensure that on the `payment.paymentMethodInfo` and the `paymen
 Currently supported payment-methods are:
 
 - card
+- gift cards
+- sepa
 
 #### Considerations
 
@@ -318,6 +321,44 @@ At any point in time entities can only have one custom-type applied. Thus if thi
 3. set the `ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED` environment variable to `true`.
    1. this will create the predefined Checkout custom-types the next time the connector is re-deployed.
    2. enables the feature during runtime.
+
+### Partial payments (gift cards)
+
+This feature enables split payments using the [Adyen Orders API](https://docs.adyen.com/payment-methods/gift-cards/web-drop-in/), allowing shoppers to pay part of the order amount with a gift card and the remainder with another payment method (e.g. credit card).
+
+> **Note:** This feature is only supported with the **Drop-in** component.
+
+#### How it works
+
+1. The shopper selects a gift card in the Drop-in and enters the data.
+2. Adyen checks the balance and, if sufficient to cover part of the order, creates an **Adyen Order** to track the partial payment.
+3. The Drop-in then prompts the shopper to pay the remaining amount with another payment method.
+4. When the gift card authorization is confirmed, the connector stores the Adyen Order reference (`adyenOrderData`, `adyenOrderPspReference`) as custom fields on the CT `payment` resource so that the Order can be managed (e.g. cancelled) in subsequent sessions.
+5. If the Adyen Order expires (see `ADYEN_ORDER_EXPIRY_MINUTES`), Adyen sends an `ORDER_CLOSED` webhook. The connector handles this by marking all partial payments as reversed in CT.
+
+#### Re-starting a partial payment flow
+
+If the shopper abandons the flow and a new session is created while a previous Adyen Order is still active, the connector **automatically cancels any existing open Adyen Orders** before creating the new session. This means:
+
+- Adyen Orders with an approved (authorized or captured, not reverted) CT payment that carries `adyenOrderData` are cancelled via the Adyen Orders API.
+- The new session amount is recalculated **optimistically**: the gift card payments are excluded from the total immediately, without waiting for Adyen to confirm the cancellation via the `ORDER_CLOSED` webhook. The final CT payment deduction happens when that webhook arrives.
+- Cancellation failures are logged but do not block the new session from being created.
+
+> **UI limitation:** because a new Adyen session must always be created from scratch (to reflect any cart changes and maintain security), the Drop-in cannot resume a partially-paid state. The shopper will need to re-apply the gift card in the new session.
+
+#### Configuration
+
+1. Ensure the configured commercetools API client has the scope `manage_types` (needed to create the custom type on deploy).
+2. Set `ADYEN_PARTIAL_PAYMENTS_ENABLED` to `"true"`. On the next re-deploy, the connector will create the `commercetools-checkout-adyen-order-details` custom type.
+3. Optionally configure `ADYEN_ORDER_EXPIRY_MINUTES` (default: `60`) to control how long an open Adyen Order stays active before expiring.
+
+#### Custom type created
+
+| Type key | Resource | Fields |
+|---|---|---|
+| `commercetools-checkout-adyen-order-details` | `payment` | `adyenOrderData` (String), `adyenOrderPspReference` (String) |
+
+> If the CT payment already has a merchant-defined custom type applied, the connector will add its fields to that existing type rather than replacing it.
 
 ### Payment methods configuration overrides
 

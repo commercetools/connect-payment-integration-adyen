@@ -9,11 +9,12 @@ import {
   CustomFieldsDraft,
   GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
+import { GenerateGiftCardDetailsCustomFieldsDraft } from '../../custom-types/gift-card-details';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
-import { getPaymentMethodConfig } from '../../config/payment-method.config';
+import { getPaymentMethodConfig, GIFT_CARD_BRANDS } from '../../config/payment-method.config';
 import { NotificationUpdatePayment } from '../types/service.type';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
-import { convertAdyenCardBrandToCTFormat } from './helper.converter';
+import { convertAdyenCardBrandToCTFormat, convertAdyenGiftCardBrandToCTFormat } from './helper.converter';
 import { getConfig } from '../../config/config';
 
 export class NotificationConverter {
@@ -256,6 +257,13 @@ export class NotificationConverter {
       return this.convertSchemePaymentToCustomField(item);
     }
 
+    const isGiftCard = this.isGiftCardBrand(item.paymentMethod);
+    if (isGiftCard) {
+      return GenerateGiftCardDetailsCustomFieldsDraft({
+        brand: convertAdyenGiftCardBrandToCTFormat(item.paymentMethod),
+      });
+    }
+
     return undefined;
   }
 
@@ -307,6 +315,10 @@ export class NotificationConverter {
     ];
 
     return schemeBrands.includes(text);
+  }
+
+  private isGiftCardBrand(text: string): boolean {
+    return (GIFT_CARD_BRANDS as readonly string[]).includes(text);
   }
 
   private convertSchemePaymentToCustomField(item: NotificationRequestItem): CustomFieldsDraft {

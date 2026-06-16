@@ -24,48 +24,83 @@ export type PaymentMethodConfig = {
 };
 
 /**
+ * Gift card brands supported by Adyen.
+ */
+export const GIFT_CARD_BRANDS = [
+  'giftcard',
+  // Givex
+  'givex',
+  // Stored Value Solutions (SVS)
+  'svs',
+  // Fiserv (ValueLink)
+  'valuelink',
+  // Intersolve — Netherlands and international
+  'intersolve',
+  'genericgiftcard',
+  'babygiftcard',
+  'bloemengiftcard',
+  'expertgiftcard',
+  'fashioncheque',
+  'fijncadeau',
+  'fleuropbloemenbon',
+  'fonqgiftcard',
+  'gallgall',
+  'hmlingerie',
+  'kadowereld',
+  'kidscadeau',
+  'kindpas',
+  'leisurecard',
+  'nationalebioscoopbon',
+  'podiumcard',
+  'rotterdampas',
+  'schoolspullenpas',
+  'vvvcadeaubon',
+  'vvvgiftcard',
+  'webshopgiftcard',
+  'winkelcheque',
+  'winterkledingpas',
+  'yourgift',
+  // Nets — Nordic
+  'nets',
+  'auriga',
+  'cashcomgiftcard',
+  'entercard',
+  'igive',
+  'ikano',
+  'netscard',
+  'oberthur',
+  'pathegiftcard',
+  'payex',
+  'resursgiftcard',
+  'sparnord',
+  'sparebank',
+  'universalgiftcard',
+  'xponcard',
+  // FIS
+  'hallmarkcard',
+  // Prosodie
+  'prosodie_illicado',
+] as const;
+
+const giftCardConfig: PaymentMethodConfig = Object.fromEntries(
+  GIFT_CARD_BRANDS.map((brand) => [brand, { supportSeparateCapture: false }]),
+);
+
+/**
  * Default payment method configuration.
  * These payment methods do not support separate capture by default.
  * This can be overridden via the ADYEN_PAYMENT_METHODS_CONFIG environment variable.
  */
 export const defaultPaymentMethodConfig: PaymentMethodConfig = {
-  bcmc: {
-    supportSeparateCapture: false,
-  },
-  bcmc_mobile: {
-    supportSeparateCapture: false,
-  },
-  blik: {
-    supportSeparateCapture: false,
-  },
-  eps: {
-    supportSeparateCapture: false,
-  },
-  molpay_ebanking_fpx_MY: {
-    supportSeparateCapture: false,
-  },
-  ideal: {
-    supportSeparateCapture: false,
-  },
-  onlineBanking_PL: {
-    supportSeparateCapture: false,
-  },
-  swish: {
-    supportSeparateCapture: false,
-  },
-  //  -- Gift cards --
-  givex: {
-    supportSeparateCapture: false,
-  },
-  svs: {
-    supportSeparateCapture: false,
-  },
-  valuelink: {
-    supportSeparateCapture: false,
-  },
-  genericgiftcard: {
-    supportSeparateCapture: false,
-  },
+  bcmc: { supportSeparateCapture: false },
+  bcmc_mobile: { supportSeparateCapture: false },
+  blik: { supportSeparateCapture: false },
+  eps: { supportSeparateCapture: false },
+  molpay_ebanking_fpx_MY: { supportSeparateCapture: false },
+  ideal: { supportSeparateCapture: false },
+  onlineBanking_PL: { supportSeparateCapture: false },
+  swish: { supportSeparateCapture: false },
+  ...giftCardConfig,
 };
 
 /**
