@@ -52,6 +52,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     ]);
 
     let orderAmount: { value: number; currency: string } | undefined;
+    let currentRemainingAmount = 0;
     let storedPaymentMethodsList: CocoStoredPaymentMethod[] = [];
     if (configJson.storedPaymentMethodsConfig?.isEnabled === true) {
       const storedPaymentMethods = await this.apiClient.getStoredPaymentMethods();
@@ -97,6 +98,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
 
           const data = await this.apiClient.createPayment(reqData);
           paymentReference = data.paymentReference;
+          currentRemainingAmount = data.order?.remainingAmount?.value ?? 0;
           if (data.action) {
             if (["threeDS2", "qrCode"].includes(data.action.type) && this.initOptions.onActionRequired) {
               this.initOptions.onActionRequired({ type: "fullscreen" });
@@ -105,8 +107,8 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
           } else {
             if (data.resultCode === "Authorised" || data.resultCode === "Pending") {
               component.setStatus("success");
-              const isPartialPayment = (data.order?.remainingAmount?.value ?? 0) > 0;
-              if (!isPartialPayment) {
+              const remainingAmount = data.order?.remainingAmount?.value ?? 0;
+              if (remainingAmount === 0) {
                 this.handleComplete({
                   isSuccess: true,
                   component: component,
@@ -176,6 +178,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         try {
           const order = await this.apiClient.createOrder();
           orderAmount = order.amount;
+          currentRemainingAmount = order.remainingAmount?.value ?? 0;
           resolve({
             orderData: order.orderData,
             pspReference: order.pspReference ?? "",
@@ -225,6 +228,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       adyenCheckout,
       sessionId: this.initOptions.sessionId,
       processorUrl: this.initOptions.processorUrl,
+      getRemainingAmount: () => currentRemainingAmount,
       currencyCode: this.initOptions.currencyCode,
       applePayConfig: this.applePayConfig,
       paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,

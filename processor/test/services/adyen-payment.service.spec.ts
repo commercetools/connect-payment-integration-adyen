@@ -61,6 +61,7 @@ import {
   TokenizationAlreadyExistingDetailsNotificationRequest,
 } from '@adyen/api-library/lib/src/typings/tokenizationWebhooks/models';
 import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
+import { OrdersApi } from '@adyen/api-library/lib/src/services/checkout/ordersApi';
 
 import * as FastifyContext from '../../src/libs/fastify/context/context';
 import { StoredPaymentMethod } from '../../src/dtos/stored-payment-methods.dto';
@@ -128,7 +129,7 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(24);
+    expect(result?.components).toHaveLength(27);
     expect(result?.components[0]?.type).toStrictEqual('afterpay');
     expect(result?.components[1]?.type).toStrictEqual('applepay');
     expect(result?.components[2]?.type).toStrictEqual('bancontactcard');
@@ -153,6 +154,9 @@ describe('adyen-payment.service', () => {
     expect(result?.components[21]?.type).toStrictEqual('clearpay');
     expect(result?.components[22]?.type).toStrictEqual('mbway');
     expect(result?.components[23]?.type).toStrictEqual('trustly');
+    expect(result?.components[24]?.type).toStrictEqual('zip');
+    expect(result?.components[25]?.type).toStrictEqual('wechatpay');
+    expect(result?.components[26]?.type).toStrictEqual('alipay');
   });
 
   test('getStatus', async () => {
@@ -2214,6 +2218,117 @@ describe('adyen-payment.service', () => {
       });
       const result = service.calculateRemainingAmount(cartWithPayments([p1, p2]));
       expect(result.centAmount).toBe(10000 - 1000 - 3000);
+    });
+
+    test('throws ErrorInvalidOperation when remaining amount is exactly zero', () => {
+      const payment = approvedPayment({
+        amountPlanned: { type: 'centPrecision', centAmount: 10000, currencyCode: 'USD', fractionDigits: 2 },
+        transactions: [
+          {
+            id: 'tx-1',
+            type: 'Authorization',
+            state: 'Success',
+            amount: { type: 'centPrecision', centAmount: 10000, currencyCode: 'USD', fractionDigits: 2 },
+            timestamp: '2024-01-01T00:00:00Z',
+          },
+        ],
+      });
+      expect(() => service.calculateRemainingAmount(cartWithPayments([payment]))).toThrow(ErrorInvalidOperation);
+    });
+
+    test('throws ErrorInvalidOperation when remaining amount would be negative', () => {
+      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(10001);
+      expect(() => service.calculateRemainingAmount(baseCart())).toThrow(ErrorInvalidOperation);
+    });
+  });
+
+  describe('createPayment - gift card split payment (getAmountToPay)', () => {
+    const giftCardPaymentOpts: { data: CreatePaymentRequestDTO } = {
+      data: {
+        paymentMethod: { type: 'giftcard', brand: 'givex' } as Record<string, string>,
+        order: { orderData: 'some-order-data', pspReference: 'ORDER-PSP-1' },
+      },
+    };
+
+    beforeEach(() => {
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+      jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+      jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+      jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    });
+
+    test('uses gift card balance as amountPlanned when balance is less than cart amount', async () => {
+      // cartAmount = 150000 (mockGetPaymentAmount), balance = 5000 → use 5000
+      jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
+        balance: { value: 5000, currency: 'USD' },
+        pspReference: 'BALANCE-PSP-1',
+        resultCode: 'Success',
+      });
+
+      const adyenPaymentService = new AdyenPaymentService(opts);
+      await adyenPaymentService.createPayment(giftCardPaymentOpts);
+
+      expect(DefaultPaymentService.prototype.createPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountPlanned: expect.objectContaining({ centAmount: 5000, currencyCode: 'USD' }),
+        }),
+      );
+    });
+
+    test('caps amountPlanned at cart amount when gift card balance exceeds remaining cart amount', async () => {
+      // cartAmount = 150000 (mockGetPaymentAmount), balance = 200000 → cap at 150000
+      jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
+        balance: { value: 200000, currency: 'USD' },
+        pspReference: 'BALANCE-PSP-2',
+        resultCode: 'Success',
+      });
+
+      const adyenPaymentService = new AdyenPaymentService(opts);
+      await adyenPaymentService.createPayment(giftCardPaymentOpts);
+
+      expect(DefaultPaymentService.prototype.createPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountPlanned: expect.objectContaining({ centAmount: 150000, currencyCode: 'USD' }),
+        }),
+      );
+    });
+
+    test('falls back to cart amount when balance check returns no balance', async () => {
+      jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
+        pspReference: 'BALANCE-PSP-3',
+        resultCode: 'NotEnoughBalance',
+      });
+
+      const adyenPaymentService = new AdyenPaymentService(opts);
+      await adyenPaymentService.createPayment(giftCardPaymentOpts);
+
+      expect(DefaultPaymentService.prototype.createPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountPlanned: expect.objectContaining({ centAmount: 150000, currencyCode: 'USD' }),
+        }),
+      );
+    });
+
+    test('uses cart amount directly when payment is not a gift card split payment', async () => {
+      const cardPaymentOpts: { data: CreatePaymentRequestDTO } = {
+        data: { paymentMethod: { type: 'scheme' } as Record<string, string> },
+      };
+
+      const balanceSpy = jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard');
+
+      const adyenPaymentService = new AdyenPaymentService(opts);
+      await adyenPaymentService.createPayment(cardPaymentOpts);
+
+      expect(balanceSpy).not.toHaveBeenCalled();
+      expect(DefaultPaymentService.prototype.createPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountPlanned: expect.objectContaining({ centAmount: 150000 }),
+        }),
+      );
     });
   });
 });
