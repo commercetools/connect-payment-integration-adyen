@@ -45,6 +45,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private processorUrl: string;
   private sessionId: string;
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
+  private getRemainingAmount: (() => number) | undefined;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -53,6 +54,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
     this.storedPaymentMethodsConfig = baseOptions.storedPaymentMethodsConfig;
     this.processorUrl = baseOptions.processorUrl;
     this.sessionId = baseOptions.sessionId;
+    this.getRemainingAmount = baseOptions.getRemainingAmount;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -63,6 +65,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
       processorUrl: this.processorUrl,
       sessionId: this.sessionId,
+      getRemainingAmount: this.getRemainingAmount,
     });
 
     dropin.init();
@@ -81,6 +84,8 @@ export class DropinComponents implements DropinComponent {
   private dropinConfigOverride: Record<string, any>;
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private apiClient: ProcessorApiClient;
+  private lastKnownGiftCardBalance: number | null = null;
+  private getRemainingAmount: (() => number) | undefined;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -89,13 +94,16 @@ export class DropinComponents implements DropinComponent {
     storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
     processorUrl: string;
     sessionId: string;
+    getRemainingAmount?: () => number;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
     this.dropinConfigOverride = opts.dropinConfigOverride;
     this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
     this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
+    this.getRemainingAmount = opts.getRemainingAmount;
 
+    this.overrideBalanceCheckCallback();
     this.overrideOnSubmit();
   }
 
@@ -133,7 +141,7 @@ export class DropinComponents implements DropinComponent {
         }
       },
       onReady: () => {
-        if (this.dropinOptions.onDropinReady) {
+        if (this.dropinOptions?.onDropinReady) {
           this.dropinOptions
             .onDropinReady()
             .then(() => {})
@@ -288,16 +296,51 @@ export class DropinComponents implements DropinComponent {
     this.adyenCheckout.options.onSubmit = async (state: SubmitData, component: Dropin, actions: SubmitActions) => {
       const paymentMethod = state.data.paymentMethod.type;
       const hasOnClick = component.props.paymentMethodsConfiguration?.[paymentMethod]?.onClick;
-      const isGiftCardResubmit = paymentMethod === 'giftcard' && !!state.data.order;
-      if (!hasOnClick && !isGiftCardResubmit && this.dropinOptions.onPayButtonClick) {
-        try {
-          await this.dropinOptions.onPayButtonClick();
-        } catch (e) {
-          component.setStatus("ready");
-          return;
-        }
+      const isIntermediateSplitPayment = this.isIntermediateSplitPayment(state);
+
+      if (!hasOnClick && !isIntermediateSplitPayment && this.dropinOptions?.onPayButtonClick) {
+        const cancelled = await this.runOnPayButtonClick(component);
+        if (cancelled) return;
       }
+
       return await parentOnSubmit(state, component, actions);
     };
+  }
+
+  private overrideBalanceCheckCallback() {
+    const parentOnBalanceCheck = this.adyenCheckout.options.onBalanceCheck;
+    if (!parentOnBalanceCheck) return;
+
+    this.adyenCheckout.options.onBalanceCheck = (resolve, reject, data) => {
+      return parentOnBalanceCheck(
+        (result) => {
+          this.lastKnownGiftCardBalance = result.balance?.value ?? null;
+          resolve(result);
+        },
+        reject,
+        data,
+      );
+    };
+  }
+
+  private isIntermediateSplitPayment(state: SubmitData): boolean {
+    const order = state.data.order as { orderData: string; pspReference: string } | undefined;
+    if (!order) return false;
+
+    const paymentType = state.data.paymentMethod?.type ?? "";
+    if (paymentType !== "giftcard") return false;
+
+    const remainingAmount = this.getRemainingAmount?.() ?? 0;
+    return this.lastKnownGiftCardBalance !== null && this.lastKnownGiftCardBalance < remainingAmount;
+  }
+
+  private async runOnPayButtonClick(component: Dropin): Promise<boolean> {
+    try {
+      await this.dropinOptions!.onPayButtonClick!();
+      return false;
+    } catch {
+      component.setStatus("ready");
+      return true;
+    }
   }
 }
