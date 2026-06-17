@@ -369,8 +369,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
       )
       .reduce((sum, payment) => sum + payment.amountPlanned.centAmount, 0);
 
+    const centAmount = basePrice.centAmount - paidCentAmount - giftCardCentAmount;
+    if (centAmount <= 0) {
+      throw new ErrorInvalidOperation('Cart has no remaining amount to pay');
+    }
+
     return {
-      centAmount: basePrice.centAmount - paidCentAmount - giftCardCentAmount,
+      centAmount,
       currencyCode: basePrice.currencyCode,
       fractionDigits: basePrice.fractionDigits,
     };
@@ -1702,7 +1707,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
       if (balanceResponse.balance) {
         return {
-          centAmount: balanceResponse.balance.value,
+          centAmount: Math.min(balanceResponse.balance.value, cartAmount.centAmount),
           currencyCode: balanceResponse.balance.currency,
           fractionDigits: cartAmount.fractionDigits,
         };

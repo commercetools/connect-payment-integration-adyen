@@ -68,6 +68,7 @@ export type BaseOptions = {
   setStorePaymentDetails?: (enabled: boolean) => void;
   setSessionId?: (sessionId: string) => void;
   onComplete?: OnComplete;
+  getRemainingAmount?: () => number;
 };
 
 export class AdyenPaymentEnabler implements PaymentEnabler {
