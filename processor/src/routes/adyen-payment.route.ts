@@ -335,7 +335,7 @@ export const adyenPaymentRoutes = async (
   fastify.post<{ Body: GetExpressConfigRequestDTO; Reply: GetExpressConfigResponseDTO }>(
     '/express-config',
     {
-      preHandler: [corsAuthHook()],
+      // preHandler: [corsAuthHook()],
     },
     async (request, reply) => {
       const response = await opts.paymentService.expressConfig({

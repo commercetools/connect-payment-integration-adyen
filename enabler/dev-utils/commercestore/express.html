@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>commercestore — Express</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+    <link rel="stylesheet" href="/dev-utils/commercestore/css/store.css" />
+    <script>
+      window.__VITE_CTP_AUTH_URL__ = !"%VITE_CTP_AUTH_URL%".startsWith("%") && "%VITE_CTP_AUTH_URL%";
+      window.__VITE_CTP_API_URL__ = !"%VITE_CTP_API_URL%".startsWith("%") && "%VITE_CTP_API_URL%";
+      window.__VITE_CTP_SESSION_URL__ = !"%VITE_CTP_SESSION_URL%".startsWith("%") && "%VITE_CTP_SESSION_URL%";
+      window.__VITE_CTP_CLIENT_ID__ = !"%VITE_CTP_CLIENT_ID%".startsWith("%") && "%VITE_CTP_CLIENT_ID%";
+      window.__VITE_CTP_CLIENT_SECRET__ = !"%VITE_CTP_CLIENT_SECRET%".startsWith("%") && "%VITE_CTP_CLIENT_SECRET%";
+      window.__VITE_CTP_PROJECT_KEY__ = !"%VITE_CTP_PROJECT_KEY%".startsWith("%") && "%VITE_CTP_PROJECT_KEY%";
+      window.__VITE_PROCESSOR_URL__ = !"%VITE_PROCESSOR_URL%".startsWith("%") && "%VITE_PROCESSOR_URL%";
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/dev-utils/commercestore/src/express.tsx"></script>
+  </body>
+</html>

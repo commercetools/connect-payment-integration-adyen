@@ -36,6 +36,7 @@ import {
   Trustly,
   MBWay,
   Giftcard,
+  WeChat,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -169,6 +170,7 @@ export class DropinComponents implements DropinComponent {
         Trustly,
         MBWay,
         Giftcard,
+        WeChat,
       ],
       paymentMethodsConfiguration: {
         applepay: {

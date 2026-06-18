@@ -141,7 +141,7 @@
       import { Enabler } from "/src/main.ts";
 
       async function fetchDevJwt() {
-        const response = await fetch("http://localhost:9002/jwt/token", {
+        const response = await fetch("http://127.0.0.1:9000/jwt/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -245,10 +245,10 @@
           return alert("Enter cart ID");
         }
 
-        const token = await fetchDevJwt();
+        // const token = await fetchDevJwt();
         const res = await fetch(
           `${__VITE_PROCESSOR_URL__}/operations/payment-components`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          // { headers: { Authorization: `Bearer ${token}` } }
         );
         const paymentMethods = await res.json();
 
