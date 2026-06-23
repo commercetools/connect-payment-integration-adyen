@@ -34,7 +34,7 @@
     "@sinclair/typebox": "0.34.49",
     "dotenv": "17.4.2",
     "fastify": "5.8.5",
-    "fastify-plugin": "5.1.0"
+    "fastify-plugin": "6.0.0"
   },
   "devDependencies": {
     "@commercetools/composable-commerce-test-data": "13.13.1",
