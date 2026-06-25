@@ -13,6 +13,9 @@ export class PaymentComponentsConverter {
           type: 'afterpay', // afterpaytouch
         },
         {
+          type: 'alipay',
+        },
+        {
           type: 'applepay',
         },
         {
@@ -80,6 +83,9 @@ export class PaymentComponentsConverter {
         },
         {
           type: 'trustly',
+        },
+        {
+          type: 'wechatpay',
         },
         {
           type: 'zip',
