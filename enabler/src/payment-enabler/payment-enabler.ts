@@ -74,9 +74,7 @@ export enum PaymentMethod {
   vipps = "vipps",
   mobilepay = "mobilepay",
   mbway = "mbway",
-  trustly = "trustly",
-  wechatpay = "wechatpay", // WeChat Pay
-  zip = "zip",
+  wechatpay = "wechatpayQR", // WeChat Pay
 }
 
 export type CTAmount = {
