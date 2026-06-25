@@ -50,6 +50,7 @@ export type EnablerOptions = {
 
 export enum PaymentMethod {
   afterpay = "afterpaytouch", // Afterpay
+  alipay = "alipay", 
   applepay = "applepay",
   bancontactcard = "bcmc", // Bancontact card
   bancontactmobile = "bcmc_mobile", // Bancontact mobile
@@ -74,6 +75,7 @@ export enum PaymentMethod {
   mobilepay = "mobilepay",
   mbway = "mbway",
   trustly = "trustly",
+  wechatpay = "wechatpay", // WeChat Pay
   zip = "zip",
 }
 

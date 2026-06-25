@@ -6,10 +6,7 @@ import {
   PaymentDropinBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
-import {
-  BaseOptions,
-  StoredPaymentMethodsConfig,
-} from "../payment-enabler/adyen-payment-enabler";
+import { BaseOptions, StoredPaymentMethodsConfig } from "../payment-enabler/adyen-payment-enabler";
 import { ProcessorApiClient } from "../api/processor-api.client";
 import {
   ICore,
@@ -36,6 +33,7 @@ import {
   Trustly,
   MBWay,
   Giftcard,
+  WeChat,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -49,8 +47,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
-    this.paymentComponentsConfigOverride =
-      baseOptions.paymentComponentsConfigOverride;
+    this.paymentComponentsConfigOverride = baseOptions.paymentComponentsConfigOverride;
     this.storedPaymentMethodsConfig = baseOptions.storedPaymentMethodsConfig;
     this.processorUrl = baseOptions.processorUrl;
     this.sessionId = baseOptions.sessionId;
@@ -169,6 +166,7 @@ export class DropinComponents implements DropinComponent {
         Trustly,
         MBWay,
         Giftcard,
+        WeChat,
       ],
       paymentMethodsConfiguration: {
         applepay: {
@@ -277,6 +275,9 @@ export class DropinComponents implements DropinComponent {
         },
         mbway: {
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.mbway)],
+        },
+        wechatpayQR: {
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.wechatpay)],
         },
         zip: {
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.zip)],

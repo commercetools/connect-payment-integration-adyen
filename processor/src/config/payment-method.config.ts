@@ -92,6 +92,7 @@ const giftCardConfig: PaymentMethodConfig = Object.fromEntries(
  * This can be overridden via the ADYEN_PAYMENT_METHODS_CONFIG environment variable.
  */
 export const defaultPaymentMethodConfig: PaymentMethodConfig = {
+  alipay: { supportSeparateCapture: false },
   bcmc: { supportSeparateCapture: false },
   bcmc_mobile: { supportSeparateCapture: false },
   blik: { supportSeparateCapture: false },
@@ -100,6 +101,7 @@ export const defaultPaymentMethodConfig: PaymentMethodConfig = {
   ideal: { supportSeparateCapture: false },
   onlineBanking_PL: { supportSeparateCapture: false },
   swish: { supportSeparateCapture: false },
+  wechatpay: { supportSeparateCapture: false },
   ...giftCardConfig,
 };
 

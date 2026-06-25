@@ -291,6 +291,7 @@ const PAYMENT_METHOD_TO_ADYEN_MAPPING: Record<string, string> = {
   klarna_pay_overtime: 'klarna_account',
   przelewy24: GenericIssuerPaymentMethodDetails.TypeEnum.OnlineBankingPl,
   fpx: 'molpay_ebanking_fpx_MY',
+  wechatpay: 'wechatpayQR',
 };
 
 const ADYEN_TO_PAYMENT_METHOD_MAPPING: Record<string, string> = Object.entries(PAYMENT_METHOD_TO_ADYEN_MAPPING).reduce(
