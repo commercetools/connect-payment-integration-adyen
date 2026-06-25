@@ -17,6 +17,8 @@ import {
   MolPayEBankingMY,
   BcmcMobile,
   MBWay,
+  WeChat,
+  Giftcard,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -34,6 +36,7 @@ type AdyenComponent =
   | GooglePay
   | Klarna
   | EPS
+  | Giftcard
   | MolPayEBankingMY
   | Twint
   | Redirect
@@ -44,7 +47,8 @@ type AdyenComponent =
   | Swish
   | AfterPay
   | BcmcMobile
-  | MBWay;
+  | MBWay
+  | WeChat;
 
 /**
  * Base Web Component
@@ -115,7 +119,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     storePaymentDetails = false,
   }: {
     storePaymentDetails?: boolean;
-  }): Promise<void> {
+  } = {}): Promise<void> {
     this.setStorePaymentDetails?.(storePaymentDetails);
     this.component.submit();
   }
@@ -147,7 +151,7 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
 
   private isPaymentMethodAllowed(): boolean {
     return this.adyenCheckout.paymentMethodsResponse.paymentMethods.some(
-      (paymentMethod) => paymentMethod.type === this.paymentMethod
+      (paymentMethod) => paymentMethod.type === this.paymentMethod,
     );
   }
 }
