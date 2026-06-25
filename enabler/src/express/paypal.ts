@@ -254,14 +254,18 @@ export class PayPalExpressComponent extends DefaultAdyenExpressComponent {
 
         const deliveryName = this.safelyParseShippingName(deliveryInformation?.name?.full_name);
 
-        const customerEmail = data.authorizedEvent.payer.email_address;
+        const customerEmail =
+          data.authorizedEvent.payment_source?.paypal?.email_address || data.authorizedEvent.payer.email_address;
+        const phoneNumber =
+          data.authorizedEvent.payment_source?.paypal?.phone_number?.national_number ||
+          data.authorizedEvent.payer?.phone?.phone_number?.national_number;
 
         const shippingAddress = this.convertAddress({
           address: data.deliveryAddress,
           email: customerEmail,
           firstName: deliveryName.firstName,
           lastName: deliveryName.lastName,
-          phoneNumber: data.authorizedEvent?.shippingAddress?.phoneNumber,
+          phoneNumber,
         });
 
         const billingAddress = this.convertAddress({
