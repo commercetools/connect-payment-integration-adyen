@@ -43,6 +43,8 @@ import { ApplePayExpressBuilder } from "../express/applepay";
 import { MBWayBuilder } from "../components/payment-methods/mbway";
 import { TrustlyBuilder } from "../components/payment-methods/trustly";
 import { ZipBuilder } from "../components/payment-methods/zip";
+import { AlipayBuilder } from "../components/payment-methods/alipay";
+import { WeChatPayBuilder } from "../components/payment-methods/wechatpay";
 
 export type AdyenEnablerOptions = EnablerOptions & {
   onActionRequired?: (action: any) => Promise<void>;
@@ -104,6 +106,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
 
     const supportedMethods = {
       applepay: ApplePayBuilder,
+      alipay: AlipayBuilder,
       bancontactcard: BancontactCardBuilder,
       bancontactmobile: BancontactMobileBuilder,
       blik: BlikBuilder,
@@ -127,6 +130,7 @@ export class AdyenPaymentEnabler implements PaymentEnabler {
       clearpay: ClearpayBuilder,
       mbway: MBWayBuilder,
       trustly: TrustlyBuilder,
+      wechatpay: WeChatPayBuilder,
       zip: ZipBuilder,
     };
 
