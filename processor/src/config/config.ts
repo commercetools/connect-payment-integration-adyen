@@ -45,6 +45,9 @@ export const config = {
   // Adyen — partial payments (gift cards)
   adyenPartialPaymentsEnabled: process.env.ADYEN_PARTIAL_PAYMENTS_ENABLED === 'true',
   adyenOrderExpiryMinutes: parseInt(process.env.ADYEN_ORDER_EXPIRY_MINUTES || '60', 10),
+
+  // Interface interactions
+  saveInterfaceInteractions: process.env.ADYEN_SAVE_INTERFACE_INTERACTIONS === 'true',
 };
 
 export const getConfig = () => {

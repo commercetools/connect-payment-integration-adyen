@@ -93,6 +93,9 @@ deployAs:
         - key: ADYEN_PARTIAL_PAYMENTS_ENABLED
           description: If set to "true" then partial payments (split payments using Adyen Orders API, e.g. gift cards) are enabled. When enabled, the connector creates the required custom type to store Adyen Order data on CT payments. Only supported with the Drop-in component. Default value is "false".
           required: false
+        - key: ADYEN_SAVE_INTERFACE_INTERACTIONS
+          description: If set to "true" then every request/response exchanged with Adyen (and incoming notifications) is stored as an interface interaction on the commercetools Payment. Sensitive fields are automatically masked. Default value is "false".
+          required: false
 
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
