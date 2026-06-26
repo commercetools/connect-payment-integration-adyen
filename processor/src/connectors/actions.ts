@@ -5,6 +5,20 @@ import { GiftCardDetailsTypeDraft } from '../custom-types/gift-card-details';
 import { AdyenOrderDetailsTypeDraft } from '../custom-types/adyen-order-details';
 
 export async function createCheckoutCustomType(): Promise<void> {
+  if (getConfig().saveInterfaceInteractions) {
+    log.info('Creating interface interaction custom type if not existing...');
+    try {
+      const interfaceInteractionType =
+        await paymentSDK.ctCustomTypeService.createOrUpdatePredefinedInterfaceInteractionType();
+      log.info('Created (if not existing) interface interaction custom type', {
+        typeId: interfaceInteractionType.id,
+        typeKey: interfaceInteractionType.key,
+      });
+    } catch (error) {
+      log.error('Error creating interface interaction custom type', { error });
+    }
+  }
+
   if (getConfig().adyenPartialPaymentsEnabled) {
     log.info('Creating Adyen order details custom type if not existing...');
     try {

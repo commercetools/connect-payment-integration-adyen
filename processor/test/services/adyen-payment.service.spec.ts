@@ -643,6 +643,62 @@ describe('adyen-payment.service', () => {
     expect(result?.paymentReference).toStrictEqual('123456');
   });
 
+  describe('interface interactions', () => {
+    const createPaymentOpts: { data: CreatePaymentRequestDTO } = {
+      data: { paymentMethod: { type: CardDetails.TypeEnum.Scheme } as CardDetails },
+    };
+
+    const setupCreatePaymentMocks = () => {
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+      jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+      jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+      jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    };
+
+    test('createPayment passes pspInteractions to updatePayment when saveInterfaceInteractions is enabled', async () => {
+      // Arrange
+      jest
+        .spyOn(Config, 'getConfig')
+        .mockReturnValue({ saveInterfaceInteractions: true, adyenMerchantAccount: 'adyenMerchantAccount' } as any);
+      setupCreatePaymentMocks();
+
+      // Act
+      await new AdyenPaymentService(opts).createPayment(createPaymentOpts);
+
+      // Assert
+      expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pspInteractions: expect.arrayContaining([
+            expect.objectContaining({
+              type: expect.objectContaining({ key: 'commercetools-checkout-payment-interface-interaction' }),
+              fields: expect.objectContaining({ type: 'CreatePayment' }),
+            }),
+          ]),
+        }),
+      );
+    });
+
+    test('createPayment does not pass pspInteractions to updatePayment when saveInterfaceInteractions is disabled', async () => {
+      // Arrange
+      jest
+        .spyOn(Config, 'getConfig')
+        .mockReturnValue({ saveInterfaceInteractions: false, adyenMerchantAccount: 'adyenMerchantAccount' } as any);
+      setupCreatePaymentMocks();
+
+      // Act
+      await new AdyenPaymentService(opts).createPayment(createPaymentOpts);
+
+      // Assert
+      expect(DefaultPaymentService.prototype.updatePayment).toHaveBeenCalledWith(
+        expect.objectContaining({ pspInteractions: undefined }),
+      );
+    });
+  });
+
   test('getPaymentMethods', async () => {
     const getPaymentMethodsOpts: { data: PaymentMethodsRequestDTO } = {
       data: {},

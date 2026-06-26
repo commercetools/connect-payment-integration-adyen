@@ -100,6 +100,7 @@ export const defaultPaymentMethodConfig: PaymentMethodConfig = {
   molpay_ebanking_fpx_MY: { supportSeparateCapture: false },
   ideal: { supportSeparateCapture: false },
   wechatpayQR: { supportSeparateCapture: false },
+  ...giftCardConfig,
 };
 
 /**

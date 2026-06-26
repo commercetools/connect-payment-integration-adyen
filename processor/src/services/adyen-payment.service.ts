@@ -93,6 +93,7 @@ import {
   convertPaymentMethodToAdyenFormat,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
+import { populateInterfaceInteraction, AdyenRequestPayload, AdyenResponsePayload } from './helper.service';
 import {
   AdyenOrderDetailsTypeDraft,
   AdyenOrderDetailsTypeKey,
@@ -105,6 +106,13 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../constants/currencies';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
+
+const MODIFICATION_TYPE_MAP = {
+  capture: 'CapturePayment',
+  refund: 'RefundPayment',
+  cancel: 'CancelPayment',
+  reverse: 'ReversePayment',
+} as const;
 
 export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
@@ -443,6 +451,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
         ? await this.buildAdyenOrderCustomFields(ctPayment, res.order)
         : {};
 
+    const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -458,6 +468,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
           paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
         }),
       ...orderCustomFields,
+      pspInteractions: interfaceInteraction,
     });
 
     log.info(`Payment authorization processed.`, {
@@ -492,6 +503,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
+    const interfaceInteraction = this.buildInterfaceInteraction('ConfirmPayment', data, res);
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -502,6 +515,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
+      pspInteractions: interfaceInteraction,
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -572,6 +586,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
+    const interfaceInteraction = this.buildInterfaceInteraction('ConfirmPayment', data, res);
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -585,6 +601,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
+      pspInteractions: interfaceInteraction,
     });
 
     log.info(`Payment confirmation processed.`, {
@@ -608,7 +625,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       const updateDataList = await this.notificationConverter.convert(opts);
 
       for (const updateData of updateDataList) {
-        await this.applyNotificationUpdate(updateData);
+        await this.applyNotificationUpdate(updateData, opts.data);
       }
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {
@@ -933,6 +950,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
+    const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: newlyCreatedPayment.id,
       pspReference: res.pspReference,
@@ -943,6 +962,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interactionId: res.pspReference, // Deprecated but kept for backward compatibility
         interfaceId: res.pspReference,
       },
+      pspInteractions: interfaceInteraction,
     });
 
     log.info("Payment authorization processed for 'transaction' stored payment method", {
@@ -1293,52 +1313,61 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const interfaceId = request.payment.interfaceId as string;
 
-    const response = await this.makeCallToAdyenInternal(interfaceId, adyenOperation, request);
+    const { adyenRequest, adyenResponse } = await this.makeCallToAdyenInternal(interfaceId, adyenOperation, request);
+
+    const interfaceInteraction = this.buildInterfaceInteraction(
+      MODIFICATION_TYPE_MAP[adyenOperation],
+      adyenRequest,
+      adyenResponse,
+    );
 
     await this.ctPaymentService.updatePayment({
       id: request.payment.id,
       transaction: {
         type: transactionType,
         amount,
-        interactionId: response.pspReference, // Deprecated but kept for backward compatibility
-        interfaceId: response.pspReference,
+        interactionId: adyenResponse.pspReference, // Deprecated but kept for backward compatibility
+        interfaceId: adyenResponse.pspReference,
         state: this.convertPaymentModificationOutcomeToState(PaymentModificationStatus.RECEIVED),
       },
+      pspInteractions: interfaceInteraction,
     });
 
-    return { outcome: PaymentModificationStatus.RECEIVED, pspReference: response.pspReference };
+    return { outcome: PaymentModificationStatus.RECEIVED, pspReference: adyenResponse.pspReference };
   }
 
   private async makeCallToAdyenInternal(
     interfaceId: string,
     adyenOperation: 'capture' | 'refund' | 'cancel' | 'reverse',
     request: CapturePaymentRequest | CancelPaymentRequest | RefundPaymentRequest | ReversePaymentRequest,
-  ): Promise<PaymentCaptureResponse | PaymentCancelResponse | PaymentRefundResponse> {
+  ): Promise<{
+    adyenRequest: AdyenRequestPayload;
+    adyenResponse: PaymentCaptureResponse | PaymentCancelResponse | PaymentRefundResponse;
+  }> {
     try {
       switch (adyenOperation) {
         case 'capture': {
-          return await AdyenApi().ModificationsApi.captureAuthorisedPayment(
-            interfaceId,
-            await this.capturePaymentConverter.convertRequest(request as CapturePaymentRequest),
-          );
+          const adyenRequest = await this.capturePaymentConverter.convertRequest(request as CapturePaymentRequest);
+          const adyenResponse = await AdyenApi().ModificationsApi.captureAuthorisedPayment(interfaceId, adyenRequest);
+          return { adyenRequest, adyenResponse };
         }
         case 'refund': {
-          return await AdyenApi().ModificationsApi.refundCapturedPayment(
-            interfaceId,
-            this.refundPaymentConverter.convertRequest(request as RefundPaymentRequest),
-          );
+          const adyenRequest = this.refundPaymentConverter.convertRequest(request as RefundPaymentRequest);
+          const adyenResponse = await AdyenApi().ModificationsApi.refundCapturedPayment(interfaceId, adyenRequest);
+          return { adyenRequest, adyenResponse };
         }
         case 'cancel': {
-          return await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(
+          const adyenRequest = this.cancelPaymentConverter.convertRequest(request as CancelPaymentRequest);
+          const adyenResponse = await AdyenApi().ModificationsApi.cancelAuthorisedPaymentByPspReference(
             interfaceId,
-            this.cancelPaymentConverter.convertRequest(request as CancelPaymentRequest),
+            adyenRequest,
           );
+          return { adyenRequest, adyenResponse };
         }
         case 'reverse': {
-          return await AdyenApi().ModificationsApi.refundOrCancelPayment(
-            interfaceId,
-            this.reversePaymentConverter.convertRequest(request as ReversePaymentRequest),
-          );
+          const adyenRequest = this.reversePaymentConverter.convertRequest(request as ReversePaymentRequest);
+          const adyenResponse = await AdyenApi().ModificationsApi.refundOrCancelPayment(interfaceId, adyenRequest);
+          return { adyenRequest, adyenResponse };
         }
         default: {
           log.error(`makeCallToAdyenInternal: Operation  ${adyenOperation} not supported when modifying payment.`);
@@ -1525,9 +1554,16 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * @param data
    * @returns A payment instance
    */
-  private async applyNotificationUpdate(updateData: NotificationUpdatePayment): Promise<void> {
+  private async applyNotificationUpdate(
+    updateData: NotificationUpdatePayment,
+    rawNotification?: NotificationRequestDTO,
+  ): Promise<void> {
     const payment = await this.getPaymentFromNotification(updateData);
-    for (const tx of updateData.transactions) {
+    const interfaceInteraction = rawNotification
+      ? this.buildInterfaceInteraction('Notification', rawNotification, undefined)
+      : undefined;
+    for (let i = 0; i < updateData.transactions.length; i++) {
+      const tx = updateData.transactions[i];
       const updatedPayment = await this.ctPaymentService.updatePayment({
         id: payment.id,
         pspReference: updateData.pspReference,
@@ -1535,6 +1571,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         ...(updateData.paymentMethodInfoCustomField && {
           paymentMethodInfo: { custom: updateData.paymentMethodInfoCustomField },
         }),
+        ...(i === 0 && { pspInteractions: interfaceInteraction }),
       });
       log.info('Payment updated after processing the notification', {
         paymentId: updatedPayment.id,
@@ -1665,6 +1702,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
+    const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
+
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
       pspReference: res.pspReference,
@@ -1675,6 +1714,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: txState,
       },
+      pspInteractions: interfaceInteraction,
     });
 
     log.info(`Payment authorization processed.`, {
@@ -1730,5 +1770,15 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } catch (e) {
       throw wrapAdyenError(e);
     }
+  }
+
+  private buildInterfaceInteraction(type: string, request: AdyenRequestPayload, response: AdyenResponsePayload | undefined) {
+    return populateInterfaceInteraction({
+      interactionId: randomUUID(),
+      type,
+      createdAt: new Date().toISOString(),
+      request,
+      response,
+    });
   }
 }

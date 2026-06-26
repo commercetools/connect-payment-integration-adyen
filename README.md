@@ -24,6 +24,10 @@
       - [Solution](#solution)
       - [Configuration](#configuration)
       - [Behavior](#behavior)
+    - [Interface interaction logging](#interface-interaction-logging)
+      - [Covered operations](#covered-operations)
+      - [Sensitive field masking](#sensitive-field-masking)
+      - [Configuration](#configuration-1)
   - [Development](#development)
     - [Configuration steps](#configuration-steps)
       - [1. Environment Variable Setup](#1-environment-variable-setup)
@@ -431,6 +435,52 @@ By default, Bancontact (`bcmc` and `bcmc_mobile`) uses immediate capture. Howeve
 
 - **If `supportSeparateCapture` is `false`**: The connector automatically creates a `Charge` transaction upon receiving the authorization confirmation, immediately synchronizing the payment state with Adyen's immediate capture.
 - **If `supportSeparateCapture` is `true`**: The connector waits for the `CAPTURE` webhook from Adyen before creating the `Charge` transaction, supporting manual/deferred capture workflows.
+
+### Interface interaction logging
+
+When enabled, the connector stores every request/response exchanged with Adyen as a `payment-interface-interaction` custom field on the commercetools `Payment` resource. This is useful for debugging payment flows or for extracting information that the connector does not explicitly persist.
+
+#### Covered operations
+
+The following operations are recorded:
+
+| Operation | Interaction type stored |
+|---|---|
+| Create payment | `CreatePayment` |
+| Confirm payment (additional details) | `ConfirmPayment` |
+| Capture | `CapturePayment` |
+| Refund | `RefundPayment` |
+| Cancel | `CancelPayment` |
+| Reverse | `ReversePayment` |
+| Incoming Adyen notification | `Notification` |
+
+Each interaction records the full request and response .
+
+#### Sensitive field masking
+
+Before storing any payload, the connector automatically masks sensitive data to avoid persisting PCI or PII information:
+
+- **`paymentMethod` block**: every sub-field except `type` is replaced with `***`. This covers encrypted card fields (`encryptedCardNumber`, `encryptedSecurityCode`, etc.), raw card numbers, Apple Pay tokens, Google Pay tokens, and any other payment-method-specific data regardless of field name.
+- **Named fields at any nesting depth**: the following field names are masked wherever they appear in the payload, including inside `additionalData` dotted keys (e.g. `"tokenization.storedPaymentMethodId"`):
+
+  | Field | Category |
+  |---|---|
+  | `shopperEmail` | PII |
+  | `shopperIP` | PII |
+  | `holderName` | PII |
+  | `storedPaymentMethodId` | PII |
+  | `riskData` | Opaque SDK blob |
+  | `sdkData` | Opaque SDK blob |
+  | `checkoutAttemptId` | Opaque SDK blob |
+  | `clientData` | Opaque SDK blob |
+
+All other fields (amounts, references, result codes, event codes, merchant account, etc.) are stored as-is.
+
+#### Configuration
+
+Set the environment variable `ADYEN_SAVE_INTERFACE_INTERACTIONS` to `"true"`. The default value is `"false"` (disabled).
+
+When enabled, the required commercetools custom type (`commercetools-checkout-payment-interface-interaction`) is created automatically on connector deploy, no manual setup is needed.
 
 ## Development
 
