@@ -32,8 +32,10 @@ import { ApplePayExpressBuilder } from "../express/applepay";
 import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
 import { WeChatPayBuilder } from "../components/payment-methods/wechatpay";
 import { ZipBuilder } from "../components/payment-methods/zip";
+import { AlipayBuilder } from "../components/payment-methods/alipay";
 
 export const SUPPORTED_METHODS = {
+  alipay: AlipayBuilder,
   applepay: ApplePayBuilder,
   bancontactcard: BancontactCardBuilder,
   bancontactmobile: BancontactMobileBuilder,
