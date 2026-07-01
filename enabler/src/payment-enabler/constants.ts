@@ -30,6 +30,8 @@ import { GooglePayExpressBuilder } from "../express/googlepay";
 import { PayPalExpressBuilder } from "../express/paypal";
 import { ApplePayExpressBuilder } from "../express/applepay";
 import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
+import { WeChatPayBuilder } from "../components/payment-methods/wechatpay";
+import { ZipBuilder } from "../components/payment-methods/zip";
 
 export const SUPPORTED_METHODS = {
   applepay: ApplePayBuilder,
@@ -56,6 +58,8 @@ export const SUPPORTED_METHODS = {
   clearpay: ClearpayBuilder,
   mbway: MBWayBuilder,
   trustly: TrustlyBuilder,
+  wechatpay: WeChatPayBuilder,
+  zip: ZipBuilder,
   jcs: JCSBuilder,
 } as const;
 
