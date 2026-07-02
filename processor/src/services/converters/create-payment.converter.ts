@@ -290,7 +290,15 @@ export class CreatePaymentConverter {
         return this.populateKlarnaB2BData(cart, data.paymentMethod.type);
       }
       case 'econtext': {
-        return this.populateJCSData(data);
+        return this.populateJCSData({
+          ...data,
+          shopperEmail: data.shopperEmail ?? cart.customerEmail,
+          telephoneNumber:
+            data.telephoneNumber ??
+            cart.billingAddress?.phone ??
+            cart.shippingAddress?.phone ??
+            undefined,
+        });
       }
       default:
         return {};

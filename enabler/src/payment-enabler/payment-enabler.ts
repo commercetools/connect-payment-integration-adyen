@@ -79,7 +79,7 @@ export enum PaymentMethod {
   mbway = "mbway",
   wechatpay = "wechatpayQR", // WeChat Pay
   zip = "zip",
-  jcs= "jcs",
+  jcs= "econtext_stores",
 }
 
 export type CTAmount = {
