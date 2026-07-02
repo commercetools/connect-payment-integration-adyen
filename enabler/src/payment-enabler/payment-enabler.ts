@@ -1,3 +1,5 @@
+import { SupportedExpressMethod, SupportedMethod, SupportedStoredMethod } from "./constants";
+
 type CardPaymentState = {
   card?: {
     endDigits?: string;
@@ -77,6 +79,7 @@ export enum PaymentMethod {
   mbway = "mbway",
   wechatpay = "wechatpayQR", // WeChat Pay
   zip = "zip",
+  jcs= "econtext_stores",
 }
 
 export type CTAmount = {
@@ -198,7 +201,7 @@ export interface PaymentEnabler {
    * @throws {Error}
    */
   createComponentBuilder: (
-    type: string
+    type: SupportedMethod
   ) => Promise<PaymentComponentBuilder | never>;
 
   /**
@@ -211,11 +214,11 @@ export interface PaymentEnabler {
   ) => Promise<PaymentDropinBuilder | never>;
 
   createExpressBuilder: (
-    type: string
+    type: SupportedExpressMethod
   ) => Promise<PaymentExpressBuilder | never>;
 
   createStoredPaymentMethodBuilder: (
-    type: string
+    type: SupportedStoredMethod
   ) => Promise<StoredComponentBuilder | never>;
 
   isStoredPaymentMethodsEnabled: () => Promise<boolean>;

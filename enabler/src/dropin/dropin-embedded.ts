@@ -34,6 +34,7 @@ import {
   MBWay,
   Giftcard,
   WeChat,
+  Econtext,
 } from "@adyen/adyen-web";
 
 export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
@@ -167,6 +168,7 @@ export class DropinComponents implements DropinComponent {
         MBWay,
         Giftcard,
         WeChat,
+        Econtext,
       ],
       paymentMethodsConfiguration: {
         applepay: {
@@ -281,6 +283,9 @@ export class DropinComponents implements DropinComponent {
         },
         zip: {
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.zip)],
+        },
+        econtext_stores: {
+          ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.jcs)],
         },
       },
     });
