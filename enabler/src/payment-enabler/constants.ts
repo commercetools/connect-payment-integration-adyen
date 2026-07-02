@@ -1,7 +1,6 @@
 
 import { MBWayBuilder } from "../components/payment-methods/mbway";
 import { TrustlyBuilder } from "../components/payment-methods/trustly";
-import { JCSBuilder } from "../components/payment-methods/jsc";
 import { AfterPayBuilder } from "../components/payment-methods/afterpay";
 import { BlikBuilder } from "../components/payment-methods/blik";
 import { FPXBuilder } from "../components/payment-methods/fpx";
@@ -33,6 +32,7 @@ import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
 import { WeChatPayBuilder } from "../components/payment-methods/wechatpay";
 import { ZipBuilder } from "../components/payment-methods/zip";
 import { AlipayBuilder } from "../components/payment-methods/alipay";
+import { JCSBuilder } from "../components/payment-methods/jcs";
 
 export const SUPPORTED_METHODS = {
   alipay: AlipayBuilder,
