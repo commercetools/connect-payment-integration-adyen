@@ -33,6 +33,7 @@ import { PaymentRest, type TPaymentRest } from '@commercetools/composable-commer
 import { CartRest, TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import {
   Cart,
+  ErrorInternalConstraintViolated,
   ErrorInvalidField,
   ErrorInvalidOperation,
   ErrorRequiredField,
@@ -1505,6 +1506,175 @@ describe('adyen-payment.service', () => {
           },
         ],
       });
+    });
+
+    test('should create a commercetools payment-method for an orphan Adyen token with default: false, without ever calling update()', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const methodType = 'scheme';
+      const existingToken = 'adyen-token-value-existing';
+      const orphanToken = 'adyen-token-value-orphan';
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          { id: existingToken, type: methodType, lastFour: '1111', brand: 'visa' },
+          { id: orphanToken, type: methodType, lastFour: '2222', brand: 'mc' },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 1,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'existing-ct-id',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: existingToken },
+            method: methodType,
+            createdAt: '2023-01-01T00:00:00.000Z',
+            lastModifiedAt: '2023-01-01T00:00:00.000Z',
+            default: true,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const createdOrphan = {
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: methodType,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod;
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce(createdOrphan);
+      const updateSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'update');
+
+      const result = await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ customerId, token: orphanToken, method: methodType }),
+      );
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(result.storedPaymentMethods).toHaveLength(2);
+      expect(result.storedPaymentMethods.find((spm) => spm.id === 'new-ct-id')?.isDefault).toStrictEqual(false);
+    });
+
+    test('should recover via getByTokenValue when creating the orphan fails because it was concurrently created already', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const methodType = 'scheme';
+      const adyenToken = 'adyen-token-value-race';
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [{ id: adyenToken, type: methodType, lastFour: '1234', brand: 'visa' }],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'save')
+        .mockRejectedValueOnce(
+          new ErrorInternalConstraintViolated('A payment method with the same token already exists.'),
+        );
+
+      const concurrentlyCreated = {
+        id: 'concurrently-created-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: adyenToken },
+        method: methodType,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod;
+
+      const getByTokenValueSpy = jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
+        .mockResolvedValueOnce(concurrentlyCreated);
+
+      const result = await paymentService.getStoredPaymentMethods();
+
+      expect(getByTokenValueSpy).toHaveBeenCalledWith(expect.objectContaining({ customerId, tokenValue: adyenToken }));
+      expect(result.storedPaymentMethods).toHaveLength(1);
+      expect(result.storedPaymentMethods[0].id).toStrictEqual('concurrently-created-id');
+    });
+
+    test('should omit an orphan from the response instead of failing the whole request when creating it in CT fails', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const methodType = 'scheme';
+      const healthyToken = 'adyen-token-value-healthy';
+      const brokenToken = 'adyen-token-value-broken';
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          { id: healthyToken, type: methodType, lastFour: '1234', brand: 'visa' },
+          { id: brokenToken, type: methodType, lastFour: '5678', brand: 'mc' },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const createdHealthy = {
+        id: 'healthy-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: healthyToken },
+        method: methodType,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod;
+
+      jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'save')
+        .mockResolvedValueOnce(createdHealthy)
+        .mockRejectedValueOnce(new Error('CT is temporarily unavailable'));
+
+      const result = await paymentService.getStoredPaymentMethods();
+
+      expect(result.storedPaymentMethods).toHaveLength(1);
+      expect(result.storedPaymentMethods[0].id).toStrictEqual('healthy-ct-id');
     });
   });
 
