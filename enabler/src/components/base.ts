@@ -19,6 +19,7 @@ import {
   MBWay,
   WeChat,
   Giftcard,
+  Econtext,
 } from "@adyen/adyen-web";
 import {
   ComponentOptions,
@@ -48,7 +49,8 @@ type AdyenComponent =
   | AfterPay
   | BcmcMobile
   | MBWay
-  | WeChat;
+  | WeChat
+  | Econtext;
 
 /**
  * Base Web Component

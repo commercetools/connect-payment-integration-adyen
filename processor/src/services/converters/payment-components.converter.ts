@@ -90,6 +90,9 @@ export class PaymentComponentsConverter {
         {
           type: 'zip',
         },
+        {
+          type: 'jcs', // econtext_stores
+        }
       ],
       express: [
         {
