@@ -21,7 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@adyen/api-library": "31.0.0",
+    "@adyen/api-library": "32.0.0",
     "@commercetools-backend/loggers": "27.8.0",
     "@commercetools/connect-payments-sdk": "1.1.0",
     "@fastify/autoload": "6.4.0",
