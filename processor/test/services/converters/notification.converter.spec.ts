@@ -1300,6 +1300,7 @@ describe('notification.converter', () => {
                 'order-1-pspReference': 'GIFT_CARD_PSP',
                 'order-1-paymentAmount': 'EUR 50.00',
                 'order-1-paymentMethod': 'givex',
+                'order-1-success': NotificationRequestItem.SuccessEnum.True,
               },
               amount: { currency: 'EUR', value: 5000 },
               eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
@@ -1362,6 +1363,7 @@ describe('notification.converter', () => {
                 'order-1-pspReference': 'GIFT_CARD_PSP',
                 'order-1-paymentAmount': 'EUR 50.00',
                 'order-1-paymentMethod': 'givex',
+                'order-1-success': NotificationRequestItem.SuccessEnum.True,
               },
               amount: { currency: 'EUR', value: 5000 },
               eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
@@ -1408,6 +1410,7 @@ describe('notification.converter', () => {
               additionalData: {
                 'order-1-pspReference': 'UNKNOWN_PSP',
                 'order-1-paymentAmount': 'EUR 50.00',
+                'order-1-success': NotificationRequestItem.SuccessEnum.True,
               },
               amount: { currency: 'EUR', value: 5000 },
               eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
@@ -1426,6 +1429,76 @@ describe('notification.converter', () => {
 
       // Assert
       expect(result).toEqual([]);
+    });
+
+    test('skips a partial payment leg that was never approved (e.g. the card leg failed in a gift card + card split payment)', async () => {
+      // Arrange: gift card leg succeeded, card leg never got approved and triggered the order cancellation.
+      const mockGiftCardPaymentWithCharge = {
+        ...mockUpdatePaymentResult,
+        interfaceId: 'GIFT_CARD_PSP',
+        transactions: [
+          {
+            type: 'Charge',
+            state: 'Success',
+            id: 'tx-1',
+            amount: { centAmount: 3000, currencyCode: 'EUR' },
+          },
+        ],
+      };
+
+      const findPaymentsByInterfaceIdSpy = jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockGiftCardPaymentWithCharge] as any);
+
+      const merchantReference = 'some-merchant-reference';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                'order-1-pspReference': 'GIFT_CARD_PSP',
+                'order-1-paymentAmount': 'EUR 30.00',
+                'order-1-paymentMethod': 'givex',
+                'order-1-success': NotificationRequestItem.SuccessEnum.True,
+                'order-2-pspReference': 'CARD_PSP',
+                'order-2-paymentAmount': 'EUR 20.00',
+                'order-2-paymentMethod': 'visa',
+                'order-2-success': NotificationRequestItem.SuccessEnum.False,
+              },
+              amount: { currency: 'EUR', value: 5000 },
+              eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              pspReference: 'ORDER_PSP',
+              success: NotificationRequestItem.SuccessEnum.False,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert: only the approved gift card leg is reversed; the never-approved card leg is skipped
+      // and never even looked up in commercetools.
+      expect(result).toEqual([
+        {
+          merchantReference,
+          pspReference: 'GIFT_CARD_PSP',
+          transactions: [
+            {
+              type: 'Refund',
+              state: 'Success',
+              amount: { centAmount: 3000, currencyCode: 'EUR' },
+              interactionId: 'ORDER_PSP',
+            },
+          ],
+        },
+      ]);
+      expect(findPaymentsByInterfaceIdSpy).toHaveBeenCalledWith({ interfaceId: 'GIFT_CARD_PSP' });
+      expect(findPaymentsByInterfaceIdSpy).not.toHaveBeenCalledWith({ interfaceId: 'CARD_PSP' });
     });
 
     test('returns multiple NotificationUpdatePayment objects for multiple partial payments', async () => {
@@ -1470,9 +1543,11 @@ describe('notification.converter', () => {
                 'order-1-pspReference': 'GIFT_CARD_PSP_1',
                 'order-1-paymentAmount': 'EUR 30.00',
                 'order-1-paymentMethod': 'givex',
+                'order-1-success': NotificationRequestItem.SuccessEnum.True,
                 'order-2-pspReference': 'GIFT_CARD_PSP_2',
                 'order-2-paymentAmount': 'EUR 20.00',
                 'order-2-paymentMethod': 'givex',
+                'order-2-success': NotificationRequestItem.SuccessEnum.True,
               },
               amount: { currency: 'EUR', value: 5000 },
               eventCode: NotificationRequestItem.EventCodeEnum.OrderClosed,
