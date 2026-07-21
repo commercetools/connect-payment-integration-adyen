@@ -16,6 +16,7 @@ import { NotificationUpdatePayment } from '../types/service.type';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
 import { convertAdyenCardBrandToCTFormat, convertAdyenGiftCardBrandToCTFormat } from './helper.converter';
 import { getConfig } from '../../config/config';
+import { log } from '../../libs/logger';
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
@@ -181,10 +182,27 @@ export class NotificationConverter {
     // success: false — order expired or was cancelled. Adyen automatically refunds gift card partial
     // payments but does not send individual REFUND webhooks for them. We use ORDER_CLOSED as the
     // trigger to mark each partial payment as reversed in commercetools.
+    //
+    // Each leg carries its own `order-N-success` flag. A leg can be present on the order without
+    // ever having been approved — e.g. in a gift card + card split payment, the card leg that failed
+    // (and triggered the order cancellation in the first place) was never authorised/charged. There is
+    // nothing to reverse for that leg, so we skip it based on its own success flag rather than assuming
+    // every leg on the order was approved just because the order itself carried the pspReference.
     const results: NotificationUpdatePayment[] = [];
     let n = 1;
     while (item.additionalData?.[`order-${n}-pspReference`]) {
       const partialPspReference = item.additionalData[`order-${n}-pspReference`] as string;
+      const wasApproved = item.additionalData[`order-${n}-success`] === NotificationRequestItem.SuccessEnum.True;
+
+      if (!wasApproved) {
+        log.info('Skipping order-closed reversal for a partial payment that was never approved.', {
+          merchantReference: item.merchantReference,
+          pspReference: partialPspReference,
+        });
+        n++;
+        continue;
+      }
+
       const payments = await this.ctPaymentService.findPaymentsByInterfaceId({ interfaceId: partialPspReference });
       const ctPayment = payments[0];
 
