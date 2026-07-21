@@ -12,7 +12,7 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.40.2",
+    "@adyen/adyen-web": "6.41.0",
     "serve": "14.2.6"
   },
   "devDependencies": {
@@ -22,8 +22,8 @@
     "sass": "1.101.0",
     "ts-jest": "29.4.11",
     "typescript": "6.0.3",
-    "vite": "8.1.4",
-    "vite-plugin-css-injected-by-js": "5.0.1"
+    "vite": "8.1.5",
+    "vite-plugin-css-injected-by-js": "5.0.2"
   },
   "overrides": {
     "@babel/core": "7.29.7",
