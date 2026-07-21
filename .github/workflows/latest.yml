@@ -6,6 +6,10 @@ on:
       - main
 
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   tag-latest:
     name: Tag latest version
