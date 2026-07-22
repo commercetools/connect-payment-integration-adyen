@@ -69,6 +69,7 @@ import { StoredPaymentMethod } from '../../src/dtos/stored-payment-methods.dto';
 import * as StoredPaymentMethodsConfig from '../../src/config/stored-payment-methods.config';
 import { HttpClientException } from '@adyen/api-library';
 import { TransactionDraftDTO } from '../../src/dtos/operations/transaction.dto';
+import { BalanceCheckResponse, CancelOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
 
 interface FlexibleConfig {
   [key: string]: string; // Adjust the type according to your config values
@@ -130,7 +131,7 @@ describe('adyen-payment.service', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(27);
+    expect(result?.components).toHaveLength(28);
     expect(result?.components[0]?.type).toStrictEqual('afterpay');
     expect(result?.components[1]?.type).toStrictEqual('alipay');
     expect(result?.components[2]?.type).toStrictEqual('applepay');
@@ -158,6 +159,7 @@ describe('adyen-payment.service', () => {
     expect(result?.components[24]?.type).toStrictEqual('trustly');
     expect(result?.components[25]?.type).toStrictEqual('wechatpay');
     expect(result?.components[26]?.type).toStrictEqual('zip');
+    expect(result?.components[27]?.type).toStrictEqual('jcs');
   });
 
   test('getStatus', async () => {
@@ -642,6 +644,143 @@ describe('adyen-payment.service', () => {
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
     expect(result?.resultCode).toStrictEqual(PaymentResponse.ResultCodeEnum.Received);
     expect(result?.paymentReference).toStrictEqual('123456');
+  });
+
+  describe('reversePayment', () => {
+    const paymentWithSuccessfulCharge: Payment = {
+      ...mockGetPaymentResult,
+      transactions: [
+        {
+          id: 'tx-charge',
+          type: 'Charge',
+          state: 'Success',
+          amount: { type: 'centPrecision', centAmount: 120000, currencyCode: 'GBP', fractionDigits: 2 },
+          timestamp: '2024-02-13T00:00:00.000Z',
+        },
+      ],
+    };
+
+    const paymentWithAdyenOrder: Payment = {
+      ...paymentWithSuccessfulCharge,
+      custom: {
+        type: { typeId: 'type', id: 'custom-type-id' },
+        fields: { adyenOrderData: 'some-order-data', adyenOrderPspReference: 'ORDER-PSP-123' },
+      },
+    };
+
+    test('reverses the individual payment via the modification API when there is no Adyen order', async () => {
+      // Given
+      const updateSpy = jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResult);
+      const reversalSpy = jest.spyOn(ModificationsApi.prototype, 'refundOrCancelPayment').mockResolvedValue({
+        status: 'received' as never,
+        pspReference: 'REVERSAL-PSP-789',
+        paymentPspReference: paymentWithSuccessfulCharge.interfaceId as string,
+        merchantAccount: 'adyenMerchantAccount',
+      });
+      const cancelOrderSpy = jest.spyOn(OrdersApi.prototype, 'cancelOrder');
+
+      // Act
+      const result = await paymentService.reversePayment({ payment: paymentWithSuccessfulCharge });
+
+      // Expect
+      expect(cancelOrderSpy).not.toHaveBeenCalled();
+      expect(reversalSpy).toHaveBeenCalledWith(
+        paymentWithSuccessfulCharge.interfaceId as string,
+        expect.objectContaining({ reference: paymentWithSuccessfulCharge.id }),
+      );
+      expect(result.outcome).toStrictEqual('received');
+      expect(result.pspReference).toStrictEqual('REVERSAL-PSP-789');
+      expect(updateSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          transaction: expect.objectContaining({
+            type: 'Refund',
+            interactionId: 'REVERSAL-PSP-789',
+            interfaceId: 'REVERSAL-PSP-789',
+          }),
+        }),
+      );
+    });
+
+    test('cancels the Adyen order instead of reversing the leg when the payment belongs to an Adyen order', async () => {
+      // Given
+      const updateSpy = jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResult);
+      const cancelOrderSpy = jest.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValue({
+        pspReference: 'CANCEL-REQUEST-PSP-456',
+        resultCode: CancelOrderResponse.ResultCodeEnum.Received,
+      });
+      const reversalSpy = jest.spyOn(ModificationsApi.prototype, 'refundOrCancelPayment');
+
+      // Act
+      const result = await paymentService.reversePayment({ payment: paymentWithAdyenOrder });
+
+      // Expect
+      expect(reversalSpy).not.toHaveBeenCalled();
+      expect(cancelOrderSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          order: { orderData: 'some-order-data', pspReference: 'ORDER-PSP-123' },
+        }),
+      );
+      // The transaction must be stamped with the order's own pspReference — not the cancellation
+      // request's own pspReference — so it later matches the ORDER_CLOSED webhook.
+      expect(result.outcome).toStrictEqual('received');
+      expect(result.pspReference).toStrictEqual('ORDER-PSP-123');
+      expect(updateSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          transaction: expect.objectContaining({
+            type: 'Refund',
+            interactionId: 'ORDER-PSP-123',
+            interfaceId: 'ORDER-PSP-123',
+          }),
+        }),
+      );
+    });
+
+    test('uses CancelAuthorization when the Adyen order payment only has a successful Authorization', async () => {
+      // Given
+      const paymentWithAdyenOrderAuthOnly: Payment = {
+        ...paymentWithAdyenOrder,
+        transactions: [
+          {
+            id: 'tx-auth',
+            type: 'Authorization',
+            state: 'Success',
+            amount: { type: 'centPrecision', centAmount: 120000, currencyCode: 'GBP', fractionDigits: 2 },
+            timestamp: '2024-02-13T00:00:00.000Z',
+          },
+        ],
+      };
+      const updateSpy = jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValue(mockUpdatePaymentResult);
+      jest.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValue({
+        pspReference: 'CANCEL-REQUEST-PSP-456',
+        resultCode: CancelOrderResponse.ResultCodeEnum.Received,
+      });
+
+      // Act
+      await paymentService.reversePayment({ payment: paymentWithAdyenOrderAuthOnly });
+
+      // Expect
+      expect(updateSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          transaction: expect.objectContaining({ type: 'CancelAuthorization', interactionId: 'ORDER-PSP-123' }),
+        }),
+      );
+    });
+
+    test('throws when there is no successful Charge or Authorization to reverse', async () => {
+      // Given
+      const paymentWithoutSuccessfulTransaction: Payment = { ...mockGetPaymentResult, transactions: [] };
+
+      // Act & Expect
+      await expect(paymentService.reversePayment({ payment: paymentWithoutSuccessfulTransaction })).rejects.toThrow(
+        'There is no successful payment transaction to reverse.',
+      );
+    });
   });
 
   describe('interface interactions', () => {
@@ -2492,7 +2631,7 @@ describe('adyen-payment.service', () => {
       jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
         balance: { value: 5000, currency: 'USD' },
         pspReference: 'BALANCE-PSP-1',
-        resultCode: 'Success',
+        resultCode: BalanceCheckResponse.ResultCodeEnum.Success,
       });
 
       const adyenPaymentService = new AdyenPaymentService(opts);
@@ -2510,7 +2649,7 @@ describe('adyen-payment.service', () => {
       jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
         balance: { value: 200000, currency: 'USD' },
         pspReference: 'BALANCE-PSP-2',
-        resultCode: 'Success',
+        resultCode: BalanceCheckResponse.ResultCodeEnum.Success,
       });
 
       const adyenPaymentService = new AdyenPaymentService(opts);
@@ -2526,8 +2665,8 @@ describe('adyen-payment.service', () => {
     test('falls back to cart amount when balance check returns no balance', async () => {
       jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
         pspReference: 'BALANCE-PSP-3',
-        resultCode: 'NotEnoughBalance',
-      });
+        resultCode: BalanceCheckResponse.ResultCodeEnum.NotEnoughBalance,
+      } as BalanceCheckResponse);
 
       const adyenPaymentService = new AdyenPaymentService(opts);
       await adyenPaymentService.createPayment(giftCardPaymentOpts);

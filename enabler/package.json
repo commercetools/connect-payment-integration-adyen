@@ -1,7 +1,7 @@
 {
   "name": "enabler",
   "private": true,
-  "version": "5.24.0",
+  "version": "5.26.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
@@ -12,18 +12,18 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.40.1",
+    "@adyen/adyen-web": "6.41.0",
     "serve": "14.2.6"
   },
   "devDependencies": {
     "@jest/globals": "30.4.1",
-    "@types/node": "26.0.1",
+    "@types/node": "26.1.1",
     "jest": "30.4.2",
     "sass": "1.101.0",
     "ts-jest": "29.4.11",
     "typescript": "6.0.3",
-    "vite": "8.1.0",
-    "vite-plugin-css-injected-by-js": "5.0.1"
+    "vite": "8.1.5",
+    "vite-plugin-css-injected-by-js": "5.0.2"
   },
   "overrides": {
     "@babel/core": "7.29.7",

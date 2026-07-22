@@ -1,4 +1,5 @@
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
+import { Transaction } from '@commercetools/platform-sdk';
 import { NotificationRequestDTO } from '../../dtos/adyen-payment.dto';
 import {
   TransactionData,
@@ -16,6 +17,7 @@ import { NotificationUpdatePayment } from '../types/service.type';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING } from '../../constants/currencies';
 import { convertAdyenCardBrandToCTFormat, convertAdyenGiftCardBrandToCTFormat } from './helper.converter';
 import { getConfig } from '../../config/config';
+import { log } from '../../libs/logger';
 
 export class NotificationConverter {
   private ctPaymentService: CommercetoolsPaymentService;
@@ -181,14 +183,33 @@ export class NotificationConverter {
     // success: false — order expired or was cancelled. Adyen automatically refunds gift card partial
     // payments but does not send individual REFUND webhooks for them. We use ORDER_CLOSED as the
     // trigger to mark each partial payment as reversed in commercetools.
+    //
+    // A leg can be present on the order without ever having been approved — e.g. in a gift card +
+    // card split payment, the card leg that failed (and triggered the order cancellation in the
+    // first place) was never authorised/charged. There is nothing to reverse for that leg, so we
+    // skip it rather than assuming every leg on the order was approved just because the order
+    // itself carried the pspReference. See wasPartialPaymentApproved for how that's determined.
     const results: NotificationUpdatePayment[] = [];
     let n = 1;
     while (item.additionalData?.[`order-${n}-pspReference`]) {
       const partialPspReference = item.additionalData[`order-${n}-pspReference`] as string;
+      const successFlag = item.additionalData[`order-${n}-success`] as string | undefined;
+
+      // Fast path: Adyen told us explicitly this leg was never approved — nothing to reverse,
+      // no need to even look up the commercetools payment for it.
+      if (successFlag === NotificationRequestItem.SuccessEnum.False) {
+        log.info('Skipping order-closed reversal for a partial payment that was never approved.', {
+          merchantReference: item.merchantReference,
+          pspReference: partialPspReference,
+        });
+        n++;
+        continue;
+      }
+
       const payments = await this.ctPaymentService.findPaymentsByInterfaceId({ interfaceId: partialPspReference });
       const ctPayment = payments[0];
 
-      if (ctPayment) {
+      if (ctPayment && this.wasPartialPaymentApproved(successFlag, ctPayment)) {
         const hasSuccessfulCharge = ctPayment.transactions.some((tx) => tx.type === 'Charge' && tx.state === 'Success');
         const transactionType = hasSuccessfulCharge ? 'Refund' : 'CancelAuthorization';
         const originalTx = ctPayment.transactions.find(
@@ -207,6 +228,12 @@ export class NotificationConverter {
             },
           ],
         });
+      } else if (ctPayment) {
+        log.info('Skipping order-closed reversal for a partial payment that was never approved.', {
+          merchantReference: item.merchantReference,
+          pspReference: partialPspReference,
+          paymentId: ctPayment.id,
+        });
       }
 
       n++;
@@ -214,6 +241,32 @@ export class NotificationConverter {
 
     return results;
   };
+
+  /**
+   * Whether a partial payment leg on a cancelled Adyen order was actually approved, and therefore
+   * needs a Refund/CancelAuthorization reflected in commercetools.
+   *
+   * `order-N-success` is the authoritative signal, but Adyen only includes it in additionalData
+   * when the merchant account has that field explicitly enabled — it cannot be relied upon to always be present. 
+   * When it's missing, we fall back to what commercetools already recorded for this leg: if there's no approved/pending
+   * Charge or Authorization AND there's an explicit Failure, the leg was never approved. If neither
+   * signal is available (e.g. no Charge/Authorization transaction at all yet), we default to
+   * treating the leg as approved — silently skipping a leg that actually needs reversing is worse
+   * than creating one extra transaction for a leg that turns out not to have needed it.
+   */
+  private wasPartialPaymentApproved(successFlag: string | undefined, ctPayment: Payment): boolean {
+    if (successFlag !== undefined) {
+      return successFlag === NotificationRequestItem.SuccessEnum.True;
+    }
+
+    const isChargeOrAuthorization = (tx: Transaction) => tx.type === 'Charge' || tx.type === 'Authorization';
+    const hasApprovedOrPending = ctPayment.transactions.some(
+      (tx) => isChargeOrAuthorization(tx) && (tx.state === 'Success' || tx.state === 'Pending'),
+    );
+    const hasFailure = ctPayment.transactions.some((tx) => isChargeOrAuthorization(tx) && tx.state === 'Failure');
+
+    return hasApprovedOrPending || !hasFailure;
+  }
 
   private POPULATE_TRANSACTIONS_MAPPER: Partial<
     Record<

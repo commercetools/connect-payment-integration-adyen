@@ -818,24 +818,25 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const hasCharge = transactionStateChecker('Charge', ['Success']);
     const hasAuthorization = transactionStateChecker('Authorization', ['Success']);
 
-    let response!: PaymentProviderModificationResponse;
+    let transactionType: 'Refund' | 'CancelAuthorization';
     if (hasCharge) {
-      response = await this.processPaymentModificationInternal({
-        request,
-        transactionType: 'Refund',
-        adyenOperation: 'reverse',
-        amount: request.payment.amountPlanned,
-      });
+      transactionType = 'Refund';
     } else if (hasAuthorization) {
-      response = await this.processPaymentModificationInternal({
-        request,
-        transactionType: 'CancelAuthorization',
-        adyenOperation: 'reverse',
-        amount: request.payment.amountPlanned,
-      });
+      transactionType = 'CancelAuthorization';
     } else {
       throw new ErrorInvalidOperation(`There is no successful payment transaction to reverse.`);
     }
+
+    const adyenOrder = this.getAdyenOrderReference(request.payment);
+
+    const response = adyenOrder
+      ? await this.reverseOrderPayment({ request, transactionType, ...adyenOrder })
+      : await this.processPaymentModificationInternal({
+          request,
+          transactionType,
+          adyenOperation: 'reverse',
+          amount: request.payment.amountPlanned,
+        });
 
     log.info(`Payment modification completed.`, {
       paymentId: request.payment.id,
@@ -844,6 +845,64 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     return response;
+  }
+
+  /**
+   * Returns the Adyen order reference for a payment that is part of a partial/multi payment
+   * (gift card + card), or undefined if the payment was not created as part of such an order.
+   */
+  private getAdyenOrderReference(
+    payment: Payment,
+  ): { adyenOrderData: string; adyenOrderPspReference: string } | undefined {
+    const adyenOrderData = payment.custom?.fields?.['adyenOrderData'] as string | undefined;
+    const adyenOrderPspReference = payment.custom?.fields?.['adyenOrderPspReference'] as string | undefined;
+
+    return adyenOrderData && adyenOrderPspReference ? { adyenOrderData, adyenOrderPspReference } : undefined;
+  }
+
+  /**
+   * Reverses a payment that belongs to an Adyen order (partial/multi payments, e.g. gift card + card)
+   * by cancelling the order itself instead of calling the modification API on the individual payment.
+   */
+  private async reverseOrderPayment(opts: {
+    request: ReversePaymentRequest;
+    transactionType: 'Refund' | 'CancelAuthorization';
+    adyenOrderData: string;
+    adyenOrderPspReference: string;
+  }): Promise<PaymentProviderModificationResponse> {
+    const { request, transactionType, adyenOrderData, adyenOrderPspReference } = opts;
+
+    await this.ctPaymentService.updatePayment({
+      id: request.payment.id,
+      transaction: {
+        type: transactionType,
+        amount: request.payment.amountPlanned,
+        state: 'Initial',
+      },
+    });
+
+    const adyenResponse = await this.orderService.cancelOrder({
+      data: { orderData: adyenOrderData, pspReference: adyenOrderPspReference },
+    });
+
+    log.info(`Adyen order cancellation requested as part of payment reversal.`, {
+      paymentId: request.payment.id,
+      adyenOrderPspReference,
+      cancellationRequestPspReference: adyenResponse.pspReference,
+    });
+
+    await this.ctPaymentService.updatePayment({
+      id: request.payment.id,
+      transaction: {
+        type: transactionType,
+        amount: request.payment.amountPlanned,
+        interactionId: adyenOrderPspReference, // Deprecated but kept for backward compatibility
+        interfaceId: adyenOrderPspReference,
+        state: this.convertPaymentModificationOutcomeToState(PaymentModificationStatus.RECEIVED),
+      },
+    });
+
+    return { outcome: PaymentModificationStatus.RECEIVED, pspReference: adyenOrderPspReference };
   }
 
   private async handleTransactionRecurringType(transactionDraft: TransactionDraftDTO): Promise<TransactionResponseDTO> {
@@ -1860,7 +1919,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentMethod: opts.paymentMethod,
         amountPlanned: cartAmount,
       });
-      if (balanceResponse.balance) {
+      if (balanceResponse.balance && balanceResponse.balance.value > 0) {
         return {
           centAmount: Math.min(balanceResponse.balance.value, cartAmount.centAmount),
           currencyCode: balanceResponse.balance.currency,

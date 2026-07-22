@@ -289,6 +289,17 @@ export class CreatePaymentConverter {
       case 'klarna_b2b': {
         return this.populateKlarnaB2BData(cart, data.paymentMethod.type);
       }
+      case 'econtext': {
+        return this.populateJCSData({
+          ...data,
+          shopperEmail: data.shopperEmail ?? cart.customerEmail,
+          telephoneNumber:
+            data.telephoneNumber ??
+            cart.billingAddress?.phone ??
+            cart.shippingAddress?.phone ??
+            undefined,
+        });
+      }
       default:
         return {};
     }
@@ -325,6 +336,22 @@ export class CreatePaymentConverter {
         name: company ?? '',
       },
       lineItems,
+    };
+  }
+
+  private populateJCSData(data: CreatePaymentRequestDTO): Partial<PaymentRequest> {
+    // econtext_stores requires shopper details inside the paymentMethod object,
+    // not at the top level (where the Adyen Web component puts them as shopperName etc.)
+    const { shopperName, shopperEmail, telephoneNumber } = data;
+    return {
+      paymentMethod: {
+        ...data.paymentMethod as object,
+        firstName: shopperName?.firstName,
+        lastName: shopperName?.lastName,
+        shopperEmail: shopperEmail,
+        telephoneNumber: telephoneNumber,
+        type: 'econtext_stores',
+      } as typeof data.paymentMethod,
     };
   }
 }
