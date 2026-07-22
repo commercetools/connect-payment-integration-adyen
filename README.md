@@ -355,6 +355,7 @@ If the shopper abandons the flow and a new session is created while a previous A
 1. Ensure the configured commercetools API client has the scope `manage_types` (needed to create the custom type on deploy).
 2. Set `ADYEN_PARTIAL_PAYMENTS_ENABLED` to `"true"`. On the next re-deploy, the connector will create the `commercetools-checkout-adyen-order-details` custom type.
 3. Optionally configure `ADYEN_ORDER_EXPIRY_MINUTES` (default: `60`) to control how long an open Adyen Order stays active before expiring.
+4. In the Adyen Customer Area, on your webhook's **Additional settings** tab, under **Payment**, it is recommended to enable **"Include a success boolean for the payments listed in an ORDER_CLOSED event"**. This makes Adyen report the approval status of each partial payment directly in the `ORDER_CLOSED` webhook.
 
 #### Custom type created
 

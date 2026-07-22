@@ -14,12 +14,14 @@ import {
   ErrorRequiredField,
   PaymentMethod,
   ErrorInvalidField,
+  ErrorInternalConstraintViolated,
   CurrencyConverters,
   CustomFieldsDraft,
   FieldContainer,
 } from '@commercetools/connect-payments-sdk';
 import { AdyenOrderService } from './adyen-order.service';
 import { CheckoutOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/checkoutOrderResponse';
+import type { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
@@ -90,6 +92,7 @@ import { NotificationTokenizationConverter } from './converters/notification-rec
 import {
   buildCheckoutTransactionItemId,
   convertAdyenCardBrandToCTFormat,
+  convertPaymentMethodFromAdyenFormat,
   convertPaymentMethodToAdyenFormat,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
@@ -103,6 +106,7 @@ import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/che
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../constants/currencies';
+import { StoredPaymentMethodResource } from '@adyen/api-library/lib/src/typings/checkout/storedPaymentMethodResource';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -1095,61 +1099,170 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return customerId;
   }
 
+  /**
+   * Adyen is the source of truth for *which* tokens exist for the customer (commercetools can be
+   * missing tokens that were imported into Adyen from another PSP, e.g. Braintree). commercetools
+   * is only the store for the metadata Adyen doesn't have (our own `id` used for delete,
+   * `createdAt`, `default`). Any Adyen token without a matching record is an "orphan" and gets
+   * persisted on the fly, within this same call, by reconcileOrphanAdyenToken().
+   */
   async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const customerId = await this.getCustomerIdFromCart();
+    const { paymentInterface, interfaceAccount } = getStoredPaymentMethodsConfig().config;
 
-    const storedPaymentMethods = await this.ctPaymentMethodService.find({
-      customerId: customerId,
-      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
-      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-    });
+    // Fetched in parallel: neither call depends on the other's result.
+    const [adyenTokenDetails, ctStoredPaymentMethods] = await Promise.all([
+      AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(customerId, getConfig().adyenMerchantAccount),
+      this.ctPaymentMethodService.find({
+        customerId,
+        paymentInterface,
+        interfaceAccount,
+      }),
+    ]);
 
-    if (storedPaymentMethods.results.length <= 0) {
+    const adyenStoredPaymentMethods = adyenTokenDetails.storedPaymentMethods ?? [];
+
+    // Nothing in Adyen means nothing to show, regardless of what commercetools has (a record without a
+    // matching Adyen token is a stale/deleted token and must not be surfaced to the customer).
+    if (adyenStoredPaymentMethods.length <= 0) {
       return { storedPaymentMethods: [] };
     }
 
-    const resList = await this.enhanceCTStoredPaymentMethodsWithAdyenDisplayData(
-      customerId,
-      storedPaymentMethods.results,
+    // Index commercetools records by token value so each Adyen token can find a match
+    // directly, instead of scanning the array per token.
+    const ctPaymentMethodByToken = new Map(
+      ctStoredPaymentMethods.results.map((paymentMethod) => [paymentMethod.token?.value, paymentMethod]),
+    );
+
+    const storedPaymentMethods = await Promise.all(
+      adyenStoredPaymentMethods.map((adyenToken) =>
+        this.resolveStoredPaymentMethod(adyenToken, ctPaymentMethodByToken.get(adyenToken.id), {
+          customerId,
+          paymentInterface,
+          interfaceAccount,
+        }),
+      ),
     );
 
     return {
-      storedPaymentMethods: resList,
+      storedPaymentMethods: storedPaymentMethods.filter((paymentMethod) => paymentMethod !== undefined),
     };
   }
 
-  async enhanceCTStoredPaymentMethodsWithAdyenDisplayData(
-    customerId: string,
-    storedPaymentMethods: PaymentMethod[],
-  ): Promise<StoredPaymentMethod[]> {
-    const customersTokenDetailsFromAdyen = await AdyenApi().RecurringApi.getTokensForStoredPaymentDetails(
-      customerId,
-      getConfig().adyenMerchantAccount,
-    );
+  /**
+   * Turns one Adyen token into a response entry. Reconciles it into commercetools first if
+   * `ctPaymentMethod` is undefined (no matching record yet). Returns undefined if reconciliation
+   * fails, so this token is simply left out of the response (see reconcileOrphanAdyenToken()).
+   */
+  private async resolveStoredPaymentMethod(
+    adyenToken: StoredPaymentMethodResource,
+    ctPaymentMethod: PaymentMethod | undefined,
+    context: { customerId: string; paymentInterface: string; interfaceAccount?: string },
+  ): Promise<StoredPaymentMethod | undefined> {
+    const paymentMethod = ctPaymentMethod ?? (await this.reconcileOrphanAdyenToken(adyenToken, context));
 
-    return storedPaymentMethods.map((spm) => {
-      const tokenDetailsFromAdyen = customersTokenDetailsFromAdyen.storedPaymentMethods?.find(
-        (tokenDetails) => tokenDetails.id === spm.token?.value,
-      );
+    return paymentMethod ? this.mapToStoredPaymentMethod(paymentMethod, adyenToken) : undefined;
+  }
 
-      const res: StoredPaymentMethod = {
-        id: spm.id,
-        createdAt: spm.createdAt,
-        isDefault: spm.default,
-        token: spm.token?.value || tokenDetailsFromAdyen?.id || '',
-        type: spm.method || tokenDetailsFromAdyen?.type || '',
-        displayOptions: {
-          brand: {
-            key: convertAdyenCardBrandToCTFormat(tokenDetailsFromAdyen?.brand),
-          },
-          endDigits: tokenDetailsFromAdyen?.lastFour,
-          expiryMonth: tokenDetailsFromAdyen?.expiryMonth ? Number(tokenDetailsFromAdyen.expiryMonth) : undefined,
-          expiryYear: tokenDetailsFromAdyen?.expiryYear ? Number(tokenDetailsFromAdyen.expiryYear) : undefined,
+  /**
+   * Combines the commercetools record (id, createdAt, default) with Adyen's display data
+   * (brand, last four & expiry date) into the response DTO. Used for both already reconciled and
+   * newly created records.
+   */
+  private mapToStoredPaymentMethod(
+    ctPaymentMethod: PaymentMethod,
+    adyenToken: StoredPaymentMethodResource,
+  ): StoredPaymentMethod {
+    return {
+      id: ctPaymentMethod.id,
+      createdAt: ctPaymentMethod.createdAt,
+      isDefault: ctPaymentMethod.default,
+      token: ctPaymentMethod.token?.value || adyenToken.id || '',
+      type: ctPaymentMethod.method || convertPaymentMethodFromAdyenFormat(adyenToken.type as string) || '',
+      displayOptions: {
+        brand: {
+          key: convertAdyenCardBrandToCTFormat(adyenToken.brand),
         },
-      };
+        endDigits: adyenToken.lastFour,
+        expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
+        expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
+      },
+    };
+  }
 
-      return res;
-    });
+  /**
+   * Persists a PaymentMethod in commercetools for a token that exists in Adyen but was never
+   * recorded there (e.g. imported from another PSP). Self-heals on the next call if persistence
+   * fails here.
+   */
+  private async reconcileOrphanAdyenToken(
+    adyenToken: StoredPaymentMethodResource,
+    context: { customerId: string; paymentInterface: string; interfaceAccount?: string },
+  ): Promise<PaymentMethod | undefined> {
+    const { customerId, paymentInterface, interfaceAccount } = context;
+
+    try {
+      // Always created with default: false
+      const createdPaymentMethod = await this.ctPaymentMethodService.save({
+        customerId,
+        token: adyenToken.id || '',
+        paymentInterface,
+        interfaceAccount,
+        method: convertPaymentMethodFromAdyenFormat(adyenToken.type as string),
+      });
+
+      log.info('Created payment-method in commercetools for orphaned Adyen token', {
+        customer: { id: customerId, type: 'customer' },
+        paymentMethod: { id: createdPaymentMethod.id, type: 'payment-method' },
+      });
+
+      return createdPaymentMethod;
+    } catch (error) {
+      if (error instanceof ErrorInternalConstraintViolated) {
+        // save() already checked for a record with this token.value and found one, a concurrent
+        // request (or another in-flight tab) beat us to reconciling it. Not a real failure: fetch
+        // the record that now exists instead of dropping a token the customer does have.
+        return this.fetchConcurrentlyCreatedPaymentMethod(adyenToken, context);
+      }
+
+      // Any other failure (e.g. a transient commercetools outage): log and give up on this one
+      // token. We deliberately don't fail the whole request for one bad token.
+      // The token simply won't appear until a later call successfully reconciles it.
+      log.warn('Could not create payment-method in commercetools for orphaned Adyen token; omitting from response', {
+        error,
+        customer: { id: customerId, type: 'customer' },
+      });
+
+      return undefined;
+    }
+  }
+
+  /**
+   * Fetches the commercetools record for a token that reconcileOrphanAdyenToken() failed to
+   * create because it already exists: i.e. another concurrent request won the
+   * race and created it first. Returns undefined if even this lookup fails, in which case the
+   * token is left out of the response until a later call reconciles it successfully.
+   */
+  private async fetchConcurrentlyCreatedPaymentMethod(
+    adyenToken: StoredPaymentMethodResource,
+    context: { customerId: string; paymentInterface: string; interfaceAccount?: string },
+  ): Promise<PaymentMethod | undefined> {
+    const { customerId, paymentInterface, interfaceAccount } = context;
+
+    try {
+      return await this.ctPaymentMethodService.getByTokenValue({
+        customerId,
+        tokenValue: adyenToken.id || '',
+        paymentInterface,
+        interfaceAccount,
+      });
+    } catch (error) {
+      log.warn('Could not fetch concurrently-created payment-method in commercetools for orphaned Adyen token', {
+        error,
+        customer: { id: customerId, type: 'customer' },
+      });
+      return undefined;
+    }
   }
 
   async deleteStoredPaymentMethodViaCart(id: string): Promise<void> {

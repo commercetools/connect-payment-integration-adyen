@@ -247,7 +247,7 @@ export class NotificationConverter {
    * needs a Refund/CancelAuthorization reflected in commercetools.
    *
    * `order-N-success` is the authoritative signal, but Adyen only includes it in additionalData
-   * when the merchant account has that field explicitly enabled — it cannot be relied upon to always be present. 
+   * when the merchant account has that field explicitly enabled — it cannot be relied upon to always be present.
    * When it's missing, we fall back to what commercetools already recorded for this leg: if there's no approved/pending
    * Charge or Authorization AND there's an explicit Failure, the leg was never approved. If neither
    * signal is available (e.g. no Charge/Authorization transaction at all yet), we default to

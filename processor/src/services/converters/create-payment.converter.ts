@@ -294,10 +294,7 @@ export class CreatePaymentConverter {
           ...data,
           shopperEmail: data.shopperEmail ?? cart.customerEmail,
           telephoneNumber:
-            data.telephoneNumber ??
-            cart.billingAddress?.phone ??
-            cart.shippingAddress?.phone ??
-            undefined,
+            data.telephoneNumber ?? cart.billingAddress?.phone ?? cart.shippingAddress?.phone ?? undefined,
         });
       }
       default:
@@ -345,7 +342,7 @@ export class CreatePaymentConverter {
     const { shopperName, shopperEmail, telephoneNumber } = data;
     return {
       paymentMethod: {
-        ...data.paymentMethod as object,
+        ...(data.paymentMethod as object),
         firstName: shopperName?.firstName,
         lastName: shopperName?.lastName,
         shopperEmail: shopperEmail,
