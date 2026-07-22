@@ -106,6 +106,7 @@ import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/che
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../constants/currencies';
+import { StoredPaymentMethodResource } from '@adyen/api-library/lib/src/typings/checkout/storedPaymentMethodResource';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -116,10 +117,6 @@ const MODIFICATION_TYPE_MAP = {
   cancel: 'CancelPayment',
   reverse: 'ReversePayment',
 } as const;
-
-type AdyenStoredPaymentMethodToken = NonNullable<
-  Awaited<ReturnType<RecurringApi['getTokensForStoredPaymentDetails']>>['storedPaymentMethods']
->[number];
 
 export type AdyenPaymentServiceOptions = {
   ctCartService: CommercetoolsCartService;
@@ -1158,7 +1155,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * fails, so this token is simply left out of the response (see reconcileOrphanAdyenToken()).
    */
   private async resolveStoredPaymentMethod(
-    adyenToken: AdyenStoredPaymentMethodToken,
+    adyenToken: StoredPaymentMethodResource,
     ctPaymentMethod: PaymentMethod | undefined,
     context: { customerId: string; paymentInterface: string; interfaceAccount?: string },
   ): Promise<StoredPaymentMethod | undefined> {
@@ -1174,7 +1171,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
    */
   private mapToStoredPaymentMethod(
     ctPaymentMethod: PaymentMethod,
-    adyenToken: AdyenStoredPaymentMethodToken,
+    adyenToken: StoredPaymentMethodResource,
   ): StoredPaymentMethod {
     return {
       id: ctPaymentMethod.id,
@@ -1199,7 +1196,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * fails here.
    */
   private async reconcileOrphanAdyenToken(
-    adyenToken: AdyenStoredPaymentMethodToken,
+    adyenToken: StoredPaymentMethodResource,
     context: { customerId: string; paymentInterface: string; interfaceAccount?: string },
   ): Promise<PaymentMethod | undefined> {
     const { customerId, paymentInterface, interfaceAccount } = context;
@@ -1247,7 +1244,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * token is left out of the response until a later call reconciles it successfully.
    */
   private async fetchConcurrentlyCreatedPaymentMethod(
-    adyenToken: AdyenStoredPaymentMethodToken,
+    adyenToken: StoredPaymentMethodResource,
     context: { customerId: string; paymentInterface: string; interfaceAccount?: string },
   ): Promise<PaymentMethod | undefined> {
     const { customerId, paymentInterface, interfaceAccount } = context;

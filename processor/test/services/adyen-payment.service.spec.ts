@@ -1705,7 +1705,7 @@ describe('adyen-payment.service', () => {
       const result = await paymentService.getStoredPaymentMethods();
 
       expect(saveSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ customerId, token: orphanToken, method: methodType }),
+        expect.objectContaining({ customerId, token: orphanToken, method: 'card' }),
       );
       expect(updateSpy).not.toHaveBeenCalled();
       expect(result.storedPaymentMethods).toHaveLength(2);
