@@ -92,7 +92,7 @@ export class PaymentComponentsConverter {
         },
         {
           type: 'jcs', // econtext_stores
-        }
+        },
       ],
       express: [
         {
