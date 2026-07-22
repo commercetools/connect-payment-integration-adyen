@@ -92,6 +92,7 @@ import { NotificationTokenizationConverter } from './converters/notification-rec
 import {
   buildCheckoutTransactionItemId,
   convertAdyenCardBrandToCTFormat,
+  convertPaymentMethodFromAdyenFormat,
   convertPaymentMethodToAdyenFormat,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
@@ -1180,7 +1181,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       createdAt: ctPaymentMethod.createdAt,
       isDefault: ctPaymentMethod.default,
       token: ctPaymentMethod.token?.value || adyenToken.id || '',
-      type: ctPaymentMethod.method || adyenToken.type || '',
+      type: ctPaymentMethod.method || convertPaymentMethodFromAdyenFormat(adyenToken.type as string) || '',
       displayOptions: {
         brand: {
           key: convertAdyenCardBrandToCTFormat(adyenToken.brand),
@@ -1210,7 +1211,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         token: adyenToken.id || '',
         paymentInterface,
         interfaceAccount,
-        method: adyenToken.type || '',
+        method: convertPaymentMethodFromAdyenFormat(adyenToken.type as string),
       });
 
       log.info('Created payment-method in commercetools for orphaned Adyen token', {
