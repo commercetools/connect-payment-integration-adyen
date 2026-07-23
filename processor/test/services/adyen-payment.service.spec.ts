@@ -1704,9 +1704,7 @@ describe('adyen-payment.service', () => {
 
       const result = await paymentService.getStoredPaymentMethods();
 
-      expect(saveSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ customerId, token: orphanToken, method: 'card' }),
-      );
+      expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ customerId, token: orphanToken, method: 'card' }));
       expect(updateSpy).not.toHaveBeenCalled();
       expect(result.storedPaymentMethods).toHaveLength(2);
       expect(result.storedPaymentMethods.find((spm) => spm.id === 'new-ct-id')?.isDefault).toStrictEqual(false);
@@ -1814,6 +1812,200 @@ describe('adyen-payment.service', () => {
 
       expect(result.storedPaymentMethods).toHaveLength(1);
       expect(result.storedPaymentMethods[0].id).toStrictEqual('healthy-ct-id');
+    });
+
+    test('includes card details custom fields for a "scheme" orphan token when adyenStorePaymentMethodDetailsEnabled is enabled', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const orphanToken = 'adyen-token-value-orphan';
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          { id: orphanToken, type: 'scheme', brand: 'visa', lastFour: '1234', expiryMonth: '03', expiryYear: '30' },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: 'card',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod);
+
+      await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customFields: {
+            type: { key: 'commercetools-checkout-card-details', typeId: 'type' },
+            fields: {
+              brand: 'Visa',
+              lastFour: '1234',
+              expiryMonth: 3,
+              expiryYear: 30,
+            },
+          },
+        }),
+      );
+    });
+
+    test('omits expiryMonth/expiryYear from custom fields when the "scheme" orphan token does not provide them', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const orphanToken = 'adyen-token-value-orphan';
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [{ id: orphanToken, type: 'scheme', brand: 'visa', lastFour: '1234' }],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: 'card',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod);
+
+      await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customFields: {
+            type: { key: 'commercetools-checkout-card-details', typeId: 'type' },
+            fields: {
+              brand: 'Visa',
+              lastFour: '1234',
+            },
+          },
+        }),
+      );
+    });
+
+    test('omits custom fields for a non-"scheme" orphan token even when adyenStorePaymentMethodDetailsEnabled is enabled', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const orphanToken = 'adyen-token-value-orphan';
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [{ id: orphanToken, type: 'paypal' }],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: 'paypal',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod);
+
+      await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ customFields: undefined }));
+    });
+
+    test('omits custom fields when adyenStorePaymentMethodDetailsEnabled is disabled', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const orphanToken = 'adyen-token-value-orphan';
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: false } as any);
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          { id: orphanToken, type: 'scheme', brand: 'visa', lastFour: '1234', expiryMonth: '03', expiryYear: '30' },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: 'card',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod);
+
+      await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ customFields: undefined }));
     });
   });
 

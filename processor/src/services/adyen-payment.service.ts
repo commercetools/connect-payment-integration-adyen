@@ -18,6 +18,7 @@ import {
   CurrencyConverters,
   CustomFieldsDraft,
   FieldContainer,
+  GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import { AdyenOrderService } from './adyen-order.service';
 import { CheckoutOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/checkoutOrderResponse';
@@ -1203,12 +1204,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     try {
       // Always created with default: false
+      const customFields = this.getPaymentMethodCustomFieldsDraft(adyenToken);
       const createdPaymentMethod = await this.ctPaymentMethodService.save({
         customerId,
         token: adyenToken.id || '',
         paymentInterface,
         interfaceAccount,
         method: convertPaymentMethodFromAdyenFormat(adyenToken.type as string),
+        customFields,
       });
 
       log.info('Created payment-method in commercetools for orphaned Adyen token', {
@@ -1234,6 +1237,26 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
 
       return undefined;
+    }
+  }
+
+  private getPaymentMethodCustomFieldsDraft(adyenToken?: StoredPaymentMethodResource): CustomFieldsDraft | undefined {
+    if (!getConfig().adyenStorePaymentMethodDetailsEnabled || !adyenToken) {
+      return undefined;
+    }
+
+    switch (adyenToken.type) {
+      case 'scheme': {
+        return GenerateCardDetailsCustomFieldsDraft({
+          brand: convertAdyenCardBrandToCTFormat(adyenToken.brand),
+          lastFour: adyenToken.lastFour,
+          ...(adyenToken.expiryMonth ? { expiryMonth: Number(adyenToken.expiryMonth) } : undefined),
+          ...(adyenToken.expiryYear ? { expiryYear: Number(adyenToken.expiryYear) } : undefined),
+        });
+      }
+      default: {
+        return undefined;
+      }
     }
   }
 
