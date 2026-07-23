@@ -35,9 +35,18 @@ export async function getCtpToken(): Promise<string> {
 }
 
 export async function getJwtToken(): Promise<string> {
-  const res = await fetch('http://127.0.0.1:9000/jwt/token', { method: 'GET' });
-  if (!res.ok) throw new Error('Failed to get JWT token — is the local JWT service running on port 9000?');
-  return res.text();
+  const res = await fetch('http://localhost:9002/jwt/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      iss: 'https://issuer.com',
+      sub: 'test-sub',
+      'https://issuer.com/claims/project_key': projectKey(),
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to get JWT token — is the local JWT service running on port 9002?');
+  const data = await res.json() as { token: string };
+  return data.token;
 }
 
 export async function getSessionId(cartId: string, { isDropin = false } = {}): Promise<string> {

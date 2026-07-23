@@ -1,16 +1,17 @@
-import { getCtpToken } from './ct.ts';
+import { getCtpToken, getJwtToken } from './ct.ts';
 import type { PaymentMethod } from '../types.ts';
 
 const processorUrl = (): string => window.__VITE_PROCESSOR_URL__;
 
-export async function fetchPaymentMethods(sessionId: string): Promise<{
+export async function fetchPaymentMethods(): Promise<{
   components: PaymentMethod[];
   dropins: PaymentMethod[];
   express: PaymentMethod[];
 }> {
+  const jwt = await getJwtToken();
   const res = await fetch(`${processorUrl()}/operations/payment-components`, {
     headers: {
-      'X-Session-Id': sessionId,
+      Authorization: `Bearer ${jwt}`,
       'Content-Type': 'application/json',
     },
   });

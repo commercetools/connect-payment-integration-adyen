@@ -68,7 +68,7 @@ export function useCheckout(): {
       });
 
       const [methodsData, storedEnabled] = await Promise.all([
-        fetchPaymentMethods(sessionId),
+        fetchPaymentMethods(),
         instance.isStoredPaymentMethodsEnabled?.().catch(() => false),
       ]);
 
