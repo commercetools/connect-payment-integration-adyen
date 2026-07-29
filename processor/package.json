@@ -20,6 +20,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
   "dependencies": {
     "@adyen/api-library": "32.0.0",
     "@commercetools-backend/loggers": "27.8.0",
@@ -43,7 +47,7 @@
     "globals": "17.8.0",
     "@jest/globals": "30.4.1",
     "@types/jest": "30.0.0",
-    "@types/node": "26.1.1",
+    "@types/node": "24.13.3",
     "@typescript-eslint/eslint-plugin": "8.65.0",
     "@typescript-eslint/parser": "8.65.0",
     "eslint": "10.8.0",

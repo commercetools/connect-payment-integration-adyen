@@ -3,6 +3,10 @@
   "private": true,
   "version": "5.27.1",
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
   "scripts": {
     "dev": "vite --port 3000",
     "start": "serve public -l 8080 --cors",
@@ -17,7 +21,7 @@
   },
   "devDependencies": {
     "@jest/globals": "30.4.1",
-    "@types/node": "26.1.1",
+    "@types/node": "24.13.3",
     "jest": "30.4.2",
     "sass": "1.102.0",
     "ts-jest": "29.4.12",
