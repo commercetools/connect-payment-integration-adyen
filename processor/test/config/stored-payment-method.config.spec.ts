@@ -7,6 +7,9 @@ describe('stored-payment-methods.config', () => {
       scheme: {
         oneOffPayments: true,
       },
+      googlepay: {
+        oneOffPayments: true,
+      },
     });
   });
 });
