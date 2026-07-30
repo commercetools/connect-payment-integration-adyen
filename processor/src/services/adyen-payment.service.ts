@@ -22,7 +22,6 @@ import {
 } from '@commercetools/connect-payments-sdk';
 import { AdyenOrderService } from './adyen-order.service';
 import { CheckoutOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/checkoutOrderResponse';
-import type { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
