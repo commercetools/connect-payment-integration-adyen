@@ -357,6 +357,18 @@ body {
 .cs-saved-card__brand--amex       { background: #007bc1; }
 .cs-saved-card__brand--maestro    { background: #6f2c91; }
 
+.cs-saved-card__wallet {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  background: #1a1a1a;
+  color: #fff;
+  flex-shrink: 0;
+}
+
 .cs-saved-card__number {
   font-size: 14px;
   font-weight: 500;

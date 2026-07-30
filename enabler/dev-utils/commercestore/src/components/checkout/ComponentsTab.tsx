@@ -45,6 +45,7 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
       <span className={`cs-saved-card__radio ${selected ? 'selected' : ''}`} />
       <span className="cs-saved-card__info">
         <span className="cs-saved-card__main">
+          {method.type === 'googlepay' && <span className="cs-saved-card__wallet">G Pay</span>}
           {brand && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
           <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>
           {exp && <span className="cs-saved-card__exp">{exp}</span>}
@@ -103,10 +104,12 @@ function PaymentContainer({ component, onPay, showStore, storeChecked, onStoreCh
       )}
       {!hasOwnButton && (
         <div className="cs-pay-area">
-          <label className="cs-terms">
-            <input type="checkbox" id="termsCheck" />
-            I agree to the <a href="#">terms and conditions</a>
-          </label>
+          {!isSaved && (
+            <label className="cs-terms">
+              <input type="checkbox" id="termsCheck" />
+              I agree to the <a href="#">terms and conditions</a>
+            </label>
+          )}
           <div className="cs-pay-actions">
             <button className="btn btn-primary cs-pay-btn" onClick={onPay}>Pay now</button>
             {isSaved && onRemoveSaved && (
@@ -221,8 +224,10 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
   }, [selectedSaved, onSavedMethodRemoved, onError]);
 
   const handlePay = useCallback(async () => {
-    const terms = document.getElementById('termsCheck') as HTMLInputElement | null;
-    if (!terms?.checked) { onError('Please accept the terms and conditions.'); return; }
+    if (!selectedSaved) {
+      const terms = document.getElementById('termsCheck') as HTMLInputElement | null;
+      if (!terms?.checked) { onError('Please accept the terms and conditions.'); return; }
+    }
     try {
       const c = component || savedComponent;
       if (await c?.isValid?.() === false) { await c?.showValidation?.(); return; }
@@ -230,9 +235,14 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
     } catch (e) {
       onError((e as Error).message);
     }
-  }, [component, savedComponent, storeMethod, onError]);
+  }, [component, savedComponent, storeMethod, onError, selectedSaved]);
 
   const activeComponent = component || savedComponent;
+
+  const handleStoreChange = useCallback((checked: boolean) => {
+    setStoreMethod(checked);
+    activeComponent?.setStorePaymentDetails?.(checked);
+  }, [activeComponent]);
 
   return (
     <div className="cs-tab-layout">
@@ -275,9 +285,9 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
           <PaymentContainer
             component={activeComponent}
             onPay={handlePay}
-            showStore={selected === 'card'}
+            showStore={!selectedSaved}
             storeChecked={storeMethod}
-            onStoreChange={setStoreMethod}
+            onStoreChange={handleStoreChange}
             hasOwnButton={activeHasOwnButton}
             isSaved={!!selectedSaved}
             onRemoveSaved={handleRemoveSaved}

@@ -76,7 +76,7 @@ export function useCheckout(): {
       setDropinMethods(methodsData.dropins);
 
       if (storedEnabled && cartData.customerId) {
-        const stored = await instance.getStoredPaymentMethods({ allowedMethodTypes: ['card'] }).catch(() => ({ storedPaymentMethods: [] }));
+        const stored = await instance.getStoredPaymentMethods({ allowedMethodTypes: ['card', 'googlepay'] }).catch(() => ({ storedPaymentMethods: [] }));
         console.log('[useCheckout] getStoredPaymentMethods raw:', JSON.stringify(stored, null, 2));
         setSavedMethods(stored.storedPaymentMethods ?? []);
       }

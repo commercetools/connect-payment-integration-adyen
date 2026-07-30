@@ -29,6 +29,7 @@ import { GooglePayExpressBuilder } from "../express/googlepay";
 import { PayPalExpressBuilder } from "../express/paypal";
 import { ApplePayExpressBuilder } from "../express/applepay";
 import { StoredCardBuilder } from "../stored/stored-payment-methods/card";
+import { StoredGooglePayBuilder } from "../stored/stored-payment-methods/googlepay";
 import { WeChatPayBuilder } from "../components/payment-methods/wechatpay";
 import { ZipBuilder } from "../components/payment-methods/zip";
 import { AlipayBuilder } from "../components/payment-methods/alipay";
@@ -83,6 +84,7 @@ export type SupportedExpressMethod = keyof typeof SUPPORTED_EXPRESS_METHODS;
 
 export const SUPPORTED_STORED_METHODS = {
   card: StoredCardBuilder,
+  googlepay: StoredGooglePayBuilder,
 };
 
 export type SupportedStoredMethod = keyof typeof SUPPORTED_STORED_METHODS;

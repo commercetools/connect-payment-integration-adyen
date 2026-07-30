@@ -139,7 +139,8 @@ export interface MountableComponent {
   mount(element: HTMLElement): void;
   unmount?(): void;
   remove?(): Promise<void>;
-  submit?(): Promise<void>;
+  submit?(opts?: { storePaymentDetails?: boolean }): Promise<void>;
+  setStorePaymentDetails?(enabled: boolean): void;
   isValid?(): boolean;
   showValidation?(): void;
 }

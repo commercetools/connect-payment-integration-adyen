@@ -34,6 +34,9 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
         scheme: {
           oneOffPayments: true,
         },
+        googlepay: {
+          oneOffPayments: true,
+        },
       },
     },
   };
