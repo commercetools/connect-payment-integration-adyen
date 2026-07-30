@@ -3,3 +3,6 @@
 .env
 .connect
 .vscode
+
+# AI related files
+.claude

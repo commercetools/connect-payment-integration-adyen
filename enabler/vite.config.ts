@@ -1,11 +1,13 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js";
 import path from "path";
 
 export default defineConfig({
   server: { watch: { usePolling: true }, allowedHosts: true },
   plugins: [
+    react(),
     cssInjectedByJsPlugin({
       injectCodeFunction: function injectCodeCustomRunTimeFunction(
         cssCode: string,
