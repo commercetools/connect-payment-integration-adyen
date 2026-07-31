@@ -44,15 +44,11 @@ jobs:
           permission-pull-requests: write
 
       - name: Checkout
-<<<<<<< Updated upstream
         uses: actions/checkout@v7
-=======
-        uses: actions/checkout@v4
         with:
           token: ${{ steps.generate-token.outputs.token }}
           # peter-evans pushes via its own token input, so don't persist the App token.
           persist-credentials: false
->>>>>>> Stashed changes
 
       - name: Use Node.js 24.x
         uses: actions/setup-node@v7
