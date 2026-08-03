@@ -453,8 +453,8 @@ export const extractWalletTypeFromBrand = (brand?: string): string | undefined =
 };
 
 /**
- * 
- * @param brand The Adyen brand string to verify if it is for a wallet payment (e.g. Google Pay) 
+ *
+ * @param brand The Adyen brand string to verify if it is for a wallet payment (e.g. Google Pay)
  * @returns true if the Adyen brand is for a wallet payment, otherwise false
  */
 export const isWalletPayment = (brand?: string): boolean => {

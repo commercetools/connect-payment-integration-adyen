@@ -218,7 +218,11 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random().origin('Customer').lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;

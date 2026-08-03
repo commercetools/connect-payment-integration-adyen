@@ -1190,7 +1190,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
         expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
       },
-    }
+    };
     // Check if the AdyenToken is for a wallet payment method
     // If so, the type of the payment method should be the wallet type instead of 'scheme/card'
     // For wallet type, the brand is returned as 'amex_googlepay', etc while the type is 'scheme'
@@ -1199,7 +1199,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       if (walletType) {
         mappedResponse.type = walletType;
       }
-    } 
+    }
     return mappedResponse;
   }
 
