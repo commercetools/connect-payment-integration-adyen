@@ -10,12 +10,13 @@ interface CheckoutContentProps {
   paymentMethods: PaymentMethod[];
   dropinMethods: PaymentMethod[];
   savedMethods: StoredPaymentMethod[];
+  isRecurringOrder: boolean;
   onSuccess: (result: CheckoutResult) => void;
   onError: (msg: string) => void;
   onSavedMethodRemoved: (id: string) => void;
 }
 
-export default function CheckoutContent({ enabler, paymentMethods, dropinMethods, savedMethods, onSuccess, onError, onSavedMethodRemoved }: CheckoutContentProps) {
+export default function CheckoutContent({ enabler, paymentMethods, dropinMethods, savedMethods, isRecurringOrder, onSuccess, onError, onSavedMethodRemoved }: CheckoutContentProps) {
   const hasComponents = paymentMethods.length > 0;
   const hasDropin = dropinMethods.length > 0;
 
@@ -46,7 +47,7 @@ export default function CheckoutContent({ enabler, paymentMethods, dropinMethods
       <div className="cs-tab-content">
         {activeTab === 'components' && hasComponents && (
           <ComponentsTab enabler={enabler} paymentMethods={paymentMethods}
-            savedMethods={savedMethods} onSuccess={onSuccess} onError={onError}
+            savedMethods={savedMethods} isRecurringOrder={isRecurringOrder} onSuccess={onSuccess} onError={onError}
             onSavedMethodRemoved={onSavedMethodRemoved} />
         )}
         {activeTab === 'dropin' && hasDropin && (

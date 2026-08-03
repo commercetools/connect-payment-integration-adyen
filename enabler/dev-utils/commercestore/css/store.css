@@ -681,6 +681,17 @@ body {
 .cs-field { margin-bottom: 16px; }
 .cs-field label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; display: block; }
 
+.cs-field .cs-field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1a1a2e;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
 .cs-option-cards {
   display: flex;
   gap: 8px;
@@ -1042,6 +1053,17 @@ body {
 .cs-action-btn:hover {
   background: #f0f2f5;
   border-color: #aab0b8;
+}
+
+.cs-recurring-message {
+  padding: 10px 14px;
+  background: #f0f4ff;
+  border: 1px solid #d0daf8;
+  border-radius: 8px;
+  color: #3d52b8;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0 0 12px;
 }
 
 .cs-redirect-notice {

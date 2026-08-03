@@ -221,7 +221,7 @@ export async function ensureProjectConfiguration(): Promise<void> {
   await getOrCreateShippingMethod(taxCategory);
 }
 
-export async function createCart({ country, customerId, lineItems }: { country: string; customerId?: string; lineItems: LineItem[] }): Promise<CtCart> {
+export async function createCart({ country, customerId, lineItems, isRecurring }: { country: string; customerId?: string; lineItems: LineItem[]; isRecurring?: boolean }): Promise<CtCart> {
   const countries = getAllCountries();
   const addresses = getAllAddresses();
   const countryConfig = countries.find(c => c.code === country);
@@ -247,6 +247,7 @@ export async function createCart({ country, customerId, lineItems }: { country: 
     taxRoundingMode: 'HalfEven',
     taxCalculationMode: 'LineItemLevel',
     ...(customerId && { customerId }),
+    ...(isRecurring && { origin: 'RecurringOrder' }),
     shippingAddress: { ...address, country },
     billingAddress: { ...address, country },
     customLineItems,

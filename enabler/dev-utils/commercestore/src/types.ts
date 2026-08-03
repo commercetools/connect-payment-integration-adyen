@@ -73,6 +73,7 @@ export interface CtCart {
   currency: string;
   country?: string;
   customerId?: string;
+  origin?: string;
   totalPrice?: CtMoney;
   taxedPrice?: { totalGross: CtMoney };
   shippingInfo?: { price: CtMoney };

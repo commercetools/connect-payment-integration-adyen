@@ -13,6 +13,14 @@ const CUSTOMER_MODES = [
 
 type CustomerMode = (typeof CUSTOMER_MODES)[number]['value'];
 
+const RECURRING_FREQUENCIES = [
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+] as const;
+
+type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number]['value'];
+
 interface LineItemRowProps {
   item: LineItem;
   index: number;
@@ -49,6 +57,8 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [items, setItems] = useState<LineItem[]>([{ ...DEFAULT_ITEM }]);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<RecurringFrequency>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -65,6 +75,7 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
     if (items.some(i => !i.name.trim())) { setError('All items need a name.'); return; }
     if (customerMode === 'existing' && !email) { setError('Enter a customer email.'); return; }
     if (customerMode === 'new' && (!email || !firstName || !lastName)) { setError('Fill in all customer fields.'); return; }
+    if (isRecurring && customerMode === 'none') { setError('Recurring carts require a customer.'); return; }
 
     setLoading(true);
     setError('');
@@ -79,7 +90,7 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
         customerId = result.customer.id;
       }
 
-      const cart = await createCart({ country: countryCode, customerId, lineItems: items });
+      const cart = await createCart({ country: countryCode, customerId, lineItems: items, isRecurring });
       onCreated(cart.id);
       onClose();
     } catch (e) {
@@ -128,6 +139,20 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
               <div className="col-md-4"><input className="form-control" placeholder="Last name *" value={lastName} onChange={e => setLastName(e.target.value)} /></div>
             </div>
           )}
+
+          <div className="cs-field">
+            <label className="cs-field-checkbox">
+              <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
+              Recurring cart
+            </label>
+            {isRecurring && (
+              <select className="form-control mt-2" value={recurringFrequency} onChange={e => setRecurringFrequency(e.target.value as RecurringFrequency)}>
+                {RECURRING_FREQUENCIES.map(f => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
+                ))}
+              </select>
+            )}
+          </div>
 
           <div className="cs-field">
             <label>Line Items</label>
