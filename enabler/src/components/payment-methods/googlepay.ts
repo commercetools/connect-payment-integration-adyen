@@ -24,7 +24,6 @@ export class GooglepayBuilder extends AdyenBaseComponentBuilder {
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
       paymentComponentConfigOverride: this.resolvePaymentComponentConfigOverride(PaymentMethod.googlepay),
-      setStorePaymentDetails: this.setStorePaymentDetails,
     });
     googlePayComponent.init();
 
@@ -41,7 +40,6 @@ export class GooglePayComponent extends DefaultAdyenComponent {
     processorUrl: string;
     paymentComponentConfigOverride: Record<string, any>;
     usesOwnCertificate?: boolean;
-    setStorePaymentDetails?: (enabled: boolean) => void;
   }) {
     super(opts);
   }

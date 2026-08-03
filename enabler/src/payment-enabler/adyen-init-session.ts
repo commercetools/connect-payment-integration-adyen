@@ -234,7 +234,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
       storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
       setStorePaymentDetails: this.setStorePaymentDetails,
-      onComplete: this.initOptions.onComplete,
     };
   }
 
