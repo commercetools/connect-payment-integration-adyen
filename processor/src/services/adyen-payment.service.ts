@@ -93,7 +93,6 @@ import {
   buildCheckoutTransactionItemId,
   convertAdyenCardBrandToCTFormat,
   convertPaymentMethodFromAdyenFormat,
-  convertPaymentMethodToAdyenFormat,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
 import { populateInterfaceInteraction, AdyenRequestPayload, AdyenResponsePayload } from './helper.service';
@@ -219,7 +218,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       'view_api_clients',
       'manage_orders',
       'introspect_oauth_tokens',
-      'manage_checkout_payment_intents',
     ];
 
     if (getStoredPaymentMethodsConfig().enabled) {
@@ -921,26 +919,26 @@ export class AdyenPaymentService extends AbstractPaymentService {
             id: ctCart.id,
           },
           checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
-          paymentInterface: transactionDraft.paymentInterface,
         },
       });
     }
 
-    if (!transactionDraft.paymentMethod) {
-      throw new ErrorRequiredField('paymentMethod', {
-        privateMessage: 'paymentMethod is not provided in the draft',
-        privateFields: {
-          cart: {
-            id: ctCart.id,
-          },
-          checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
-          paymentInterface: transactionDraft.paymentInterface,
-        },
-      });
+    const cartAmount = await this.ctCartService.getPaymentAmount({ cart: ctCart });
+
+    if (transactionDraft.amount.currencyCode !== cartAmount.currencyCode) {
+      throw new ErrorInvalidField('amount.currencyCode', transactionDraft.amount.currencyCode, cartAmount.currencyCode);
+    }
+
+    if (transactionDraft.amount.centAmount > cartAmount.centAmount) {
+      throw new ErrorInvalidField(
+        'amount.centAmount',
+        String(transactionDraft.amount.centAmount),
+        `<= ${cartAmount.centAmount}`,
+      );
     }
 
     const paymentMethod = await this.ctPaymentMethodService.get({
-      id: transactionDraft.paymentMethod.id,
+      id: transactionDraft.paymentMethodId,
       customerId: ctCart.customerId,
       paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
       interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
@@ -954,7 +952,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
             id: ctCart.id,
           },
           checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
-          paymentInterface: transactionDraft.paymentInterface,
           paymentMethod: {
             id: paymentMethod.id,
           },
@@ -962,21 +959,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
       });
     }
 
-    // Determine the amount that needs to be payed and setup the payment entity in CT
-    let amountPlanned = transactionDraft.amount;
-    if (!amountPlanned) {
-      amountPlanned = await this.ctCartService.getPaymentAmount({ cart: ctCart });
-    }
+    const amountPlanned = transactionDraft.amount;
 
     const newlyCreatedPayment = await this.ctPaymentService.createPayment({
       amountPlanned,
       checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
       paymentMethodInfo: {
-        paymentInterface: transactionDraft.paymentInterface,
+        paymentInterface: getConfig().paymentInterface,
         token: {
           value: paymentMethod.token.value,
         },
-        ...(paymentMethod.method && { method: convertPaymentMethodToAdyenFormat(paymentMethod.method) }),
+        ...(paymentMethod.method && { method: paymentMethod.method }),
       },
       customer: {
         typeId: 'customer',
@@ -1002,16 +995,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     try {
-      res = await AdyenApi().PaymentsApi.payments(data);
+      res = await AdyenApi().PaymentsApi.payments(data, { idempotencyKey: transactionDraft.idempotencyKey });
     } catch (e) {
       throw wrapAdyenError(e);
     }
 
-    // Handle the response from Adyen
-    const txState = this.convertAdyenResultCode(
-      res.resultCode as PaymentResponse.ResultCodeEnum,
-      this.isActionRequired(res),
-    );
+    const txState = this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false);
 
     const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
 
@@ -1028,7 +1017,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       pspInteractions: interfaceInteraction,
     });
 
-    log.info("Payment authorization processed for 'transaction' stored payment method", {
+    log.info('Payment authorization processed for recurring payment', {
       paymentId: updatedPayment.id,
       interactionId: res.pspReference,
       interfaceId: res.pspReference,
@@ -1046,6 +1035,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
             },
           ],
           state: 'Failed',
+          paymentId: updatedPayment.id,
         },
       };
     }
@@ -1055,6 +1045,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         transactionStatus: {
           errors: [],
           state: 'Completed',
+          paymentId: updatedPayment.id,
         },
       };
     }
@@ -1063,6 +1054,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       transactionStatus: {
         errors: [],
         state: 'Pending',
+        paymentId: updatedPayment.id,
       },
     };
   }
