@@ -210,7 +210,12 @@ export class CreatePaymentConverter {
     );
 
     const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
-    const tokeniseForFirstTime = data.storePaymentMethod;
+    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
+    // A recurring order always needs a stored token to charge future occurrences, so storage must
+    // not depend on the client (enabler/SPA) correctly requesting it for every payment method.
+    // Only applies to a fresh payment method — one already paying with an existing token is
+    // already stored and must not be re-tokenized.
+    const tokeniseForFirstTime = !payWithExistingToken && (data.storePaymentMethod || isCurrentCartRecurringOrder);
 
     // User does not want to store token for the first time nor pay with existing one
     if (!tokeniseForFirstTime && !payWithExistingToken) {
@@ -257,8 +262,6 @@ export class CreatePaymentConverter {
         );
       }
     }
-
-    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
 
     const shopperInteraction = payWithExistingToken
       ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens

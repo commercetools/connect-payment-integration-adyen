@@ -218,7 +218,7 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random().lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
+      const cartRandom = CartRest.random().origin('Customer').lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
@@ -401,6 +401,42 @@ describe('create-payment.converter', () => {
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
         storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should force storePaymentMethod for a fresh payment on a recurring-cart even when the client did not request it', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
 
       const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
