@@ -2708,8 +2708,8 @@ describe('adyen-payment.service', () => {
           transactionStatus: {
             errors: [],
             state: 'Pending',
-            paymentId,
           },
+          paymentId,
         });
       });
     });

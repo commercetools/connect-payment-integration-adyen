@@ -1035,8 +1035,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
             },
           ],
           state: 'Failed',
-          paymentId: updatedPayment.id,
         },
+        paymentId: updatedPayment.id,
       };
     }
 
@@ -1045,8 +1045,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
         transactionStatus: {
           errors: [],
           state: 'Completed',
-          paymentId: updatedPayment.id,
         },
+        paymentId: updatedPayment.id,
       };
     }
 
@@ -1054,8 +1054,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       transactionStatus: {
         errors: [],
         state: 'Pending',
-        paymentId: updatedPayment.id,
       },
+      paymentId: updatedPayment.id,
     };
   }
 

@@ -480,16 +480,16 @@ Private endpoint used for server-to-server payment processing, for example to ch
 
 - transactionStatus
   - state: Result of the transaction. It can be `Pending`, `Failed` or `Completed`. `Pending` means Adyen accepted the charge but has not confirmed it yet - typical of payment methods that are settled asynchronously and may still be confirmed at a later point because it requires time.
-  - paymentId: Id of the commercetools Payment resource created for this charge, when available.
   - errors: List of errors.
+- paymentId: Id of the commercetools Payment resource created for this charge, when available.
 
 ```
 {
     transactionStatus: {
         state: "Pending|Failed|Completed",
-        paymentId: "<paymentId>",
         errors: [{ code: "PaymentRejected", message: "<message>" }]
-    }
+    },
+    paymentId: "<paymentId>"
 }
 ```
 
