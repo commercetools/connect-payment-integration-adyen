@@ -16,7 +16,7 @@ import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-metho
 import {
   convertAdyenCardBrandToCTFormat,
   convertPaymentMethodFromAdyenFormat,
-  extractCardBrandFromWalletBrand,
+  extractCardBrand,
   extractWalletTypeFromBrand,
 } from './helper.converter';
 import { AdyenApi } from '../../clients/adyen.client';
@@ -139,7 +139,7 @@ export class NotificationTokenizationConverter {
         const lastFourDigits = storedPaymentMethodResource.lastFour;
         const expiryMonth = storedPaymentMethodResource.expiryMonth;
         const expiryYear = storedPaymentMethodResource.expiryYear;
-        const brand = extractCardBrandFromWalletBrand(storedPaymentMethodResource.brand);
+        const brand = extractCardBrand(storedPaymentMethodResource.brand);
 
         return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),

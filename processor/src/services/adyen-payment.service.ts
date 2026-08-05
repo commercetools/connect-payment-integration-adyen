@@ -94,7 +94,7 @@ import {
   convertAdyenCardBrandToCTFormat,
   convertPaymentMethodFromAdyenFormat,
   convertPaymentMethodToAdyenFormat,
-  extractCardBrandFromWalletBrand,
+  extractCardBrand,
   extractWalletTypeFromBrand,
   isGiftCardSplitPayment,
   isWalletPayment,
@@ -1184,7 +1184,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       type: ctPaymentMethod.method || convertPaymentMethodFromAdyenFormat(adyenToken.type as string) || '',
       displayOptions: {
         brand: {
-          key: convertAdyenCardBrandToCTFormat(extractCardBrandFromWalletBrand(adyenToken.brand)),
+          key: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
         },
         endDigits: adyenToken.lastFour,
         expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
@@ -1262,7 +1262,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       case 'scheme':
       case 'googlepay': {
         return GenerateCardDetailsCustomFieldsDraft({
-          brand: convertAdyenCardBrandToCTFormat(extractCardBrandFromWalletBrand(adyenToken.brand)),
+          brand: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
           lastFour: adyenToken.lastFour,
           ...(adyenToken.expiryMonth ? { expiryMonth: Number(adyenToken.expiryMonth) } : undefined),
           ...(adyenToken.expiryYear ? { expiryYear: Number(adyenToken.expiryYear) } : undefined),

@@ -469,7 +469,7 @@ export const isWalletPayment = (brand?: string): boolean => {
  * Strips a wallet suffix (see extractWalletTypeFromBrand) to recover the underlying card brand,
  * e.g. "amex" from "amex_googlepay". Returns the brand unchanged if it carries no wallet suffix.
  */
-export const extractCardBrandFromWalletBrand = (brand?: string): string | undefined => {
+export const extractCardBrand = (brand?: string): string | undefined => {
   if (!brand) {
     return brand;
   }
