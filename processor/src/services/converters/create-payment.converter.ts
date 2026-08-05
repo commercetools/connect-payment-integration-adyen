@@ -198,10 +198,11 @@ export class CreatePaymentConverter {
     }
 
     const paymentMethodType = data.paymentMethod.type;
-    if (
-      typeof paymentMethodType !== 'string' ||
-      !Object.keys(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).includes(paymentMethodType)
-    ) {
+    const paymentMethodConfig =
+      typeof paymentMethodType === 'string'
+        ? getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes[paymentMethodType]
+        : undefined;
+    if (!paymentMethodConfig) {
       return;
     }
 
@@ -211,11 +212,16 @@ export class CreatePaymentConverter {
 
     const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
     const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
-    // A recurring order always needs a stored token to charge future occurrences, so storage must
-    // not depend on the client (enabler/SPA) correctly requesting it for every payment method.
-    // Only applies to a fresh payment method — one already paying with an existing token is
-    // already stored and must not be re-tokenized.
-    const tokeniseForFirstTime = !payWithExistingToken && (data.storePaymentMethod || isCurrentCartRecurringOrder);
+    // Whether this payment method type is allowed to be tokenized at all depends on the type's own
+    // config: oneOffPayments gates a client-requested store (data.storePaymentMethod) on a regular
+    // cart, recurringPayments gates being auto-stored for a recurring order. A recurring order
+    // always needs a stored token to charge future occurrences, so that storage must not depend on
+    // the client (enabler/SPA) correctly requesting it for every payment method. Only applies to a
+    // fresh payment method — one already paying with an existing token is already stored and must
+    // not be re-tokenized.
+    const shouldStoreOneOff = !!data.storePaymentMethod && paymentMethodConfig.oneOffPayments;
+    const shouldStoreForRecurringOrder = isCurrentCartRecurringOrder && paymentMethodConfig.recurringPayments;
+    const tokeniseForFirstTime = !payWithExistingToken && (shouldStoreOneOff || shouldStoreForRecurringOrder);
 
     // User does not want to store token for the first time nor pay with existing one
     if (!tokeniseForFirstTime && !payWithExistingToken) {
