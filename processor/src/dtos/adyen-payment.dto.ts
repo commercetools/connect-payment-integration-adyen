@@ -22,7 +22,7 @@ export type PaymentMethodsRequestDTO = Omit<PaymentMethodsRequest, 'amount' | 'm
 export type PaymentMethodsResponseDTO = PaymentMethodsResponse;
 
 export type GetExpressConfigResponseDTO = {
-  config: Omit<ConfigResponseSchemaDTO, 'storedPaymentMethodsConfig'>;
+  config: Omit<ConfigResponseSchemaDTO, 'storedPaymentMethodsConfig' | 'methodsAllowedForRecurringPayments'>;
   methods: PaymentMethod[] | undefined;
 };
 
