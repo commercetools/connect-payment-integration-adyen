@@ -4,21 +4,24 @@ const TransactionTypes = Type.Union([Type.Literal('Recurring')]);
 
 export const TransactionDraft = Type.Object({
   cartId: Type.String({ format: 'uuid' }),
-  paymentInterface: Type.String({ format: 'uuid' }),
   checkoutTransactionItemId: Type.String({ format: 'uuid' }),
+  paymentInterface: Type.Optional(
+    Type.String({
+      format: 'uuid',
+      deprecated: true,
+      description: 'Deprecated: use checkoutTransactionItemId instead.',
+    }),
+  ),
   amount: Type.Optional(
     Type.Object({
       centAmount: Type.Number(),
       currencyCode: Type.String(),
     }),
   ),
+  paymentMethodId: Type.Optional(Type.String({ format: 'uuid' })),
+  idempotencyKey: Type.Optional(Type.String()),
   futureOrderNumber: Type.Optional(Type.String()),
-  paymentMethod: Type.Optional(
-    Type.Object({
-      id: Type.String({ format: 'uuid' }),
-    }),
-  ),
-  type: Type.Optional(TransactionTypes),
+  type: TransactionTypes,
 });
 
 const TransactionStatePending = Type.Literal('Pending', {
@@ -49,6 +52,7 @@ export const TransactionResponse = Type.Object({
       }),
     ),
   }),
+  paymentId: Type.Optional(Type.String()),
 });
 
 export type TransactionDraftDTO = Static<typeof TransactionDraft>;
