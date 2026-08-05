@@ -165,7 +165,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true},
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -189,7 +189,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true},
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
