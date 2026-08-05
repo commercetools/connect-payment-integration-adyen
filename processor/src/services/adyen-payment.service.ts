@@ -1111,7 +1111,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
    */
   async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const customerId = await this.getCustomerIdFromCart();
-    const { paymentInterface, interfaceAccount } = getStoredPaymentMethodsConfig().config;
+    const { paymentInterface, interfaceAccount, supportedPaymentMethodTypes } = getStoredPaymentMethodsConfig().config;
+
+    // The payment method should be displayed in the stored payment methods list if it is supported and one-off payments are allowed for that method.
+    // Methods that only support recurring payments, should not be displayed in the stored payment methods list.
+    const shouldShowStoredPaymentMethod = (method: string) => {
+      return supportedPaymentMethodTypes[method]?.oneOffPayments;
+    };
 
     // Fetched in parallel: neither call depends on the other's result.
     const [adyenTokenDetails, ctStoredPaymentMethods] = await Promise.all([
@@ -1148,7 +1154,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
     );
 
     return {
-      storedPaymentMethods: storedPaymentMethods.filter((paymentMethod) => paymentMethod !== undefined),
+      storedPaymentMethods: storedPaymentMethods.filter(
+        (paymentMethod): paymentMethod is NonNullable<typeof paymentMethod> => {
+          if (!paymentMethod) {
+            return false;
+          }
+          return shouldShowStoredPaymentMethod(paymentMethod.type === 'card' ? 'scheme' : paymentMethod.type);
+        },
+      ),
     };
   }
 

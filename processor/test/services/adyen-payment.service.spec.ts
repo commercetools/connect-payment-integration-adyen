@@ -1647,6 +1647,152 @@ describe('adyen-payment.service', () => {
       });
     });
 
+    test('should filter out a stored payment method whose type does not support oneOffPayments', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'adyen-token-value-123';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'card',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getStoredPaymentMethods();
+
+      expect(result).toStrictEqual({ storedPaymentMethods: [] });
+    });
+
+    test('should include a stored payment method whose type supports oneOffPayments', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'adyen-token-value-123';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: false },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'card',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getStoredPaymentMethods();
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'card',
+            displayOptions: {
+              brand: { key: 'Visa' },
+              endDigits: '1234',
+              expiryMonth: 3,
+              expiryYear: 30,
+            },
+          },
+        ],
+      });
+    });
+
     test('should create a commercetools payment-method for an orphan Adyen token with default: false, without ever calling update()', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const methodType = 'scheme';
