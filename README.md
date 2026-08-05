@@ -296,6 +296,21 @@ When a payment method is tokenized for the first time Adyen will send a new noti
 
 The next time the same customer goes through Checkout (either using drop-ins or web-components) they will see the stored payment method as a option to pay with.
 
+### Server-to-server recurring payments
+
+Once a payment method has been tokenized (see [stored payment methods](#stored-payment-methods) above), a backend system - for example Checkout when processing a recurring payment - can charge that stored payment method directly, server-to-server. This is a different flow from the client-to-server flows described above: there is no shopper session and no redirect involved, since the shopper is not present when the charge happens.
+
+#### Endpoint
+
+`POST /operations/transactions`
+
+For the full request/response contract, see [Create transaction](./processor/README.md#create-transaction) in the processor documentation.
+
+#### Requirements
+
+- The stored payment methods feature must be enabled (see [Setting up stored payment methods](#setting-up-stored-payment-methods)) - a token to charge must already exist.
+- The caller must present an OAuth2 token with the `manage_project` and `manage_checkout_transactions` scopes.
+
 ### Save displayable payment method details
 
 This feature will ensure that on the `payment.paymentMethodInfo` and the `payment-methods` entities the `custom` property is filled with the specific payment details.

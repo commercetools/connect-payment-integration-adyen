@@ -2554,18 +2554,18 @@ describe('adyen-payment.service', () => {
 
     const adyenTokenId = 'adyen-token-id-value';
 
+    const idempotencyKey = 'idempotency-key-value';
+
     const transactionDraft: TransactionDraftDTO = {
       cartId: 'fcd6bbc4-64a9-48b8-918e-bfa60d3d7495',
       checkoutTransactionItemId: 'ee64746c-327c-4732-b1d2-678ded3c760e',
-      paymentInterface: 'ee64746c-327c-4732-b1d2-678ded3c760e',
       amount: {
         centAmount: 1199,
         currencyCode: 'EUR',
       },
       futureOrderNumber: 'future-order-number',
-      paymentMethod: {
-        id: 'f3850734-0da8-4c57-8009-2425991c12aa',
-      },
+      paymentMethodId: 'f3850734-0da8-4c57-8009-2425991c12aa',
+      idempotencyKey,
       type: 'Recurring',
     };
 
@@ -2622,7 +2622,79 @@ describe('adyen-payment.service', () => {
         );
       });
 
-      test('it should throw an ErrorRequiredField if the no paymentMethod reference is provided', async () => {
+      test('it should fall back to the cart amount, skipping currency/amount validation, when the draft does not have an amount set', async () => {
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
+
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(customerId)
+          .buildRest<TCartRest>({}) as Cart;
+
+        const paymentMethod: PaymentMethod = {
+          id: paymentMethodId,
+          createdAt: '',
+          lastModifiedAt: '',
+          paymentMethodStatus: 'Active',
+          version: 1,
+          default: false,
+          token: {
+            value: adyenTokenId,
+          },
+        };
+
+        const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>() as Payment;
+
+        const cartAmount = {
+          centAmount: 999,
+          currencyCode: 'USD',
+          fractionDigits: 2,
+        };
+
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(cartAmount);
+        jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
+        jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
+        jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(cartRandom);
+        jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+          merchantAccount: merchantReference,
+          shopperReference: customerId,
+          storedPaymentMethods: [
+            {
+              id: adyenTokenId,
+              type: 'scheme',
+              lastFour: '1234',
+              brand: 'visa',
+              expiryMonth: '03',
+              expiryYear: '30',
+            },
+          ],
+        });
+        jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(paymentRandom);
+
+        const transactionDraftWithoutAmount: TransactionDraftDTO = { ...transactionDraft, amount: undefined };
+
+        await paymentService.handleTransaction(transactionDraftWithoutAmount);
+
+        expect(DefaultPaymentService.prototype.createPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amountPlanned: cartAmount,
+          }),
+        );
+      });
+
+      test('it should throw an ErrorInvalidField if the draft amount currency does not match the cart amount currency', async () => {
         jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
@@ -2642,14 +2714,85 @@ describe('adyen-payment.service', () => {
           .buildRest<TCartRest>({}) as Cart;
 
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+          centAmount: transactionDraft.amount.centAmount,
+          currencyCode: 'USD',
+          fractionDigits: 2,
+        });
 
-        const transactionDraftWithoutPaymentMethod: TransactionDraftDTO = {
+        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          new ErrorInvalidField('amount.currencyCode', transactionDraft.amount.currencyCode, 'USD'),
+        );
+      });
+
+      test('it should throw an ErrorInvalidField if the draft amount is greater than the cart amount', async () => {
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
+
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(customerId)
+          .buildRest<TCartRest>({}) as Cart;
+
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+          centAmount: transactionDraft.amount.centAmount - 1,
+          currencyCode: transactionDraft.amount.currencyCode,
+          fractionDigits: 2,
+        });
+
+        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          new ErrorInvalidField(
+            'amount.centAmount',
+            String(transactionDraft.amount.centAmount),
+            `<= ${transactionDraft.amount.centAmount - 1}`,
+          ),
+        );
+      });
+
+      test('it should throw an ErrorRequiredField if the draft does not have a paymentMethodId set', async () => {
+        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+          enabled: true,
+          config: {
+            paymentInterface,
+            interfaceAccount,
+            supportedPaymentMethodTypes: {
+              scheme: { oneOffPayments: true },
+            },
+          },
+        });
+
+        const cartRandom = CartRest.random()
+          .origin('RecurringOrder')
+          .lineItems([])
+          .customLineItems([])
+          .customerId(customerId)
+          .buildRest<TCartRest>({}) as Cart;
+
+        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+          centAmount: transactionDraft.amount.centAmount,
+          currencyCode: transactionDraft.amount.currencyCode,
+          fractionDigits: 2,
+        });
+
+        const transactionDraftWithoutPaymentMethodId: TransactionDraftDTO = {
           ...transactionDraft,
-          paymentMethod: undefined,
+          paymentMethodId: undefined,
         };
 
-        expect(paymentService.handleTransaction(transactionDraftWithoutPaymentMethod)).rejects.toThrow(
-          new ErrorRequiredField('paymentMethod'),
+        expect(paymentService.handleTransaction(transactionDraftWithoutPaymentMethodId)).rejects.toThrow(
+          new ErrorRequiredField('paymentMethodId'),
         );
       });
 
@@ -2682,6 +2825,11 @@ describe('adyen-payment.service', () => {
         };
 
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+          centAmount: transactionDraft.amount.centAmount,
+          currencyCode: transactionDraft.amount.currencyCode,
+          fractionDigits: 2,
+        });
         jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
 
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(new ErrorRequiredField('token'));
@@ -2724,6 +2872,11 @@ describe('adyen-payment.service', () => {
 
         jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+          centAmount: transactionDraft.amount.centAmount,
+          currencyCode: transactionDraft.amount.currencyCode,
+          fractionDigits: 2,
+        });
         jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
 
         jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
@@ -2768,17 +2921,19 @@ describe('adyen-payment.service', () => {
           },
           checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
           paymentMethodInfo: {
-            paymentInterface: transactionDraft.paymentInterface,
+            paymentInterface: Config.getConfig().paymentInterface,
             token: {
               value: adyenTokenId,
             },
-            method: 'scheme',
+            method: 'card',
           },
           customer: {
             typeId: 'customer',
             id: customerId,
           },
         });
+
+        expect(PaymentsApi.prototype.payments).toHaveBeenCalledWith(expect.anything(), { idempotencyKey });
 
         expect(DefaultCartService.prototype.addPayment).toHaveBeenCalledWith({
           resource: {
@@ -2808,6 +2963,7 @@ describe('adyen-payment.service', () => {
             errors: [],
             state: 'Pending',
           },
+          paymentId,
         });
       });
     });
