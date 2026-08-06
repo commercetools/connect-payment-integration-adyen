@@ -16,7 +16,7 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.41.0",
+    "@adyen/adyen-web": "6.41.1",
     "serve": "14.2.6"
   },
   "devDependencies": {
@@ -24,7 +24,7 @@
     "@types/node": "26.1.2",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
-    "@vitejs/plugin-react": "6.0.4",
+    "@vitejs/plugin-react": "6.0.5",
     "jest": "30.4.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
