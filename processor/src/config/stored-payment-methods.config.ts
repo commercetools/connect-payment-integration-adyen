@@ -40,6 +40,10 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        applepay: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };
