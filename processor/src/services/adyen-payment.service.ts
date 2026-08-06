@@ -93,6 +93,7 @@ import {
   buildCheckoutTransactionItemId,
   convertAdyenCardBrandToCTFormat,
   convertPaymentMethodFromAdyenFormat,
+  convertPaymentMethodToAdyenFormat,
   extractCardBrand,
   extractWalletTypeFromBrand,
   isGiftCardSplitPayment,
@@ -1170,7 +1171,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
           if (!paymentMethod) {
             return false;
           }
-          return shouldShowStoredPaymentMethod(paymentMethod.type === 'card' ? 'scheme' : paymentMethod.type);
+          return shouldShowStoredPaymentMethod(convertPaymentMethodToAdyenFormat(paymentMethod.type));
         },
       ),
     };
