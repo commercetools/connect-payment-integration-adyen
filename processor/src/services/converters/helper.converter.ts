@@ -435,6 +435,49 @@ export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
   return ADYEN_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
 };
 
+const WALLET_BRAND_SUFFIXES: Record<string, string> = {
+  googlepay: '_googlepay',
+};
+
+/**
+ * Adyen tokenizes wallet payments (e.g. Google Pay) as a generic "scheme" token, encoding the
+ * original wallet in the brand string instead, e.g. "amex_googlepay". Returns the wallet's
+ * payment method type (e.g. "googlepay") if the brand carries one, otherwise undefined.
+ */
+export const extractWalletTypeFromBrand = (brand?: string): string | undefined => {
+  if (!brand) {
+    return undefined;
+  }
+
+  return Object.entries(WALLET_BRAND_SUFFIXES).find(([, suffix]) => brand.endsWith(suffix))?.[0];
+};
+
+/**
+ *
+ * @param brand The Adyen brand string to verify if it is for a wallet payment (e.g. Google Pay)
+ * @returns true if the Adyen brand is for a wallet payment, otherwise false
+ */
+export const isWalletPayment = (brand?: string): boolean => {
+  if (!brand) {
+    return false;
+  }
+
+  return Object.values(WALLET_BRAND_SUFFIXES).some((suffix) => brand.endsWith(suffix));
+};
+
+/**
+ * Strips a wallet suffix (see extractWalletTypeFromBrand) to recover the underlying card brand,
+ * e.g. "amex" from "amex_googlepay". Returns the brand unchanged if it carries no wallet suffix.
+ */
+export const extractCardBrand = (brand?: string): string | undefined => {
+  if (!brand) {
+    return brand;
+  }
+
+  const suffix = Object.values(WALLET_BRAND_SUFFIXES).find((s) => brand.endsWith(s));
+  return suffix ? brand.slice(0, -suffix.length) : brand;
+};
+
 const ADYEN_GIFT_CARD_BRAND_TO_CT_MAPPING: Record<string, string> = Object.fromEntries(
   GIFT_CARD_BRANDS.map((brand) => [brand, brand.charAt(0).toUpperCase() + brand.slice(1)]),
 );

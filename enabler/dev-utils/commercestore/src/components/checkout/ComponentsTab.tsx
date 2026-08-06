@@ -45,6 +45,7 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
       <span className={`cs-saved-card__radio ${selected ? 'selected' : ''}`} />
       <span className="cs-saved-card__info">
         <span className="cs-saved-card__main">
+          {method.type === 'googlepay' && <span className="cs-saved-card__wallet">G Pay</span>}
           {brand && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
           <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>
           {exp && <span className="cs-saved-card__exp">{exp}</span>}
@@ -59,6 +60,7 @@ interface PaymentContainerProps {
   component: MountableComponent;
   onPay: () => void;
   showStore: boolean;
+  showRecurringMessage: boolean;
   storeChecked: boolean;
   onStoreChange: (checked: boolean) => void;
   hasOwnButton: boolean;
@@ -67,7 +69,7 @@ interface PaymentContainerProps {
   removingId: string | null;
 }
 
-function PaymentContainer({ component, onPay, showStore, storeChecked, onStoreChange, hasOwnButton, isSaved, onRemoveSaved, removingId }: PaymentContainerProps) {
+function PaymentContainer({ component, onPay, showStore, showRecurringMessage, storeChecked, onStoreChange, hasOwnButton, isSaved, onRemoveSaved, removingId }: PaymentContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRedirect, setIsRedirect] = useState(false);
   useAdyenMount(component, containerRef as RefObject<HTMLElement>);
@@ -95,6 +97,9 @@ function PaymentContainer({ component, onPay, showStore, storeChecked, onStoreCh
           You'll be redirected to complete this payment
         </div>
       )}
+      {showRecurringMessage && (
+        <p className="cs-recurring-message">This payment method will be securely saved for next time.</p>
+      )}
       {showStore && (
         <label className="cs-store-method">
           <input type="checkbox" checked={storeChecked} onChange={e => onStoreChange(e.target.checked)} />
@@ -103,10 +108,12 @@ function PaymentContainer({ component, onPay, showStore, storeChecked, onStoreCh
       )}
       {!hasOwnButton && (
         <div className="cs-pay-area">
-          <label className="cs-terms">
-            <input type="checkbox" id="termsCheck" />
-            I agree to the <a href="#">terms and conditions</a>
-          </label>
+          {!isSaved && (
+            <label className="cs-terms">
+              <input type="checkbox" id="termsCheck" />
+              I agree to the <a href="#">terms and conditions</a>
+            </label>
+          )}
           <div className="cs-pay-actions">
             <button className="btn btn-primary cs-pay-btn" onClick={onPay}>Pay now</button>
             {isSaved && onRemoveSaved && (
@@ -132,12 +139,13 @@ interface ComponentsTabProps {
   enabler: EnablerInstance;
   paymentMethods: PaymentMethod[];
   savedMethods: StoredPaymentMethod[];
+  isRecurringOrder: boolean;
   onSuccess: (result: CheckoutResult) => void;
   onError: (msg: string) => void;
   onSavedMethodRemoved: (id: string) => void;
 }
 
-export default function ComponentsTab({ enabler, paymentMethods, savedMethods, onSuccess: _onSuccess, onError, onSavedMethodRemoved }: ComponentsTabProps) {
+export default function ComponentsTab({ enabler, paymentMethods, savedMethods, isRecurringOrder, onSuccess: _onSuccess, onError, onSavedMethodRemoved }: ComponentsTabProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedSaved, setSelectedSaved] = useState<string | null>(null);
   const [component, setComponent] = useState<MountableComponent | null>(null);
@@ -173,13 +181,20 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
 
       setActiveHasOwnButton(hasOwnButton);
       setComponent(instance);
+
+      // Mirrors the checkout SPA: on a recurring order, a freshly selected (not-yet-stored)
+      // payment method is always saved for next time, with no shopper opt-in.
+      if (isRecurringOrder) {
+        setStoreMethod(true);
+        instance.setStorePaymentDetails?.(true);
+      }
     } catch (e) {
       onError(`Failed to load ${type}: ${(e as Error).message}`);
       setSelected(null);
     } finally {
       setLoadingMethod(null);
     }
-  }, [enabler, selected, instancesRef, onError]);
+  }, [enabler, selected, instancesRef, onError, isRecurringOrder]);
 
   const selectSaved = useCallback(async (method: StoredPaymentMethod) => {
     setSelected(null);
@@ -221,8 +236,10 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
   }, [selectedSaved, onSavedMethodRemoved, onError]);
 
   const handlePay = useCallback(async () => {
-    const terms = document.getElementById('termsCheck') as HTMLInputElement | null;
-    if (!terms?.checked) { onError('Please accept the terms and conditions.'); return; }
+    if (!selectedSaved) {
+      const terms = document.getElementById('termsCheck') as HTMLInputElement | null;
+      if (!terms?.checked) { onError('Please accept the terms and conditions.'); return; }
+    }
     try {
       const c = component || savedComponent;
       if (await c?.isValid?.() === false) { await c?.showValidation?.(); return; }
@@ -230,9 +247,14 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
     } catch (e) {
       onError((e as Error).message);
     }
-  }, [component, savedComponent, storeMethod, onError]);
+  }, [component, savedComponent, storeMethod, onError, selectedSaved]);
 
   const activeComponent = component || savedComponent;
+
+  const handleStoreChange = useCallback((checked: boolean) => {
+    setStoreMethod(checked);
+    activeComponent?.setStorePaymentDetails?.(checked);
+  }, [activeComponent]);
 
   return (
     <div className="cs-tab-layout">
@@ -275,9 +297,11 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, o
           <PaymentContainer
             component={activeComponent}
             onPay={handlePay}
-            showStore={selected === 'card'}
+            // Show store method checkbox only for card, and only if it's not a recurring order (recurring orders always save the method)
+            showStore={selected === 'card' && !isRecurringOrder}
+            showRecurringMessage={!selectedSaved && isRecurringOrder}
             storeChecked={storeMethod}
-            onStoreChange={setStoreMethod}
+            onStoreChange={handleStoreChange}
             hasOwnButton={activeHasOwnButton}
             isSaved={!!selectedSaved}
             onRemoveSaved={handleRemoveSaved}

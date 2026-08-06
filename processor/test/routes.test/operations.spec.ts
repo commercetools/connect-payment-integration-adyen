@@ -124,6 +124,7 @@ describe('/operations APIs', () => {
         storedPaymentMethodsConfig: {
           isEnabled: true,
         },
+        methodsAllowedForRecurringPayments: ['scheme', 'googlepay'],
       });
     });
   });

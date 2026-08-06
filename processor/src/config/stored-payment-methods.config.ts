@@ -6,6 +6,7 @@ import { getConfig } from './config';
 export type SupportedStoredPaymentMethodsTypes = {
   [key: string]: {
     oneOffPayments: boolean;
+    recurringPayments: boolean;
   };
 };
 
@@ -33,6 +34,11 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
       supportedPaymentMethodTypes: {
         scheme: {
           oneOffPayments: true,
+          recurringPayments: true,
+        },
+        googlepay: {
+          oneOffPayments: false,
+          recurringPayments: true,
         },
       },
     },

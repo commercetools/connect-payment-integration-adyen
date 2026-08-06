@@ -6,6 +6,11 @@ describe('stored-payment-methods.config', () => {
     expect(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).toStrictEqual({
       scheme: {
         oneOffPayments: true,
+        recurringPayments: true,
+      },
+      googlepay: {
+        oneOffPayments: false,
+        recurringPayments: true,
       },
     });
   });

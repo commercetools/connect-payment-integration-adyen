@@ -13,7 +13,12 @@ import {
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
-import { convertAdyenCardBrandToCTFormat, convertPaymentMethodFromAdyenFormat } from './helper.converter';
+import {
+  convertAdyenCardBrandToCTFormat,
+  convertPaymentMethodFromAdyenFormat,
+  extractCardBrand,
+  extractWalletTypeFromBrand,
+} from './helper.converter';
 import { AdyenApi } from '../../clients/adyen.client';
 import { getConfig } from '../../config/config';
 import { log } from '../../libs/logger';
@@ -96,6 +101,14 @@ export class NotificationTokenizationConverter {
     recurringTokenOperationData: RecurringTokenStoreOperation,
     storedPaymentMethodResource?: StoredPaymentMethodResource,
   ): Promise<string> {
+    // Adyen tokenizes wallet payments (e.g. Google Pay) as a generic "scheme" token, encoding the
+    // original wallet in the brand string instead (e.g. "amex_googlepay"). Prefer that so the
+    // shopper still sees "Google Pay" instead of a generic card.
+    const walletType = extractWalletTypeFromBrand(storedPaymentMethodResource?.brand);
+    if (walletType) {
+      return convertPaymentMethodFromAdyenFormat(walletType);
+    }
+
     if (!storedPaymentMethodResource || !storedPaymentMethodResource.type) {
       log.warn(
         'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
@@ -121,11 +134,12 @@ export class NotificationTokenizationConverter {
     storedPaymentMethodResource: StoredPaymentMethodResource,
   ): CustomFieldsDraft | undefined {
     switch (storedPaymentMethodResource.type) {
-      case 'scheme': {
+      case 'scheme':
+      case 'googlepay': {
         const lastFourDigits = storedPaymentMethodResource.lastFour;
         const expiryMonth = storedPaymentMethodResource.expiryMonth;
         const expiryYear = storedPaymentMethodResource.expiryYear;
-        const brand = storedPaymentMethodResource.brand;
+        const brand = extractCardBrand(storedPaymentMethodResource.brand);
 
         return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),
