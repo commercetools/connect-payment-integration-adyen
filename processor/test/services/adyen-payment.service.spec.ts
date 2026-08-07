@@ -1793,6 +1793,89 @@ describe('adyen-payment.service', () => {
       });
     });
 
+    test('should only include methods that support recurringPayments when recurring: true is passed', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'adyen-token-value-123';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'card',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      // Without recurring: true, oneOffPayments: false excludes it (already covered elsewhere);
+      // with recurring: true, recurringPayments: true includes it.
+      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'card',
+            displayOptions: {
+              brand: { key: 'Visa' },
+              endDigits: '1234',
+              expiryMonth: 3,
+              expiryYear: 30,
+            },
+          },
+        ],
+      });
+    });
+
     test('should create a commercetools payment-method for an orphan Adyen token with default: false, without ever calling update()', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const methodType = 'scheme';
@@ -2629,7 +2712,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true },
+              scheme: { oneOffPayments: true, recurringPayments: true },
             },
           },
         });
@@ -2715,13 +2798,13 @@ describe('adyen-payment.service', () => {
 
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
         jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
-          centAmount: transactionDraft.amount.centAmount,
+          centAmount: transactionDraft.amount!.centAmount,
           currencyCode: 'USD',
           fractionDigits: 2,
         });
 
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
-          new ErrorInvalidField('amount.currencyCode', transactionDraft.amount.currencyCode, 'USD'),
+          new ErrorInvalidField('amount.currencyCode', transactionDraft.amount!.currencyCode, 'USD'),
         );
       });
 
@@ -2732,7 +2815,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true },
+              scheme: { oneOffPayments: true, recurringPayments: true },
             },
           },
         });
@@ -2746,16 +2829,16 @@ describe('adyen-payment.service', () => {
 
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
         jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
-          centAmount: transactionDraft.amount.centAmount - 1,
-          currencyCode: transactionDraft.amount.currencyCode,
+          centAmount: transactionDraft.amount!.centAmount - 1,
+          currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
 
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
           new ErrorInvalidField(
             'amount.centAmount',
-            String(transactionDraft.amount.centAmount),
-            `<= ${transactionDraft.amount.centAmount - 1}`,
+            String(transactionDraft.amount!.centAmount),
+            `<= ${transactionDraft.amount!.centAmount - 1}`,
           ),
         );
       });
@@ -2767,7 +2850,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true },
+              scheme: { oneOffPayments: true, recurringPayments: true },
             },
           },
         });
@@ -2781,8 +2864,8 @@ describe('adyen-payment.service', () => {
 
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
         jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
-          centAmount: transactionDraft.amount.centAmount,
-          currencyCode: transactionDraft.amount.currencyCode,
+          centAmount: transactionDraft.amount!.centAmount,
+          currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
 
@@ -2826,8 +2909,8 @@ describe('adyen-payment.service', () => {
 
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
         jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
-          centAmount: transactionDraft.amount.centAmount,
-          currencyCode: transactionDraft.amount.currencyCode,
+          centAmount: transactionDraft.amount!.centAmount,
+          currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
         jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
@@ -2873,8 +2956,8 @@ describe('adyen-payment.service', () => {
         jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
         jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
-          centAmount: transactionDraft.amount.centAmount,
-          currencyCode: transactionDraft.amount.currencyCode,
+          centAmount: transactionDraft.amount!.centAmount,
+          currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
         jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);

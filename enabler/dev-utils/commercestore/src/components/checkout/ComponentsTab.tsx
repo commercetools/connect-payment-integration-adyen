@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
 import { useAdyenMount } from '../../hooks/useAdyenMount.ts';
 import { usePaymentAvailability } from '../../hooks/usePaymentAvailability.ts';
+import { WALLET_METHODS } from '../../../../wallet-methods.ts';
 import type { EnablerInstance, MountableComponent, PaymentMethod, StoredPaymentMethod, CheckoutResult } from '../../types.ts';
 
 interface PaymentMethodItemProps {
@@ -35,6 +36,7 @@ interface SavedMethodItemProps {
 function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
   const brand = method.displayOptions?.brand?.key ?? '';
   const last4 = method.displayOptions?.endDigits;
+  const walletLabel = WALLET_METHODS[method.type]?.label;
   const exp = method.displayOptions?.expiryMonth && method.displayOptions?.expiryYear
     ? `${String(method.displayOptions.expiryMonth).padStart(2, '0')}/${String(method.displayOptions.expiryYear).slice(-2)}`
     : null;
@@ -45,7 +47,7 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
       <span className={`cs-saved-card__radio ${selected ? 'selected' : ''}`} />
       <span className="cs-saved-card__info">
         <span className="cs-saved-card__main">
-          {method.type === 'googlepay' && <span className="cs-saved-card__wallet">G Pay</span>}
+          {walletLabel && <span className="cs-saved-card__wallet">{walletLabel}</span>}
           {brand && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
           <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>
           {exp && <span className="cs-saved-card__exp">{exp}</span>}

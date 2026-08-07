@@ -314,6 +314,11 @@ body {
 }
 .cs-saved-card:hover { border-color: #6359ff; background: #6359ff06; }
 .cs-saved-card.selected { border-color: #6359ff; background: #6359ff0d; }
+.cs-saved-card--static { cursor: default; justify-content: space-between; }
+.cs-saved-card--static:hover { border-color: #e0e0ee; background: #fff; }
+
+.cs-recurring-list { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.cs-recurring-method-id { font-size: 11px; color: #999; flex-shrink: 0; }
 
 .cs-saved-card__radio {
   flex-shrink: 0;
