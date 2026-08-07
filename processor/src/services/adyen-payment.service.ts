@@ -1121,14 +1121,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * `createdAt`, `default`). Any Adyen token without a matching record is an "orphan" and gets
    * persisted on the fly, within this same call, by reconcileOrphanAdyenToken().
    */
-  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+  async getStoredPaymentMethods(opts: { recurring?: boolean } = {}): Promise<StoredPaymentMethodsResponse> {
     const customerId = await this.getCustomerIdFromCart();
     const { paymentInterface, interfaceAccount, supportedPaymentMethodTypes } = getStoredPaymentMethodsConfig().config;
 
-    // The payment method should be displayed in the stored payment methods list if it is supported and one-off payments are allowed for that method.
-    // Methods that only support recurring payments, should not be displayed in the stored payment methods list.
+    // By default the payment method is displayed in the stored payment methods list if it is
+    // supported and one-off payments are allowed for that method. Pass `recurring: true` to
+    // instead list the methods that are allowed to be used for a recurring order's future charges.
     const shouldShowStoredPaymentMethod = (method: string) => {
-      return supportedPaymentMethodTypes[method]?.oneOffPayments;
+      return opts.recurring
+        ? supportedPaymentMethodTypes[method]?.recurringPayments
+        : supportedPaymentMethodTypes[method]?.oneOffPayments;
     };
 
     // Fetched in parallel: neither call depends on the other's result.

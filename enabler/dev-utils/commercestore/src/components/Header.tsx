@@ -2,6 +2,7 @@ const NAV = [
   { href: '/dev-utils/commercestore/index.html', label: 'Checkout' },
   { href: '/dev-utils/commercestore/express.html', label: 'Express' },
   { href: '/dev-utils/commercestore/payments.html', label: 'Payments' },
+  { href: '/dev-utils/commercestore/recurring.html', label: 'Recurring' },
   { href: '/dev-utils/commercestore/admin.html', label: 'Admin' },
 ];
 
