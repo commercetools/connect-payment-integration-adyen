@@ -231,13 +231,13 @@ export const adyenPaymentRoutes = async (
     },
   );
 
-  fastify.get<{ Querystring: { recurring?: string } }>(
+  fastify.get<{ Querystring: { withRecurring?: string } }>(
     '/stored-payment-methods',
     {
       preHandler: [opts.sessionHeaderAuthHook.authenticate()],
       schema: {
         querystring: Type.Object({
-          recurring: Type.Optional(
+          withRecurring: Type.Optional(
             Type.String({
               description: 'Pass "true" to list methods allowed for recurring payments instead of one-off payments.',
             }),
@@ -249,7 +249,9 @@ export const adyenPaymentRoutes = async (
       },
     },
     async (request, reply) => {
-      const res = await opts.paymentService.getStoredPaymentMethods({ recurring: request.query.recurring === 'true' });
+      const res = await opts.paymentService.getStoredPaymentMethods({
+        withRecurring: request.query.withRecurring === 'true',
+      });
       reply.code(200).send(res);
     },
   );
