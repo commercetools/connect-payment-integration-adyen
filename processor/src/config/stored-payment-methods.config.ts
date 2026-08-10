@@ -44,6 +44,10 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        klarna_paynow: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };

@@ -16,6 +16,10 @@ describe('stored-payment-methods.config', () => {
         oneOffPayments: false,
         recurringPayments: true,
       },
+      klarna_paynow: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
     });
   });
 });
