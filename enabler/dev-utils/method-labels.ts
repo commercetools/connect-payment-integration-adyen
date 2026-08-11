@@ -9,8 +9,12 @@ export const METHOD_LABELS: Record<string, { label: string }> = {
   googlepay: { label: 'G Pay' },
   applepay: { label: 'Apple Pay' },
   klarna_pay_now: { label: 'Klarna Pay Now' },
+  klarna_pay_later: { label: 'Klarna Pay Later' },
+  klarna_pay_overtime: { label: 'Klarna Pay Over Time' },
 };
 
 export const METHODS_WITH_NO_CARDS: string[] = [
   'klarna_pay_now',
+  'klarna_pay_later',
+  'klarna_pay_overtime',
 ]
