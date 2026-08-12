@@ -1876,7 +1876,7 @@ describe('adyen-payment.service', () => {
       });
     });
 
-    test('should include a stored Klarna Pay Now method (no card data) when recurring: true is passed', async () => {
+    test('should include a stored Klarna Pay Now method (no card data) when withRecurring: true is passed', async () => {
       const merchantAccount = 'merchantAccount';
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const paymentInterface = 'adyen-payment-interface';
