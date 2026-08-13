@@ -28,6 +28,11 @@ describe('stored-payment-methods.config', () => {
         oneOffPayments: false,
         recurringPayments: true,
       },
+      afterpaytouch: {
+        oneOffPayments: false,
+        recurringPayments: true,
+        recurringPaymentsAllowedCountries: ['AU', 'NZ'],
+      },
     });
   });
 });
