@@ -17,4 +17,5 @@ export const METHODS_WITH_NO_CARDS: string[] = [
   'klarna_pay_now',
   'klarna_pay_later',
   'klarna_pay_overtime',
+  'afterpay',
 ]
