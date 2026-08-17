@@ -33,6 +33,14 @@ describe('stored-payment-methods.config', () => {
         recurringPayments: true,
         tokenizationAllowedCountries: ['AU', 'NZ'],
       },
+      bcmc: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      bcmc_mobile: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
     });
   });
 });

@@ -67,6 +67,14 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           recurringPayments: true,
           tokenizationAllowedCountries: ['AU', 'NZ'],
         },
+        bcmc: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
+        bcmc_mobile: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };

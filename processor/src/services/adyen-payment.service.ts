@@ -95,9 +95,9 @@ import {
   convertPaymentMethodFromAdyenFormat,
   convertPaymentMethodToAdyenFormat,
   extractCardBrand,
-  extractWalletTypeFromBrand,
+  extractCollapsedTypeFromBrand,
+  isCollapsedTypePayment,
   isGiftCardSplitPayment,
-  isWalletPayment,
 } from './converters/helper.converter';
 import { populateInterfaceInteraction, AdyenRequestPayload, AdyenResponsePayload } from './helper.service';
 import {
@@ -1219,13 +1219,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
         expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
       },
     };
-    // Check if the AdyenToken is for a wallet payment method
-    // If so, the type of the payment method should be the wallet type instead of 'scheme/card'
-    // For wallet type, the brand is returned as 'amex_googlepay', etc while the type is 'scheme'
-    if (adyenToken.brand && isWalletPayment(adyenToken.brand)) {
-      const walletType = extractWalletTypeFromBrand(adyenToken.brand);
-      if (walletType) {
-        mappedResponse.type = walletType;
+    // Adyen collapses some payment methods (e.g. Google Pay, Bancontact card) into a generic
+    // 'scheme' token, encoding the real payment method type in the brand instead (e.g.
+    // 'amex_googlepay', 'bcmc'). If so, the type of the payment method should be that real type
+    // instead of 'scheme/card'.
+    if (adyenToken.brand && isCollapsedTypePayment(adyenToken.brand)) {
+      const collapsedType = extractCollapsedTypeFromBrand(adyenToken.brand);
+      if (collapsedType) {
+        mappedResponse.type = convertPaymentMethodFromAdyenFormat(collapsedType);
       }
     }
     return mappedResponse;
@@ -1245,13 +1246,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       // Always created with default: false
       const customFields = this.getPaymentMethodCustomFieldsDraft(adyenToken);
-      const walletType = extractWalletTypeFromBrand(adyenToken.brand);
+      const collapsedType = extractCollapsedTypeFromBrand(adyenToken.brand);
       const createdPaymentMethod = await this.ctPaymentMethodService.save({
         customerId,
         token: adyenToken.id || '',
         paymentInterface,
         interfaceAccount,
-        method: convertPaymentMethodFromAdyenFormat(walletType ?? (adyenToken.type as string)),
+        method: convertPaymentMethodFromAdyenFormat(collapsedType ?? (adyenToken.type as string)),
         customFields,
       });
 
