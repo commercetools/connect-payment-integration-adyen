@@ -34,13 +34,16 @@ interface SavedMethodItemProps {
 }
 
 function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
-  const brand = method.displayOptions?.brand?.key ?? '';
+  const cardDetails = method.displayOptions?.cardDetails;
+  const bankDetails = method.displayOptions?.bankDetails;
+  const brand = cardDetails?.brand?.key ?? '';
   const showBrandBadge = brand && brand !== 'Unknown';
-  const last4 = method.displayOptions?.endDigits;
+  const last4 = cardDetails?.endDigits ?? bankDetails?.endDigits;
+  const ownerName = bankDetails?.ownerName;
   const methodLabel = METHOD_LABELS[method.type]?.label;
   const hasCardDigits = !METHODS_WITH_NO_CARDS.includes(method.type);
-  const exp = method.displayOptions?.expiryMonth && method.displayOptions?.expiryYear
-    ? `${String(method.displayOptions.expiryMonth).padStart(2, '0')}/${String(method.displayOptions.expiryYear).slice(-2)}`
+  const exp = cardDetails?.expiryMonth && cardDetails?.expiryYear
+    ? `${String(cardDetails.expiryMonth).padStart(2, '0')}/${String(cardDetails.expiryYear).slice(-2)}`
     : null;
 
   return (
@@ -53,6 +56,7 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
           {showBrandBadge && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
           {hasCardDigits && <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>}
           {hasCardDigits && exp && <span className="cs-saved-card__exp">{exp}</span>}
+          {ownerName && <span className="cs-saved-card__owner">{ownerName}</span>}
         </span>
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}
       </span>
@@ -210,7 +214,7 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, i
     try {
       if (!savedInstancesRef.current[method.id]) {
         const builder = await enabler.createStoredPaymentMethodBuilder(method.type);
-        const brand = method.displayOptions?.brand?.key;
+        const brand = method.displayOptions?.cardDetails?.brand?.key;
         const instance = builder.build({ id: method.id, brands: brand ? [brand] : [] });
         savedInstancesRef.current[method.id] = instance;
       }

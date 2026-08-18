@@ -19,6 +19,7 @@ import {
   CustomFieldsDraft,
   FieldContainer,
   GenerateCardDetailsCustomFieldsDraft,
+  GenerateSepaDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import { AdyenOrderService } from './adyen-order.service';
 import { CheckoutOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/checkoutOrderResponse';
@@ -1210,14 +1211,26 @@ export class AdyenPaymentService extends AbstractPaymentService {
       isDefault: ctPaymentMethod.default,
       token: ctPaymentMethod.token?.value || adyenToken.id || '',
       type: ctPaymentMethod.method || convertPaymentMethodFromAdyenFormat(adyenToken.type as string) || '',
-      displayOptions: {
-        brand: {
-          key: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
-        },
-        endDigits: adyenToken.lastFour,
-        expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
-        expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
-      },
+      displayOptions: adyenToken.iban
+        ? {
+            // Bank-account-based methods (e.g. SEPA Direct Debit) have no separate PAN or brand;
+            // endDigits is the last four digits of the IBAN instead.
+            bankDetails: {
+              ownerName: adyenToken.ownerName,
+              issuingBank: adyenToken.issuerName,
+              endDigits: adyenToken.lastFour ?? adyenToken.iban.slice(-4),
+            },
+          }
+        : {
+            cardDetails: {
+              brand: {
+                key: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
+              },
+              endDigits: adyenToken.lastFour,
+              expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
+              expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
+            },
+          },
     };
     // Adyen collapses some payment methods (e.g. Google Pay, Bancontact card) into a generic
     // 'scheme' token, encoding the real payment method type in the brand instead (e.g.
@@ -1295,6 +1308,11 @@ export class AdyenPaymentService extends AbstractPaymentService {
           lastFour: adyenToken.lastFour,
           ...(adyenToken.expiryMonth ? { expiryMonth: Number(adyenToken.expiryMonth) } : undefined),
           ...(adyenToken.expiryYear ? { expiryYear: Number(adyenToken.expiryYear) } : undefined),
+        });
+      }
+      case 'sepadirectdebit': {
+        return GenerateSepaDetailsCustomFieldsDraft({
+          lastFour: adyenToken.lastFour ?? adyenToken.iban?.slice(-4),
         });
       }
       default: {

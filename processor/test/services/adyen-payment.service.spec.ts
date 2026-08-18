@@ -1620,12 +1620,14 @@ describe('adyen-payment.service', () => {
             token: 'adyen-token-value-123',
             type: 'card',
             displayOptions: {
-              brand: {
-                key: 'Visa',
+              cardDetails: {
+                brand: {
+                  key: 'Visa',
+                },
+                endDigits: '1234',
+                expiryMonth: 3,
+                expiryYear: 30,
               },
-              endDigits: '1234',
-              expiryMonth: 3,
-              expiryYear: 30,
             },
           },
           {
@@ -1635,12 +1637,14 @@ describe('adyen-payment.service', () => {
             token: 'adyen-token-value-456',
             type: 'card',
             displayOptions: {
-              brand: {
-                key: 'Mastercard',
+              cardDetails: {
+                brand: {
+                  key: 'Mastercard',
+                },
+                endDigits: '5678',
+                expiryMonth: 11,
+                expiryYear: 28,
               },
-              endDigits: '5678',
-              expiryMonth: 11,
-              expiryYear: 28,
             },
           },
         ],
@@ -1783,10 +1787,12 @@ describe('adyen-payment.service', () => {
             token: adyenToken,
             type: 'card',
             displayOptions: {
-              brand: { key: 'Visa' },
-              endDigits: '1234',
-              expiryMonth: 3,
-              expiryYear: 30,
+              cardDetails: {
+                brand: { key: 'Visa' },
+                endDigits: '1234',
+                expiryMonth: 3,
+                expiryYear: 30,
+              },
             },
           },
         ],
@@ -1866,10 +1872,12 @@ describe('adyen-payment.service', () => {
             token: adyenToken,
             type: 'card',
             displayOptions: {
-              brand: { key: 'Visa' },
-              endDigits: '1234',
-              expiryMonth: 3,
-              expiryYear: 30,
+              cardDetails: {
+                brand: { key: 'Visa' },
+                endDigits: '1234',
+                expiryMonth: 3,
+                expiryYear: 30,
+              },
             },
           },
         ],
@@ -1943,10 +1951,12 @@ describe('adyen-payment.service', () => {
             token: adyenToken,
             type: 'klarna_pay_now',
             displayOptions: {
-              brand: { key: 'Unknown' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
+              cardDetails: {
+                brand: { key: 'Unknown' },
+                endDigits: undefined,
+                expiryMonth: undefined,
+                expiryYear: undefined,
+              },
             },
           },
         ],
@@ -2028,22 +2038,24 @@ describe('adyen-payment.service', () => {
             token: adyenToken,
             type: 'bancontactcard',
             displayOptions: {
-              brand: { key: 'Bancontact' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
+              cardDetails: {
+                brand: { key: 'Bancontact' },
+                endDigits: undefined,
+                expiryMonth: undefined,
+                expiryYear: undefined,
+              },
             },
           },
         ],
       });
     });
 
-    test('should include a stored SEPA Direct Debit method (no card data) when withRecurring: true is passed', async () => {
+    test('should include bank details (IBAN last-four, owner name, issuing bank) for a stored SEPA Direct Debit method when withRecurring: true is passed', async () => {
       const merchantAccount = 'merchantAccount';
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'adyen-token-value-sepa';
+      const adyenToken = 'QNMS8NV7QK5BRX65';
 
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
@@ -2062,6 +2074,8 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
+      // Real shape of a SEPA Direct Debit stored payment method resource from Adyen: no
+      // lastFour/expiry (those are card-only), but iban and ownerName instead.
       jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount,
         shopperReference: customerId,
@@ -2069,6 +2083,10 @@ describe('adyen-payment.service', () => {
           {
             id: adyenToken,
             type: 'sepadirectdebit',
+            brand: 'sepadirectdebit_authcap',
+            iban: 'NL98ABNA0410108103',
+            ownerName: 'A. Klaasen',
+            issuerName: 'ABN AMRO BANK N.V.',
           },
         ],
       });
@@ -2105,10 +2123,11 @@ describe('adyen-payment.service', () => {
             token: adyenToken,
             type: 'sepadirectdebit',
             displayOptions: {
-              brand: { key: 'Unknown' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
+              bankDetails: {
+                ownerName: 'A. Klaasen',
+                issuingBank: 'ABN AMRO BANK N.V.',
+                endDigits: '8103',
+              },
             },
           },
         ],
@@ -2332,6 +2351,65 @@ describe('adyen-payment.service', () => {
               lastFour: '1234',
               expiryMonth: 3,
               expiryYear: 30,
+            },
+          },
+        }),
+      );
+    });
+
+    test('includes SEPA details custom fields (IBAN last-four) for a "sepadirectdebit" orphan token when adyenStorePaymentMethodDetailsEnabled is enabled', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const orphanToken = 'adyen-token-value-orphan-sepa';
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: orphanToken,
+            type: 'sepadirectdebit',
+            brand: 'sepadirectdebit_authcap',
+            iban: 'NL98ABNA0410108103',
+            ownerName: 'A. Klaasen',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: 'sepadirectdebit',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod);
+
+      await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customFields: {
+            type: { key: 'commercetools-checkout-sepa-details', typeId: 'type' },
+            fields: {
+              lastFour: '8103',
             },
           },
         }),

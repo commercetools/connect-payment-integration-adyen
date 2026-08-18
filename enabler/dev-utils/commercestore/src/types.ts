@@ -113,10 +113,18 @@ export interface StoredPaymentMethod {
   isDefault?: boolean;
   createdAt?: string;
   displayOptions?: {
-    endDigits?: string;
-    brand?: { key: string };
-    expiryMonth?: number;
-    expiryYear?: number;
+    logoUrl?: string;
+    cardDetails?: {
+      endDigits?: string;
+      brand?: { key: string };
+      expiryMonth?: number;
+      expiryYear?: number;
+    };
+    bankDetails?: {
+      ownerName?: string;
+      issuingBank?: string;
+      endDigits?: string;
+    };
   };
 }
 

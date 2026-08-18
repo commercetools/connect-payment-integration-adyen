@@ -8,6 +8,7 @@ import {
   CommercetoolsPaymentMethodTypes,
   CustomFieldsDraft,
   GenerateCardDetailsCustomFieldsDraft,
+  GenerateSepaDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
@@ -147,6 +148,11 @@ export class NotificationTokenizationConverter {
           lastFour: lastFourDigits,
           expiryMonth: Number(expiryMonth),
           expiryYear: Number(expiryYear),
+        });
+      }
+      case 'sepadirectdebit': {
+        return GenerateSepaDetailsCustomFieldsDraft({
+          lastFour: storedPaymentMethodResource.lastFour ?? storedPaymentMethodResource.iban?.slice(-4),
         });
       }
       default: {
