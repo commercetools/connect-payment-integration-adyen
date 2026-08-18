@@ -2038,6 +2038,83 @@ describe('adyen-payment.service', () => {
       });
     });
 
+    test('should include a stored SEPA Direct Debit method (no card data) when withRecurring: true is passed', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'adyen-token-value-sepa';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            sepadirectdebit: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'sepadirectdebit',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'sepadirectdebit',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'sepadirectdebit',
+            displayOptions: {
+              brand: { key: 'Unknown' },
+              endDigits: undefined,
+              expiryMonth: undefined,
+              expiryYear: undefined,
+            },
+          },
+        ],
+      });
+    });
+
     test('should create a commercetools payment-method for an orphan Adyen token with default: false, without ever calling update()', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const methodType = 'scheme';

@@ -83,6 +83,10 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        sepadirectdebit: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };

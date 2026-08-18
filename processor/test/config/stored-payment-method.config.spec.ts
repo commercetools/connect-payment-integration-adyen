@@ -49,6 +49,10 @@ describe('stored-payment-methods.config', () => {
         oneOffPayments: false,
         recurringPayments: true,
       },
+      sepadirectdebit: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
     });
   });
 });
