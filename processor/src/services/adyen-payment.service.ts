@@ -1211,26 +1211,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       isDefault: ctPaymentMethod.default,
       token: ctPaymentMethod.token?.value || adyenToken.id || '',
       type: ctPaymentMethod.method || convertPaymentMethodFromAdyenFormat(adyenToken.type as string) || '',
-      displayOptions: adyenToken.iban
-        ? {
-            // Bank-account-based methods (e.g. SEPA Direct Debit) have no separate PAN or brand;
-            // endDigits is the last four digits of the IBAN instead.
-            bankDetails: {
-              ownerName: adyenToken.ownerName,
-              issuingBank: adyenToken.issuerName,
-              endDigits: adyenToken.lastFour ?? adyenToken.iban.slice(-4),
-            },
-          }
-        : {
-            cardDetails: {
-              brand: {
-                key: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
-              },
-              endDigits: adyenToken.lastFour,
-              expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
-              expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
-            },
-          },
+      displayOptions: this.buildDisplayOptions(adyenToken),
     };
     // Adyen collapses some payment methods (e.g. Google Pay, Bancontact card) into a generic
     // 'scheme' token, encoding the real payment method type in the brand instead (e.g.
@@ -1243,6 +1224,39 @@ export class AdyenPaymentService extends AbstractPaymentService {
       }
     }
     return mappedResponse;
+  }
+
+  private buildDisplayOptions(adyenToken: StoredPaymentMethodResource): StoredPaymentMethod['displayOptions'] {
+    if (adyenToken.iban) {
+      // Bank-account-based methods (e.g. SEPA Direct Debit) have no separate PAN or brand;
+      // endDigits is the last four digits of the IBAN instead.
+      return {
+        bankDetails: {
+          ownerName: adyenToken.ownerName,
+          issuingBank: adyenToken.issuerName,
+          endDigits: adyenToken.lastFour ?? adyenToken.iban.slice(-4),
+        },
+      };
+    }
+
+    // Adyen populates `brand` for some non-card methods too (e.g. echoing the method's own type),
+    // so presence alone isn't a reliable signal — only trust it once resolved to a recognized brand.
+    const brandKey = convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand));
+    const hasCardData = brandKey !== 'Unknown' || !!adyenToken.lastFour || !!adyenToken.expiryMonth || !!adyenToken.expiryYear;
+    if (!hasCardData) {
+      return {};
+    }
+
+    return {
+      cardDetails: {
+        brand: {
+          key: brandKey,
+        },
+        endDigits: adyenToken.lastFour,
+        expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
+        expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
+      },
+    };
   }
 
   /**

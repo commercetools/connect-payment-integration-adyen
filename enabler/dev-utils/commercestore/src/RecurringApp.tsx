@@ -5,7 +5,7 @@ import Spinner from './components/Spinner.tsx';
 import { useToast } from './hooks/useToast.ts';
 import { getSessionId } from './api/ct.ts';
 import { deleteStoredPaymentMethod, fetchRecurringStoredPaymentMethods } from './api/processor.ts';
-import { METHOD_LABELS, METHODS_WITH_NO_CARDS } from '../../method-labels.ts';
+import { METHOD_LABELS } from '../../method-labels.ts';
 import type { StoredPaymentMethod } from './types.ts';
 
 function RecurringMethodItem({
@@ -25,7 +25,7 @@ function RecurringMethodItem({
   const ownerName = bankDetails?.ownerName;
   const issuingBank = bankDetails?.issuingBank;
   const methodLabel = METHOD_LABELS[method.type]?.label;
-  const hasCardDigits = !METHODS_WITH_NO_CARDS.includes(method.type);
+  const hasCardDigits = last4 !== undefined;
   const exp = cardDetails?.expiryMonth && cardDetails?.expiryYear
     ? `${String(cardDetails.expiryMonth).padStart(2, '0')}/${String(cardDetails.expiryYear).slice(-2)}`
     : null;

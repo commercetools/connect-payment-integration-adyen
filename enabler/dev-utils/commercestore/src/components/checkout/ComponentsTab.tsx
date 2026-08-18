@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
 import { useAdyenMount } from '../../hooks/useAdyenMount.ts';
 import { usePaymentAvailability } from '../../hooks/usePaymentAvailability.ts';
-import { METHOD_LABELS, METHODS_WITH_NO_CARDS } from '../../../../method-labels.ts';
+import { METHOD_LABELS } from '../../../../method-labels.ts';
 import type { EnablerInstance, MountableComponent, PaymentMethod, StoredPaymentMethod, CheckoutResult } from '../../types.ts';
 
 interface PaymentMethodItemProps {
@@ -41,7 +41,7 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
   const last4 = cardDetails?.endDigits ?? bankDetails?.endDigits;
   const ownerName = bankDetails?.ownerName;
   const methodLabel = METHOD_LABELS[method.type]?.label;
-  const hasCardDigits = !METHODS_WITH_NO_CARDS.includes(method.type);
+  const hasCardDigits = last4 !== undefined;
   const exp = cardDetails?.expiryMonth && cardDetails?.expiryYear
     ? `${String(cardDetails.expiryMonth).padStart(2, '0')}/${String(cardDetails.expiryYear).slice(-2)}`
     : null;
