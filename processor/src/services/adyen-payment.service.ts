@@ -1242,7 +1242,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
     // Adyen populates `brand` for some non-card methods too (e.g. echoing the method's own type),
     // so presence alone isn't a reliable signal — only trust it once resolved to a recognized brand.
     const brandKey = convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand));
-    const hasCardData = brandKey !== 'Unknown' || !!adyenToken.lastFour || !!adyenToken.expiryMonth || !!adyenToken.expiryYear;
+    const hasCardData =
+      brandKey !== 'Unknown' || !!adyenToken.lastFour || !!adyenToken.expiryMonth || !!adyenToken.expiryYear;
     if (!hasCardData) {
       return {};
     }
