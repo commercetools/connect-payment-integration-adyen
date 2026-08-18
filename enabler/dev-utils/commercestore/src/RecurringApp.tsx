@@ -6,6 +6,7 @@ import { useToast } from './hooks/useToast.ts';
 import { getSessionId } from './api/ct.ts';
 import { deleteStoredPaymentMethod, fetchRecurringStoredPaymentMethods } from './api/processor.ts';
 import { METHOD_LABELS } from '../../method-labels.ts';
+import { CardInfo, BankInfo } from './components/StoredMethodDetails.tsx';
 import type { StoredPaymentMethod } from './types.ts';
 
 function RecurringMethodItem({
@@ -19,31 +20,19 @@ function RecurringMethodItem({
 }) {
   const cardDetails = method.displayOptions?.cardDetails;
   const bankDetails = method.displayOptions?.bankDetails;
-  const brand = cardDetails?.brand?.key ?? '';
-  const showBrandBadge = brand && brand !== 'Unknown';
-  const last4 = cardDetails?.endDigits ?? bankDetails?.endDigits;
-  const ownerName = bankDetails?.ownerName;
-  const issuingBank = bankDetails?.issuingBank;
+  const hasBrandBadge = !!cardDetails?.brand?.key && cardDetails.brand.key !== 'Unknown';
   const methodLabel = METHOD_LABELS[method.type]?.label;
-  const hasCardDigits = last4 !== undefined;
-  const exp = cardDetails?.expiryMonth && cardDetails?.expiryYear
-    ? `${String(cardDetails.expiryMonth).padStart(2, '0')}/${String(cardDetails.expiryYear).slice(-2)}`
-    : null;
 
   return (
     <div className="cs-saved-card cs-saved-card--static">
       <span className="cs-saved-card__info">
         <span className="cs-saved-card__main">
           {methodLabel && <span className="cs-saved-card__wallet">{methodLabel}</span>}
-          {showBrandBadge ? (
-            <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>
-          ) : !methodLabel ? (
+          {!methodLabel && !hasBrandBadge && (
             <span className={`cs-saved-card__brand cs-saved-card__brand--${method.type.toLowerCase()}`}>{method.type}</span>
-          ) : null}
-          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>}
-          {hasCardDigits && exp && <span className="cs-saved-card__exp">{exp}</span>}
-          {ownerName && <span className="cs-saved-card__owner">{ownerName}</span>}
-          {issuingBank && <span className="cs-saved-card__owner">{issuingBank}</span>}
+          )}
+          {cardDetails && <CardInfo cardDetails={cardDetails} />}
+          {bankDetails && <BankInfo bankDetails={bankDetails} />}
         </span>
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}
       </span>

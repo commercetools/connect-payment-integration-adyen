@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, type RefObject } from 'react'
 import { useAdyenMount } from '../../hooks/useAdyenMount.ts';
 import { usePaymentAvailability } from '../../hooks/usePaymentAvailability.ts';
 import { METHOD_LABELS } from '../../../../method-labels.ts';
+import { CardInfo, BankInfo } from '../StoredMethodDetails.tsx';
 import type { EnablerInstance, MountableComponent, PaymentMethod, StoredPaymentMethod, CheckoutResult } from '../../types.ts';
 
 interface PaymentMethodItemProps {
@@ -36,15 +37,7 @@ interface SavedMethodItemProps {
 function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
   const cardDetails = method.displayOptions?.cardDetails;
   const bankDetails = method.displayOptions?.bankDetails;
-  const brand = cardDetails?.brand?.key ?? '';
-  const showBrandBadge = brand && brand !== 'Unknown';
-  const last4 = cardDetails?.endDigits ?? bankDetails?.endDigits;
-  const ownerName = bankDetails?.ownerName;
   const methodLabel = METHOD_LABELS[method.type]?.label;
-  const hasCardDigits = last4 !== undefined;
-  const exp = cardDetails?.expiryMonth && cardDetails?.expiryYear
-    ? `${String(cardDetails.expiryMonth).padStart(2, '0')}/${String(cardDetails.expiryYear).slice(-2)}`
-    : null;
 
   return (
     <div className={`cs-saved-card ${selected ? 'selected' : ''}`} onClick={onClick} role="button" tabIndex={0}
@@ -53,10 +46,8 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
       <span className="cs-saved-card__info">
         <span className="cs-saved-card__main">
           {methodLabel && <span className="cs-saved-card__wallet">{methodLabel}</span>}
-          {showBrandBadge && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
-          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>}
-          {hasCardDigits && exp && <span className="cs-saved-card__exp">{exp}</span>}
-          {ownerName && <span className="cs-saved-card__owner">{ownerName}</span>}
+          {cardDetails && <CardInfo cardDetails={cardDetails} />}
+          {bankDetails && <BankInfo bankDetails={bankDetails} />}
         </span>
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}
       </span>
