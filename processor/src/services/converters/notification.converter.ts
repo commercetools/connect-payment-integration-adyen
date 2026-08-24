@@ -377,7 +377,11 @@ export class NotificationConverter {
   private convertSchemePaymentToCustomField(item: NotificationRequestItem): CustomFieldsDraft {
     const lastFourDigits = item.additionalData?.cardSummary; // Needs to be enabled in "Additional data" settings in Adyen.
     const expiryDate = item.additionalData?.expiryDate; // Needs to be enabled in "Additional data" settings in Adyen. Returned as: '6/2016'.
-    const brand = item.additionalData?.paymentMethod; // The paymentMethod property contains the brand of the card and not the paymentMethodType `scheme`. Instead its visa, amex, etc.
+    // For scheme payments the brand lives in two places. `additionalData.paymentMethod` is only present when the
+    // corresponding "Additional data" setting is enabled in Adyen, whereas the top-level `paymentMethod` always
+    // carries the brand (`visa`, `amex`, ...) rather than the payment method type `scheme` -- `isSchemeCardBrand`
+    // has already asserted that. Falling back to it keeps the brand accurate without relying on that setting.
+    const brand = item.additionalData?.paymentMethod ?? item.paymentMethod;
 
     let expiryMonth: string | undefined = undefined;
     let expiryYear: string | undefined = undefined;
