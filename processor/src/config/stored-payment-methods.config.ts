@@ -5,16 +5,14 @@ import { getConfig } from './config';
  */
 export type SupportedStoredPaymentMethodsTypes = {
   [key: string]: {
-    oneOffPayments: {
-      enabled: boolean;
-    };
-    recurringPayments: {
-      enabled: boolean;
-      // Some payment methods (e.g. Afterpay) only support recurring/tokenization in specific
-      // countries even though the same Adyen type value is used elsewhere. Omit to allow every
-      // country wherever recurringPayments is true.
-      allowedCountries?: string[];
-    };
+    oneOffPayments: boolean;
+    recurringPayments: boolean;
+    // Some payment methods (e.g. Afterpay) only support tokenization in specific countries even
+    // though the same Adyen type value is used elsewhere. Applies to tokenization generally —
+    // both a client-requested one-off store and an auto-stored recurring order — since it reflects
+    // a capability of the payment method/account, not of a particular trigger path. Omit to allow
+    // every country.
+    tokenizationAllowedCountries?: string[];
   };
 };
 
@@ -41,61 +39,33 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
       interfaceAccount: getConfig().adyenStoredPaymentMethodsInterfaceAccount,
       supportedPaymentMethodTypes: {
         scheme: {
-          oneOffPayments: {
-            enabled: true,
-          },
-          recurringPayments: {
-            enabled: true,
-          },
+          oneOffPayments: true,
+          recurringPayments: true,
         },
         googlepay: {
-          oneOffPayments: {
-            enabled: false,
-          },
-          recurringPayments: {
-            enabled: true,
-          },
+          oneOffPayments: false,
+          recurringPayments: true,
         },
         applepay: {
-          oneOffPayments: {
-            enabled: false,
-          },
-          recurringPayments: {
-            enabled: true,
-          },
+          oneOffPayments: false,
+          recurringPayments: true,
         },
         klarna_paynow: {
-          oneOffPayments: {
-            enabled: false,
-          },
-          recurringPayments: {
-            enabled: true,
-          },
+          oneOffPayments: false,
+          recurringPayments: true,
         },
         klarna: {
-          oneOffPayments: {
-            enabled: false,
-          },
-          recurringPayments: {
-            enabled: true,
-          },
+          oneOffPayments: false,
+          recurringPayments: true,
         },
         klarna_account: {
-          oneOffPayments: {
-            enabled: false,
-          },
-          recurringPayments: {
-            enabled: true,
-          },
+          oneOffPayments: false,
+          recurringPayments: true,
         },
         afterpaytouch: {
-          oneOffPayments: {
-            enabled: false,
-          },
-          recurringPayments: {
-            enabled: true,
-            allowedCountries: ['AU', 'NZ'],
-          },
+          oneOffPayments: false,
+          recurringPayments: true,
+          tokenizationAllowedCountries: ['AU', 'NZ'],
         },
       },
     },

@@ -222,11 +222,14 @@ export class CreatePaymentConverter {
     // the client (enabler/SPA) correctly requesting it for every payment method. Only applies to a
     // fresh payment method — one already paying with an existing token is already stored and must
     // not be re-tokenized.
-    const shouldStoreOneOff = !!data.storePaymentMethod && paymentMethodConfig.oneOffPayments.enabled;
+    const shouldStoreOneOff =
+      !!data.storePaymentMethod &&
+      paymentMethodConfig.oneOffPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
     const shouldStoreForRecurringOrder =
       isCurrentCartRecurringOrder &&
-      paymentMethodConfig.recurringPayments.enabled &&
-      this.isRecurringPaymentAllowedForCartCountry(paymentMethodConfig, cart);
+      paymentMethodConfig.recurringPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
     const tokeniseForFirstTime = !payWithExistingToken && (shouldStoreOneOff || shouldStoreForRecurringOrder);
 
     // User does not want to store token for the first time nor pay with existing one
@@ -292,16 +295,16 @@ export class CreatePaymentConverter {
     };
   }
 
-  private isRecurringPaymentAllowedForCartCountry(
+  private isTokenizationAllowedForCartCountry(
     paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string],
     cart: Cart,
   ): boolean {
-    if (!paymentMethodConfig.recurringPayments.allowedCountries) {
-      return paymentMethodConfig.recurringPayments.enabled;
+    if (!paymentMethodConfig.tokenizationAllowedCountries) {
+      return true;
     }
 
     const countryCode = getCountryCodeFromCart(cart);
-    return !!countryCode && paymentMethodConfig.recurringPayments.allowedCountries.includes(countryCode);
+    return !!countryCode && paymentMethodConfig.tokenizationAllowedCountries.includes(countryCode);
   }
 
   private populateAdditionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {

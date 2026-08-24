@@ -165,7 +165,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -189,7 +189,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -213,7 +213,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -242,7 +242,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -274,7 +274,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -315,7 +315,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -354,7 +354,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -390,7 +390,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -428,7 +428,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -464,7 +464,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            klarna_paynow: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
+            klarna_paynow: { oneOffPayments: false, recurringPayments: true },
           },
         },
       });
@@ -503,7 +503,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            [adyenType]: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
+            [adyenType]: { oneOffPayments: false, recurringPayments: true },
           },
         },
       });
@@ -539,7 +539,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: false } },
+            scheme: { oneOffPayments: true, recurringPayments: false },
           },
         },
       });
@@ -570,8 +570,9 @@ describe('create-payment.converter', () => {
           interfaceAccount,
           supportedPaymentMethodTypes: {
             afterpaytouch: {
-              oneOffPayments: { enabled: false },
-              recurringPayments: { enabled: true, allowedCountries: ['AU', 'NZ'] },
+              oneOffPayments: false,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
             },
           },
         },
@@ -610,8 +611,9 @@ describe('create-payment.converter', () => {
           interfaceAccount,
           supportedPaymentMethodTypes: {
             afterpaytouch: {
-              oneOffPayments: { enabled: false },
-              recurringPayments: { enabled: true, allowedCountries: ['AU', 'NZ'] },
+              oneOffPayments: false,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
             },
           },
         },
@@ -633,6 +635,84 @@ describe('create-payment.converter', () => {
       expect(result).toBeUndefined();
     });
 
+    test('it should store a client-requested one-off payment when the cart country is within tokenizationAllowedCountries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: true,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'AU' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'CardOnFile',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should not store a client-requested one-off payment when the cart country is outside tokenizationAllowedCountries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: true,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'US' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
     test('it should not store a client-requested payment method on a regular cart if the type does not support oneOffPayments', async () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
@@ -643,7 +723,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            googlepay: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
+            googlepay: { oneOffPayments: false, recurringPayments: true },
           },
         },
       });
@@ -675,7 +755,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
