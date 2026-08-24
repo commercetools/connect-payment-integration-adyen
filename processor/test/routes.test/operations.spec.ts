@@ -124,7 +124,14 @@ describe('/operations APIs', () => {
         storedPaymentMethodsConfig: {
           isEnabled: true,
         },
-        methodsAllowedForRecurringPayments: ['scheme', 'googlepay', 'applepay'],
+        methodsAllowedForRecurringPayments: [
+          'scheme',
+          'googlepay',
+          'applepay',
+          'klarna_paynow',
+          'klarna',
+          'klarna_account',
+        ],
       });
     });
   });

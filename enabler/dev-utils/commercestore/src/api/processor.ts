@@ -4,7 +4,7 @@ import type { PaymentMethod, StoredPaymentMethod } from '../types.ts';
 const processorUrl = (): string => window.__VITE_PROCESSOR_URL__;
 
 export async function fetchRecurringStoredPaymentMethods(sessionId: string): Promise<StoredPaymentMethod[]> {
-  const res = await fetch(`${processorUrl()}/stored-payment-methods?recurring=true`, {
+  const res = await fetch(`${processorUrl()}/stored-payment-methods?withRecurring=true`, {
     headers: {
       'X-Session-Id': sessionId,
       'Content-Type': 'application/json',

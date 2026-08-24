@@ -55,11 +55,11 @@ export default function ReturnApp() {
   }, [paymentReference, userAction]);
 
   const goToCheckout = () => {
-    window.location.href = '/checkout';
+    window.location.href = '/dev-utils/commercestore/index.html';
   };
 
   const goToPayments = () => {
-    window.location.href = '/payments';
+    window.location.href = '/dev-utils/commercestore/payments.html';
   };
 
   const renderContent = () => {
