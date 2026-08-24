@@ -26,7 +26,10 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
-import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
+import {
+  getStoredPaymentMethodsConfig,
+  SupportedStoredPaymentMethodsTypes,
+} from '../../config/stored-payment-methods.config';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 import { AdyenApi } from '../../clients/adyen.client';
 
@@ -219,8 +222,14 @@ export class CreatePaymentConverter {
     // the client (enabler/SPA) correctly requesting it for every payment method. Only applies to a
     // fresh payment method — one already paying with an existing token is already stored and must
     // not be re-tokenized.
-    const shouldStoreOneOff = !!data.storePaymentMethod && paymentMethodConfig.oneOffPayments;
-    const shouldStoreForRecurringOrder = isCurrentCartRecurringOrder && paymentMethodConfig.recurringPayments;
+    const shouldStoreOneOff =
+      !!data.storePaymentMethod &&
+      paymentMethodConfig.oneOffPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
+    const shouldStoreForRecurringOrder =
+      isCurrentCartRecurringOrder &&
+      paymentMethodConfig.recurringPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
     const tokeniseForFirstTime = !payWithExistingToken && (shouldStoreOneOff || shouldStoreForRecurringOrder);
 
     // User does not want to store token for the first time nor pay with existing one
@@ -284,6 +293,18 @@ export class CreatePaymentConverter {
       ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
       paymentMethod: data.paymentMethod,
     };
+  }
+
+  private isTokenizationAllowedForCartCountry(
+    paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string],
+    cart: Cart,
+  ): boolean {
+    if (!paymentMethodConfig.tokenizationAllowedCountries) {
+      return true;
+    }
+
+    const countryCode = getCountryCodeFromCart(cart);
+    return !!countryCode && paymentMethodConfig.tokenizationAllowedCountries.includes(countryCode);
   }
 
   private populateAdditionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {

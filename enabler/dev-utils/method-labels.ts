@@ -11,10 +11,12 @@ export const METHOD_LABELS: Record<string, { label: string }> = {
   klarna_pay_now: { label: 'Klarna Pay Now' },
   klarna_pay_later: { label: 'Klarna Pay Later' },
   klarna_pay_overtime: { label: 'Klarna Pay Over Time' },
+  afterpay: { label: 'Afterpay (AU & NZ)' },
 };
 
 export const METHODS_WITH_NO_CARDS: string[] = [
   'klarna_pay_now',
   'klarna_pay_later',
   'klarna_pay_overtime',
+  'afterpay',
 ]

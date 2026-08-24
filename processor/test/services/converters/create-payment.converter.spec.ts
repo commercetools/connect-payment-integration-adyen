@@ -559,6 +559,160 @@ describe('create-payment.converter', () => {
       expect(result).toBeUndefined();
     });
 
+    test('it should force storePaymentMethod for a fresh Afterpay payment on a recurring-cart in an allowed country', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: false,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'AU' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should not force storePaymentMethod for a fresh Afterpay payment on a recurring-cart outside the allowed countries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: false,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'US' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
+    test('it should store a client-requested one-off payment when the cart country is within tokenizationAllowedCountries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: true,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'AU' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'CardOnFile',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should not store a client-requested one-off payment when the cart country is outside tokenizationAllowedCountries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: true,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'US' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
     test('it should not store a client-requested payment method on a regular cart if the type does not support oneOffPayments', async () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);

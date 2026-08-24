@@ -7,6 +7,12 @@ export type SupportedStoredPaymentMethodsTypes = {
   [key: string]: {
     oneOffPayments: boolean;
     recurringPayments: boolean;
+    // Some payment methods (e.g. Afterpay) only support tokenization in specific countries even
+    // though the same Adyen type value is used elsewhere. Applies to tokenization generally —
+    // both a client-requested one-off store and an auto-stored recurring order — since it reflects
+    // a capability of the payment method/account, not of a particular trigger path. Omit to allow
+    // every country.
+    tokenizationAllowedCountries?: string[];
   };
 };
 
@@ -55,6 +61,11 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
         klarna_account: {
           oneOffPayments: false,
           recurringPayments: true,
+        },
+        afterpaytouch: {
+          oneOffPayments: false,
+          recurringPayments: true,
+          tokenizationAllowedCountries: ['AU', 'NZ'],
         },
       },
     },
