@@ -5,33 +5,32 @@ describe('stored-payment-methods.config', () => {
   test('should have the supported payment method types set', async () => {
     expect(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).toStrictEqual({
       scheme: {
-        oneOffPayments: true,
-        recurringPayments: true,
+        oneOffPayments: { enabled: true },
+        recurringPayments: { enabled: true },
       },
       googlepay: {
-        oneOffPayments: false,
-        recurringPayments: true,
+        oneOffPayments: { enabled: false },
+        recurringPayments: { enabled: true },
       },
       applepay: {
-        oneOffPayments: false,
-        recurringPayments: true,
+        oneOffPayments: { enabled: false },
+        recurringPayments: { enabled: true },
       },
       klarna_paynow: {
-        oneOffPayments: false,
-        recurringPayments: true,
+        oneOffPayments: { enabled: false },
+        recurringPayments: { enabled: true },
       },
       klarna: {
-        oneOffPayments: false,
-        recurringPayments: true,
+        oneOffPayments: { enabled: false },
+        recurringPayments: { enabled: true },
       },
       klarna_account: {
-        oneOffPayments: false,
-        recurringPayments: true,
+        oneOffPayments: { enabled: false },
+        recurringPayments: { enabled: true },
       },
       afterpaytouch: {
-        oneOffPayments: false,
-        recurringPayments: true,
-        recurringPaymentsAllowedCountries: ['AU', 'NZ'],
+        oneOffPayments: { enabled: false },
+        recurringPayments: { enabled: true, allowedCountries: ['AU', 'NZ'] },
       },
     });
   });

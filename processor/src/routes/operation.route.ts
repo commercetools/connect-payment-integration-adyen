@@ -48,7 +48,7 @@ export const operationsRoute = async (fastify: FastifyInstance, opts: FastifyPlu
       const methodsAllowedForRecurringPayments = Object.entries(
         getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes,
       )
-        .filter(([, value]) => value.recurringPayments)
+        .filter(([, value]) => value.recurringPayments.enabled)
         .map(([key]) => key);
       const configWithMethodsForRecurring = {
         ...config,

@@ -222,10 +222,10 @@ export class CreatePaymentConverter {
     // the client (enabler/SPA) correctly requesting it for every payment method. Only applies to a
     // fresh payment method — one already paying with an existing token is already stored and must
     // not be re-tokenized.
-    const shouldStoreOneOff = !!data.storePaymentMethod && paymentMethodConfig.oneOffPayments;
+    const shouldStoreOneOff = !!data.storePaymentMethod && paymentMethodConfig.oneOffPayments.enabled;
     const shouldStoreForRecurringOrder =
       isCurrentCartRecurringOrder &&
-      paymentMethodConfig.recurringPayments &&
+      paymentMethodConfig.recurringPayments.enabled &&
       this.isRecurringPaymentAllowedForCartCountry(paymentMethodConfig, cart);
     const tokeniseForFirstTime = !payWithExistingToken && (shouldStoreOneOff || shouldStoreForRecurringOrder);
 
@@ -296,12 +296,12 @@ export class CreatePaymentConverter {
     paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string],
     cart: Cart,
   ): boolean {
-    if (!paymentMethodConfig.recurringPaymentsAllowedCountries) {
-      return paymentMethodConfig.recurringPayments;
+    if (!paymentMethodConfig.recurringPayments.allowedCountries) {
+      return paymentMethodConfig.recurringPayments.enabled;
     }
 
     const countryCode = getCountryCodeFromCart(cart);
-    return !!countryCode && paymentMethodConfig.recurringPaymentsAllowedCountries.includes(countryCode);
+    return !!countryCode && paymentMethodConfig.recurringPayments.allowedCountries.includes(countryCode);
   }
 
   private populateAdditionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {

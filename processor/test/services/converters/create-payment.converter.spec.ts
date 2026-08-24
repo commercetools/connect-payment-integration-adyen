@@ -165,7 +165,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -189,7 +189,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -213,7 +213,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -242,7 +242,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -274,7 +274,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -315,7 +315,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -354,7 +354,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -390,7 +390,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -428,7 +428,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -464,7 +464,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            klarna_paynow: { oneOffPayments: false, recurringPayments: true },
+            klarna_paynow: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -503,7 +503,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            [adyenType]: { oneOffPayments: false, recurringPayments: true },
+            [adyenType]: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -539,7 +539,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: false },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: false } },
           },
         },
       });
@@ -570,9 +570,8 @@ describe('create-payment.converter', () => {
           interfaceAccount,
           supportedPaymentMethodTypes: {
             afterpaytouch: {
-              oneOffPayments: false,
-              recurringPayments: true,
-              recurringPaymentsAllowedCountries: ['AU', 'NZ'],
+              oneOffPayments: { enabled: false },
+              recurringPayments: { enabled: true, allowedCountries: ['AU', 'NZ'] },
             },
           },
         },
@@ -611,9 +610,8 @@ describe('create-payment.converter', () => {
           interfaceAccount,
           supportedPaymentMethodTypes: {
             afterpaytouch: {
-              oneOffPayments: false,
-              recurringPayments: true,
-              recurringPaymentsAllowedCountries: ['AU', 'NZ'],
+              oneOffPayments: { enabled: false },
+              recurringPayments: { enabled: true, allowedCountries: ['AU', 'NZ'] },
             },
           },
         },
@@ -645,7 +643,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            googlepay: { oneOffPayments: false, recurringPayments: true },
+            googlepay: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -677,7 +675,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });

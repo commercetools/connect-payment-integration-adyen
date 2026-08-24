@@ -1130,8 +1130,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
     // instead list the methods that are allowed to be used for a recurring order's future charges.
     const shouldShowStoredPaymentMethod = (method: string) => {
       return opts.withRecurring
-        ? supportedPaymentMethodTypes[method]?.recurringPayments
-        : supportedPaymentMethodTypes[method]?.oneOffPayments;
+        ? supportedPaymentMethodTypes[method]?.recurringPayments.enabled
+        : supportedPaymentMethodTypes[method]?.oneOffPayments.enabled;
     };
 
     // Fetched in parallel: neither call depends on the other's result.

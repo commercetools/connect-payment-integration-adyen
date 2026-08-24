@@ -1138,7 +1138,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1258,7 +1258,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1378,7 +1378,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1420,7 +1420,7 @@ describe('adyen-payment.service', () => {
           paymentInterface: 'paymentInterface',
           interfaceAccount: 'interfaceAccount',
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1437,7 +1437,7 @@ describe('adyen-payment.service', () => {
           paymentInterface: 'paymentInterface',
           interfaceAccount: 'interfaceAccount',
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1463,7 +1463,7 @@ describe('adyen-payment.service', () => {
           paymentInterface: 'paymentInterface',
           interfaceAccount: 'interfaceAccount',
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1660,7 +1660,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: false, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1725,7 +1725,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: false },
+            scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: false } },
           },
         },
       });
@@ -1806,7 +1806,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: false, recurringPayments: true },
+            scheme: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -1889,7 +1889,7 @@ describe('adyen-payment.service', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            klarna_paynow: { oneOffPayments: false, recurringPayments: true },
+            klarna_paynow: { oneOffPayments: { enabled: false }, recurringPayments: { enabled: true } },
           },
         },
       });
@@ -2763,7 +2763,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
@@ -2789,7 +2789,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
@@ -2861,7 +2861,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
@@ -2892,7 +2892,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
@@ -2927,7 +2927,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
@@ -2963,7 +2963,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
@@ -3003,7 +3003,7 @@ describe('adyen-payment.service', () => {
             paymentInterface,
             interfaceAccount,
             supportedPaymentMethodTypes: {
-              scheme: { oneOffPayments: true, recurringPayments: true },
+              scheme: { oneOffPayments: { enabled: true }, recurringPayments: { enabled: true } },
             },
           },
         });
