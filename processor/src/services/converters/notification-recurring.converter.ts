@@ -17,7 +17,7 @@ import {
   convertAdyenCardBrandToCTFormat,
   convertPaymentMethodFromAdyenFormat,
   extractCardBrand,
-  extractWalletTypeFromBrand,
+  extractCollapsedTypeFromBrand,
 } from './helper.converter';
 import { AdyenApi } from '../../clients/adyen.client';
 import { getConfig } from '../../config/config';
@@ -101,12 +101,13 @@ export class NotificationTokenizationConverter {
     recurringTokenOperationData: RecurringTokenStoreOperation,
     storedPaymentMethodResource?: StoredPaymentMethodResource,
   ): Promise<string> {
-    // Adyen tokenizes wallet payments (e.g. Google Pay) as a generic "scheme" token, encoding the
-    // original wallet in the brand string instead (e.g. "amex_googlepay"). Prefer that so the
-    // shopper still sees "Google Pay" instead of a generic card.
-    const walletType = extractWalletTypeFromBrand(storedPaymentMethodResource?.brand);
-    if (walletType) {
-      return convertPaymentMethodFromAdyenFormat(walletType);
+    // Adyen tokenizes some payment methods (e.g. Google Pay, Bancontact card) as a generic
+    // "scheme" token, encoding the real payment method type in the brand string instead (e.g.
+    // "amex_googlepay", "bcmc"). Prefer that so the shopper still sees "Google Pay"/"Bancontact"
+    // instead of a generic card.
+    const collapsedType = extractCollapsedTypeFromBrand(storedPaymentMethodResource?.brand);
+    if (collapsedType) {
+      return convertPaymentMethodFromAdyenFormat(collapsedType);
     }
 
     if (!storedPaymentMethodResource || !storedPaymentMethodResource.type) {

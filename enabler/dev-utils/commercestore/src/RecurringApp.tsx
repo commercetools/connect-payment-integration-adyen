@@ -4,11 +4,19 @@ import ToastContainer from './components/Toast.tsx';
 import Spinner from './components/Spinner.tsx';
 import { useToast } from './hooks/useToast.ts';
 import { getSessionId } from './api/ct.ts';
-import { fetchRecurringStoredPaymentMethods } from './api/processor.ts';
+import { deleteStoredPaymentMethod, fetchRecurringStoredPaymentMethods } from './api/processor.ts';
 import { METHOD_LABELS, METHODS_WITH_NO_CARDS } from '../../method-labels.ts';
 import type { StoredPaymentMethod } from './types.ts';
 
-function RecurringMethodItem({ method }: { method: StoredPaymentMethod }) {
+function RecurringMethodItem({
+  method,
+  onRemove,
+  removing,
+}: {
+  method: StoredPaymentMethod;
+  onRemove: (id: string) => void;
+  removing: boolean;
+}) {
   const brand = method.displayOptions?.brand?.key ?? '';
   const showBrandBadge = brand && brand !== 'Unknown';
   const last4 = method.displayOptions?.endDigits;
@@ -34,15 +42,20 @@ function RecurringMethodItem({ method }: { method: StoredPaymentMethod }) {
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}
       </span>
       <code className="cs-recurring-method-id">{method.id}</code>
+      <button className="cs-remove-saved-btn" onClick={() => onRemove(method.id)} disabled={removing}>
+        {removing ? 'Removing…' : 'Remove'}
+      </button>
     </div>
   );
 }
 
 export default function RecurringApp() {
   const [cartId, setCartId] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [methods, setMethods] = useState<StoredPaymentMethod[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
   const handleLoad = useCallback(async () => {
@@ -50,8 +63,9 @@ export default function RecurringApp() {
     setLoading(true);
     setLoaded(false);
     try {
-      const sessionId = await getSessionId(cartId);
-      const result = await fetchRecurringStoredPaymentMethods(sessionId);
+      const newSessionId = await getSessionId(cartId);
+      const result = await fetchRecurringStoredPaymentMethods(newSessionId);
+      setSessionId(newSessionId);
       setMethods(result);
       setLoaded(true);
     } catch (e) {
@@ -60,6 +74,18 @@ export default function RecurringApp() {
       setLoading(false);
     }
   }, [cartId, addToast]);
+
+  const handleRemove = useCallback(async (id: string) => {
+    setRemovingId(id);
+    try {
+      await deleteStoredPaymentMethod(id, sessionId);
+      setMethods(current => current.filter(m => m.id !== id));
+    } catch (e) {
+      addToast('error', (e as Error).message);
+    } finally {
+      setRemovingId(null);
+    }
+  }, [sessionId, addToast]);
 
   return (
     <>
@@ -97,7 +123,9 @@ export default function RecurringApp() {
         {!loading && loaded && (
           methods.length > 0 ? (
             <div className="cs-recurring-list">
-              {methods.map(m => <RecurringMethodItem key={m.id} method={m} />)}
+              {methods.map(m => (
+                <RecurringMethodItem key={m.id} method={m} onRemove={handleRemove} removing={removingId === m.id} />
+              ))}
             </div>
           ) : (
             <p className="cs-sidebar-empty">

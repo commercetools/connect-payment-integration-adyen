@@ -133,6 +133,8 @@ describe('/operations APIs', () => {
           'klarna',
           'klarna_account',
           'afterpaytouch',
+          'bcmc',
+          'bcmc_mobile',
         ],
       });
     });

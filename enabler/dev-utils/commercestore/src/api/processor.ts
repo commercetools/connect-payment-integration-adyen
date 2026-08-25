@@ -18,6 +18,19 @@ export async function fetchRecurringStoredPaymentMethods(sessionId: string): Pro
   return data.storedPaymentMethods ?? [];
 }
 
+export async function deleteStoredPaymentMethod(id: string, sessionId: string): Promise<void> {
+  const res = await fetch(`${processorUrl()}/stored-payment-methods/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Session-Id': sessionId,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message || 'Failed to delete stored payment method');
+  }
+}
+
 export async function fetchPaymentMethods(): Promise<{
   components: PaymentMethod[];
   dropins: PaymentMethod[];

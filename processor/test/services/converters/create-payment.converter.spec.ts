@@ -493,6 +493,8 @@ describe('create-payment.converter', () => {
     test.each([
       ['Klarna Pay Later', 'klarna'],
       ['Klarna Pay Over Time', 'klarna_account'],
+      ['Bancontact card', 'bcmc'],
+      ['Bancontact mobile', 'bcmc_mobile'],
     ])('it should force storePaymentMethod for a fresh %s payment on a recurring-cart', async (_label, adyenType) => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);

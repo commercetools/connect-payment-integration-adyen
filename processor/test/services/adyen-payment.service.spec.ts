@@ -1953,6 +1953,91 @@ describe('adyen-payment.service', () => {
       });
     });
 
+    test('should reclassify a Bancontact card token stale-recorded as a generic card, and only show it under recurring', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'adyen-token-value-bcmc';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: true },
+            bcmc: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      // Adyen collapses Bancontact card into a generic "scheme" token, encoding the real type in
+      // the brand ("bcmc") instead — mirroring how Google Pay encodes "amex_googlepay".
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValue({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'scheme',
+            brand: 'bcmc',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+      // The commercetools record was recorded as a generic "card" before Bancontact recurring
+      // was correctly classified (or before it was reclassified) — this must be corrected on read.
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValue({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'card',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const oneOffResult = await paymentService.getStoredPaymentMethods();
+      expect(oneOffResult).toStrictEqual({ storedPaymentMethods: [] });
+
+      const recurringResult = await paymentService.getStoredPaymentMethods({ withRecurring: true });
+      expect(recurringResult).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'bancontactcard',
+            displayOptions: {
+              brand: { key: 'Bancontact' },
+              endDigits: undefined,
+              expiryMonth: undefined,
+              expiryYear: undefined,
+            },
+          },
+        ],
+      });
+    });
+
     test('should create a commercetools payment-method for an orphan Adyen token with default: false, without ever calling update()', async () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const methodType = 'scheme';
