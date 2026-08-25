@@ -41,14 +41,6 @@ describe('stored-payment-methods.config', () => {
         oneOffPayments: false,
         recurringPayments: true,
       },
-      bcmc: {
-        oneOffPayments: false,
-        recurringPayments: true,
-      },
-      bcmc_mobile: {
-        oneOffPayments: false,
-        recurringPayments: true,
-      },
     });
   });
 });
