@@ -45,6 +45,10 @@ describe('stored-payment-methods.config', () => {
         oneOffPayments: false,
         recurringPayments: true,
       },
+      zip: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
     });
   });
 });
