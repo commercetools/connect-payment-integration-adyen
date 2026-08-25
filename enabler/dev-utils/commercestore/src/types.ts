@@ -106,19 +106,6 @@ export interface PaymentMethod {
   unavailable?: boolean;
 }
 
-export interface CardDetails {
-  endDigits?: string;
-  brand?: { key: string };
-  expiryMonth?: number;
-  expiryYear?: number;
-}
-
-export interface BankDetails {
-  ownerName?: string;
-  issuingBank?: string;
-  endDigits?: string;
-}
-
 export interface StoredPaymentMethod {
   id: string;
   type: string;
@@ -126,9 +113,10 @@ export interface StoredPaymentMethod {
   isDefault?: boolean;
   createdAt?: string;
   displayOptions?: {
-    logoUrl?: string;
-    cardDetails?: CardDetails;
-    bankDetails?: BankDetails;
+    endDigits?: string;
+    brand?: { key: string };
+    expiryMonth?: number;
+    expiryYear?: number;
   };
 }
 

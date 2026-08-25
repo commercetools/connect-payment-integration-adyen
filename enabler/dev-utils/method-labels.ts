@@ -13,3 +13,11 @@ export const METHOD_LABELS: Record<string, { label: string }> = {
   afterpay: { label: 'Afterpay (AU & NZ)' },
   sepadirectdebit: { label: 'SEPA Direct Debit' },
 };
+
+export const METHODS_WITH_NO_CARDS: string[] = [
+  'klarna_pay_now',
+  'klarna_pay_later',
+  'klarna_pay_overtime',
+  'afterpay',
+  'sepadirectdebit',
+];

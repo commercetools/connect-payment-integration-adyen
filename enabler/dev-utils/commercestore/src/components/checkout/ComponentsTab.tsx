@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
 import { useAdyenMount } from '../../hooks/useAdyenMount.ts';
 import { usePaymentAvailability } from '../../hooks/usePaymentAvailability.ts';
-import { METHOD_LABELS } from '../../../../method-labels.ts';
-import { CardInfo, BankInfo } from '../StoredMethodDetails.tsx';
+import { METHOD_LABELS, METHODS_WITH_NO_CARDS } from '../../../../method-labels.ts';
 import type { EnablerInstance, MountableComponent, PaymentMethod, StoredPaymentMethod, CheckoutResult } from '../../types.ts';
 
 interface PaymentMethodItemProps {
@@ -35,9 +34,14 @@ interface SavedMethodItemProps {
 }
 
 function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
-  const cardDetails = method.displayOptions?.cardDetails;
-  const bankDetails = method.displayOptions?.bankDetails;
+  const brand = method.displayOptions?.brand?.key ?? '';
+  const showBrandBadge = brand && brand !== 'Unknown';
+  const last4 = method.displayOptions?.endDigits;
   const methodLabel = METHOD_LABELS[method.type]?.label;
+  const hasCardDigits = !METHODS_WITH_NO_CARDS.includes(method.type);
+  const exp = method.displayOptions?.expiryMonth && method.displayOptions?.expiryYear
+    ? `${String(method.displayOptions.expiryMonth).padStart(2, '0')}/${String(method.displayOptions.expiryYear).slice(-2)}`
+    : null;
 
   return (
     <div className={`cs-saved-card ${selected ? 'selected' : ''}`} onClick={onClick} role="button" tabIndex={0}
@@ -46,8 +50,9 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
       <span className="cs-saved-card__info">
         <span className="cs-saved-card__main">
           {methodLabel && <span className="cs-saved-card__wallet">{methodLabel}</span>}
-          {cardDetails && <CardInfo cardDetails={cardDetails} />}
-          {bankDetails && <BankInfo bankDetails={bankDetails} />}
+          {showBrandBadge && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
+          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4}</span>}
+          {hasCardDigits && exp && <span className="cs-saved-card__exp">{exp}</span>}
         </span>
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}
       </span>
@@ -205,7 +210,7 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, i
     try {
       if (!savedInstancesRef.current[method.id]) {
         const builder = await enabler.createStoredPaymentMethodBuilder(method.type);
-        const brand = method.displayOptions?.cardDetails?.brand?.key;
+        const brand = method.displayOptions?.brand?.key;
         const instance = builder.build({ id: method.id, brands: brand ? [brand] : [] });
         savedInstancesRef.current[method.id] = instance;
       }

@@ -179,14 +179,12 @@ type BaseStoredPaymentMethod = {
 type StoredCardPaymentMethod = BaseStoredPaymentMethod & {
   type: "card";
   displayOptions: BaseStoredDisplayOptions & {
-    cardDetails?: {
-      endDigits?: string;
-      brand?: {
-        key: string;
-      };
-      expiryMonth?: number;
-      expiryYear?: number;
+    endDigits?: string;
+    brand?: {
+      key: string;
     };
+    expiryMonth?: number;
+    expiryYear?: number;
   };
 };
 
