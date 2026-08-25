@@ -51,7 +51,7 @@ function SavedMethodItem({ method, selected, onClick }: SavedMethodItemProps) {
         <span className="cs-saved-card__main">
           {methodLabel && <span className="cs-saved-card__wallet">{methodLabel}</span>}
           {showBrandBadge && <span className={`cs-saved-card__brand cs-saved-card__brand--${brand.toLowerCase()}`}>{brand}</span>}
-          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4}</span>}
+          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>}
           {hasCardDigits && exp && <span className="cs-saved-card__exp">{exp}</span>}
         </span>
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}

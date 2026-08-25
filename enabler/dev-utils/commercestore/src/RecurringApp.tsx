@@ -36,7 +36,7 @@ function RecurringMethodItem({
           ) : !methodLabel ? (
             <span className={`cs-saved-card__brand cs-saved-card__brand--${method.type.toLowerCase()}`}>{method.type}</span>
           ) : null}
-          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4}</span>}
+          {hasCardDigits && <span className="cs-saved-card__number">•••• {last4 ?? '????'}</span>}
           {hasCardDigits && exp && <span className="cs-saved-card__exp">{exp}</span>}
         </span>
         {method.isDefault && <span className="cs-saved-card__default">Default</span>}
