@@ -135,6 +135,8 @@ describe('/operations APIs', () => {
           'afterpaytouch',
           'bcmc',
           'bcmc_mobile',
+          'sepadirectdebit',
+          'eps',
         ],
       });
     });

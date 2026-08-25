@@ -75,6 +75,18 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        sepadirectdebit: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
+        // EPS itself is never tokenized: Adyen sets up recurring for an EPS shopper as a SEPA
+        // Direct Debit mandate instead, so the stored resource comes back as `sepadirectdebit`
+        // (already configured above) rather than `eps`. This entry only gates the initial EPS
+        // payment on a recurring cart being asked to store.
+        eps: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };
