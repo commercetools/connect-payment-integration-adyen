@@ -79,6 +79,10 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        zip: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };

@@ -496,6 +496,7 @@ describe('create-payment.converter', () => {
       ['Bancontact card', 'bcmc'],
       ['Bancontact mobile', 'bcmc_mobile'],
       ['SEPA Direct Debit', 'sepadirectdebit'],
+      ['Zip', 'zip'],
     ])('it should force storePaymentMethod for a fresh %s payment on a recurring-cart', async (_label, adyenType) => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
