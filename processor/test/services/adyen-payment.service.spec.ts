@@ -1953,6 +1953,87 @@ describe('adyen-payment.service', () => {
       });
     });
 
+    test('should resolve an unrecognized Afterpay brand value to Unknown', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'adyen-token-value-afterpay';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      // Adyen does not leave `brand` empty for every non-card method — for Afterpay it comes back
+      // populated with a non-card value (e.g. echoing the method's own type), which is not a
+      // recognized card brand.
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'afterpaytouch',
+            brand: 'afterpaytouch',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'afterpay',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'afterpay',
+            displayOptions: {
+              brand: { key: 'Unknown' },
+              endDigits: undefined,
+              expiryMonth: undefined,
+              expiryYear: undefined,
+            },
+          },
+        ],
+      });
+    });
+
     test('should reclassify a Bancontact card token stale-recorded as a generic card, and only show it under recurring', async () => {
       const merchantAccount = 'merchantAccount';
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
@@ -2029,6 +2110,90 @@ describe('adyen-payment.service', () => {
             type: 'bancontactcard',
             displayOptions: {
               brand: { key: 'Bancontact' },
+              endDigits: undefined,
+              expiryMonth: undefined,
+              expiryYear: undefined,
+            },
+          },
+        ],
+      });
+    });
+
+    test('should include a stored SEPA Direct Debit method (no card data) when withRecurring: true is passed', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'QNMS8NV7QK5BRX65';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            sepadirectdebit: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      // Real shape of a SEPA Direct Debit stored payment method resource from Adyen: no
+      // lastFour/expiry (those are card-only), but iban and ownerName instead. None of those
+      // bank-specific fields are surfaced in displayOptions.
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'sepadirectdebit',
+            brand: 'sepadirectdebit_authcap',
+            iban: 'NL98ABNA0410108103',
+            ownerName: 'A. Klaasen',
+            issuerName: 'ABN AMRO BANK N.V.',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'sepadirectdebit',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'sepadirectdebit',
+            displayOptions: {
+              brand: { key: 'Unknown' },
               endDigits: undefined,
               expiryMonth: undefined,
               expiryYear: undefined,
@@ -2259,6 +2424,56 @@ describe('adyen-payment.service', () => {
           },
         }),
       );
+    });
+
+    test('omits custom fields for a "sepadirectdebit" orphan token even when adyenStorePaymentMethodDetailsEnabled is enabled', async () => {
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const orphanToken = 'adyen-token-value-orphan-sepa';
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: 'merchantAccount',
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: orphanToken,
+            type: 'sepadirectdebit',
+            brand: 'sepadirectdebit_authcap',
+            iban: 'NL98ABNA0410108103',
+            ownerName: 'A. Klaasen',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [],
+      });
+
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+        id: 'new-ct-id',
+        customer: { id: customerId, typeId: 'customer' },
+        token: { value: orphanToken },
+        method: 'sepadirectdebit',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastModifiedAt: '2024-01-01T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      } as PaymentMethod);
+
+      await paymentService.getStoredPaymentMethods();
+
+      expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ customFields: undefined }));
     });
 
     test('omits expiryMonth/expiryYear from custom fields when the "scheme" orphan token does not provide them', async () => {
