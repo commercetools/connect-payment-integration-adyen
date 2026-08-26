@@ -1,7 +1,7 @@
 {
   "name": "enabler",
   "private": true,
-  "version": "5.27.1",
+  "version": "5.27.2",
   "type": "module",
   "engines": {
     "node": ">=24.0.0",
@@ -16,12 +16,12 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.41.0",
+    "@adyen/adyen-web": "6.42.0",
     "serve": "14.2.6"
   },
   "devDependencies": {
     "@jest/globals": "30.4.1",
-    "@types/node": "26.1.2",
+    "@types/node": "26.2.0",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.0.4",
@@ -31,12 +31,12 @@
     "sass": "1.102.0",
     "ts-jest": "29.4.12",
     "typescript": "6.0.3",
-    "vite": "8.1.5",
+    "vite": "8.2.2",
     "vite-plugin-css-injected-by-js": "5.0.2"
   },
   "overrides": {
     "@babel/core": "7.29.7",
     "js-yaml": "^4.2.0",
-    "brace-expansion": "5.0.8"
+    "brace-expansion": "5.0.9"
   }
 }
