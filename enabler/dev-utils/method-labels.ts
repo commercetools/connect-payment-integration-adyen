@@ -20,4 +20,6 @@ export const METHODS_WITH_NO_CARDS: string[] = [
   'klarna_pay_overtime',
   'afterpay',
   'sepadirectdebit',
+  'zip',
+  'ideal'
 ];
