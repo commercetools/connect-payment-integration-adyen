@@ -83,6 +83,10 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        twint: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };
