@@ -137,6 +137,7 @@ describe('/operations APIs', () => {
           'bcmc_mobile',
           'sepadirectdebit',
           'zip',
+          'ideal',
         ],
       });
     });

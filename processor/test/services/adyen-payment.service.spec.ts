@@ -2119,6 +2119,90 @@ describe('adyen-payment.service', () => {
       });
     });
 
+    test('should include a stored iDEAL method (no card data) when withRecurring: true is passed', async () => {
+      const merchantAccount = 'merchantAccount';
+      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const adyenToken = 'G3W3X4J43Z828DV5';
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            ideal: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+
+      // Real shape of an iDEAL stored payment method resource from Adyen: `type` and `brand` both
+      // stay "ideal" (unlike Google Pay/Bancontact, which collapse into "scheme"), but it's backed
+      // by a SEPA Direct Debit mandate under the hood, so it also carries iban/ownerName. None of
+      // those bank-specific fields are surfaced in displayOptions.
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount,
+        shopperReference: customerId,
+        storedPaymentMethods: [
+          {
+            id: adyenToken,
+            type: 'ideal',
+            brand: 'ideal',
+            iban: 'NL44RABO0123456789',
+            ownerName: 'Pino the Bird',
+          },
+        ],
+      });
+      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+        count: 0,
+        limit: 100,
+        offset: 0,
+        results: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            customer: { id: customerId, typeId: 'customer' },
+            token: { value: adyenToken },
+            paymentInterface,
+            interfaceAccount,
+            method: 'ideal',
+            createdAt: '',
+            lastModifiedAt: '',
+            default: false,
+            paymentMethodStatus: 'Active',
+            version: 1,
+          },
+        ],
+      });
+
+      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
+
+      expect(result).toStrictEqual({
+        storedPaymentMethods: [
+          {
+            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+            createdAt: '',
+            isDefault: false,
+            token: adyenToken,
+            type: 'ideal',
+            displayOptions: {
+              brand: { key: 'Unknown' },
+              endDigits: undefined,
+              expiryMonth: undefined,
+              expiryYear: undefined,
+            },
+          },
+        ],
+      });
+    });
+
     test('should include a stored SEPA Direct Debit method (no card data) when withRecurring: true is passed', async () => {
       const merchantAccount = 'merchantAccount';
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
