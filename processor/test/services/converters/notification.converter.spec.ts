@@ -1237,6 +1237,97 @@ describe('notification.converter', () => {
         },
       ]);
     });
+
+    test('falls back to the top-level paymentMethod for the brand when additionalData.paymentMethod is absent', async () => {
+      // Arrange
+      // Adyen only includes `additionalData.paymentMethod` when the corresponding "Additional data" setting is
+      // enabled in the Customer Area. The top-level `paymentMethod` always carries the brand, so the converter must
+      // fall back to it instead of writing 'Unknown'.
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result[0].paymentMethodInfoCustomField).toEqual({
+        fields: {
+          brand: 'Visa',
+          expiryMonth: 12,
+          expiryYear: 2012,
+          lastFour: '7777',
+        },
+        type: {
+          key: 'commercetools-checkout-card-details',
+          typeId: 'type',
+        },
+      });
+    });
+
+    test('prefers additionalData.paymentMethod over the top-level paymentMethod when both are present', async () => {
+      // Arrange
+      // `additionalData.paymentMethod` is the more specific of the two, so it must win the fallback.
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                cardSummary: '7777',
+                paymentMethod: 'mc',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference: 'some-merchant-reference',
+              paymentMethod: 'visa',
+              pspReference: 'some-psp-reference',
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result[0].paymentMethodInfoCustomField?.fields.brand).toEqual('Mastercard');
+    });
   });
 
   describe('ORDER_CLOSED event', () => {
