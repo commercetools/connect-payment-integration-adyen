@@ -26,7 +26,10 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
-import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
+import {
+  getStoredPaymentMethodsConfig,
+  SupportedStoredPaymentMethodsTypes,
+} from '../../config/stored-payment-methods.config';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
 import { AdyenApi } from '../../clients/adyen.client';
 
@@ -198,10 +201,11 @@ export class CreatePaymentConverter {
     }
 
     const paymentMethodType = data.paymentMethod.type;
-    if (
-      typeof paymentMethodType !== 'string' ||
-      !Object.keys(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).includes(paymentMethodType)
-    ) {
+    const paymentMethodConfig =
+      typeof paymentMethodType === 'string'
+        ? getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes[paymentMethodType]
+        : undefined;
+    if (!paymentMethodConfig) {
       return;
     }
 
@@ -210,7 +214,23 @@ export class CreatePaymentConverter {
     );
 
     const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
-    const tokeniseForFirstTime = data.storePaymentMethod;
+    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
+    // Whether this payment method type is allowed to be tokenized at all depends on the type's own
+    // config: oneOffPayments gates a client-requested store (data.storePaymentMethod) on a regular
+    // cart, recurringPayments gates being auto-stored for a recurring order. A recurring order
+    // always needs a stored token to charge future occurrences, so that storage must not depend on
+    // the client (enabler/SPA) correctly requesting it for every payment method. Only applies to a
+    // fresh payment method — one already paying with an existing token is already stored and must
+    // not be re-tokenized.
+    const shouldStoreOneOff =
+      !!data.storePaymentMethod &&
+      paymentMethodConfig.oneOffPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
+    const shouldStoreForRecurringOrder =
+      isCurrentCartRecurringOrder &&
+      paymentMethodConfig.recurringPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
+    const tokeniseForFirstTime = !payWithExistingToken && (shouldStoreOneOff || shouldStoreForRecurringOrder);
 
     // User does not want to store token for the first time nor pay with existing one
     if (!tokeniseForFirstTime && !payWithExistingToken) {
@@ -258,8 +278,6 @@ export class CreatePaymentConverter {
       }
     }
 
-    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
-
     const shopperInteraction = payWithExistingToken
       ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
       : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
@@ -275,6 +293,18 @@ export class CreatePaymentConverter {
       ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
       paymentMethod: data.paymentMethod,
     };
+  }
+
+  private isTokenizationAllowedForCartCountry(
+    paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string],
+    cart: Cart,
+  ): boolean {
+    if (!paymentMethodConfig.tokenizationAllowedCountries) {
+      return true;
+    }
+
+    const countryCode = getCountryCodeFromCart(cart);
+    return !!countryCode && paymentMethodConfig.tokenizationAllowedCountries.includes(countryCode);
   }
 
   private populateAdditionalPaymentMethodData(data: CreatePaymentRequestDTO, cart: Cart) {

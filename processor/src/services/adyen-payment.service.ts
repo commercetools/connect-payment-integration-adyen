@@ -93,6 +93,10 @@ import {
   buildCheckoutTransactionItemId,
   convertAdyenCardBrandToCTFormat,
   convertPaymentMethodFromAdyenFormat,
+  convertPaymentMethodToAdyenFormat,
+  extractCardBrand,
+  extractCollapsedTypeFromBrand,
+  isCollapsedTypePayment,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
 import { populateInterfaceInteraction, AdyenRequestPayload, AdyenResponsePayload } from './helper.service';
@@ -1117,9 +1121,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * `createdAt`, `default`). Any Adyen token without a matching record is an "orphan" and gets
    * persisted on the fly, within this same call, by reconcileOrphanAdyenToken().
    */
-  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
+  async getStoredPaymentMethods(opts: { withRecurring?: boolean } = {}): Promise<StoredPaymentMethodsResponse> {
     const customerId = await this.getCustomerIdFromCart();
-    const { paymentInterface, interfaceAccount } = getStoredPaymentMethodsConfig().config;
+    const { paymentInterface, interfaceAccount, supportedPaymentMethodTypes } = getStoredPaymentMethodsConfig().config;
+
+    // By default the payment method is displayed in the stored payment methods list if it is
+    // supported and one-off payments are allowed for that method. Pass `withRecurring: true` to
+    // instead list the methods that are allowed to be used for a recurring order's future charges.
+    const shouldShowStoredPaymentMethod = (method: string) => {
+      return opts.withRecurring
+        ? supportedPaymentMethodTypes[method]?.recurringPayments
+        : supportedPaymentMethodTypes[method]?.oneOffPayments;
+    };
 
     // Fetched in parallel: neither call depends on the other's result.
     const [adyenTokenDetails, ctStoredPaymentMethods] = await Promise.all([
@@ -1156,7 +1169,14 @@ export class AdyenPaymentService extends AbstractPaymentService {
     );
 
     return {
-      storedPaymentMethods: storedPaymentMethods.filter((paymentMethod) => paymentMethod !== undefined),
+      storedPaymentMethods: storedPaymentMethods.filter(
+        (paymentMethod): paymentMethod is NonNullable<typeof paymentMethod> => {
+          if (!paymentMethod) {
+            return false;
+          }
+          return shouldShowStoredPaymentMethod(convertPaymentMethodToAdyenFormat(paymentMethod.type));
+        },
+      ),
     };
   }
 
@@ -1184,7 +1204,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     ctPaymentMethod: PaymentMethod,
     adyenToken: StoredPaymentMethodResource,
   ): StoredPaymentMethod {
-    return {
+    const mappedResponse = {
       id: ctPaymentMethod.id,
       createdAt: ctPaymentMethod.createdAt,
       isDefault: ctPaymentMethod.default,
@@ -1192,13 +1212,24 @@ export class AdyenPaymentService extends AbstractPaymentService {
       type: ctPaymentMethod.method || convertPaymentMethodFromAdyenFormat(adyenToken.type as string) || '',
       displayOptions: {
         brand: {
-          key: convertAdyenCardBrandToCTFormat(adyenToken.brand),
+          key: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
         },
         endDigits: adyenToken.lastFour,
         expiryMonth: adyenToken.expiryMonth ? Number(adyenToken.expiryMonth) : undefined,
         expiryYear: adyenToken.expiryYear ? Number(adyenToken.expiryYear) : undefined,
       },
     };
+    // Adyen collapses some payment methods (e.g. Google Pay, Bancontact card) into a generic
+    // 'scheme' token, encoding the real payment method type in the brand instead (e.g.
+    // 'amex_googlepay', 'bcmc'). If so, the type of the payment method should be that real type
+    // instead of 'scheme/card'.
+    if (adyenToken.brand && isCollapsedTypePayment(adyenToken.brand)) {
+      const collapsedType = extractCollapsedTypeFromBrand(adyenToken.brand);
+      if (collapsedType) {
+        mappedResponse.type = convertPaymentMethodFromAdyenFormat(collapsedType);
+      }
+    }
+    return mappedResponse;
   }
 
   /**
@@ -1215,12 +1246,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       // Always created with default: false
       const customFields = this.getPaymentMethodCustomFieldsDraft(adyenToken);
+      const collapsedType = extractCollapsedTypeFromBrand(adyenToken.brand);
       const createdPaymentMethod = await this.ctPaymentMethodService.save({
         customerId,
         token: adyenToken.id || '',
         paymentInterface,
         interfaceAccount,
-        method: convertPaymentMethodFromAdyenFormat(adyenToken.type as string),
+        method: convertPaymentMethodFromAdyenFormat(collapsedType ?? (adyenToken.type as string)),
         customFields,
       });
 
@@ -1256,9 +1288,10 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     switch (adyenToken.type) {
-      case 'scheme': {
+      case 'scheme':
+      case 'googlepay': {
         return GenerateCardDetailsCustomFieldsDraft({
-          brand: convertAdyenCardBrandToCTFormat(adyenToken.brand),
+          brand: convertAdyenCardBrandToCTFormat(extractCardBrand(adyenToken.brand)),
           lastFour: adyenToken.lastFour,
           ...(adyenToken.expiryMonth ? { expiryMonth: Number(adyenToken.expiryMonth) } : undefined),
           ...(adyenToken.expiryYear ? { expiryYear: Number(adyenToken.expiryYear) } : undefined),

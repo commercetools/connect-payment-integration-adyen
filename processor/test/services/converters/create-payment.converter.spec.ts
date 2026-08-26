@@ -165,7 +165,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -189,7 +189,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -213,12 +213,16 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
 
-      const cartRandom = CartRest.random().lineItems([]).customLineItems([]).buildRest<TCartRest>({}) as Cart;
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .buildRest<TCartRest>({}) as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
@@ -238,7 +242,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -270,7 +274,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -311,7 +315,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -350,7 +354,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -386,7 +390,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });
@@ -414,6 +418,336 @@ describe('create-payment.converter', () => {
       });
     });
 
+    test('it should force storePaymentMethod for a fresh payment on a recurring-cart even when the client did not request it', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'scheme' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should force storePaymentMethod for a fresh Klarna Pay Now payment on a recurring-cart', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            klarna_paynow: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'klarna_paynow' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test.each([
+      ['Klarna Pay Later', 'klarna'],
+      ['Klarna Pay Over Time', 'klarna_account'],
+      ['Bancontact card', 'bcmc'],
+      ['Bancontact mobile', 'bcmc_mobile'],
+      ['SEPA Direct Debit', 'sepadirectdebit'],
+      ['Zip', 'zip'],
+    ])('it should force storePaymentMethod for a fresh %s payment on a recurring-cart', async (_label, adyenType) => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            [adyenType]: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: adyenType },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should not force storePaymentMethod on a recurring-cart if the type does not support recurringPayments', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: false },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'scheme' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
+    test('it should force storePaymentMethod for a fresh Afterpay payment on a recurring-cart in an allowed country', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: false,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'AU' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'Subscription',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should not force storePaymentMethod for a fresh Afterpay payment on a recurring-cart outside the allowed countries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: false,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('RecurringOrder')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'US' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
+    test('it should store a client-requested one-off payment when the cart country is within tokenizationAllowedCountries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: true,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'AU' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toStrictEqual({
+        recurringProcessingModel: 'CardOnFile',
+        shopperInteraction: 'Ecommerce',
+        shopperReference: customerId,
+        storePaymentMethod: true,
+        paymentMethod: paymentRequestDTO.paymentMethod,
+      });
+    });
+
+    test('it should not store a client-requested one-off payment when the cart country is outside tokenizationAllowedCountries', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            afterpaytouch: {
+              oneOffPayments: true,
+              recurringPayments: true,
+              tokenizationAllowedCountries: ['AU', 'NZ'],
+            },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .billingAddress({ country: 'US' })
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'afterpaytouch' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
+    test('it should not store a client-requested payment method on a regular cart if the type does not support oneOffPayments', async () => {
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            googlepay: { oneOffPayments: false, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'googlepay' },
+        storePaymentMethod: true,
+      } as CreatePaymentRequestDTO;
+
+      const result = await converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      expect(result).toBeUndefined();
+    });
+
     test('it should return the required stored payment methods data when paying with an tokenId when the cart is considered a recurring-cart', async () => {
       const storedPaymentMethodId = 'abcdefgh';
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
@@ -425,7 +759,7 @@ describe('create-payment.converter', () => {
           paymentInterface,
           interfaceAccount,
           supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true },
+            scheme: { oneOffPayments: true, recurringPayments: true },
           },
         },
       });

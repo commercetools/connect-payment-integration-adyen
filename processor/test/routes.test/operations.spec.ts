@@ -75,6 +75,7 @@ describe('/operations APIs', () => {
     ctPaymentService: jest.fn() as unknown as CommercetoolsPaymentService,
     ctOrderService: jest.fn() as unknown as CommercetoolsOrderService,
     ctPaymentMethodService: jest.fn() as unknown as CommercetoolsPaymentMethodService,
+    orderService: jest.fn() as unknown as ConstructorParameters<typeof AdyenPaymentService>[0]['orderService'],
   });
 
   beforeAll(async () => {
@@ -124,6 +125,19 @@ describe('/operations APIs', () => {
         storedPaymentMethodsConfig: {
           isEnabled: true,
         },
+        methodsAllowedForRecurringPayments: [
+          'scheme',
+          'googlepay',
+          'applepay',
+          'klarna_paynow',
+          'klarna',
+          'klarna_account',
+          'afterpaytouch',
+          'bcmc',
+          'bcmc_mobile',
+          'sepadirectdebit',
+          'zip',
+        ],
       });
     });
   });

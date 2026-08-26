@@ -8,12 +8,18 @@ import {
   CommercetoolsPaymentMethodTypes,
   CustomFieldsDraft,
   GenerateCardDetailsCustomFieldsDraft,
+  GenerateSepaDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 
 import { NotificationTokenizationDTO } from '../../dtos/adyen-payment.dto';
 import { UnsupportedNotificationError } from '../../errors/adyen-api.error';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
-import { convertAdyenCardBrandToCTFormat, convertPaymentMethodFromAdyenFormat } from './helper.converter';
+import {
+  convertAdyenCardBrandToCTFormat,
+  convertPaymentMethodFromAdyenFormat,
+  extractCardBrand,
+  extractCollapsedTypeFromBrand,
+} from './helper.converter';
 import { AdyenApi } from '../../clients/adyen.client';
 import { getConfig } from '../../config/config';
 import { log } from '../../libs/logger';
@@ -96,6 +102,15 @@ export class NotificationTokenizationConverter {
     recurringTokenOperationData: RecurringTokenStoreOperation,
     storedPaymentMethodResource?: StoredPaymentMethodResource,
   ): Promise<string> {
+    // Adyen tokenizes some payment methods (e.g. Google Pay, Bancontact card) as a generic
+    // "scheme" token, encoding the real payment method type in the brand string instead (e.g.
+    // "amex_googlepay", "bcmc"). Prefer that so the shopper still sees "Google Pay"/"Bancontact"
+    // instead of a generic card.
+    const collapsedType = extractCollapsedTypeFromBrand(storedPaymentMethodResource?.brand);
+    if (collapsedType) {
+      return convertPaymentMethodFromAdyenFormat(collapsedType);
+    }
+
     if (!storedPaymentMethodResource || !storedPaymentMethodResource.type) {
       log.warn(
         'Received no token detail information from Adyen that is required to properly map over the payment method type, falling back to the one from the notification',
@@ -121,17 +136,23 @@ export class NotificationTokenizationConverter {
     storedPaymentMethodResource: StoredPaymentMethodResource,
   ): CustomFieldsDraft | undefined {
     switch (storedPaymentMethodResource.type) {
-      case 'scheme': {
+      case 'scheme':
+      case 'googlepay': {
         const lastFourDigits = storedPaymentMethodResource.lastFour;
         const expiryMonth = storedPaymentMethodResource.expiryMonth;
         const expiryYear = storedPaymentMethodResource.expiryYear;
-        const brand = storedPaymentMethodResource.brand;
+        const brand = extractCardBrand(storedPaymentMethodResource.brand);
 
         return GenerateCardDetailsCustomFieldsDraft({
           brand: convertAdyenCardBrandToCTFormat(brand),
           lastFour: lastFourDigits,
           expiryMonth: Number(expiryMonth),
           expiryYear: Number(expiryYear),
+        });
+      }
+      case 'sepadirectdebit': {
+        return GenerateSepaDetailsCustomFieldsDraft({
+          lastFour: storedPaymentMethodResource.lastFour ?? storedPaymentMethodResource.iban?.slice(-4),
         });
       }
       default: {

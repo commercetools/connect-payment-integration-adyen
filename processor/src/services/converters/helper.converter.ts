@@ -435,6 +435,55 @@ export const convertAdyenCardBrandToCTFormat = (brand?: string): string => {
   return ADYEN_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
 };
 
+type CollapsedTypeBrandPattern = {
+  suffix: string;
+  // True when the suffix wraps a real card brand that should be revealed once stripped, e.g.
+  // "visa" from "visa_googlepay". False when the brand *is* the method's own identity with no
+  // separate underlying card brand to reveal, e.g. Bancontact's "bcmc".
+  revealsUnderlyingCardBrand: boolean;
+};
+
+// Adyen tokenizes some payment methods as a generic "scheme" token, encoding the original payment
+// method type in the brand string instead of a distinct `type`.
+const COLLAPSED_TYPE_BRAND_PATTERNS: Record<string, CollapsedTypeBrandPattern> = {
+  googlepay: { suffix: '_googlepay', revealsUnderlyingCardBrand: true },
+  bcmc: { suffix: 'bcmc', revealsUnderlyingCardBrand: false },
+};
+
+/**
+ * Returns the real payment method type encoded in the brand (e.g. "googlepay" from
+ * "amex_googlepay", or "bcmc" from "bcmc"), or undefined if the brand carries none.
+ */
+export const extractCollapsedTypeFromBrand = (brand?: string): string | undefined => {
+  if (!brand) {
+    return undefined;
+  }
+
+  return Object.entries(COLLAPSED_TYPE_BRAND_PATTERNS).find(([, pattern]) => brand.endsWith(pattern.suffix))?.[0];
+};
+
+/**
+ * @param brand The Adyen brand string to verify if it is for a type-collapsed payment method (e.g. Google Pay, Bancontact card)
+ * @returns true if the Adyen brand carries a collapsed payment method type, otherwise false
+ */
+export const isCollapsedTypePayment = (brand?: string): boolean => {
+  return extractCollapsedTypeFromBrand(brand) !== undefined;
+};
+
+/**
+ * Strips a wallet suffix (see extractCollapsedTypeFromBrand) to recover the underlying card brand,
+ * e.g. "amex" from "amex_googlepay". Returns the brand unchanged if it carries no such suffix, or
+ * if the suffix's brand has no underlying card brand to reveal (e.g. "bcmc").
+ */
+export const extractCardBrand = (brand?: string): string | undefined => {
+  if (!brand) {
+    return brand;
+  }
+
+  const pattern = Object.values(COLLAPSED_TYPE_BRAND_PATTERNS).find((p) => brand.endsWith(p.suffix));
+  return pattern?.revealsUnderlyingCardBrand ? brand.slice(0, -pattern.suffix.length) : brand;
+};
+
 const ADYEN_GIFT_CARD_BRAND_TO_CT_MAPPING: Record<string, string> = Object.fromEntries(
   GIFT_CARD_BRANDS.map((brand) => [brand, brand.charAt(0).toUpperCase() + brand.slice(1)]),
 );

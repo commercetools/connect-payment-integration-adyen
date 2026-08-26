@@ -97,6 +97,7 @@ export default function CheckoutApp() {
             paymentMethods={paymentMethods}
             dropinMethods={dropinMethods}
             savedMethods={savedMethods}
+            isRecurringOrder={cart?.origin === 'RecurringOrder'}
             onSuccess={handlePaySuccess}
             onError={handlePayError}
             onSavedMethodRemoved={removeSavedMethod}

@@ -1,7 +1,35 @@
 import { getCtpToken, getJwtToken } from './ct.ts';
-import type { PaymentMethod } from '../types.ts';
+import type { PaymentMethod, StoredPaymentMethod } from '../types.ts';
 
 const processorUrl = (): string => window.__VITE_PROCESSOR_URL__;
+
+export async function fetchRecurringStoredPaymentMethods(sessionId: string): Promise<StoredPaymentMethod[]> {
+  const res = await fetch(`${processorUrl()}/stored-payment-methods?withRecurring=true`, {
+    headers: {
+      'X-Session-Id': sessionId,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message || 'Failed to fetch recurring stored payment methods');
+  }
+  const data = await res.json() as { storedPaymentMethods?: StoredPaymentMethod[] };
+  return data.storedPaymentMethods ?? [];
+}
+
+export async function deleteStoredPaymentMethod(id: string, sessionId: string): Promise<void> {
+  const res = await fetch(`${processorUrl()}/stored-payment-methods/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Session-Id': sessionId,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message || 'Failed to delete stored payment method');
+  }
+}
 
 export async function fetchPaymentMethods(): Promise<{
   components: PaymentMethod[];

@@ -6,6 +6,48 @@ describe('stored-payment-methods.config', () => {
     expect(getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes).toStrictEqual({
       scheme: {
         oneOffPayments: true,
+        recurringPayments: true,
+      },
+      googlepay: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      applepay: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      klarna_paynow: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      klarna: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      klarna_account: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      afterpaytouch: {
+        oneOffPayments: false,
+        recurringPayments: true,
+        tokenizationAllowedCountries: ['AU', 'NZ'],
+      },
+      bcmc: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      bcmc_mobile: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      sepadirectdebit: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
+      zip: {
+        oneOffPayments: false,
+        recurringPayments: true,
       },
     });
   });

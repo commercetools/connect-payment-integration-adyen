@@ -58,7 +58,7 @@ describe('notification.tokenization.converter', () => {
         paymentInterface,
         interfaceAccount,
         supportedPaymentMethodTypes: {
-          scheme: { oneOffPayments: true },
+          scheme: { oneOffPayments: true, recurringPayments: true },
         },
       },
     });

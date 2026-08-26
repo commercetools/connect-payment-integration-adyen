@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { getCartById, getSessionId } from '../api/ct.ts';
 import { fetchPaymentMethods } from '../api/processor.ts';
+import { METHOD_LABELS } from '../../../method-labels.ts';
 import type {
   CtCart,
   EnablerInstance,
@@ -76,7 +77,7 @@ export function useCheckout(): {
       setDropinMethods(methodsData.dropins);
 
       if (storedEnabled && cartData.customerId) {
-        const stored = await instance.getStoredPaymentMethods({ allowedMethodTypes: ['card'] }).catch(() => ({ storedPaymentMethods: [] }));
+        const stored = await instance.getStoredPaymentMethods({ allowedMethodTypes: ['card', ...Object.keys(METHOD_LABELS)] }).catch(() => ({ storedPaymentMethods: [] }));
         console.log('[useCheckout] getStoredPaymentMethods raw:', JSON.stringify(stored, null, 2));
         setSavedMethods(stored.storedPaymentMethods ?? []);
       }
