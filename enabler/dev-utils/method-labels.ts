@@ -12,6 +12,8 @@ export const METHOD_LABELS: Record<string, { label: string }> = {
   klarna_pay_overtime: { label: 'Klarna Pay Over Time' },
   afterpay: { label: 'Afterpay (AU & NZ)' },
   sepadirectdebit: { label: 'SEPA Direct Debit' },
+  zip: { label: 'Zip' },
+  ideal: { label: 'iDEAL' },
 };
 
 export const METHODS_WITH_NO_CARDS: string[] = [
@@ -20,4 +22,6 @@ export const METHODS_WITH_NO_CARDS: string[] = [
   'klarna_pay_overtime',
   'afterpay',
   'sepadirectdebit',
+  'zip',
+  'ideal'
 ];

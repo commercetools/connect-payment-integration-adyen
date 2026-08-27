@@ -10,6 +10,7 @@ import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-
 import { NotificationTokenizationConverter } from '../../../src/services/converters/notification-recurring.converter';
 import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.error';
 import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
+import * as Config from '../../../src/config/config';
 
 describe('notification.tokenization.converter', () => {
   const converter = new NotificationTokenizationConverter();
@@ -74,6 +75,81 @@ describe('notification.tokenization.converter', () => {
         method: 'card',
         paymentInterface: 'adyen-payment-interface',
         token: 'abcdefg',
+      },
+    });
+  });
+
+  test('it should include SEPA-shaped custom fields (IBAN last-four) for an iDEAL-originated token', async () => {
+    // Arrange
+    const merchantReference = 'some-merchant-reference';
+    const shopperReference = 'some-shopper-reference';
+    const storedPaymentMethodId = 'G3W3X4J43Z828DV5';
+    const paymentInterface = 'adyen-payment-interface';
+    const interfaceAccount = 'adyen-interface-account';
+
+    const notification: NotificationTokenizationDTO = {
+      createdAt: new Date(),
+      environment: TokenizationCreatedDetailsNotificationRequest.EnvironmentEnum.Test,
+      eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
+      type: TokenizationCreatedDetailsNotificationRequest.TypeEnum.RecurringTokenCreated,
+      data: {
+        merchantAccount: merchantReference,
+        operation: 'operation text description',
+        shopperReference: shopperReference,
+        storedPaymentMethodId,
+        type: 'ideal',
+      },
+    };
+
+    // Real shape of an iDEAL stored payment method resource from Adyen: `type` and `brand` both
+    // stay "ideal", but it carries iban/ownerName since it's backed by a SEPA Direct Debit mandate.
+    jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      merchantAccount: merchantReference,
+      shopperReference,
+      storedPaymentMethods: [
+        {
+          id: storedPaymentMethodId,
+          type: 'ideal',
+          brand: 'ideal',
+          iban: 'NL44RABO0123456789',
+          ownerName: 'Pino the Bird',
+        },
+      ],
+    });
+
+    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      enabled: true,
+      config: {
+        paymentInterface,
+        interfaceAccount,
+        supportedPaymentMethodTypes: {
+          ideal: { oneOffPayments: false, recurringPayments: true },
+        },
+      },
+    });
+
+    jest.spyOn(Config, 'getConfig').mockReturnValue({
+      adyenMerchantAccount: merchantReference,
+      adyenStorePaymentMethodDetailsEnabled: true,
+    } as any);
+
+    // Act
+    const result = await converter.convert({ data: notification });
+
+    // Assert
+    expect(result).toEqual({
+      draft: {
+        customerId: shopperReference,
+        interfaceAccount,
+        method: 'ideal',
+        paymentInterface,
+        token: storedPaymentMethodId,
+        customFields: {
+          type: { key: 'commercetools-checkout-sepa-details', typeId: 'type' },
+          fields: {
+            lastFour: '6789',
+          },
+        },
       },
     });
   });

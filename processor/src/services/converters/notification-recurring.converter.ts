@@ -150,7 +150,11 @@ export class NotificationTokenizationConverter {
           expiryYear: Number(expiryYear),
         });
       }
-      case 'sepadirectdebit': {
+      // iDEAL retains its own `type` (unlike Google Pay/Bancontact, which collapse into
+      // 'scheme'), but the stored resource is backed by a SEPA Direct Debit mandate under the
+      // hood and carries the same iban/ownerName shape as a genuine 'sepadirectdebit' token.
+      case 'sepadirectdebit':
+      case 'ideal': {
         return GenerateSepaDetailsCustomFieldsDraft({
           lastFour: storedPaymentMethodResource.lastFour ?? storedPaymentMethodResource.iban?.slice(-4),
         });
