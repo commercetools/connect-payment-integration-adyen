@@ -31,6 +31,7 @@ export class ApplePayExpressBuilder implements PaymentExpressBuilder {
     this.countryCode = baseOptions.countryCode;
     this.currencyCode = baseOptions.currencyCode;
     this.paymentMethodConfig = baseOptions.paymentMethodConfig;
+    this.usesOwnCertificate = baseOptions.applePayConfig?.usesOwnCertificate || false;
     this.onComplete = baseOptions.onComplete;
   }
 
