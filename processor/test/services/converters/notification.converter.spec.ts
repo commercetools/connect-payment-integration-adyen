@@ -1326,7 +1326,7 @@ describe('notification.converter', () => {
       const result = await converter.convert({ data: notification });
 
       // Assert
-      expect(result[0].paymentMethodInfoCustomField?.fields.brand).toEqual('Mastercard');
+      expect(result[0].paymentMethodInfoCustomField?.fields?.brand).toEqual('Mastercard');
     });
   });
 

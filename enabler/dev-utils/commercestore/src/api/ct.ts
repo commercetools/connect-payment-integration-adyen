@@ -2,10 +2,16 @@ import { ALLOWED_PAYMENT_METHODS } from '../data/countries.ts';
 import { getAllCountries, getAllAddresses, getAllShippingCosts } from '../data/customCountries.ts';
 import type {
   Country,
-  CtCart, CtCustomer, CtPayment,
-  CtTaxCategoryStatus, CtShippingMethodStatus,
-  LineItem, ExpressAddressData,
-} from '../types.ts';
+  CtCart,
+  CtCustomer,
+  CtPayment,
+  CtTaxCategoryStatus,
+  CtShippingMethodStatus,
+  LineItem,
+  ExpressAddressData,
+  RecurrencePolicy,
+  RecurrencePolicyFormInput,
+} from "../types.ts";
 
 const projectKey = (): string => window.__VITE_CTP_PROJECT_KEY__;
 const apiUrl = (): string => window.__VITE_CTP_API_URL__;
@@ -72,6 +78,8 @@ export async function getSessionId(cartId: string, { isDropin = false } = {}): P
   return data.id;
 }
 
+export type CtApiError = Error & { code?: string };
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ctFetch(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getCtpToken();
@@ -80,13 +88,22 @@ async function ctFetch(path: string, options: RequestInit = {}): Promise<any> {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(options.headers as Record<string, string>) },
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(err.message || `CT API error: ${res.status}`);
+    const err = (await res.json().catch(() => ({}))) as { message?: string; errors?: Array<{ code?: string }> };
+    const error = new Error(err.message || `CT API error: ${res.status}`) as CtApiError;
+    error.code = err.errors?.[0]?.code;
+    throw error;
   }
   return res.json();
 }
 
 export const getCartById = (cartId: string): Promise<CtCart> => ctFetch(`/carts/${cartId}`);
+
+export function isRecurringCart(cart: CtCart): boolean {
+  if (!cart.customerId) return false;
+  const hasRecurringLineItems = cart.lineItems?.some((item) => item.recurrenceInfo) ?? false;
+  const hasRecurringCustomLineItems = cart.customLineItems?.some((item) => item.recurrenceInfo) ?? false;
+  return hasRecurringLineItems || hasRecurringCustomLineItems;
+}
 
 export async function searchCustomerByEmail(email: string): Promise<CtCustomer | null> {
   const data = await ctFetch(`/customers?where=email%3D%22${encodeURIComponent(email)}%22`) as { results: CtCustomer[] };
@@ -195,6 +212,88 @@ async function getOrCreateShippingMethod(taxCategory: { id: string }): Promise<u
   });
 }
 
+interface RawRecurrenceSchedule {
+  type: string;
+  value?: number;
+  intervalUnit?: string;
+  day?: number;
+  dayOfMonth?: number;
+}
+
+function formatRecurrenceSchedule(schedule: RawRecurrenceSchedule): string {
+  if (schedule.type === "standard" && schedule.intervalUnit && schedule.value !== undefined) {
+    return `Every ${schedule.value} ${schedule.intervalUnit.toLowerCase()}`;
+  }
+  const day = schedule.day ?? schedule.dayOfMonth;
+  if (schedule.type === "dayOfMonth" && day !== undefined) {
+    return `Day ${day} of every month`;
+  }
+  return JSON.stringify(schedule);
+}
+
+interface RawRecurrencePolicy {
+  id: string;
+  version: number;
+  key?: string;
+  name?: Record<string, string>;
+  schedule: RawRecurrenceSchedule;
+}
+
+function toRecurrencePolicy(rp: RawRecurrencePolicy): RecurrencePolicy {
+  return {
+    id: rp.id,
+    version: rp.version,
+    key: rp.key ?? rp.id,
+    name: rp.name?.en,
+    scheduleType: rp.schedule.type === "dayOfMonth" ? "dayOfMonth" : "standard",
+    intervalUnit: rp.schedule.intervalUnit as "Days" | "Weeks" | "Months" | undefined,
+    value: rp.schedule.value,
+    day: rp.schedule.day ?? rp.schedule.dayOfMonth,
+    scheduleLabel: formatRecurrenceSchedule(rp.schedule),
+  };
+}
+
+function scheduleFromFormInput(input: RecurrencePolicyFormInput): RawRecurrenceSchedule {
+  return input.scheduleType === "dayOfMonth"
+    ? { type: "dayOfMonth", day: input.day }
+    : { type: "standard", intervalUnit: input.intervalUnit, value: input.value };
+}
+
+export async function getAllRecurrencePolicies(): Promise<RecurrencePolicy[]> {
+  const data = (await ctFetch("/recurrence-policies?limit=500")) as { results: RawRecurrencePolicy[] };
+  return data.results.map(toRecurrencePolicy);
+}
+
+export async function createRecurrencePolicy(input: RecurrencePolicyFormInput): Promise<RecurrencePolicy> {
+  const created = (await ctFetch("/recurrence-policies", {
+    method: "POST",
+    body: JSON.stringify({
+      key: input.key,
+      name: { en: input.name },
+      schedule: scheduleFromFormInput(input),
+    }),
+  })) as RawRecurrencePolicy;
+  return toRecurrencePolicy(created);
+}
+
+export async function updateRecurrencePolicy(
+  id: string,
+  version: number,
+  input: RecurrencePolicyFormInput,
+): Promise<RecurrencePolicy> {
+  const updated = (await ctFetch(`/recurrence-policies/${id}`, {
+    method: "POST",
+    body: JSON.stringify({
+      version,
+      actions: [
+        { action: "setName", name: { en: input.name } },
+        { action: "setSchedule", schedule: scheduleFromFormInput(input) },
+      ],
+    }),
+  })) as RawRecurrencePolicy;
+  return toRecurrencePolicy(updated);
+}
+
 export async function ensureProjectConfiguration(): Promise<void> {
   const countries = getAllCountries();
   const supportedCurrencies = [...new Set(countries.map(c => c.currency))];
@@ -221,52 +320,81 @@ export async function ensureProjectConfiguration(): Promise<void> {
   await getOrCreateShippingMethod(taxCategory);
 }
 
-export async function createCart({ country, customerId, lineItems, isRecurring }: { country: string; customerId?: string; lineItems: LineItem[]; isRecurring?: boolean }): Promise<CtCart> {
+export async function createCart({
+  country,
+  customerId,
+  lineItems,
+  isRecurring,
+  recurrencePolicyId,
+}: {
+  country: string;
+  customerId?: string;
+  lineItems: LineItem[];
+  isRecurring?: boolean;
+  recurrencePolicyId?: string;
+}): Promise<CtCart> {
   const countries = getAllCountries();
   const addresses = getAllAddresses();
-  const countryConfig = countries.find(c => c.code === country);
+  const countryConfig = countries.find((c) => c.code === country);
   const currency = countryConfig?.currency ?? country;
   const address = addresses[country];
   const taxCategory = await getOrCreateTaxCategory();
 
   const taxRate = countryConfig?.taxRate ?? 0;
 
-  const customLineItems = lineItems.map(item => ({
+  // A cart becomes eligible to spawn a Recurring Order once it checks out by having at least
+  // one item reference a RecurrencePolicy - the cart itself does NOT get origin: 'RecurringOrder'.
+  // That origin is set by commercetools only on the carts it generates for each subsequent cycle.
+  const attachRecurrencePolicy = isRecurring && recurrencePolicyId;
+
+  const customLineItems = lineItems.map((item) => ({
     name: { en: item.name },
     quantity: item.quantity,
     money: { currencyCode: currency, centAmount: item.centAmount },
-    slug: item.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-    taxCategory: { typeId: 'tax-category', id: taxCategory.id },
-    externalTaxRate: { name: 'Standard Tax', amount: taxRate, country, includedInPrice: false },
+    slug: item.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, ""),
+    taxCategory: { typeId: "tax-category", id: taxCategory.id },
+    externalTaxRate: { name: "Standard Tax", amount: taxRate, country, includedInPrice: false },
+    ...(attachRecurrencePolicy && {
+      recurrenceInfo: {
+        recurrencePolicy: { typeId: "recurrence-policy", id: recurrencePolicyId },
+        priceSelectionMode: "Fixed",
+      },
+    }),
   }));
 
   const cartPayload: Record<string, unknown> = {
     currency,
     country,
-    taxMode: 'External',
-    taxRoundingMode: 'HalfEven',
-    taxCalculationMode: 'LineItemLevel',
+    taxMode: "External",
+    taxRoundingMode: "HalfEven",
+    taxCalculationMode: "LineItemLevel",
     ...(customerId && { customerId }),
-    ...(isRecurring && { origin: 'RecurringOrder' }),
     shippingAddress: { ...address, country },
     billingAddress: { ...address, country },
     customLineItems,
   };
 
-  const cart = await ctFetch('/carts', { method: 'POST', body: JSON.stringify(cartPayload) }) as CtCart;
+  const cart = (await ctFetch("/carts", { method: "POST", body: JSON.stringify(cartPayload) })) as CtCart;
 
-  const shippingData = await ctFetch(`/shipping-methods/matching-cart?cartId=${cart.id}`) as { results: Array<{ id: string }> };
+  const shippingData = (await ctFetch(`/shipping-methods/matching-cart?cartId=${cart.id}`)) as {
+    results: Array<{ id: string }>;
+  };
   const shippingMethod = shippingData.results[0];
 
   if (shippingMethod) {
     return ctFetch(`/carts/${cart.id}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({
         version: cart.version,
-        actions: [{
-          action: 'setShippingMethod',
-          shippingMethod: { typeId: 'shipping-method', id: shippingMethod.id },
-        }],
+        actions: [
+          {
+            action: "setShippingMethod",
+            shippingMethod: { typeId: "shipping-method", id: shippingMethod.id },
+          },
+        ],
       }),
     });
   }
@@ -274,7 +402,12 @@ export async function createCart({ country, customerId, lineItems, isRecurring }
   return cart;
 }
 
-export async function createPreconfiguredCart(country: string, withCustomer = false): Promise<CtCart> {
+export async function createPreconfiguredCart(
+  country: string,
+  withCustomer = false,
+  isRecurring = false,
+  recurrencePolicyId?: string,
+): Promise<CtCart> {
   const addresses = getAllAddresses();
   const address = addresses[country];
 
@@ -292,11 +425,11 @@ export async function createPreconfiguredCart(country: string, withCustomer = fa
   }
 
   const lineItems: LineItem[] = [
-    { name: 'Premium Wireless Headphones', quantity: 1, centAmount: 12999 },
-    { name: 'Organic Cotton T-Shirt', quantity: 2, centAmount: 3499 },
+    { name: "Premium Wireless Headphones", quantity: 1, centAmount: 12999 },
+    { name: "Organic Cotton T-Shirt", quantity: 2, centAmount: 3499 },
   ];
 
-  return createCart({ country, customerId, lineItems });
+  return createCart({ country, customerId, lineItems, isRecurring: withCustomer && isRecurring, recurrencePolicyId });
 }
 
 // Admin helpers
@@ -319,8 +452,18 @@ export async function getShippingMethodStatus(): Promise<CtShippingMethodStatus>
   return { exists: true, currencies };
 }
 
-export async function enableCountryInCt(_countryCode: string): Promise<void> {
+export async function enableCountryInCt(countryCode: string): Promise<void> {
+  // Bootstraps the tax category/shipping method the first time they don't exist at all yet.
   await ensureProjectConfiguration();
+
+  // getOrCreateTaxCategory/getOrCreateShippingMethod only create these resources once - once they
+  // exist, they're never patched to add rates for a country enabled afterwards. addCountryToCt is
+  // what actually adds a missing rate to an already-existing tax category/shipping method.
+  const country = getAllCountries().find((c) => c.code === countryCode);
+  if (!country) return;
+
+  const shippingCost = getAllShippingCosts()[country.currency] ?? 500;
+  await addCountryToCt(country, shippingCost);
 }
 
 /**
@@ -355,21 +498,29 @@ export async function addCountryToCt(country: Country, shippingCost: number): Pr
     const tc = taxData.results[0];
     const alreadyHasRate = tc.rates.some(r => r.country === country.code);
     if (!alreadyHasRate) {
-      await ctFetch(`/tax-categories/${tc.id}`, {
-        method: 'POST',
-        body: JSON.stringify({
-          version: tc.version,
-          actions: [{
-            action: 'addTaxRate',
-            taxRate: {
-              name: country.taxName,
-              amount: country.taxRate,
-              country: country.code,
-              includedInPrice: false,
-            },
-          }],
-        }),
-      });
+      try {
+        await ctFetch(`/tax-categories/${tc.id}`, {
+          method: "POST",
+          body: JSON.stringify({
+            version: tc.version,
+            actions: [
+              {
+                action: "addTaxRate",
+                taxRate: {
+                  name: country.taxName,
+                  amount: country.taxRate,
+                  country: country.code,
+                  includedInPrice: false,
+                },
+              },
+            ],
+          }),
+        });
+      } catch (e) {
+        // A previous, partially-applied run may have already added this rate even though our
+        // stale read above didn't see it yet - safe to ignore and move on to the next step.
+        if ((e as CtApiError).code !== "DuplicateField") throw e;
+      }
     }
   }
 
@@ -407,13 +558,19 @@ export async function addCountryToCt(country: Country, shippingCost: number): Pr
         // Add country to zone if not already there
         const alreadyInZone = zone.locations.some(l => l.country === country.code);
         if (!alreadyInZone) {
-          await ctFetch(`/zones/${zone.id}`, {
-            method: 'POST',
-            body: JSON.stringify({
-              version: zone.version,
-              actions: [{ action: 'addLocation', location: { country: country.code } }],
-            }),
-          });
+          try {
+            await ctFetch(`/zones/${zone.id}`, {
+              method: "POST",
+              body: JSON.stringify({
+                version: zone.version,
+                actions: [{ action: "addLocation", location: { country: country.code } }],
+              }),
+            });
+          } catch (e) {
+            // The zone can already have this location from a previous run that got this far but
+            // failed on the shipping rate step below - safe to ignore and add the rate now.
+            if ((e as CtApiError).code !== "DuplicateField") throw e;
+          }
         }
       } else {
         // Create the zone

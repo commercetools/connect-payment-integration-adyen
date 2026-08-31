@@ -218,6 +218,9 @@ deployAs:
         - key: ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT
           description: The payment method interface account value used in the commerceotools payment methods.
           required: false
+        - key: ADYEN_RECURRING_PAYMENTS_ENABLED
+          description: If set to "true" then payment methods are tokenized for recurring carts so they can be used for future recurring payments. Also forces the stored payment methods feature on regardless of ADYEN_STORED_PAYMENT_METHODS_ENABLED. Default value is "false".
+          required: false
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
           description: commercetools client secret
@@ -266,6 +269,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY`: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
 - `ADYEN_ORDER_EXPIRY_MINUTES`: Number of minutes before an Adyen Order expires for split payments (e.g. gift card + remaining method). When the order expires, Adyen sends an `ORDER_CLOSED` webhook which cancels the pending split and automatically refunds any partial payments. Default value is `60`.
 - `ADYEN_PARTIAL_PAYMENTS_ENABLED`: If set to `"true"` then partial payments (split payments via the Adyen Orders API, e.g. gift cards) are enabled. When enabled, the connector creates a custom type to store Adyen Order data (`adyenOrderData`, `adyenOrderPspReference`) on the CT `payment` resource. Only supported with the **Drop-in** component. Default value is `"false"`.
+- `ADYEN_RECURRING_PAYMENTS_ENABLED`: If set to `"true"` then payment methods are tokenized for recurring carts so they can be used for future recurring payments. Enabling this also forces the stored payment methods feature on, regardless of `ADYEN_STORED_PAYMENT_METHODS_ENABLED`. Default value is `"false"`.
 
 ## Feature
 

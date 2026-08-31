@@ -211,7 +211,7 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, i
       if (!savedInstancesRef.current[method.id]) {
         const builder = await enabler.createStoredPaymentMethodBuilder(method.type);
         const brand = method.displayOptions?.brand?.key;
-        const instance = builder.build({ id: method.id, brands: brand ? [brand] : [] });
+        const instance = builder.build({ id: method.id, brands: brand ? [brand] : [], showPayButton: false });
         savedInstancesRef.current[method.id] = instance;
       }
       setSavedComponent(savedInstancesRef.current[method.id]);
@@ -303,7 +303,7 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, i
             onPay={handlePay}
             // Show store method checkbox only for card, and only if it's not a recurring order (recurring orders always save the method)
             showStore={selected === 'card' && !isRecurringOrder}
-            showRecurringMessage={!selectedSaved && isRecurringOrder}
+            showRecurringMessage={isRecurringOrder}
             storeChecked={storeMethod}
             onStoreChange={handleStoreChange}
             hasOwnButton={activeHasOwnButton}

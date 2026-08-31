@@ -82,6 +82,42 @@ export const GIFT_CARD_BRANDS = [
   'prosodie_illicado',
 ] as const;
 
+/**
+ * Adyen payment method type values supported by this connector's Components/Drop-in UI.
+ * See convertPaymentMethodFromAdyenFormat (helper.converter.ts) for the mapping to this
+ * connector's own CoCo-style type values, used at the edges (e.g. /payment-components response).
+ */
+export const SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES = [
+  'afterpaytouch', // afterpay
+  'alipay',
+  'applepay',
+  'bcmc', // bancontactcard
+  'bcmc_mobile', // bancontactmobile
+  'blik',
+  'scheme', // card
+  'eps',
+  'molpay_ebanking_fpx_MY', // fpx, FPX Online banking Malaysia
+  'googlepay',
+  'ideal',
+  'klarna_b2b', // klarna_billie
+  'klarna', // klarna_pay_later
+  'klarna_paynow', // klarna_pay_now
+  'klarna_account', // klarna_pay_overtime
+  'mobilepay',
+  'paypal',
+  'onlineBanking_PL', // przelewy24
+  'sepadirectdebit',
+  'swish',
+  'twint',
+  'vipps',
+  'clearpay',
+  'mbway',
+  'trustly',
+  'wechatpayQR', // wechatpay
+  'zip',
+  'econtext_stores', // jcs
+] as const;
+
 const giftCardConfig: PaymentMethodConfig = Object.fromEntries(
   GIFT_CARD_BRANDS.map((brand) => [brand, { supportSeparateCapture: false }]),
 );

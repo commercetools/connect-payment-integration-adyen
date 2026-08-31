@@ -8,6 +8,7 @@ import QuickCartModal from './components/cart/QuickCartModal.tsx';
 import CustomCartModal from './components/cart/CustomCartModal.tsx';
 import { useCheckout } from './hooks/useCheckout.ts';
 import { useToast } from './hooks/useToast.ts';
+import { isRecurringCart } from './api/ct.ts';
 import type { CheckoutResult } from './types.ts';
 
 interface ResultModalProps {
@@ -97,7 +98,7 @@ export default function CheckoutApp() {
             paymentMethods={paymentMethods}
             dropinMethods={dropinMethods}
             savedMethods={savedMethods}
-            isRecurringOrder={cart?.origin === 'RecurringOrder'}
+            isRecurringOrder={cart ? isRecurringCart(cart) : false}
             onSuccess={handlePaySuccess}
             onError={handlePayError}
             onSavedMethodRemoved={removeSavedMethod}

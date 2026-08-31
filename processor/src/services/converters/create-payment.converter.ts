@@ -7,7 +7,6 @@ import {
   CurrencyConverters,
   Payment,
   CommercetoolsPaymentMethodService,
-  ErrorRequiredField,
   ErrorInternalConstraintViolated,
   PaymentMethod,
   CommercetoolsCartService,
@@ -20,6 +19,7 @@ import {
   mapCoCoCartItemsToAdyenLineItems,
   getCountryCodeFromCart,
   extractShopperName,
+  extractStoredPaymentMethodId,
 } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
@@ -28,6 +28,7 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 import { randomUUID } from 'node:crypto';
 import {
   getStoredPaymentMethodsConfig,
+  isTokenizationEnabled,
   SupportedStoredPaymentMethodsTypes,
 } from '../../config/stored-payment-methods.config';
 import { PaymentAmount } from '@commercetools/connect-payments-sdk/dist/commercetools/types/payment.type';
@@ -196,7 +197,7 @@ export class CreatePaymentConverter {
     data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>,
     cart: Cart,
   ) {
-    if (!getStoredPaymentMethodsConfig().enabled) {
+    if (!isTokenizationEnabled()) {
       return;
     }
 
@@ -209,90 +210,180 @@ export class CreatePaymentConverter {
       return;
     }
 
-    const storedPaymentMethodIdKeyValuePair = Object.entries(data.paymentMethod).find(
-      (keyValuePair) => keyValuePair[0] === 'storedPaymentMethodId',
-    );
+    const storedPaymentMethodId = extractStoredPaymentMethodId(data.paymentMethod);
+    const isRecurringOrder = this.ctCartService.isRecurringCart(cart);
 
-    const payWithExistingToken = storedPaymentMethodIdKeyValuePair !== undefined;
-    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(cart);
-    // Whether this payment method type is allowed to be tokenized at all depends on the type's own
-    // config: oneOffPayments gates a client-requested store (data.storePaymentMethod) on a regular
-    // cart, recurringPayments gates being auto-stored for a recurring order. A recurring order
-    // always needs a stored token to charge future occurrences, so that storage must not depend on
-    // the client (enabler/SPA) correctly requesting it for every payment method. Only applies to a
-    // fresh payment method — one already paying with an existing token is already stored and must
-    // not be re-tokenized.
-    const shouldStoreOneOff =
+    if (storedPaymentMethodId) {
+      return isRecurringOrder
+        ? this.payWithExistingTokenForRecurringOrder({ data, cart, paymentMethodConfig, storedPaymentMethodId })
+        : this.payWithExistingTokenForOneOff({ data, cart, storedPaymentMethodId });
+    }
+
+    return isRecurringOrder
+      ? this.tokeniseForRecurringOrder({ data, cart, paymentMethodConfig })
+      : this.tokeniseForOneOff({ data, cart, paymentMethodConfig });
+  }
+
+  /**
+   * Fresh payment, client explicitly asked to store it, on a regular (non-recurring) cart.
+   */
+  private async tokeniseForOneOff(opts: {
+    data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>;
+    cart: Cart;
+    paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string];
+  }) {
+    const { data, cart, paymentMethodConfig } = opts;
+
+    const shouldStore =
+      getStoredPaymentMethodsConfig().enabled &&
       !!data.storePaymentMethod &&
       paymentMethodConfig.oneOffPayments &&
       this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
-    const shouldStoreForRecurringOrder =
-      isCurrentCartRecurringOrder &&
-      paymentMethodConfig.recurringPayments &&
-      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
-    const tokeniseForFirstTime = !payWithExistingToken && (shouldStoreOneOff || shouldStoreForRecurringOrder);
 
-    // User does not want to store token for the first time nor pay with existing one
-    if (!tokeniseForFirstTime && !payWithExistingToken) {
+    if (!shouldStore) {
       return;
     }
 
-    const customerReference = cart.customerId;
+    const customerReference = this.requireCustomerId(cart);
 
-    if (!customerReference) {
-      throw new ErrorRequiredField('customerId', {
-        privateMessage: 'The customerId is not set on the cart yet the customer wants to tokenize the payment',
-        privateFields: {
-          cart: {
-            id: cart.id,
-            typeId: 'cart',
+    return {
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.Ecommerce,
+      shopperReference: customerReference,
+      storePaymentMethod: true,
+      paymentMethod: data.paymentMethod,
+    };
+  }
+
+  /**
+   * Fresh payment on a recurring cart. Storage is forced regardless of what the client requested,
+   * since future occurrences need a token to charge automatically.
+   */
+  private async tokeniseForRecurringOrder(opts: {
+    data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>;
+    cart: Cart;
+    paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string];
+  }) {
+    const { data, cart, paymentMethodConfig } = opts;
+
+    const shouldStore =
+      getConfig().adyenRecurringPaymentsEnabled &&
+      paymentMethodConfig.recurringPayments &&
+      this.isTokenizationAllowedForCartCountry(paymentMethodConfig, cart);
+
+    if (!shouldStore) {
+      return;
+    }
+
+    const customerReference = this.requireCustomerId(cart);
+
+    return {
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.Ecommerce,
+      shopperReference: customerReference,
+      storePaymentMethod: true,
+      paymentMethod: data.paymentMethod,
+    };
+  }
+
+  /**
+   * Paying with an already-stored token on a regular (non-recurring) cart.
+   */
+  private async payWithExistingTokenForOneOff(opts: {
+    data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>;
+    cart: Cart;
+    storedPaymentMethodId: string;
+  }) {
+    const { data, cart, storedPaymentMethodId } = opts;
+
+    if (!getStoredPaymentMethodsConfig().enabled) {
+      throw new ErrorInternalConstraintViolated(
+        'Stored payment methods are not enabled, so an existing token cannot be used to pay.',
+        {
+          privateFields: {
+            cart: { id: cart.id, typeId: 'cart' },
           },
+        },
+      );
+    }
+
+    const customerReference = this.requireCustomerId(cart);
+    await this.assertTokenBelongsToCustomer(storedPaymentMethodId, customerReference, cart);
+
+    return {
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.CardOnFile,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.ContAuth,
+      shopperReference: customerReference,
+      paymentMethod: data.paymentMethod,
+    };
+  }
+
+  /**
+   * Paying with an already-stored token on a recurring cart.
+   */
+  private async payWithExistingTokenForRecurringOrder(opts: {
+    data: Pick<CreatePaymentRequestDTO, 'paymentMethod' | 'storePaymentMethod'>;
+    cart: Cart;
+    paymentMethodConfig: SupportedStoredPaymentMethodsTypes[string];
+    storedPaymentMethodId: string;
+  }) {
+    const { data, cart, paymentMethodConfig, storedPaymentMethodId } = opts;
+
+    if (!getConfig().adyenRecurringPaymentsEnabled || !paymentMethodConfig.recurringPayments) {
+      throw new ErrorInternalConstraintViolated(
+        'The payment method type of the provided token does not support recurring payments, yet the cart is a recurring cart.',
+        {
+          privateFields: {
+            cart: { id: cart.id, typeId: 'cart' },
+            paymentMethodType: data.paymentMethod.type,
+          },
+        },
+      );
+    }
+
+    const customerReference = this.requireCustomerId(cart);
+    await this.assertTokenBelongsToCustomer(storedPaymentMethodId, customerReference, cart);
+
+    return {
+      recurringProcessingModel: PaymentRequest.RecurringProcessingModelEnum.Subscription,
+      shopperInteraction: PaymentRequest.ShopperInteractionEnum.ContAuth,
+      shopperReference: customerReference,
+      paymentMethod: data.paymentMethod,
+    };
+  }
+
+  private requireCustomerId(cart: Cart): string {
+    if (!cart.customerId) {
+      throw new ErrorInternalConstraintViolated('The cart does not have a customerId set.', {
+        privateFields: {
+          cart: { id: cart.id, typeId: 'cart' },
         },
       });
     }
+    return cart.customerId;
+  }
 
-    if (payWithExistingToken) {
-      const storedPaymentMethodId = storedPaymentMethodIdKeyValuePair[1];
-      const doesTokenBelongsToCustomer = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
-        customerId: customerReference,
-        paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
-        interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-        tokenValue: storedPaymentMethodId,
-      });
+  private async assertTokenBelongsToCustomer(tokenValue: string, customerId: string, cart: Cart): Promise<void> {
+    const doesTokenBelongsToCustomer = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
+      customerId,
+      paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+      interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+      tokenValue,
+    });
 
-      if (!doesTokenBelongsToCustomer) {
-        throw new ErrorInternalConstraintViolated(
-          'The provided token does not belong to the given customer for any payment method currently stored.',
-          {
-            privateFields: {
-              cart: {
-                id: cart.id,
-                typeId: 'cart',
-              },
-              customerId: customerReference,
-              paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
-              interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
-            },
+    if (!doesTokenBelongsToCustomer) {
+      throw new ErrorInternalConstraintViolated(
+        'The provided token does not belong to the given customer for any payment method currently stored.',
+        {
+          privateFields: {
+            cart: { id: cart.id, typeId: 'cart' },
+            customerId,
+            paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+            interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
           },
-        );
-      }
+        },
+      );
     }
-
-    const shopperInteraction = payWithExistingToken
-      ? PaymentRequest.ShopperInteractionEnum.ContAuth // For paying with existing tokens
-      : PaymentRequest.ShopperInteractionEnum.Ecommerce; // When tokenising for the first time
-
-    const recurringProcessingModel = isCurrentCartRecurringOrder
-      ? PaymentRequest.RecurringProcessingModelEnum.Subscription
-      : PaymentRequest.RecurringProcessingModelEnum.CardOnFile;
-
-    return {
-      recurringProcessingModel,
-      shopperInteraction,
-      shopperReference: customerReference,
-      ...(tokeniseForFirstTime ? { storePaymentMethod: true } : {}), // only applicable when user wants to tokenise payment details for the first time
-      paymentMethod: data.paymentMethod,
-    };
   }
 
   private isTokenizationAllowedForCartCountry(

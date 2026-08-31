@@ -11,8 +11,11 @@ import {
   TransactionType,
   TransactionState,
   CommercetoolsPaymentMethodService,
+  CommercetoolsRecurringPaymentJobService,
   ErrorRequiredField,
+  ErrorResourceNotFound,
   PaymentMethod,
+  TransactionData,
   ErrorInvalidField,
   ErrorInternalConstraintViolated,
   CurrencyConverters,
@@ -86,7 +89,7 @@ import { NotificationUpdatePayment } from './types/service.type';
 import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureResponse';
 import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse';
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
-import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.config';
+import { getStoredPaymentMethodsConfig, isTokenizationEnabled } from '../config/stored-payment-methods.config';
 import { StoredPaymentMethod, StoredPaymentMethodsResponse } from '../dtos/stored-payment-methods.dto';
 import { NotificationTokenizationConverter } from './converters/notification-recurring.converter';
 import {
@@ -110,6 +113,7 @@ import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../constants/currencies';
 import { StoredPaymentMethodResource } from '@adyen/api-library/lib/src/typings/checkout/storedPaymentMethodResource';
+import { CommercetoolsPaymentMethodTypes } from '@commercetools/connect-payments-sdk';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJSON = require('../../package.json');
@@ -126,6 +130,7 @@ export type AdyenPaymentServiceOptions = {
   ctPaymentService: CommercetoolsPaymentService;
   ctOrderService: CommercetoolsOrderService;
   ctPaymentMethodService: CommercetoolsPaymentMethodService;
+  ctRecurringPaymentJobService: CommercetoolsRecurringPaymentJobService;
   orderService: AdyenOrderService;
 };
 
@@ -145,7 +150,13 @@ export class AdyenPaymentService extends AbstractPaymentService {
   private orderService: AdyenOrderService;
 
   constructor(opts: AdyenPaymentServiceOptions) {
-    super(opts.ctCartService, opts.ctPaymentService, opts.ctOrderService, opts.ctPaymentMethodService);
+    super(
+      opts.ctCartService,
+      opts.ctPaymentService,
+      opts.ctOrderService,
+      opts.ctPaymentMethodService,
+      opts.ctRecurringPaymentJobService,
+    );
     this.orderService = opts.orderService;
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
     this.createSessionConverter = new CreateSessionConverter();
@@ -224,12 +235,16 @@ export class AdyenPaymentService extends AbstractPaymentService {
       'introspect_oauth_tokens',
     ];
 
-    if (getStoredPaymentMethodsConfig().enabled) {
+    if (isTokenizationEnabled()) {
       requiredPermissions.push('manage_payment_methods');
     }
 
     if (getConfig().adyenStorePaymentMethodDetailsEnabled) {
       requiredPermissions.push('manage_types');
+    }
+
+    if (getConfig().adyenRecurringPaymentsEnabled) {
+      requiredPermissions.push('manage_recurring_payment_jobs');
     }
 
     const handler = await statusHandler({
@@ -668,63 +683,20 @@ export class AdyenPaymentService extends AbstractPaymentService {
     try {
       const actions = await this.notificationTokenizationConverter.convert(opts);
 
-      if (actions.draft) {
-        const doesTokenAlreadyExist = await this.ctPaymentMethodService.doesTokenBelongsToCustomer({
-          customerId: actions.draft.customerId,
-          paymentInterface: actions.draft.paymentInterface,
-          interfaceAccount: actions.draft.interfaceAccount,
-          tokenValue: actions.draft.token,
-        });
+      if (!actions.draft) {
+        return;
+      }
 
-        if (doesTokenAlreadyExist) {
-          log.info(
-            'Stored payment method already exists in CT for the given customer, paymentInterface, interfaceAccount and token combination. Not creating a new one and ignoring request to save a new stored payment method.',
-            {
-              notification: notificationLogObject,
-              paymentMethod: {
-                customer: actions.draft.customerId,
-                paymentInterface: actions.draft.paymentInterface,
-                interfaceAccount: actions.draft.interfaceAccount,
-                method: actions.draft.method,
-              },
-            },
-          );
-        } else {
-          const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(actions.draft);
+      const paymentMethod = await this.getOrCreateTokenizedPaymentMethod(actions.draft, notificationLogObject);
 
-          log.info('Created new payment method used for tokenization', {
-            notification: notificationLogObject,
-            paymentMethod: {
-              id: newlyCreatedPaymentMethod.id,
-              customer: newlyCreatedPaymentMethod.customer,
-              paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
-              interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
-              method: newlyCreatedPaymentMethod.method,
-            },
-          });
+      const payment = await this.linkPaymentToTokenizedPaymentMethod({
+        eventId: opts.data.eventId,
+        tokenValue: actions.draft.token,
+        notificationLogObject,
+      });
 
-          // Ensure that the original payment that tokenised the payment-method for the first time also has the token value set in the paymentMethodInfo.token.value
-          const payments = await this.ctPaymentService.findPaymentsByInterfaceId({
-            interfaceId: opts.data.eventId,
-          });
-
-          if (payments.length === 1) {
-            await this.ctPaymentService.updatePayment({
-              id: payments[0].id,
-              paymentMethodInfo: {
-                token: {
-                  value: actions.draft.token,
-                },
-              },
-            });
-          } else {
-            log.warn('0 or more then 1 payments for the given Adyen PsP reference which should not happen', {
-              notification: notificationLogObject,
-              paymentCount: payments.length,
-              payments: payments.map((pm) => pm.id),
-            });
-          }
-        }
+      if (payment) {
+        await this.createRecurringPaymentJobIfEnabled(payment, paymentMethod);
       }
     } catch (e) {
       if (e instanceof UnsupportedNotificationError) {
@@ -737,6 +709,113 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
       log.error('Error processing notification', { error: e, notificationLogObject });
       throw e;
+    }
+  }
+
+  private async getOrCreateTokenizedPaymentMethod(
+    draft: CommercetoolsPaymentMethodTypes.SavePaymentMethodDraft,
+    notificationLogObject: object,
+  ): Promise<PaymentMethod> {
+    try {
+      const existingPaymentMethod = await this.ctPaymentMethodService.getByTokenValue({
+        customerId: draft.customerId,
+        paymentInterface: draft.paymentInterface,
+        interfaceAccount: draft.interfaceAccount,
+        tokenValue: draft.token,
+      });
+
+      log.info(
+        'Stored payment method already exists in CT for the given customer, paymentInterface, interfaceAccount and token combination. Reusing it instead of creating a new one.',
+        {
+          notification: notificationLogObject,
+          paymentMethod: {
+            id: existingPaymentMethod.id,
+            customer: draft.customerId,
+            paymentInterface: draft.paymentInterface,
+            interfaceAccount: draft.interfaceAccount,
+            method: draft.method,
+          },
+        },
+      );
+
+      return existingPaymentMethod;
+    } catch (e) {
+      if (!(e instanceof ErrorResourceNotFound)) {
+        throw e;
+      }
+    }
+
+    const newlyCreatedPaymentMethod = await this.ctPaymentMethodService.save(draft);
+
+    log.info('Created new payment method used for tokenization', {
+      notification: notificationLogObject,
+      paymentMethod: {
+        id: newlyCreatedPaymentMethod.id,
+        customer: newlyCreatedPaymentMethod.customer,
+        paymentInterface: newlyCreatedPaymentMethod.paymentInterface,
+        interfaceAccount: newlyCreatedPaymentMethod.interfaceAccount,
+        method: newlyCreatedPaymentMethod.method,
+      },
+    });
+
+    return newlyCreatedPaymentMethod;
+  }
+
+  /**
+   * Sets the token value on the payment that triggered this notification. Must run regardless of
+   * whether the payment method was just created or already existed, since a shopper can re-use an
+   * already-tokenized payment method on a new order.
+   */
+  private async linkPaymentToTokenizedPaymentMethod(opts: {
+    eventId: string;
+    tokenValue: string;
+    notificationLogObject: object;
+  }): Promise<Payment | undefined> {
+    const payments = await this.ctPaymentService.findPaymentsByInterfaceId({ interfaceId: opts.eventId });
+
+    if (payments.length !== 1) {
+      log.warn('0 or more then 1 payments for the given Adyen PsP reference which should not happen', {
+        notification: opts.notificationLogObject,
+        paymentCount: payments.length,
+        payments: payments.map((pm) => pm.id),
+      });
+
+      return undefined;
+    }
+
+    await this.ctPaymentService.updatePayment({
+      id: payments[0].id,
+      paymentMethodInfo: {
+        token: {
+          value: opts.tokenValue,
+        },
+      },
+    });
+
+    return payments[0];
+  }
+
+  private async createRecurringPaymentJobIfEnabled(payment: Payment, paymentMethod: PaymentMethod): Promise<void> {
+    if (!getConfig().adyenRecurringPaymentsEnabled) {
+      return;
+    }
+
+    const recurringPaymentJob = await this.ctRecurringPaymentJobService.createRecurringPaymentJobIfApplicable({
+      originPayment: {
+        id: payment.id,
+        typeId: 'payment',
+      },
+      paymentMethod: {
+        id: paymentMethod.id,
+        typeId: 'payment-method',
+      },
+    });
+
+    if (recurringPaymentJob) {
+      log.info('Created recurring payment job for stored payment method', {
+        recurringPaymentJobId: recurringPaymentJob.id,
+        paymentMethodId: paymentMethod.id,
+      });
     }
   }
 
@@ -907,7 +986,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   private async handleTransactionRecurringType(transactionDraft: TransactionDraftDTO): Promise<TransactionResponseDTO> {
     // Perform validations
-    if (!getStoredPaymentMethodsConfig().enabled) {
+    if (!isTokenizationEnabled()) {
       throw new ErrorInvalidOperation(
         'The stored-payment-methods feature is disabled and thus cannot request an transaction using stored-payment-methods',
       );
@@ -916,15 +995,17 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const ctCart = await this.ctCartService.getCart({ id: transactionDraft.cartId });
 
     if (!ctCart.customerId) {
-      throw new ErrorRequiredField('customerId', {
-        privateMessage: 'customerId is not set on the cart',
-        privateFields: {
-          cart: {
-            id: ctCart.id,
+      throw new ErrorInternalConstraintViolated(
+        'The cart associated with this transaction does not have a customerId set.',
+        {
+          privateFields: {
+            cart: {
+              id: ctCart.id,
+            },
+            checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
           },
-          checkoutTransactionItemId: transactionDraft.checkoutTransactionItemId,
         },
-      });
+      );
     }
 
     const cartAmount = await this.ctCartService.getPaymentAmount({ cart: ctCart });
@@ -967,8 +1048,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     if (!paymentMethod.token) {
-      throw new ErrorRequiredField('token', {
-        privateMessage: 'The "token" value is not set on the payment-method',
+      throw new ErrorInternalConstraintViolated('The referenced payment method does not have a token set.', {
         privateFields: {
           cart: {
             id: ctCart.id,
@@ -1091,7 +1171,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   }
 
   /**
-   * Returns "cart.customerId" from the catt that is present in the context. If the "cart.customerId" is not set then a "ErrorRequiredField" will be thrown.
+   * Returns "cart.customerId" from the cart that is present in the context. If the "cart.customerId" is not set then an "ErrorInternalConstraintViolated" will be thrown.
    */
   async getCustomerIdFromCart(): Promise<string> {
     const ctCart = await this.ctCartService.getCart({
@@ -1101,8 +1181,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const customerId = ctCart.customerId;
 
     if (!customerId) {
-      throw new ErrorRequiredField('customerId', {
-        privateMessage: 'customerId is not set on the cart',
+      throw new ErrorInternalConstraintViolated('The cart does not have a customerId set.', {
         privateFields: {
           cart: {
             id: ctCart.id,
@@ -1121,17 +1200,12 @@ export class AdyenPaymentService extends AbstractPaymentService {
    * `createdAt`, `default`). Any Adyen token without a matching record is an "orphan" and gets
    * persisted on the fly, within this same call, by reconcileOrphanAdyenToken().
    */
-  async getStoredPaymentMethods(opts: { withRecurring?: boolean } = {}): Promise<StoredPaymentMethodsResponse> {
+  async getStoredPaymentMethods(): Promise<StoredPaymentMethodsResponse> {
     const customerId = await this.getCustomerIdFromCart();
     const { paymentInterface, interfaceAccount, supportedPaymentMethodTypes } = getStoredPaymentMethodsConfig().config;
 
-    // By default the payment method is displayed in the stored payment methods list if it is
-    // supported and one-off payments are allowed for that method. Pass `withRecurring: true` to
-    // instead list the methods that are allowed to be used for a recurring order's future charges.
     const shouldShowStoredPaymentMethod = (method: string) => {
-      return opts.withRecurring
-        ? supportedPaymentMethodTypes[method]?.recurringPayments
-        : supportedPaymentMethodTypes[method]?.oneOffPayments;
+      return supportedPaymentMethodTypes[method]?.oneOffPayments;
     };
 
     // Fetched in parallel: neither call depends on the other's result.
@@ -1817,6 +1891,51 @@ export class AdyenPaymentService extends AbstractPaymentService {
         pspReference: updateData.pspReference,
         paymentMethod: updateData.paymentMethod,
         transaction: JSON.stringify(tx),
+      });
+
+      if (this.isAuthorizedWithExistingStoredPaymentMethod(tx, updatedPayment)) {
+        await this.createRecurringPaymentJobForExistingTokenIfApplicable(updatedPayment);
+      }
+    }
+  }
+
+  /**
+   * Whether the transaction just applied is a successful Authorization for a payment made with an
+   * already-stored payment method rather than a new card.
+   */
+  private isAuthorizedWithExistingStoredPaymentMethod(tx: TransactionData, payment: Payment): boolean {
+    return tx.type === 'Authorization' && tx.state === 'Success' && !!payment.paymentMethodInfo?.token?.value;
+  }
+
+  /**
+   * When paying with a stored payment method, creates a recurring payment job if it is a recurring order.
+   */
+  private async createRecurringPaymentJobForExistingTokenIfApplicable(payment: Payment): Promise<void> {
+    if (!getConfig().adyenRecurringPaymentsEnabled) {
+      return;
+    }
+
+    const tokenValue = payment.paymentMethodInfo?.token?.value;
+    const customerId = payment.customer?.id;
+    if (!tokenValue || !customerId) {
+      return;
+    }
+
+    try {
+      const paymentMethod = await this.ctPaymentMethodService.getByTokenValue({
+        customerId,
+        paymentInterface: getStoredPaymentMethodsConfig().config.paymentInterface,
+        interfaceAccount: getStoredPaymentMethodsConfig().config.interfaceAccount,
+        tokenValue,
+      });
+
+      await this.createRecurringPaymentJobIfEnabled(payment, paymentMethod);
+    } catch (e) {
+      // Best-effort: a failure here must not fail the payment notification itself, or cause Adyen
+      // to retry the whole webhook.
+      log.error('Error creating recurring payment job for a payment made with an existing token', {
+        error: e,
+        paymentId: payment.id,
       });
     }
   }

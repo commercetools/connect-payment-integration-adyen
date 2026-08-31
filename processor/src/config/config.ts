@@ -42,6 +42,9 @@ export const config = {
   adyenStoredPaymentMethodsInterfaceAccount: process.env.ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT || undefined,
   adyenStorePaymentMethodDetailsEnabled: process.env.ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED === 'true',
 
+  // Adyen — recurring payments
+  adyenRecurringPaymentsEnabled: process.env.ADYEN_RECURRING_PAYMENTS_ENABLED === 'true',
+
   // Adyen — partial payments (gift cards)
   adyenPartialPaymentsEnabled: process.env.ADYEN_PARTIAL_PAYMENTS_ENABLED === 'true',
   adyenOrderExpiryMinutes: parseInt(process.env.ADYEN_ORDER_EXPIRY_MINUTES || '60', 10),

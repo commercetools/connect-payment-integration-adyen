@@ -2,6 +2,7 @@ import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/com
 import { DefaultOrderService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-order.service';
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
 import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment-method.service';
+import { DefaultRecurringPaymentJobService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-recurring-payment-job.service';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals';
 import { paymentSDK } from '../../src/payment-sdk';
 import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/services/types/operation.type';
@@ -37,6 +38,7 @@ import {
   ErrorInvalidField,
   ErrorInvalidOperation,
   ErrorRequiredField,
+  ErrorResourceNotFound,
   Errorx,
   HealthCheckResult,
   Payment,
@@ -72,10 +74,10 @@ import { TransactionDraftDTO } from '../../src/dtos/operations/transaction.dto';
 import { BalanceCheckResponse, CancelOrderResponse } from '@adyen/api-library/lib/src/typings/checkout/models';
 
 interface FlexibleConfig {
-  [key: string]: string; // Adjust the type according to your config values
+  [key: string]: string | boolean; // Adjust the type according to your config values
 }
 
-function setupMockConfig(keysAndValues: Record<string, string>) {
+function setupMockConfig(keysAndValues: Record<string, string | boolean>) {
   const mockConfig: FlexibleConfig = {};
   Object.keys(keysAndValues).forEach((key) => {
     mockConfig[key] = keysAndValues[key];
@@ -91,6 +93,7 @@ describe('adyen-payment.service', () => {
     ctPaymentService: paymentSDK.ctPaymentService,
     ctOrderService: paymentSDK.ctOrderService,
     ctPaymentMethodService: paymentSDK.ctPaymentMethodService,
+    ctRecurringPaymentJobService: paymentSDK.ctRecurringPaymentJobService,
     orderService: new AdyenOrderService({ ctCartService: paymentSDK.ctCartService }),
   };
 
@@ -118,7 +121,6 @@ describe('adyen-payment.service', () => {
     jest.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
       storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
     });
-
     // Setup mock config for a system using `clientKey`
     setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'test' });
 
@@ -174,7 +176,9 @@ describe('adyen-payment.service', () => {
     };
 
     jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
-    jest.spyOn(StatusHandler, 'healthCheckCommercetoolsPermissions').mockReturnValue(mockHealthCheckFunction);
+    const mockHealthCheck = jest
+      .spyOn(StatusHandler, 'healthCheckCommercetoolsPermissions')
+      .mockReturnValue(mockHealthCheckFunction);
     const result: StatusResponse = await paymentService.status();
 
     expect(result?.status).toBeDefined();
@@ -189,6 +193,40 @@ describe('adyen-payment.service', () => {
     expect(result?.checks[1]?.details).toBeDefined();
     expect(result?.checks[2]?.name).toStrictEqual('Adyen Apple Pay config check');
     expect(result?.checks[2]?.status).toStrictEqual('UP');
+    expect(mockHealthCheck).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requiredPermissions: expect.not.arrayContaining(['manage_recurring_payment_jobs']),
+      }),
+    );
+  });
+
+  test('getStatus requires manage_recurring_payment_jobs when recurring payments are enabled', async () => {
+    const mockHealthCheckFunction: () => Promise<HealthCheckResult> = async () => ({
+      name: 'CoCo Permissions',
+      status: 'UP',
+      details: {},
+    });
+
+    setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      enabled: false,
+      config: {
+        paymentInterface: 'adyen',
+        supportedPaymentMethodTypes: { scheme: { oneOffPayments: true, recurringPayments: true } },
+      },
+    });
+    jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
+    const mockHealthCheck = jest
+      .spyOn(StatusHandler, 'healthCheckCommercetoolsPermissions')
+      .mockReturnValue(mockHealthCheckFunction);
+
+    await paymentService.status();
+
+    expect(mockHealthCheck).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requiredPermissions: expect.arrayContaining(['manage_recurring_payment_jobs']),
+      }),
+    );
   });
 
   test('cancelPayment', async () => {
@@ -1106,6 +1144,158 @@ describe('adyen-payment.service', () => {
         },
       });
     });
+
+    test('it should create a recurring payment job when an authorization succeeds for a payment made with an existing stored payment method', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface: 'adyen-payment-interface',
+          interfaceAccount: 'adyen-interface-account',
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: true },
+          },
+        },
+      });
+
+      const updatedPaymentWithToken: Payment = {
+        ...mockUpdatePaymentResult,
+        customer: { id: 'some-customer-id', typeId: 'customer' },
+        paymentMethodInfo: {
+          ...mockUpdatePaymentResult.paymentMethodInfo,
+          token: { value: 'existing-token-value' },
+        },
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockUpdatePaymentResult]);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(updatedPaymentWithToken);
+
+      const existingPaymentMethod: PaymentMethod = {
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: { id: 'some-customer-id', typeId: 'customer' },
+        paymentInterface: 'adyen-payment-interface',
+        interfaceAccount: 'adyen-interface-account',
+        method: 'card',
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      };
+      const getByTokenValueSpy = jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
+        .mockResolvedValueOnce(existingPaymentMethod);
+
+      const createRecurringPaymentJobSpy = jest
+        .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
+        .mockResolvedValueOnce({
+          id: 'recurring-payment-job-id',
+          version: 1,
+          createdAt: '2024-02-13T00:00:00.000Z',
+          lastModifiedAt: '2024-02-13T00:00:00.000Z',
+          status: { state: 'Initial' },
+        });
+
+      // When
+      await paymentService.processNotification({ data: notification });
+
+      // Then
+      expect(getByTokenValueSpy).toHaveBeenCalledWith({
+        customerId: 'some-customer-id',
+        paymentInterface: 'adyen-payment-interface',
+        interfaceAccount: 'adyen-interface-account',
+        tokenValue: 'existing-token-value',
+      });
+      expect(createRecurringPaymentJobSpy).toHaveBeenCalledWith({
+        originPayment: {
+          id: updatedPaymentWithToken.id,
+          typeId: 'payment',
+        },
+        paymentMethod: {
+          id: existingPaymentMethod.id,
+          typeId: 'payment-method',
+        },
+      });
+    });
+
+    test('it should not look up a payment method when the authorized payment has no stored token', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const pspReference = 'some-psp-reference';
+      const paymentMethod = 'visa';
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                expiryDate: '12/2012',
+                authCode: '1234',
+                cardSummary: '7777',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference,
+              paymentMethod,
+              pspReference,
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValue([mockUpdatePaymentResult]);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const getByTokenValueSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue');
+
+      // When
+      await paymentService.processNotification({ data: notification });
+
+      // Then
+      expect(getByTokenValueSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('processNotificationTokenization', () => {
@@ -1158,7 +1348,9 @@ describe('adyen-payment.service', () => {
         ],
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(false);
+      jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
+        .mockRejectedValueOnce(new ErrorResourceNotFound(storedPaymentMethodId));
 
       jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
@@ -1203,6 +1395,10 @@ describe('adyen-payment.service', () => {
 
       jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
 
+      const mockCreateRecurringPaymentJob = jest
+        .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
+        .mockResolvedValueOnce(null);
+
       // When
       await paymentService.processNotificationTokenization({ data: notification });
 
@@ -1225,6 +1421,134 @@ describe('adyen-payment.service', () => {
           token: {
             value: notification.data.storedPaymentMethodId,
           },
+        },
+      });
+
+      // Recurring payment jobs are opt-in via ADYEN_RECURRING_PAYMENTS_ENABLED, disabled by default
+      expect(mockCreateRecurringPaymentJob).not.toHaveBeenCalled();
+    });
+
+    test('it should create a recurring payment job when ADYEN_RECURRING_PAYMENTS_ENABLED is enabled', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const shopperReference = 'some-shopper-reference';
+      const storedPaymentMethodId = 'abcdefg';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const methodType = 'visapremiumdebit';
+
+      const notification: NotificationTokenizationDTO = {
+        createdAt: new Date(),
+        environment: TokenizationCreatedDetailsNotificationRequest.EnvironmentEnum.Test,
+        eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
+        type: TokenizationCreatedDetailsNotificationRequest.TypeEnum.RecurringTokenCreated,
+        data: {
+          merchantAccount: merchantReference,
+          operation: 'operation text description',
+          shopperReference: shopperReference,
+          storedPaymentMethodId,
+          type: methodType,
+        },
+      };
+
+      setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: true },
+          },
+        },
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: merchantReference,
+        shopperReference,
+        storedPaymentMethods: [
+          {
+            id: storedPaymentMethodId,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+
+      jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
+        .mockRejectedValueOnce(new ErrorResourceNotFound(storedPaymentMethodId));
+
+      const newlyCreatedPaymentMethod = {
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: shopperReference,
+          typeId: 'customer' as const,
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: 'card',
+        createdAt: '',
+        lastModifiedAt: '',
+        default: false,
+        paymentMethodStatus: 'Active' as const,
+        version: 1,
+      };
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce(newlyCreatedPaymentMethod);
+
+      const mockGetPaymentResult: Payment = {
+        id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
+        version: 1,
+        amountPlanned: {
+          type: 'centPrecision',
+          currencyCode: 'GBP',
+          centAmount: 120000,
+          fractionDigits: 2,
+        },
+        interfaceId: '92C12661DS923781G',
+        paymentMethodInfo: {
+          method: 'method',
+          name: { 'en-US': 'Debit Card', 'en-GB': 'Debit Card' },
+        },
+        paymentStatus: { interfaceText: 'Paid' },
+        transactions: [],
+        interfaceInteractions: [],
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+      };
+
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValueOnce([mockGetPaymentResult]);
+
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+
+      const mockCreateRecurringPaymentJob = jest
+        .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
+        .mockResolvedValueOnce({
+          id: 'recurring-payment-job-id',
+          version: 1,
+          createdAt: '2024-02-13T00:00:00.000Z',
+          lastModifiedAt: '2024-02-13T00:00:00.000Z',
+          status: { state: 'Initial' },
+        });
+
+      // When
+      await paymentService.processNotificationTokenization({ data: notification });
+
+      // Then
+      expect(mockCreateRecurringPaymentJob).toHaveBeenCalledWith({
+        originPayment: {
+          id: mockGetPaymentResult.id,
+          typeId: 'payment',
+        },
+        paymentMethod: {
+          id: newlyCreatedPaymentMethod.id,
+          typeId: 'payment-method',
         },
       });
     });
@@ -1278,7 +1602,9 @@ describe('adyen-payment.service', () => {
         ],
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(false);
+      jest
+        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
+        .mockRejectedValueOnce(new ErrorResourceNotFound(storedPaymentMethodId));
 
       jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
@@ -1398,17 +1724,190 @@ describe('adyen-payment.service', () => {
         ],
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(true);
+      const existingPaymentMethod: PaymentMethod = {
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: shopperReference,
+          typeId: 'customer',
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: 'card',
+        token: { value: storedPaymentMethodId },
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      };
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce(existingPaymentMethod);
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockImplementationOnce(async () => {
-        return {} as PaymentMethod;
-      });
+      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save');
+
+      const mockGetPaymentResult: Payment = {
+        id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
+        version: 1,
+        amountPlanned: {
+          type: 'centPrecision',
+          currencyCode: 'GBP',
+          centAmount: 120000,
+          fractionDigits: 2,
+        },
+        interfaceId: '92C12661DS923781G',
+        paymentMethodInfo: {
+          method: 'method',
+          name: { 'en-US': 'Debit Card', 'en-GB': 'Debit Card' },
+        },
+        paymentStatus: { interfaceText: 'Paid' },
+        transactions: [],
+        interfaceInteractions: [],
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+      };
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValueOnce([mockGetPaymentResult]);
+      const updatePaymentSpy = jest
+        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
+        .mockResolvedValueOnce(mockGetPaymentResult);
+      const createRecurringPaymentJobSpy = jest
+        .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
+        .mockResolvedValueOnce(null);
 
       // When
       await paymentService.processNotificationTokenization({ data: notification });
 
       // Then
-      expect(DefaultPaymentMethodService.prototype.save).not.toHaveBeenCalled();
+      expect(saveSpy).not.toHaveBeenCalled();
+      expect(updatePaymentSpy).toHaveBeenCalledWith({
+        id: mockGetPaymentResult.id,
+        paymentMethodInfo: {
+          token: {
+            value: storedPaymentMethodId,
+          },
+        },
+      });
+      // Recurring payment jobs are opt-in via ADYEN_RECURRING_PAYMENTS_ENABLED, disabled by default
+      expect(createRecurringPaymentJobSpy).not.toHaveBeenCalled();
+    });
+
+    test('it should create a recurring payment job when a previously-tokenized payment method is reused and ADYEN_RECURRING_PAYMENTS_ENABLED is enabled', async () => {
+      // Given
+      const merchantReference = 'some-merchant-reference';
+      const shopperReference = 'some-shopper-reference';
+      const storedPaymentMethodId = 'abcdefg';
+      const paymentInterface = 'adyen-payment-interface';
+      const interfaceAccount = 'adyen-interface-account';
+      const methodType = 'visapremiumdebit';
+
+      const notification: NotificationTokenizationDTO = {
+        createdAt: new Date(),
+        environment: TokenizationAlreadyExistingDetailsNotificationRequest.EnvironmentEnum.Test,
+        eventId: 'cbaf6264-ee31-40cd-8cd5-00a398cd46d0',
+        type: TokenizationAlreadyExistingDetailsNotificationRequest.TypeEnum.RecurringTokenAlreadyExisting,
+        data: {
+          merchantAccount: merchantReference,
+          operation: 'operation text description',
+          shopperReference: shopperReference,
+          storedPaymentMethodId,
+          type: methodType,
+        },
+      };
+
+      setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: true },
+          },
+        },
+      });
+
+      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        merchantAccount: merchantReference,
+        shopperReference,
+        storedPaymentMethods: [
+          {
+            id: storedPaymentMethodId,
+            type: 'scheme',
+            lastFour: '1234',
+            brand: 'visa',
+            expiryMonth: '03',
+            expiryYear: '30',
+          },
+        ],
+      });
+
+      const existingPaymentMethod: PaymentMethod = {
+        id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
+        customer: {
+          id: shopperReference,
+          typeId: 'customer',
+        },
+        paymentInterface,
+        interfaceAccount,
+        method: 'card',
+        token: { value: storedPaymentMethodId },
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+        default: false,
+        paymentMethodStatus: 'Active',
+        version: 1,
+      };
+      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce(existingPaymentMethod);
+
+      const mockGetPaymentResult: Payment = {
+        id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
+        version: 1,
+        amountPlanned: {
+          type: 'centPrecision',
+          currencyCode: 'GBP',
+          centAmount: 120000,
+          fractionDigits: 2,
+        },
+        interfaceId: '92C12661DS923781G',
+        paymentMethodInfo: {
+          method: 'method',
+          name: { 'en-US': 'Debit Card', 'en-GB': 'Debit Card' },
+        },
+        paymentStatus: { interfaceText: 'Paid' },
+        transactions: [],
+        interfaceInteractions: [],
+        createdAt: '2024-02-13T00:00:00.000Z',
+        lastModifiedAt: '2024-02-13T00:00:00.000Z',
+      };
+      jest
+        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+        .mockResolvedValueOnce([mockGetPaymentResult]);
+      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+      const createRecurringPaymentJobSpy = jest
+        .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
+        .mockResolvedValueOnce({
+          id: 'recurring-payment-job-id',
+          version: 1,
+          createdAt: '2024-02-13T00:00:00.000Z',
+          lastModifiedAt: '2024-02-13T00:00:00.000Z',
+          status: { state: 'Initial' },
+        });
+
+      // When
+      await paymentService.processNotificationTokenization({ data: notification });
+
+      // Then
+      expect(createRecurringPaymentJobSpy).toHaveBeenCalledWith({
+        originPayment: {
+          id: mockGetPaymentResult.id,
+          typeId: 'payment',
+        },
+        paymentMethod: {
+          id: existingPaymentMethod.id,
+          typeId: 'payment-method',
+        },
+      });
     });
   });
 
@@ -1484,7 +1983,7 @@ describe('adyen-payment.service', () => {
   });
 
   describe('getStoredPaymentMethods', () => {
-    test('should throw an "ErrorRequiredField" error if no customerId is set on the cart', async () => {
+    test('should throw an "ErrorInternalConstraintViolated" error if no customerId is set on the cart', async () => {
       const cartRandom = CartRest.random()
         .lineItems([])
         .customLineItems([])
@@ -1496,7 +1995,7 @@ describe('adyen-payment.service', () => {
 
       const result = paymentService.getStoredPaymentMethods();
 
-      expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
+      expect(result).rejects.toThrow(new ErrorInternalConstraintViolated('The cart does not have a customerId set.'));
     });
 
     test('should return an empty list if no stored payment methods are stored for the given customerId from the cart', async () => {
@@ -1787,500 +2286,6 @@ describe('adyen-payment.service', () => {
               endDigits: '1234',
               expiryMonth: 3,
               expiryYear: 30,
-            },
-          },
-        ],
-      });
-    });
-
-    test('should only include methods that support recurringPayments when recurring: true is passed', async () => {
-      const merchantAccount = 'merchantAccount';
-      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const paymentInterface = 'adyen-payment-interface';
-      const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'adyen-token-value-123';
-
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface,
-          interfaceAccount,
-          supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: false, recurringPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
-
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
-        merchantAccount,
-        shopperReference: customerId,
-        storedPaymentMethods: [
-          {
-            id: adyenToken,
-            type: 'scheme',
-            lastFour: '1234',
-            brand: 'visa',
-            expiryMonth: '03',
-            expiryYear: '30',
-          },
-        ],
-      });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
-        count: 0,
-        limit: 100,
-        offset: 0,
-        results: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            customer: { id: customerId, typeId: 'customer' },
-            token: { value: adyenToken },
-            paymentInterface,
-            interfaceAccount,
-            method: 'card',
-            createdAt: '',
-            lastModifiedAt: '',
-            default: false,
-            paymentMethodStatus: 'Active',
-            version: 1,
-          },
-        ],
-      });
-
-      // Without recurring: true, oneOffPayments: false excludes it (already covered elsewhere);
-      // with recurring: true, recurringPayments: true includes it.
-      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
-
-      expect(result).toStrictEqual({
-        storedPaymentMethods: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            createdAt: '',
-            isDefault: false,
-            token: adyenToken,
-            type: 'card',
-            displayOptions: {
-              brand: { key: 'Visa' },
-              endDigits: '1234',
-              expiryMonth: 3,
-              expiryYear: 30,
-            },
-          },
-        ],
-      });
-    });
-
-    test('should include a stored Klarna Pay Now method (no card data) when withRecurring: true is passed', async () => {
-      const merchantAccount = 'merchantAccount';
-      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const paymentInterface = 'adyen-payment-interface';
-      const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'adyen-token-value-klarna';
-
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface,
-          interfaceAccount,
-          supportedPaymentMethodTypes: {
-            klarna_paynow: { oneOffPayments: false, recurringPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
-
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
-        merchantAccount,
-        shopperReference: customerId,
-        storedPaymentMethods: [
-          {
-            id: adyenToken,
-            type: 'klarna_paynow',
-          },
-        ],
-      });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
-        count: 0,
-        limit: 100,
-        offset: 0,
-        results: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            customer: { id: customerId, typeId: 'customer' },
-            token: { value: adyenToken },
-            paymentInterface,
-            interfaceAccount,
-            method: 'klarna_pay_now',
-            createdAt: '',
-            lastModifiedAt: '',
-            default: false,
-            paymentMethodStatus: 'Active',
-            version: 1,
-          },
-        ],
-      });
-
-      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
-
-      expect(result).toStrictEqual({
-        storedPaymentMethods: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            createdAt: '',
-            isDefault: false,
-            token: adyenToken,
-            type: 'klarna_pay_now',
-            displayOptions: {
-              brand: { key: 'Unknown' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
-            },
-          },
-        ],
-      });
-    });
-
-    test('should resolve an unrecognized Afterpay brand value to Unknown', async () => {
-      const merchantAccount = 'merchantAccount';
-      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const paymentInterface = 'adyen-payment-interface';
-      const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'adyen-token-value-afterpay';
-
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface,
-          interfaceAccount,
-          supportedPaymentMethodTypes: {
-            afterpaytouch: { oneOffPayments: false, recurringPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
-
-      // Adyen does not leave `brand` empty for every non-card method — for Afterpay it comes back
-      // populated with a non-card value (e.g. echoing the method's own type), which is not a
-      // recognized card brand.
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
-        merchantAccount,
-        shopperReference: customerId,
-        storedPaymentMethods: [
-          {
-            id: adyenToken,
-            type: 'afterpaytouch',
-            brand: 'afterpaytouch',
-          },
-        ],
-      });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
-        count: 0,
-        limit: 100,
-        offset: 0,
-        results: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            customer: { id: customerId, typeId: 'customer' },
-            token: { value: adyenToken },
-            paymentInterface,
-            interfaceAccount,
-            method: 'afterpay',
-            createdAt: '',
-            lastModifiedAt: '',
-            default: false,
-            paymentMethodStatus: 'Active',
-            version: 1,
-          },
-        ],
-      });
-
-      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
-
-      expect(result).toStrictEqual({
-        storedPaymentMethods: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            createdAt: '',
-            isDefault: false,
-            token: adyenToken,
-            type: 'afterpay',
-            displayOptions: {
-              brand: { key: 'Unknown' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
-            },
-          },
-        ],
-      });
-    });
-
-    test('should reclassify a Bancontact card token stale-recorded as a generic card, and only show it under recurring', async () => {
-      const merchantAccount = 'merchantAccount';
-      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const paymentInterface = 'adyen-payment-interface';
-      const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'adyen-token-value-bcmc';
-
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface,
-          interfaceAccount,
-          supportedPaymentMethodTypes: {
-            scheme: { oneOffPayments: true, recurringPayments: true },
-            bcmc: { oneOffPayments: false, recurringPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
-
-      // Adyen collapses Bancontact card into a generic "scheme" token, encoding the real type in
-      // the brand ("bcmc") instead — mirroring how Google Pay encodes "amex_googlepay".
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValue({
-        merchantAccount,
-        shopperReference: customerId,
-        storedPaymentMethods: [
-          {
-            id: adyenToken,
-            type: 'scheme',
-            brand: 'bcmc',
-          },
-        ],
-      });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-      // The commercetools record was recorded as a generic "card" before Bancontact recurring
-      // was correctly classified (or before it was reclassified) — this must be corrected on read.
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValue({
-        count: 0,
-        limit: 100,
-        offset: 0,
-        results: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            customer: { id: customerId, typeId: 'customer' },
-            token: { value: adyenToken },
-            paymentInterface,
-            interfaceAccount,
-            method: 'card',
-            createdAt: '',
-            lastModifiedAt: '',
-            default: false,
-            paymentMethodStatus: 'Active',
-            version: 1,
-          },
-        ],
-      });
-
-      const oneOffResult = await paymentService.getStoredPaymentMethods();
-      expect(oneOffResult).toStrictEqual({ storedPaymentMethods: [] });
-
-      const recurringResult = await paymentService.getStoredPaymentMethods({ withRecurring: true });
-      expect(recurringResult).toStrictEqual({
-        storedPaymentMethods: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            createdAt: '',
-            isDefault: false,
-            token: adyenToken,
-            type: 'bancontactcard',
-            displayOptions: {
-              brand: { key: 'Bancontact' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
-            },
-          },
-        ],
-      });
-    });
-
-    test('should include a stored iDEAL method (no card data) when withRecurring: true is passed', async () => {
-      const merchantAccount = 'merchantAccount';
-      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const paymentInterface = 'adyen-payment-interface';
-      const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'G3W3X4J43Z828DV5';
-
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface,
-          interfaceAccount,
-          supportedPaymentMethodTypes: {
-            ideal: { oneOffPayments: false, recurringPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
-
-      // Real shape of an iDEAL stored payment method resource from Adyen: `type` and `brand` both
-      // stay "ideal" (unlike Google Pay/Bancontact, which collapse into "scheme"), but it's backed
-      // by a SEPA Direct Debit mandate under the hood, so it also carries iban/ownerName. None of
-      // those bank-specific fields are surfaced in displayOptions.
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
-        merchantAccount,
-        shopperReference: customerId,
-        storedPaymentMethods: [
-          {
-            id: adyenToken,
-            type: 'ideal',
-            brand: 'ideal',
-            iban: 'NL44RABO0123456789',
-            ownerName: 'Pino the Bird',
-          },
-        ],
-      });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
-        count: 0,
-        limit: 100,
-        offset: 0,
-        results: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            customer: { id: customerId, typeId: 'customer' },
-            token: { value: adyenToken },
-            paymentInterface,
-            interfaceAccount,
-            method: 'ideal',
-            createdAt: '',
-            lastModifiedAt: '',
-            default: false,
-            paymentMethodStatus: 'Active',
-            version: 1,
-          },
-        ],
-      });
-
-      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
-
-      expect(result).toStrictEqual({
-        storedPaymentMethods: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            createdAt: '',
-            isDefault: false,
-            token: adyenToken,
-            type: 'ideal',
-            displayOptions: {
-              brand: { key: 'Unknown' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
-            },
-          },
-        ],
-      });
-    });
-
-    test('should include a stored SEPA Direct Debit method (no card data) when withRecurring: true is passed', async () => {
-      const merchantAccount = 'merchantAccount';
-      const customerId = '12303506-396c-4163-9193-11115c10fc2e';
-      const paymentInterface = 'adyen-payment-interface';
-      const interfaceAccount = 'adyen-interface-account';
-      const adyenToken = 'QNMS8NV7QK5BRX65';
-
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
-        enabled: true,
-        config: {
-          paymentInterface,
-          interfaceAccount,
-          supportedPaymentMethodTypes: {
-            sepadirectdebit: { oneOffPayments: false, recurringPayments: true },
-          },
-        },
-      });
-
-      const cartRandom = CartRest.random()
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
-
-      // Real shape of a SEPA Direct Debit stored payment method resource from Adyen: no
-      // lastFour/expiry (those are card-only), but iban and ownerName instead. None of those
-      // bank-specific fields are surfaced in displayOptions.
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
-        merchantAccount,
-        shopperReference: customerId,
-        storedPaymentMethods: [
-          {
-            id: adyenToken,
-            type: 'sepadirectdebit',
-            brand: 'sepadirectdebit_authcap',
-            iban: 'NL98ABNA0410108103',
-            ownerName: 'A. Klaasen',
-            issuerName: 'ABN AMRO BANK N.V.',
-          },
-        ],
-      });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
-        count: 0,
-        limit: 100,
-        offset: 0,
-        results: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            customer: { id: customerId, typeId: 'customer' },
-            token: { value: adyenToken },
-            paymentInterface,
-            interfaceAccount,
-            method: 'sepadirectdebit',
-            createdAt: '',
-            lastModifiedAt: '',
-            default: false,
-            paymentMethodStatus: 'Active',
-            version: 1,
-          },
-        ],
-      });
-
-      const result = await paymentService.getStoredPaymentMethods({ withRecurring: true });
-
-      expect(result).toStrictEqual({
-        storedPaymentMethods: [
-          {
-            id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
-            createdAt: '',
-            isDefault: false,
-            token: adyenToken,
-            type: 'sepadirectdebit',
-            displayOptions: {
-              brand: { key: 'Unknown' },
-              endDigits: undefined,
-              expiryMonth: undefined,
-              expiryYear: undefined,
             },
           },
         ],
@@ -2700,7 +2705,7 @@ describe('adyen-payment.service', () => {
   });
 
   describe('deleteStoredPaymentMethodViaCart', () => {
-    test('should throw an "ErrorRequiredField" error if no customerId is set on the cart', async () => {
+    test('should throw an "ErrorInternalConstraintViolated" error if no customerId is set on the cart', async () => {
       const ctPaymentMethodId = '88e7b1e4-eeee-45a9-b9c5-8723e8435d51';
       const cartRandom = CartRest.random()
         .lineItems([])
@@ -2713,7 +2718,7 @@ describe('adyen-payment.service', () => {
 
       const result = paymentService.deleteStoredPaymentMethodViaCart(ctPaymentMethodId);
 
-      expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
+      expect(result).rejects.toThrow(new ErrorInternalConstraintViolated('The cart does not have a customerId set.'));
     });
   });
 
@@ -3140,7 +3145,7 @@ describe('adyen-payment.service', () => {
         );
       });
 
-      test('it should throw an ErrorRequiredField if the provided cart does not have an customerId set', async () => {
+      test('it should throw an ErrorInternalConstraintViolated if the provided cart does not have an customerId set', async () => {
         jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
@@ -3162,7 +3167,9 @@ describe('adyen-payment.service', () => {
         jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
 
         expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
-          new ErrorRequiredField('customerId'),
+          new ErrorInternalConstraintViolated(
+            'The cart associated with this transaction does not have a customerId set.',
+          ),
         );
       });
 
@@ -3376,7 +3383,9 @@ describe('adyen-payment.service', () => {
         });
         jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
 
-        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(new ErrorRequiredField('token'));
+        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          new ErrorInternalConstraintViolated('The referenced payment method does not have a token set.'),
+        );
       });
 
       test('it should handle the "Recurring" transaction draft type', async () => {

@@ -1,4 +1,6 @@
 import { SupportedPaymentComponentsSchemaDTO } from '../../dtos/operations/payment-componets.dto';
+import { SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES } from '../../config/payment-method.config';
+import { convertPaymentMethodFromAdyenFormat } from './helper.converter';
 
 export class PaymentComponentsConverter {
   public convertResponse(): SupportedPaymentComponentsSchemaDTO {
@@ -8,92 +10,9 @@ export class PaymentComponentsConverter {
           type: 'embedded',
         },
       ],
-      components: [
-        {
-          type: 'afterpay', // afterpaytouch
-        },
-        {
-          type: 'alipay',
-        },
-        {
-          type: 'applepay',
-        },
-        {
-          type: 'bancontactcard',
-        },
-        {
-          type: 'bancontactmobile',
-        },
-        {
-          type: 'blik',
-        },
-        {
-          type: 'card', // scheme
-        },
-        {
-          type: 'eps',
-        },
-        {
-          type: 'fpx', // FPX Online banking Malaysia
-        },
-        {
-          type: 'googlepay',
-        },
-        {
-          type: 'ideal',
-        },
-        {
-          type: 'klarna_billie', // klarna_b2b
-        },
-        {
-          type: 'klarna_pay_later', // klarna
-        },
-        {
-          type: 'klarna_pay_now', // klarna_paynow
-        },
-        {
-          type: 'klarna_pay_overtime', // klarna_account
-        },
-        {
-          type: 'mobilepay',
-        },
-        {
-          type: 'paypal',
-        },
-        {
-          type: 'przelewy24', // onlineBanking_PL
-        },
-        {
-          type: 'sepadirectdebit',
-        },
-        {
-          type: 'swish',
-        },
-        {
-          type: 'twint',
-        },
-        {
-          type: 'vipps',
-        },
-        {
-          type: 'clearpay',
-        },
-        {
-          type: 'mbway',
-        },
-        {
-          type: 'trustly',
-        },
-        {
-          type: 'wechatpay',
-        },
-        {
-          type: 'zip',
-        },
-        {
-          type: 'jcs', // econtext_stores
-        },
-      ],
+      components: SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES.map((type) => ({
+        type: convertPaymentMethodFromAdyenFormat(type),
+      })),
       express: [
         {
           type: 'applepay',

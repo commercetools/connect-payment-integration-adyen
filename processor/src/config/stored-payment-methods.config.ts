@@ -83,10 +83,6 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
-        // iDEAL recurring is backed by a SEPA Direct Debit mandate under the hood (the stored
-        // resource carries iban/ownerName like SEPA — see mapCustomFieldDetails in
-        // notification-recurring.converter.ts), but Adyen retains `type: 'ideal'` directly, so no
-        // brand-based reclassification is needed here (unlike Google Pay/Bancontact).
         ideal: {
           oneOffPayments: false,
           recurringPayments: true,
@@ -96,4 +92,11 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
   };
 
   return storedPaymentMethodsConfigValidated;
+};
+
+/**
+ * Whether tokenization is enabled, either for one-off payments or for recurring payments
+ */
+export const isTokenizationEnabled = (): boolean => {
+  return getStoredPaymentMethodsConfig().enabled || getConfig().adyenRecurringPaymentsEnabled;
 };

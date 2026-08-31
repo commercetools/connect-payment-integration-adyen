@@ -11,7 +11,13 @@ import {
   convertAdyenCardBrandToCTFormat,
   convertCTCardBrandToAdyenFormat,
   extractShopperName,
+  getPaymentMethodsBlockedForRecurring,
+  extractCollapsedTypeFromBrand,
+  isCollapsedTypePayment,
+  extractCardBrand,
 } from '../../../src/services/converters/helper.converter';
+import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
+import { SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES } from '../../../src/config/payment-method.config';
 import { Address as AdyenAddress } from '@adyen/api-library/lib/src/typings/checkout/address';
 import { Address } from '@commercetools/connect-payments-sdk';
 import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
@@ -475,5 +481,64 @@ describe('helper.converter', () => {
       firstName: '',
       lastName: '',
     });
+  });
+
+  test('getPaymentMethodsBlockedForRecurring returns the Adyen type keys not marked as recurringPayments', () => {
+    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      enabled: true,
+      config: {
+        paymentInterface: 'paymentInterface',
+        interfaceAccount: 'interfaceAccount',
+        supportedPaymentMethodTypes: {
+          scheme: { oneOffPayments: true, recurringPayments: true },
+          paypal: { oneOffPayments: false, recurringPayments: false },
+        },
+      },
+    });
+
+    const blocked = getPaymentMethodsBlockedForRecurring();
+
+    expect(blocked).toContain('paypal');
+    expect(blocked).not.toContain('scheme');
+    // Types that aren't configured for tokenization at all can't be used for recurring either.
+    expect(blocked).toContain('alipay');
+  });
+
+  test('getPaymentMethodsBlockedForRecurring returns an empty list when every supported type allows recurring payments', () => {
+    const supportedPaymentMethodTypes = Object.fromEntries(
+      SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES.map((type) => [type, { oneOffPayments: true, recurringPayments: true }]),
+    );
+    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      enabled: true,
+      config: {
+        paymentInterface: 'paymentInterface',
+        interfaceAccount: 'interfaceAccount',
+        supportedPaymentMethodTypes,
+      },
+    });
+
+    expect(getPaymentMethodsBlockedForRecurring()).toEqual([]);
+  });
+
+  test('extractCollapsedTypeFromBrand recognizes brands that collapse into a generic "scheme" token', () => {
+    expect(extractCollapsedTypeFromBrand('bcmc')).toEqual('bcmc');
+    expect(extractCollapsedTypeFromBrand('amex_googlepay')).toEqual('googlepay');
+    expect(extractCollapsedTypeFromBrand('visa')).toBeUndefined();
+    expect(extractCollapsedTypeFromBrand(undefined)).toBeUndefined();
+  });
+
+  test('isCollapsedTypePayment', () => {
+    expect(isCollapsedTypePayment('bcmc')).toStrictEqual(true);
+    expect(isCollapsedTypePayment('amex_googlepay')).toStrictEqual(true);
+    expect(isCollapsedTypePayment('visa')).toStrictEqual(false);
+  });
+
+  test('extractCardBrand reveals the underlying card brand only when the collapsed type carries one', () => {
+    // Google Pay collapses "amex_googlepay" — the real card brand ("amex") is worth revealing.
+    expect(extractCardBrand('amex_googlepay')).toEqual('amex');
+    // Bancontact's brand IS its own identity — there's no separate card brand to reveal.
+    expect(extractCardBrand('bcmc')).toEqual('bcmc');
+    expect(extractCardBrand('visa')).toEqual('visa');
+    expect(extractCardBrand(undefined)).toBeUndefined();
   });
 });
