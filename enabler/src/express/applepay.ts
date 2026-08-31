@@ -94,7 +94,6 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         currency: this.expressOptions.initialAmount.currencyCode,
         value: this.expressOptions.initialAmount.centAmount,
       },
-      supportedCountries: this.expressOptions?.allowedCountries || [],
       totalPriceStatus: 'pending', // HINT: instead of showing an initial amount which is definitely going to change after delivery method is selected, apple pay will show 'Amount pending', after which it updates automatically.
       // TODO: add support for expressPage...to be set by spa to be used for analytics.
       ...(this.usesOwnCertificate && {
@@ -147,6 +146,29 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
         let update: ApplePayJS.ApplePayShippingContactUpdate = {} as ApplePayJS.ApplePayShippingContactUpdate;
         let paymentData: InitialPaymentData;
 
+        if (
+          this.expressOptions?.allowedCountries?.length &&
+          !this.expressOptions.allowedCountries.includes(countryCode)
+        ) {
+          resolve({
+            newTotal: {
+              label: this.paymentMethodConfig.merchantName,
+              amount: this.centAmountToString(
+                this.expressOptions.initialAmount.centAmount,
+                this.expressOptions.initialAmount.fractionDigits
+              ),
+            },
+            errors: [
+              new ApplePayError(
+                "shippingContactInvalid",
+                "countryCode",
+                "Cannot ship to the selected address"
+              ),
+            ],
+          });
+          return;
+        }
+
         try {
           await me.setShippingAddress({
             address: {
@@ -158,6 +180,10 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
           });
 
           const shippingMethods = await this.fetchShippingMethods(countryCode);
+          if (!shippingMethods.length) {
+            throw new Error(`No shipping methods available for country ${countryCode}`);
+          }
+
           paymentData = await this.getInitialPaymentData();
           const updatedLineItemsWithTotal = await this.getLineItemsWithNewTotal(
             shippingMethods[0],
