@@ -7,11 +7,11 @@ import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 import {
   Cart,
   ErrorInternalConstraintViolated,
-  ErrorRequiredField,
   Payment,
   PaymentMethod,
 } from '@commercetools/connect-payments-sdk';
 import { paymentSDK } from '../../../src/payment-sdk';
+import * as Config from '../../../src/config/config';
 import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
 import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment-method.service';
 import { RecurringApi } from '@adyen/api-library/lib/src/services/checkout/recurringApi';
@@ -232,7 +232,7 @@ describe('create-payment.converter', () => {
       expect(result).toBeUndefined();
     });
 
-    test('it should return throw an "ErrorRequiredField" if no customerId is set on the cart', async () => {
+    test('it should return throw an "ErrorInternalConstraintViolated" if no customerId is set on the cart', async () => {
       const storedPaymentMethodId = 'abcdefgh';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
@@ -260,7 +260,7 @@ describe('create-payment.converter', () => {
 
       const result = converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
 
-      expect(result).rejects.toThrow(new ErrorRequiredField('customerId'));
+      expect(result).rejects.toThrow(new ErrorInternalConstraintViolated('The cart does not have a customerId set.'));
     });
 
     test('it should return throw an "ErrorInternalConstraintViolated" if the given tokenId does NOT belong to the customerId set on the cart', async () => {
@@ -268,6 +268,9 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      // Regardless of whether CartRest.random() happens to produce a recurring cart, both paths
+      // must be enabled so the flow reaches the token-ownership check being tested here.
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -384,6 +387,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -422,6 +426,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -458,6 +463,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -502,6 +508,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -538,6 +545,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -568,6 +576,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -609,6 +618,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -754,6 +764,7 @@ describe('create-payment.converter', () => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
       const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
 
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
       jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
@@ -784,6 +795,42 @@ describe('create-payment.converter', () => {
         shopperReference: customerId,
         paymentMethod: paymentRequestDTO.paymentMethod,
       });
+    });
+
+    test('it should throw an "ErrorInternalConstraintViolated" when paying with an existing token on a regular cart while stored payment methods are disabled', async () => {
+      const storedPaymentMethodId = 'abcdefgh';
+      const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
+      const converter = new CreatePaymentConverter(paymentSDK.ctPaymentMethodService, paymentSDK.ctCartService);
+
+      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenRecurringPaymentsEnabled: true } as any);
+      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: false,
+        config: {
+          paymentInterface,
+          interfaceAccount,
+          supportedPaymentMethodTypes: {
+            scheme: { oneOffPayments: true, recurringPayments: true },
+          },
+        },
+      });
+
+      const cartRandom = CartRest.random()
+        .origin('Customer')
+        .lineItems([])
+        .customLineItems([])
+        .customerId(customerId)
+        .buildRest<TCartRest>({}) as Cart;
+      const paymentRequestDTO: CreatePaymentRequestDTO = {
+        paymentMethod: { type: 'scheme', storedPaymentMethodId },
+      } as CreatePaymentRequestDTO;
+
+      const result = converter.populateStoredPaymentMethodsData(paymentRequestDTO, cartRandom);
+
+      await expect(result).rejects.toThrow(
+        new ErrorInternalConstraintViolated(
+          'Stored payment methods are not enabled, so an existing token cannot be used to pay.',
+        ),
+      );
     });
   });
 

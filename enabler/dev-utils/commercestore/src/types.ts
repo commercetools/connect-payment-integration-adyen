@@ -77,6 +77,8 @@ export interface CtCart {
   totalPrice?: CtMoney;
   taxedPrice?: { totalGross: CtMoney };
   shippingInfo?: { price: CtMoney };
+  lineItems?: Array<{ recurrenceInfo?: unknown }>;
+  customLineItems?: Array<{ recurrenceInfo?: unknown }>;
 }
 
 export interface CtCustomer {
@@ -219,6 +221,29 @@ export interface CountryStatus extends Country {
   hasTax: boolean;
   hasShipping: boolean;
   isReady: boolean;
+}
+
+export type RecurrenceScheduleType = 'standard' | 'dayOfMonth';
+
+export interface RecurrencePolicy {
+  id: string;
+  version: number;
+  key: string;
+  name?: string;
+  scheduleType: RecurrenceScheduleType;
+  intervalUnit?: 'Days' | 'Weeks' | 'Months';
+  value?: number;
+  day?: number;
+  scheduleLabel: string;
+}
+
+export interface RecurrencePolicyFormInput {
+  key: string;
+  name: string;
+  scheduleType: RecurrenceScheduleType;
+  intervalUnit: 'Days' | 'Weeks' | 'Months';
+  value: number;
+  day: number;
 }
 
 export interface PaymentsFilters {

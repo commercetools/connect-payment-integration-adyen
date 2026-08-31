@@ -9,6 +9,7 @@ import {
   getShopperStatement,
   getCountryCodeFromCart,
   extractShopperName,
+  getPaymentMethodsBlockedForRecurring,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
 import { Cart, CurrencyConverters } from '@commercetools/connect-payments-sdk';
@@ -16,7 +17,7 @@ import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/cont
 import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
-import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
+import { isTokenizationEnabled } from '../../config/stored-payment-methods.config';
 
 export class CreateSessionConverter {
   public convertRequest(opts: {
@@ -29,6 +30,8 @@ export class CreateSessionConverter {
     const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
     const shopperName = extractShopperName(opts.cart);
+    const isCurrentCartRecurringOrder = paymentSDK.ctCartService.isRecurringCart(opts.cart);
+    const blockedPaymentMethods = isCurrentCartRecurringOrder ? getPaymentMethodsBlockedForRecurring() : [];
 
     return {
       ...opts.data,
@@ -46,6 +49,7 @@ export class CreateSessionConverter {
       returnUrl: buildReturnUrl(opts.cart.id),
       channel: opts.data.channel ? opts.data.channel : CreateCheckoutSessionRequest.ChannelEnum.Web,
       ...(allowedPaymentMethods.length > 0 && { allowedPaymentMethods }),
+      ...(blockedPaymentMethods.length > 0 && { blockedPaymentMethods }),
       lineItems: mapCoCoCartItemsToAdyenLineItems(opts.cart),
       ...(opts.cart.billingAddress && {
         billingAddress: populateCartAddress(opts.cart.billingAddress),
@@ -58,10 +62,12 @@ export class CreateSessionConverter {
       applicationInfo: populateApplicationInfo(),
       ...(shopperStatement && { shopperStatement }),
       ...(shopperName && { shopperName }),
-      ...(getStoredPaymentMethodsConfig().enabled &&
+      ...(isTokenizationEnabled() &&
         opts.cart.customerId && {
           shopperReference: opts.cart.customerId,
-          recurringProcessingModel: CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
+          recurringProcessingModel: isCurrentCartRecurringOrder
+            ? CreateCheckoutSessionRequest.RecurringProcessingModelEnum.Subscription
+            : CreateCheckoutSessionRequest.RecurringProcessingModelEnum.CardOnFile,
           storePaymentMethodMode: CreateCheckoutSessionRequest.StorePaymentMethodModeEnum.AskForConsent,
         }),
     };

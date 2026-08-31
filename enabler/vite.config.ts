@@ -35,16 +35,16 @@ export default defineConfig({
   resolve: {
     alias: {
       "@adyen-css": path.resolve(
-        __dirname,
+        import.meta.dirname,
         "node_modules/@adyen/adyen-web/dist/es/adyen.css"
       ),
     },
   },
   build: {
-    outDir: resolve(__dirname, "public"),
+    outDir: resolve(import.meta.dirname, "public"),
     lib: {
       // Could also be a dictionary or array of multiple entry points
-      entry: resolve(__dirname, "src/main.ts"),
+      entry: resolve(import.meta.dirname, "src/main.ts"),
 
       name: "Connector",
       formats: ["es", "umd"],

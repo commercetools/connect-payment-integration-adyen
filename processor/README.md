@@ -79,6 +79,8 @@ Make sure commercetools client credential have at least the following permission
 
 If the feature stored payment methods is enabled then the scopes must also include the scope: `manage_payment_methods`
 
+If recurring payments are enabled (`ADYEN_RECURRING_PAYMENTS_ENABLED`) then the scopes must also include the scope: `manage_recurring_payment_jobs`
+
 ```
 npm run dev
 ```

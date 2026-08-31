@@ -35,7 +35,7 @@ export type PaymentProviderModificationResponse = {
   pspReference: string;
 };
 
-export type ConfigResponse = Omit<ConfigResponseSchemaDTO, 'methodsAllowedForRecurringPayments'>;
+export type ConfigResponse = ConfigResponseSchemaDTO;
 
 export type StatusResponse = StatusResponseSchemaDTO;
 

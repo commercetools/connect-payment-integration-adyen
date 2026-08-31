@@ -22,8 +22,6 @@ import {
   TransactionResponse,
   TransactionResponseDTO,
 } from '../dtos/operations/transaction.dto';
-import { getStoredPaymentMethodsConfig } from '../config/stored-payment-methods.config';
-
 type OperationRouteOptions = {
   sessionHeaderAuthHook: SessionHeaderAuthenticationHook;
   oauth2AuthHook: Oauth2AuthenticationHook;
@@ -45,16 +43,7 @@ export const operationsRoute = async (fastify: FastifyInstance, opts: FastifyPlu
     },
     async (request, reply) => {
       const config = await opts.paymentService.config();
-      const methodsAllowedForRecurringPayments = Object.entries(
-        getStoredPaymentMethodsConfig().config.supportedPaymentMethodTypes,
-      )
-        .filter(([, value]) => value.recurringPayments)
-        .map(([key]) => key);
-      const configWithMethodsForRecurring = {
-        ...config,
-        methodsAllowedForRecurringPayments,
-      };
-      reply.code(200).send(configWithMethodsForRecurring);
+      reply.code(200).send(config);
     },
   );
 

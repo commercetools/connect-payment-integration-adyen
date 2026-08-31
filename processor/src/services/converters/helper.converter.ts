@@ -21,7 +21,9 @@ import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies
 import { GenericIssuerPaymentMethodDetails } from '@adyen/api-library/lib/src/typings/checkout/genericIssuerPaymentMethodDetails';
 import { ApplicationInfo } from '@adyen/api-library/lib/src/typings/applicationInfo';
 import { config } from '../../config/config';
-import { GIFT_CARD_BRANDS } from '../../config/payment-method.config';
+import { GIFT_CARD_BRANDS, SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES } from '../../config/payment-method.config';
+import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
+import { log } from '../../libs/logger';
 
 /**
  * These payment methods require product line item discounts to be send seperately as a new (negative value) line item
@@ -522,6 +524,33 @@ export const extractShopperName = (cart: Cart): { firstName: string; lastName: s
     firstName: firstName ?? '',
     lastName: lastName ?? '',
   };
+};
+
+/**
+ * `storedPaymentMethodId` only exists on some variants of Adyen's payment method union type, so it
+ * can't be accessed directly without narrowing every variant.
+ */
+export const extractStoredPaymentMethodId = (paymentMethod: object): string | undefined => {
+  return Object.entries(paymentMethod).find(([key]) => key === 'storedPaymentMethodId')?.[1];
+};
+
+/**
+ * Payment method types (Adyen format) that must be hidden from the shopper on a recurring cart,
+ * since they can't be tokenized for recurring use. Blocking them at session/payment-methods
+ * creation time means Adyen never offers them, so nothing else needs to validate this later.
+ */
+export const getPaymentMethodsBlockedForRecurring = (): string[] => {
+  const { supportedPaymentMethodTypes } = getStoredPaymentMethodsConfig().config;
+
+  const blocked = SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES.filter(
+    (type) => !supportedPaymentMethodTypes[type]?.recurringPayments,
+  );
+
+  if (blocked.length > 0) {
+    log.info('Blocking payment methods not eligible for recurring payments on a recurring cart', { blocked });
+  }
+
+  return blocked;
 };
 
 export function isGiftCardSplitPayment(data: { paymentMethod?: { type?: string }; order?: unknown }): boolean {

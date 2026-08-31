@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { COUNTRIES } from '../data/countries.ts';
 import { getAllCountries, getAllAddresses, getAllShippingCosts, saveCustomCountryConfig, getCustomCountryConfigs } from '../data/customCountries.ts';
-import { getTaxCategoryStatus, getShippingMethodStatus, enableCountryInCt, addCountryToCt } from '../api/ct.ts';
-import type { Country, Address, CountryStatus, CtTaxCategoryStatus, CtShippingMethodStatus } from '../types.ts';
+import { getTaxCategoryStatus, getShippingMethodStatus, enableCountryInCt, addCountryToCt, getAllRecurrencePolicies, createRecurrencePolicy as createRecurrencePolicyInCt, updateRecurrencePolicy as updateRecurrencePolicyInCt } from '../api/ct.ts';
+import type { Country, Address, CountryStatus, CtTaxCategoryStatus, CtShippingMethodStatus, RecurrencePolicy, RecurrencePolicyFormInput } from '../types.ts';
 
 const BUILT_IN_CODES = new Set(COUNTRIES.map(c => c.code));
 
 export function useAdmin(): {
   countryStatuses: CountryStatus[];
+  recurrencePolicies: RecurrencePolicy[];
   loading: boolean;
   error: string | null;
   enableCountry: (countryCode: string) => Promise<void>;
@@ -15,10 +16,13 @@ export function useAdmin(): {
   addCountry: (country: Country, address: Address, shippingCost: number) => Promise<void>;
   editCountry: (country: Country, address: Address, shippingCost: number) => Promise<void>;
   getCountryConfig: (code: string) => { country: Country; address: Address; shippingCost: number } | undefined;
+  createRecurrencePolicy: (input: RecurrencePolicyFormInput) => Promise<void>;
+  updateRecurrencePolicy: (id: string, version: number, input: RecurrencePolicyFormInput) => Promise<void>;
   reload: () => Promise<void>;
 } {
   const [taxStatus, setTaxStatus] = useState<CtTaxCategoryStatus | null>(null);
   const [shippingStatus, setShippingStatus] = useState<CtShippingMethodStatus | null>(null);
+  const [recurrencePolicies, setRecurrencePolicies] = useState<RecurrencePolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +30,14 @@ export function useAdmin(): {
     setLoading(true);
     setError(null);
     try {
-      const [tax, shipping] = await Promise.all([getTaxCategoryStatus(), getShippingMethodStatus()]);
+      const [tax, shipping, recurrence] = await Promise.all([
+        getTaxCategoryStatus(),
+        getShippingMethodStatus(),
+        getAllRecurrencePolicies(),
+      ]);
       setTaxStatus(tax);
       setShippingStatus(shipping);
+      setRecurrencePolicies(recurrence);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -105,5 +114,15 @@ export function useAdmin(): {
     return { country, address, shippingCost };
   }, []);
 
-  return { countryStatuses, loading, error, enableCountry, getMissingItems, addCountry, editCountry, getCountryConfig, reload };
+  const createRecurrencePolicy = useCallback(async (input: RecurrencePolicyFormInput) => {
+    await createRecurrencePolicyInCt(input);
+    await reload();
+  }, [reload]);
+
+  const updateRecurrencePolicy = useCallback(async (id: string, version: number, input: RecurrencePolicyFormInput) => {
+    await updateRecurrencePolicyInCt(id, version, input);
+    await reload();
+  }, [reload]);
+
+  return { countryStatuses, recurrencePolicies, loading, error, enableCountry, getMissingItems, addCountry, editCountry, getCountryConfig, createRecurrencePolicy, updateRecurrencePolicy, reload };
 }

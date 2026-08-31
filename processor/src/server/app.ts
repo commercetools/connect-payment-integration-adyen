@@ -13,6 +13,7 @@ const paymentService = new AdyenPaymentService({
   ctPaymentService: paymentSDK.ctPaymentService,
   ctOrderService: paymentSDK.ctOrderService,
   ctPaymentMethodService: paymentSDK.ctPaymentMethodService,
+  ctRecurringPaymentJobService: paymentSDK.ctRecurringPaymentJobService,
   orderService,
 });
 

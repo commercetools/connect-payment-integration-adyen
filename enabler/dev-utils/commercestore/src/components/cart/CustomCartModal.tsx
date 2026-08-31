@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { COUNTRIES } from '../../data/countries.ts';
 import { createCart, searchCustomerByEmail, createCustomer } from '../../api/ct.ts';
+import { useRecurrencePolicies } from '../../hooks/useRecurrencePolicies.ts';
+import RecurringCartFields from './RecurringCartFields.tsx';
 import type { LineItem } from '../../types.ts';
 
 const DEFAULT_ITEM: LineItem = { name: 'Premium Wireless Headphones', quantity: 1, centAmount: 12999 };
@@ -12,14 +14,6 @@ const CUSTOMER_MODES = [
 ] as const;
 
 type CustomerMode = (typeof CUSTOMER_MODES)[number]['value'];
-
-const RECURRING_FREQUENCIES = [
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'yearly', label: 'Yearly' },
-] as const;
-
-type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number]['value'];
 
 interface LineItemRowProps {
   item: LineItem;
@@ -58,9 +52,16 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
   const [lastName, setLastName] = useState('');
   const [items, setItems] = useState<LineItem[]>([{ ...DEFAULT_ITEM }]);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringFrequency, setRecurringFrequency] = useState<RecurringFrequency>('monthly');
+  const [recurrencePolicyId, setRecurrencePolicyId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { policies, loading: policiesLoading } = useRecurrencePolicies();
+
+  const handleCustomerModeChange = (value: CustomerMode) => {
+    setCustomerMode(value);
+    if (value === 'none') setIsRecurring(false);
+  };
 
   const updateItem = (idx: number, field: keyof LineItem, value: string | number) =>
     setItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: value } : it));
@@ -90,7 +91,7 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
         customerId = result.customer.id;
       }
 
-      const cart = await createCart({ country: countryCode, customerId, lineItems: items, isRecurring });
+      const cart = await createCart({ country: countryCode, customerId, lineItems: items, isRecurring, recurrencePolicyId });
       onCreated(cart.id);
       onClose();
     } catch (e) {
@@ -122,7 +123,7 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
             <div className="cs-option-cards">
               {CUSTOMER_MODES.map(opt => (
                 <label key={opt.value} className={`cs-option-card ${customerMode === opt.value ? 'selected' : ''}`}>
-                  <input type="radio" name="ccCustomer" value={opt.value} checked={customerMode === opt.value} onChange={() => setCustomerMode(opt.value)} />
+                  <input type="radio" name="ccCustomer" value={opt.value} checked={customerMode === opt.value} onChange={() => handleCustomerModeChange(opt.value)} />
                   <div><strong>{opt.label}</strong><small>{opt.desc}</small></div>
                 </label>
               ))}
@@ -140,19 +141,16 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
             </div>
           )}
 
-          <div className="cs-field">
-            <label className="cs-field-checkbox">
-              <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
-              Recurring cart
-            </label>
-            {isRecurring && (
-              <select className="form-control mt-2" value={recurringFrequency} onChange={e => setRecurringFrequency(e.target.value as RecurringFrequency)}>
-                {RECURRING_FREQUENCIES.map(f => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            )}
-          </div>
+          {customerMode !== 'none' && (
+            <RecurringCartFields
+              isRecurring={isRecurring}
+              onIsRecurringChange={setIsRecurring}
+              recurrencePolicyId={recurrencePolicyId}
+              onRecurrencePolicyIdChange={setRecurrencePolicyId}
+              policies={policies}
+              loading={policiesLoading}
+            />
+          )}
 
           <div className="cs-field">
             <label>Line Items</label>

@@ -1,7 +1,7 @@
 import { config } from '../../config/config';
 import { PaymentMethodsRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsRequest';
 import { CommercetoolsCartService, CurrencyConverters } from '@commercetools/connect-payments-sdk';
-import { convertPaymentMethodFromAdyenFormat } from './helper.converter';
+import { convertPaymentMethodFromAdyenFormat, getPaymentMethodsBlockedForRecurring } from './helper.converter';
 import { getAllowedPaymentMethodsFromContext, getCartIdFromContext } from '../../libs/fastify/context/context';
 import { PaymentMethodsRequestDTO, PaymentMethodsResponseDTO } from '../../dtos/adyen-payment.dto';
 import { PaymentMethodsResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentMethodsResponse';
@@ -21,6 +21,7 @@ export class PaymentMethodsConverter {
     const paymentAmount = await this.ctCartService.getPaymentAmount({
       cart,
     });
+    const blockedPaymentMethods = this.ctCartService.isRecurringCart(cart) ? getPaymentMethodsBlockedForRecurring() : [];
 
     return {
       ...opts.data,
@@ -35,6 +36,7 @@ export class PaymentMethodsConverter {
       countryCode: cart.country,
       merchantAccount: config.adyenMerchantAccount,
       shopperReference: cart.customerId,
+      ...(blockedPaymentMethods.length > 0 && { blockedPaymentMethods }),
     };
   }
 
