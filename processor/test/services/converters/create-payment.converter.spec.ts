@@ -400,12 +400,10 @@ describe('create-payment.converter', () => {
       });
       jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(true);
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random().customLineItems([]).customerId(customerId).buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
         storePaymentMethod: true,
@@ -438,12 +436,10 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random().customLineItems([]).customerId(customerId).buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
@@ -475,12 +471,10 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random().customLineItems([]).customerId(customerId).buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'klarna_paynow' },
       } as CreatePaymentRequestDTO;
@@ -520,12 +514,10 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random().customLineItems([]).customerId(customerId).buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: adyenType },
       } as CreatePaymentRequestDTO;
@@ -557,12 +549,10 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random().customLineItems([]).customerId(customerId).buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme' },
       } as CreatePaymentRequestDTO;
@@ -592,13 +582,14 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .billingAddress({ country: 'AU' })
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random()
+          .customLineItems([])
+          .customerId(customerId)
+          .billingAddress({ country: 'AU' })
+          .buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'afterpaytouch' },
       } as CreatePaymentRequestDTO;
@@ -634,13 +625,14 @@ describe('create-payment.converter', () => {
         },
       });
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .billingAddress({ country: 'US' })
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random()
+          .customLineItems([])
+          .customerId(customerId)
+          .billingAddress({ country: 'US' })
+          .buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'afterpaytouch' },
       } as CreatePaymentRequestDTO;
@@ -777,12 +769,10 @@ describe('create-payment.converter', () => {
       });
       jest.spyOn(DefaultPaymentMethodService.prototype, 'doesTokenBelongsToCustomer').mockResolvedValueOnce(true);
 
-      const cartRandom = CartRest.random()
-        .origin('RecurringOrder')
-        .lineItems([])
-        .customLineItems([])
-        .customerId(customerId)
-        .buildRest<TCartRest>({}) as Cart;
+      const cartRandom = {
+        ...CartRest.random().customLineItems([]).customerId(customerId).buildRest<TCartRest>({}),
+        lineItems: [{ recurrenceInfo: {} }],
+      } as unknown as Cart;
       const paymentRequestDTO: CreatePaymentRequestDTO = {
         paymentMethod: { type: 'scheme', storedPaymentMethodId },
       } as CreatePaymentRequestDTO;
