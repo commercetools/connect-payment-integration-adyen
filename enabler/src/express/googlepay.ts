@@ -269,6 +269,10 @@ export class GooglePayExpressComponent extends DefaultAdyenExpressComponent {
       },
     });
 
+    if (!shippingMethods.length) {
+      throw new Error(`No shipping methods available for country ${countryCode}`);
+    }
+
     const convertedShippingOptions = shippingMethods.map((method) => ({
       id: method.id,
       label: `${this.formatCurrency(method.amount)} - ${method.name}`,
