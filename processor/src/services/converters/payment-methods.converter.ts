@@ -21,7 +21,9 @@ export class PaymentMethodsConverter {
     const paymentAmount = await this.ctCartService.getPaymentAmount({
       cart,
     });
-    const blockedPaymentMethods = this.ctCartService.isRecurringCart(cart) ? getPaymentMethodsBlockedForRecurring() : [];
+    const blockedPaymentMethods = this.ctCartService.isRecurringCart(cart)
+      ? getPaymentMethodsBlockedForRecurring()
+      : [];
 
     return {
       ...opts.data,

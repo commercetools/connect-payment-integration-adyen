@@ -4,12 +4,7 @@ import * as Helpers from '../../../src/services/converters/helper.converter';
 import { PaymentRest, type TPaymentRest } from '@commercetools/composable-commerce-test-data/payment';
 import { CartRest, type TCartRest } from '@commercetools/composable-commerce-test-data/cart';
 import { CreatePaymentRequestDTO } from '../../../src/dtos/adyen-payment.dto';
-import {
-  Cart,
-  ErrorInternalConstraintViolated,
-  Payment,
-  PaymentMethod,
-} from '@commercetools/connect-payments-sdk';
+import { Cart, ErrorInternalConstraintViolated, Payment, PaymentMethod } from '@commercetools/connect-payments-sdk';
 import { paymentSDK } from '../../../src/payment-sdk';
 import * as Config from '../../../src/config/config';
 import * as StoredPaymentMethodsConfig from '../../../src/config/stored-payment-methods.config';
