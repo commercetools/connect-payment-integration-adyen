@@ -120,7 +120,7 @@ describe('/operations APIs', () => {
       expect(responseGetConfig.statusCode).toEqual(200);
       expect(responseGetConfig.json()).toEqual({
         clientKey: 'adyenClientKey',
-        environment: 'TEST',
+        environment: 'test',
         applePayConfig: {
           usesOwnCertificate: false,
         },

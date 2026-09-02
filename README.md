@@ -102,7 +102,7 @@ Their values are taken as input as environment variables/ configuration for conn
 #### 3. Adyen account credentials
 
 Various account data provided by Adyen are necessary to be configured so that the requests from the connect application can be authenticated by Adyen platform within the integration.
-Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX` and `ADYEN_ENVIRONMENT`.
+Their values are taken as input as environment variables/ configuration for connect with variable names `ADYEN_API_KEY`, `ADYEN_NOTIFICATION_HMAC_KEY`, `ADYEN_MERCHANT_ACCOUNT`, `ADYEN_CLIENT_KEY`, `ADYEN_LIVE_URL_PREFIX`, `ADYEN_ENVIRONMENT` and `ADYEN_CLIENT_ENVIRONMENT`.
 
 ## Development Guide
 
@@ -169,9 +169,12 @@ deployAs:
           description: commercetools client ID with manage_payments, manage_orders, view_sessions, view_api_clients, manage_checkout_payment_intents & introspect_oauth_tokens scopes
           required: true
         - key: ADYEN_ENVIRONMENT
-          description: Adyen environment
+          description: Adyen environment. Must be exactly LIVE or TEST.
           required: true
           default: TEST
+        - key: ADYEN_CLIENT_ENVIRONMENT
+          description: Adyen Web (frontend) environment, e.g. test, live, live-us, live-au, live-apse, live-in, live-nea. If unset, derived from ADYEN_ENVIRONMENT (TEST->test, LIVE->live).
+          required: false
         - key: ADYEN_MERCHANT_ACCOUNT
           description: Adyen merchant account
           required: true
@@ -250,7 +253,8 @@ Here you can see the details about various variables in configuration
 - `CTP_SESSION_URL`: The URL for session creation in commercetools platform. Connectors relies on the session created to be able to share information between enabler and processor. The default value is `https://session.europe-west1.gcp.commercetools.com`.
 - `CTP_JWKS_URL`: The URL which provides JSON Web Key Set. Default value is `https://mc-api.europe-west1.gcp.commercetools.com/.well-known/jwks.json`.
 - `CTP_JWT_ISSUER`: The issuer inside JSON Web Token which is required in JWT validation process. Default value is `default: https://mc-api.europe-west1.gcp.commercetools.com`
-- `ADYEN_ENVIRONMENT`: The indicator of adyen environment. Default value is `TEST`. It can be configured either as `LIVE` or `TEST`.
+- `ADYEN_ENVIRONMENT`: The environment used by the backend Adyen SDK. Default value is `TEST`. Must be configured as exactly `LIVE` or `TEST` (case-insensitive) — any other value (e.g. a region suffix like `LIVE-AU`) fails connector startup. Region-specific LIVE routing is configured separately via `ADYEN_LIVE_URL_PREFIX`.
+- `ADYEN_CLIENT_ENVIRONMENT`: The environment forwarded to the Adyen Web SDK in the browser. One of `test`, `live`, `live-us`, `live-au`, `live-apse`, `live-in`, `live-nea`. If not set, it is derived from `ADYEN_ENVIRONMENT` (`TEST`->`test`, `LIVE`->`live`, non-regional). Merchants on a region-qualified LIVE account (e.g. Australia) must set this explicitly to the matching `live-*` value; it has no effect on backend routing.
 - `ADYEN_MERCHANT_ACCOUNT`: The name of adyen merchant account.
 - `ADYEN_CLIENT_KEY`: Client key provided by Adyen for client-side authentication. For details, please refer to [Adyen client-side authentication](https://docs.adyen.com/development-resources/client-side-authentication).
 - `ADYEN_LIVE_URL_PREFIX`: It represents live endpoint prefix used by Adyen platform. It is only required for Adyen live environment. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).

@@ -1,3 +1,46 @@
+type AdyenBackendEnvironment = 'LIVE' | 'TEST';
+
+export const resolveAdyenEnvironment = (raw: string): AdyenBackendEnvironment => {
+  const normalized = raw.toUpperCase();
+  if (normalized !== 'LIVE' && normalized !== 'TEST') {
+    throw new Error(
+      `Invalid ADYEN_ENVIRONMENT value "${raw}". Must be exactly "LIVE" or "TEST" ` +
+        `(region-specific live routing is configured separately via ADYEN_LIVE_URL_PREFIX).`,
+    );
+  }
+  return normalized;
+};
+
+export type AdyenClientEnvironment = 'test' | 'live' | 'live-us' | 'live-au' | 'live-apse' | 'live-in' | 'live-nea';
+
+const ADYEN_CLIENT_ENVIRONMENTS: readonly AdyenClientEnvironment[] = [
+  'test',
+  'live',
+  'live-us',
+  'live-au',
+  'live-apse',
+  'live-in',
+  'live-nea',
+];
+
+export const resolveAdyenClientEnvironment = (
+  raw: string | undefined,
+  backendEnvironment: AdyenBackendEnvironment,
+): AdyenClientEnvironment => {
+  if (!raw) {
+    return backendEnvironment === 'LIVE' ? 'live' : 'test';
+  }
+  if (!ADYEN_CLIENT_ENVIRONMENTS.includes(raw as AdyenClientEnvironment)) {
+    throw new Error(
+      `Invalid ADYEN_CLIENT_ENVIRONMENT value "${raw}". Must be one of: ${ADYEN_CLIENT_ENVIRONMENTS.join(', ')}.`,
+    );
+  }
+  return raw as AdyenClientEnvironment;
+};
+
+const adyenEnvironment = resolveAdyenEnvironment(process.env.ADYEN_ENVIRONMENT || 'TEST');
+const adyenClientEnvironment = resolveAdyenClientEnvironment(process.env.ADYEN_CLIENT_ENVIRONMENT, adyenEnvironment);
+
 export const config = {
   // commercetools / Payment SDK
   projectKey: process.env.CTP_PROJECT_KEY || 'projectKey',
@@ -15,7 +58,8 @@ export const config = {
   loggerLevel: process.env.LOGGER_LEVEL || 'info',
 
   // Adyen — core
-  adyenEnvironment: process.env.ADYEN_ENVIRONMENT || 'TEST',
+  adyenEnvironment,
+  adyenClientEnvironment,
   adyenClientKey: process.env.ADYEN_CLIENT_KEY || 'adyenClientKey',
   adyenApiKey: process.env.ADYEN_API_KEY || 'adyenApiKey',
   adyenMerchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT || 'adyenMerchantAccount',

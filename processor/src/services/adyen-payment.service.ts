@@ -189,7 +189,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     return {
       clientKey: getConfig().adyenClientKey,
-      environment: getConfig().adyenEnvironment,
+      environment: getConfig().adyenClientEnvironment,
       applePayConfig: {
         usesOwnCertificate,
       },
@@ -204,7 +204,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
     const config = {
       clientKey: getConfig().adyenClientKey,
-      environment: getConfig().adyenEnvironment,
+      environment: getConfig().adyenClientEnvironment,
       applePayConfig: {
         usesOwnCertificate,
       },

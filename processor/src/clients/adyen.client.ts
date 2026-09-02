@@ -7,7 +7,7 @@ import { AdyenApiError, AdyenApiErrorData } from '../errors/adyen-api.error';
 export const AdyenApi = (): CheckoutAPI => {
   const apiClient = new Client({
     apiKey: config.adyenApiKey,
-    environment: config.adyenEnvironment.toUpperCase() as EnvironmentEnum,
+    environment: config.adyenEnvironment as EnvironmentEnum,
     ...(config.adyenLiveUrlPrefix && {
       liveEndpointUrlPrefix: config.adyenLiveUrlPrefix,
     }),
