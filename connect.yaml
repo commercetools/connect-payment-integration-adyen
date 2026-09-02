@@ -32,9 +32,12 @@ deployAs:
           description: commercetools client ID with manage_payments, manage_orders, view_sessions, view_api_clients, manage_checkout_payment_intents & introspect_oauth_tokens scopes
           required: true
         - key: ADYEN_ENVIRONMENT
-          description: Adyen environment
+          description: Adyen environment. Must be exactly LIVE or TEST.
           required: true
           default: TEST
+        - key: ADYEN_CLIENT_ENVIRONMENT
+          description: Adyen Web (frontend) environment, e.g. test, live, live-us, live-au, live-apse, live-in, live-nea. If unset, derived from ADYEN_ENVIRONMENT (TEST->test, LIVE->live).
+          required: false
         - key: ADYEN_MERCHANT_ACCOUNT
           description: Adyen merchant account
           required: true

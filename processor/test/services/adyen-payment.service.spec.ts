@@ -122,13 +122,23 @@ describe('adyen-payment.service', () => {
       storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
     });
     // Setup mock config for a system using `clientKey`
-    setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'test' });
+    setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'test', adyenClientEnvironment: 'test' });
 
     const result: ConfigResponse = await paymentService.config();
     // Assertions can remain the same or be adapted based on the abstracted access
     expect(result?.clientKey).toStrictEqual('adyen');
     expect(result?.environment).toStrictEqual('test');
     expect(result?.applePayConfig?.usesOwnCertificate).toStrictEqual(false);
+  });
+
+  test('getConfig uses the frontend-specific environment when it diverges from the backend one', async () => {
+    jest.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
+      storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
+    });
+    setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'LIVE', adyenClientEnvironment: 'live-au' });
+
+    const result: ConfigResponse = await paymentService.config();
+    expect(result?.environment).toStrictEqual('live-au');
   });
 
   test('getSupportedPaymentComponents', async () => {
