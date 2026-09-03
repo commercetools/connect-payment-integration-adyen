@@ -20,12 +20,12 @@
     "serve": "14.2.6"
   },
   "devDependencies": {
-    "@jest/globals": "30.4.1",
-    "@types/node": "26.2.0",
+    "@jest/globals": "30.5.0",
+    "@types/node": "26.4.0",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.1.1",
-    "jest": "30.4.2",
+    "jest": "30.5.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "sass": "1.103.1",
