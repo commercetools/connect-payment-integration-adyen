@@ -115,8 +115,8 @@ export class ApplePayExpressComponent extends DefaultAdyenExpressComponent {
       onClick: (resolve, reject) => {
         return this.expressOptions
           .onPayButtonClick()
-          .then((res) => {
-            this.sessionId = res.sessionId;
+          .then((opts) => {
+            this.setSessionId(opts.sessionId);
             resolve();
           })
           .catch(() => reject());
