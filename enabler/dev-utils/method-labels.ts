@@ -14,6 +14,7 @@ export const METHOD_LABELS: Record<string, { label: string }> = {
   sepadirectdebit: { label: 'SEPA Direct Debit' },
   zip: { label: 'Zip' },
   ideal: { label: 'iDEAL' },
+  paypal: { label: 'PayPal' },
 };
 
 export const METHODS_WITH_NO_CARDS: string[] = [
@@ -23,5 +24,6 @@ export const METHODS_WITH_NO_CARDS: string[] = [
   'afterpay',
   'sepadirectdebit',
   'zip',
-  'ideal'
+  'ideal',
+  'paypal',
 ];

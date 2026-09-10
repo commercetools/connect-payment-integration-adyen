@@ -87,6 +87,14 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        // Unlike every other method here, PayPal recurring also requires PayPal's own
+        // "Reference Transactions" permission to be granted on the merchant's PayPal seller
+        // account (a manual request to PayPal support, separate from anything in Adyen or this
+        // connector). Without it, Adyen will not create a token even though this config allows it.
+        paypal: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
       },
     },
   };
