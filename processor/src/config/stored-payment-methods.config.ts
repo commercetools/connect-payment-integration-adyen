@@ -87,6 +87,17 @@ export const getStoredPaymentMethodsConfig = (): StoredPaymentMethodsConfig => {
           oneOffPayments: false,
           recurringPayments: true,
         },
+        // Unlike iDEAL, Adyen documents EPS recurring as going "through SEPA Direct Debit" and
+        // shows the pay-with-token request using type: 'sepadirectdebit' directly, with no brand
+        // hint preserving the original EPS identity. So an EPS-originated token is expected to
+        // come back from Adyen (and be stored here) as a plain 'sepadirectdebit' method, not
+        // 'eps' - unlike the googlepay/bcmc brand-collapse cases, there's no known way to tell
+        // them apart after tokenization. Worth reconfirming with live token data (Adyen's docs
+        // were wrong about iDEAL colliding the same way before we checked live data).
+        eps: {
+          oneOffPayments: false,
+          recurringPayments: true,
+        },
         // Unlike every other method here, PayPal recurring also requires PayPal's own
         // "Reference Transactions" permission to be granted on the merchant's PayPal seller
         // account (a manual request to PayPal support, separate from anything in Adyen or this

@@ -493,6 +493,7 @@ describe('create-payment.converter', () => {
       ['SEPA Direct Debit', 'sepadirectdebit'],
       ['Zip', 'zip'],
       ['iDEAL', 'ideal'],
+      ['EPS', 'eps'],
       ['PayPal', 'paypal'],
     ])('it should force storePaymentMethod for a fresh %s payment on a recurring-cart', async (_label, adyenType) => {
       const customerId = '52a5774d-38c0-40b4-a2c6-512c5af6396e';
