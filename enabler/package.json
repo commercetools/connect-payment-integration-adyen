@@ -1,7 +1,7 @@
 {
   "name": "enabler",
   "private": true,
-  "version": "5.28.1",
+  "version": "5.29.0",
   "type": "module",
   "engines": {
     "node": ">=24.0.0",
