@@ -53,6 +53,10 @@ describe('stored-payment-methods.config', () => {
         oneOffPayments: false,
         recurringPayments: true,
       },
+      paypal: {
+        oneOffPayments: false,
+        recurringPayments: true,
+      },
     });
   });
 });
