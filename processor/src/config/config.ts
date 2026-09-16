@@ -85,6 +85,7 @@ export const config = {
   adyenStoredPaymentMethodsPaymentInterface: process.env.ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE || 'adyen',
   adyenStoredPaymentMethodsInterfaceAccount: process.env.ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT || undefined,
   adyenStorePaymentMethodDetailsEnabled: process.env.ADYEN_STORE_PAYMENT_METHOD_DETAILS_ENABLED === 'true',
+  adyenStorePaymentMethodHideCvc: process.env.ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC === 'true',
 
   // Adyen — recurring payments
   adyenRecurringPaymentsEnabled: process.env.ADYEN_RECURRING_PAYMENTS_ENABLED === 'true',

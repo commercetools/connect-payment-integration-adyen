@@ -205,6 +205,11 @@ export class DropinComponents implements DropinComponent {
           // Configuration that can not be overridden
           enableStoreDetails: this.storedPaymentMethodsConfig.isEnabled,
         },
+        // The drop-in resolves the configuration of a stored card from the "storedCard"
+        // key and does not fall back to the "card" key above.
+        storedCard: {
+          hideCVC: this.storedPaymentMethodsConfig.hideCVC,
+        },
         googlepay: {
           buttonType: "pay",
           buttonSizeMode: "fill",
