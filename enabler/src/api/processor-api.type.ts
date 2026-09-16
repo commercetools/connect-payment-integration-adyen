@@ -15,7 +15,7 @@ export type ConfigResponse = {
   clientKey: string;
   applePayConfig?: { usesOwnCertificate: boolean };
   paymentComponentsConfig?: Record<string, Record<string, unknown>>;
-  storedPaymentMethodsConfig?: { isEnabled: boolean };
+  storedPaymentMethodsConfig?: { isEnabled: boolean; hideCVC?: boolean };
 };
 
 export type StoredPaymentMethodsResponse = {

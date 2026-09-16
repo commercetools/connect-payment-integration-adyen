@@ -196,6 +196,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       paymentComponentsConfig: this.getPaymentComponentsConfig(),
       storedPaymentMethodsConfig: {
         isEnabled: await this.isStoredPaymentMethodsEnabled(),
+        hideCVC: getConfig().adyenStorePaymentMethodHideCvc,
       },
     };
   }
