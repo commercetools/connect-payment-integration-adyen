@@ -91,7 +91,6 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
     );
 
     this.component = new Card(this.adyenCheckout, {
-      hideCVC: this.storedPaymentMethodsConfig.hideCVC,
       // Override the default config with the one provided by the user
       ...this.paymentComponentConfigOverride,
       // Configuration that can not be overridden

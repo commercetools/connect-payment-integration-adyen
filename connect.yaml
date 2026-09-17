@@ -75,9 +75,6 @@ deployAs:
         - key: ADYEN_PAYMENT_METHODS_CONFIG
           description: 'Adyen payment methods configuration in JSON String format. This can be used to provide additional configuration for specific payment methods. For example: {"bcmc":{"supportSeparateCapture":true}, "bcmc_mobile":{"supportSeparateCapture":true}}. Please refer to the Adyen documentation for more details.'
           required: false
-        - key: ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC
-          description: If set to "true" then the CVC field is hidden when paying with a stored card, for both the stored card web component and the drop-in. Only set this to "true" if the Adyen merchant account is configured to not require the CVC for stored card payments. Default value is "false".
-          required: false
         - key: ADYEN_STORED_PAYMENT_METHODS_ENABLED
           description: If set to "true" then the stored payment methods feature is enabled. Default value is "false".
           required: false
