@@ -220,7 +220,6 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     if (configJson.storedPaymentMethodsConfig) {
       this.storedPaymentMethodsConfig = {
         isEnabled: configJson.storedPaymentMethodsConfig.isEnabled,
-        hideCVC: configJson.storedPaymentMethodsConfig.hideCVC === true,
         storedPaymentMethods: storedPaymentMethodsList,
       };
     }

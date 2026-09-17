@@ -354,20 +354,12 @@ N/A
 
 #### Response Parameters
 
-It returns the client-side configuration as below:
+It returns an object with `clientKey` and `environment` as key-value pair as below:
 
 ```
 {
   clientKey: <clientKey>,
   environment: <environment>,
-  applePayConfig: {
-    usesOwnCertificate: <boolean>,
-  },
-  paymentComponentsConfig: <ADYEN_PAYMENT_COMPONENTS_CONFIG as an object, if configured>,
-  storedPaymentMethodsConfig: {
-    isEnabled: <boolean>,
-    hideCVC: <boolean>, // reflects ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC, defaults to false
-  },
 }
 ```
 

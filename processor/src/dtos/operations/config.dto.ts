@@ -19,15 +19,9 @@ export const ConfigResponseSchema = Type.Object({
   paymentComponentsConfig: Type.Optional(Type.Any()),
   storedPaymentMethodsConfig: Type.Object(
     {
-      isEnabled: Type.Boolean({
-        description: 'Is true when the feature flag is enabled as well when the current cart has an customerId set',
-      }),
-      hideCVC: Type.Boolean({
-        description:
-          'Reflects the ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC environment variable. Hides the CVC field on stored cards and must match the CVC configuration of the merchant account in Adyen',
-      }),
+      isEnabled: Type.Boolean(),
     },
-    { description: 'Configuration of the stored payment methods feature' },
+    { description: 'Is true when the feature flag is enabled as well when the current cart has an customerId set' },
   ),
 });
 
