@@ -48,8 +48,12 @@ export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
-      paymentComponentConfigOverride:
-        this.resolvePaymentComponentConfigOverride("card"),
+      // The "storedCard" config is applied on top of the "card" one, so that options can be
+      // set for every card or for stored cards only.
+      paymentComponentConfigOverride: {
+        ...this.resolvePaymentComponentConfigOverride("card"),
+        ...this.resolvePaymentComponentConfigOverride("storedCard"),
+      },
       storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
     });
 
