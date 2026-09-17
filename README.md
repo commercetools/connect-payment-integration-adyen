@@ -354,7 +354,7 @@ Entering a new card is not affected by the above, the CVC is always requested wh
 
 - **Keeping both sides in sync is the merchant's responsibility.** This configuration only controls whether the field is rendered, it does not change how the merchant account is configured in Adyen. Only enable it after the CVC has been made optional for stored card payments in the Adyen Customer Area. Hiding the field while Adyen still requires the CVC results in refused payments.
 - Hiding the CVC can affect the risk assessment and, depending on the card scheme and region, the liability shift of a payment. Please consult Adyen before enabling it.
-- Known limitation: the Adyen Web SDK still renders its form instruction ("All fields are required unless marked otherwise.") above the - now empty - stored card form. It is rendered unconditionally by the SDK and can not be turned off per component.
+- The Adyen Web SDK always renders its form instruction ("All fields are required unless marked otherwise.") above the stored card form, even when hiding the CVC leaves that form with nothing left to fill in. For the stored card **web component**, the enabler blanks out just that instruction when `hideCVC` is enabled, by giving the `Card` component its own `i18n` instance (delegating to the checkout's one, but returning an empty string for that specific translation key) instead of the checkout-wide one - see `buildI18nWithBlankFormInstruction` in [enabler/src/stored/stored-payment-methods/card.ts](enabler/src/stored/stored-payment-methods/card.ts). This does not apply to the **drop-in**, where the instruction is shared across all payment methods in the list and can not be scoped to the stored card item alone.
 
 ### Server-to-server recurring payments
 
