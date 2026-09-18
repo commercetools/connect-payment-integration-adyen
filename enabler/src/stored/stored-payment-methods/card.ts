@@ -48,8 +48,12 @@ export class StoredCardBuilder extends AdyenBaseStoredComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
-      paymentComponentConfigOverride:
-        this.resolvePaymentComponentConfigOverride("card"),
+      // The "storedCard" config is applied on top of the "card" one, so that options can be
+      // set for every card or for stored cards only.
+      paymentComponentConfigOverride: {
+        ...this.resolvePaymentComponentConfigOverride("card"),
+        ...this.resolvePaymentComponentConfigOverride("storedCard"),
+      },
       storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
     });
 
@@ -99,6 +103,10 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
       supportedShopperInteractions: ["Ecommerce"],
       ...this.componentOptions,
       brands: brandsMapped,
+      // The SDK's "All fields are required..." instruction is unnecessary once hideCVC leaves this form empty.
+      ...(this.paymentComponentConfigOverride?.hideCVC && {
+        i18n: this.buildI18nWithBlankFormInstruction(),
+      }),
     });
     this.usedCocoStoredPaymentMethod = cocoStoredPaymentMethod;
   }
@@ -113,5 +121,14 @@ export class StoredCardComponent extends DefaultAdyenStoredComponent {
 
   async remove() {
     await this.apiClient.deleteStoredPaymentMethod(this.usedCocoStoredPaymentMethod.id);
+  }
+
+  // Delegates to the checkout's i18n instance for every key except the one instruction we want blanked out.
+  private buildI18nWithBlankFormInstruction() {
+    const baseI18n = this.adyenCheckout.modules.i18n;
+    const scopedI18n = Object.create(baseI18n);
+    scopedI18n.get = (key: string, options?: unknown) =>
+      key === "form.instruction" ? "" : baseI18n.get(key, options);
+    return scopedI18n;
   }
 }
