@@ -212,9 +212,6 @@ deployAs:
         - key: ADYEN_PAYMENT_METHODS_CONFIG
           description: Payment methods configuration overrides in JSON String format. For example: {"bcmc":{"supportSeparateCapture":false}}.
           required: false
-        - key: ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC
-          description: If set to "true" then the CVC field is hidden when paying with a stored card, for both the stored card web component and the drop-in. Only set this to "true" if the Adyen merchant account is configured to not require the CVC for stored card payments. Default value is "false".
-          required: false
         - key: ADYEN_STORED_PAYMENT_METHODS_ENABLED
           description: If set to "true" then the stored payment methods feature is enabled. Default value is "false".
           required: false
@@ -270,7 +267,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_APPLEPAY_OWN_DISPLAY_NAME`: A string of 64 or fewer UTF-8 characters containing the canonical name for your store, suitable for display. This needs to remain a consistent value for the store and shouldn’t contain dynamic values such as incrementing order numbers. Only needed if using an own certificate.
 - `ADYEN_SHOPPER_STATEMENT`: The text to be shown on the shopper's bank statement. For more information, see [Adyen's reference](https://docs.adyen.com/api-explorer/Checkout/71/post/payments#request-shopperStatement).
 - `ADYEN_PAYMENT_METHODS_CONFIG`: Payment methods configuration overrides in JSON format to control specific payment method behaviors such as the separate capture capability. This is useful when Adyen is configured with immediate capture, preventing the receipt of capture webhooks.
-- `ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC`: Indicates if the CVC field is hidden when paying with a stored card. Must be a string value of `"true"` or `"false"`. Default it's `"false"`. See [Hiding the CVC field on stored cards](#hiding-the-cvc-field-on-stored-cards).
+- `ADYEN_PAYMENT_COMPONENTS_CONFIG`: Configuration in JSON format that is forwarded to the Adyen Web SDK components rendered by the enabler. Use the payment method name as key for a web component (for example `{"paypal":{"blockPayPalVenmoButton":false}}`) and nest under `"embedded"` for the drop-in (for example `{"embedded":{"card":{"hasHolderName":false}}}`). Stored cards use the `"storedCard"` key, see [Hiding the CVC field on stored cards](#hiding-the-cvc-field-on-stored-cards). Refer to the Adyen documentation for the available options per component. Malformed JSON is logged and ignored.
 - `ADYEN_STORED_PAYMENT_METHODS_ENABLED`: Indicates if the stored payment methods feature is enabled or not. Must be a string value of "true" or "false". Default it's "false".
 - `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE`: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
 - `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT`: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
@@ -310,22 +307,54 @@ The next time the same customer goes through Checkout (either using drop-ins or 
 
 #### Hiding the CVC field on stored cards
 
-A merchant account can be configured in Adyen so that the CVC (also referred to as CVV / security code) is not required when a shopper pays with a stored card. In that case the CVC input should not be rendered at all. The connector exposes this through the `ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC` environment variable, which is forwarded to the Adyen Web SDK as the [`hideCVC`](https://docs.adyen.com/payment-methods/cards/web-component/#optional-configuration) option of the stored card.
+A merchant account can be configured in Adyen so that the CVC (also referred to as CVV / security code) is not required when a shopper pays with a stored card. In that case the CVC input should not be rendered at all. This is done through the `ADYEN_PAYMENT_COMPONENTS_CONFIG` environment variable, there is no dedicated environment variable for it.
 
-Set it to the string value `"true"` or `"false"`. The default value is `"false"`, meaning the CVC field is shown.
+Stored cards are configured under the `storedCard` key - the Adyen Web SDK resolves the configuration of a stored card from that key and does not fall back to `card`. Configure it for the stored card web component, for the drop-in, or for both:
 
-The value is returned by the processor on `GET /operations/config` as `storedPaymentMethodsConfig.hideCVC` and applied by the enabler to:
+```json
+{
+  "storedCard": { "hideCVC": true },
+  "embedded": { "storedCard": { "hideCVC": true } }
+}
+```
 
-- the stored card web component,
-- the stored cards rendered inside the **Drop-in** component (through the drop-in's `storedCard` configuration).
+- The top level `storedCard` key configures the stored card **web component**. It is applied on top of the `card` key, so use `card` for all cards and `storedCard` for stored cards only.
+- The `storedCard` key nested under `embedded` configures the stored cards rendered by the **drop-in**.
+- The option name is case sensitive: `hideCVC`, not `hideCvc`. An unknown key is passed to the Adyen Web SDK and silently ignored. The value must be the JSON boolean `true`, a string such as `"false"` is truthy and would hide the field as well.
 
-Entering a new card is deliberately **not** affected - the CVC is always requested when card details are entered for the first time. Should the CVC need to be hidden there as well, this can be configured through `ADYEN_PAYMENT_COMPONENTS_CONFIG`, for example `{"card":{"hideCVC":true}}`.
+The value of the environment variable is that JSON as a single line. Covering both the web component and the drop-in:
+
+```bash
+ADYEN_PAYMENT_COMPONENTS_CONFIG={"storedCard":{"hideCVC":true},"embedded":{"storedCard":{"hideCVC":true}}}
+```
+
+Only the stored card web component:
+
+```bash
+ADYEN_PAYMENT_COMPONENTS_CONFIG={"storedCard":{"hideCVC":true}}
+```
+
+Only the drop-in:
+
+```bash
+ADYEN_PAYMENT_COMPONENTS_CONFIG={"embedded":{"storedCard":{"hideCVC":true}}}
+```
+
+When other components are configured as well the keys are siblings of the existing ones, so extend the existing value instead of adding it a second time:
+
+```bash
+ADYEN_PAYMENT_COMPONENTS_CONFIG={"paypal":{"blockPayPalVenmoButton":false},"storedCard":{"hideCVC":true},"embedded":{"card":{"hasHolderName":false},"storedCard":{"hideCVC":true}}}
+```
+
+Note that a malformed value disables the whole variable and not just the affected key - the processor logs `Error parsing payment components config` and continues without any component configuration at all. If the configuration appears to have no effect, check the processor logs for that message first.
+
+Entering a new card is not affected by the above, the CVC is always requested when card details are entered for the first time. Should the CVC need to be hidden there as well, use the `card` key instead (`{"card":{"hideCVC":true}}` for the web component, `{"embedded":{"card":{"hideCVC":true}}}` for the drop-in).
 
 ##### Considerations
 
-- **Keeping both sides in sync is the merchant's responsibility.** This variable only controls whether the field is rendered, it does not change how the merchant account is configured in Adyen. Only set it to `"true"` after the CVC has been made optional for stored card payments in the Adyen Customer Area. Hiding the field while Adyen still requires the CVC results in refused payments.
+- **Keeping both sides in sync is the merchant's responsibility.** This configuration only controls whether the field is rendered, it does not change how the merchant account is configured in Adyen. Only enable it after the CVC has been made optional for stored card payments in the Adyen Customer Area. Hiding the field while Adyen still requires the CVC results in refused payments.
 - Hiding the CVC can affect the risk assessment and, depending on the card scheme and region, the liability shift of a payment. Please consult Adyen before enabling it.
-- For the stored card web component, an explicit `hideCVC` in `ADYEN_PAYMENT_COMPONENTS_CONFIG` (for example `{"card":{"hideCVC":false}}`) still takes precedence, to remain backwards compatible with merchants that already configure it that way.
+- The Adyen Web SDK always renders its form instruction ("All fields are required unless marked otherwise.") above the stored card form, even when hiding the CVC leaves that form with nothing left to fill in. For the stored card **web component**, the enabler blanks out just that instruction when `hideCVC` is enabled, by giving the `Card` component its own `i18n` instance (delegating to the checkout's one, but returning an empty string for that specific translation key) instead of the checkout-wide one - see `buildI18nWithBlankFormInstruction` in [enabler/src/stored/stored-payment-methods/card.ts](enabler/src/stored/stored-payment-methods/card.ts). This does not apply to the **drop-in**, where the instruction is shared across all payment methods in the list and can not be scoped to the stored card item alone.
 
 ### Server-to-server recurring payments
 
