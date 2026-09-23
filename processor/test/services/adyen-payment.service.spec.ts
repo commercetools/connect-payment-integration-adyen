@@ -122,34 +122,13 @@ describe('adyen-payment.service', () => {
       storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
     });
     // Setup mock config for a system using `clientKey`
-    setupMockConfig({
-      adyenClientKey: 'adyen',
-      adyenEnvironment: 'test',
-      adyenClientEnvironment: 'test',
-      adyenStorePaymentMethodHideCvc: false,
-    });
+    setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'test', adyenClientEnvironment: 'test' });
 
     const result: ConfigResponse = await paymentService.config();
     // Assertions can remain the same or be adapted based on the abstracted access
     expect(result?.clientKey).toStrictEqual('adyen');
     expect(result?.environment).toStrictEqual('test');
     expect(result?.applePayConfig?.usesOwnCertificate).toStrictEqual(false);
-    expect(result?.storedPaymentMethodsConfig?.hideCVC).toStrictEqual(false);
-  });
-
-  test('getConfig returns storedPaymentMethodsConfig.hideCVC as true when the feature is enabled', async () => {
-    jest.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
-      storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
-    });
-    setupMockConfig({
-      adyenClientKey: 'adyen',
-      adyenEnvironment: 'test',
-      adyenClientEnvironment: 'test',
-      adyenStorePaymentMethodHideCvc: true,
-    });
-
-    const result: ConfigResponse = await paymentService.config();
-    expect(result?.storedPaymentMethodsConfig?.hideCVC).toStrictEqual(true);
   });
 
   test('getConfig uses the frontend-specific environment when it diverges from the backend one', async () => {
