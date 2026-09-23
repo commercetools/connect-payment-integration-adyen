@@ -16,12 +16,12 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.44.0",
+    "@adyen/adyen-web": "6.45.0",
     "serve": "14.2.6"
   },
   "devDependencies": {
     "@jest/globals": "30.5.1",
-    "@types/node": "26.4.1",
+    "@types/node": "26.5.1",
     "@types/react": "18.3.31",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
@@ -31,7 +31,7 @@
     "sass": "1.104.0",
     "ts-jest": "29.4.12",
     "typescript": "6.0.3",
-    "vite": "8.2.2",
+    "vite": "8.3.0",
     "vite-plugin-css-injected-by-js": "5.0.2"
   },
   "overrides": {
