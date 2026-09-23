@@ -21,11 +21,6 @@ export type AdyenEnablerOptions = EnablerOptions & {
 
 export type StoredPaymentMethodsConfig = {
   isEnabled: boolean;
-  /**
-   * Hides the CVC field on stored cards. Mirrors the ADYEN_STORE_PAYMENT_METHOD_HIDE_CVC
-   * environment variable of the processor.
-   */
-  hideCVC: boolean;
   storedPaymentMethods: CocoStoredPaymentMethod[];
 };
 

@@ -126,7 +126,6 @@ describe('/operations APIs', () => {
         },
         storedPaymentMethodsConfig: {
           isEnabled: true,
-          hideCVC: false,
         },
       });
     });
