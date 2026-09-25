@@ -29,12 +29,23 @@ export const GiftCardDetailsTypeDraft: TypeDraft = {
       },
       required: false,
     },
+    {
+      name: 'storedValueId',
+      label: {
+        en: 'Complete giftcard number',
+      },
+      type: {
+        name: 'String',
+      },
+      required: false,
+    },
   ],
 };
 
 export type GiftCardDetailsFields = {
   brand?: string;
   lastFour?: string;
+  storedValueId?: string;
 };
 
 export const GenerateGiftCardDetailsCustomFieldsDraft = (fields: GiftCardDetailsFields): CustomFieldsDraft => {

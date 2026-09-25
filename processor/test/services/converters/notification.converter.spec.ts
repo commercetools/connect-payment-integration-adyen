@@ -1344,6 +1344,7 @@ describe('notification.converter', () => {
               additionalData: {
                 // Last four digits of the gift card, sent by Adyen when "Card summary" is enabled in Additional data settings.
                 cardSummary: '7777',
+                storedValueId: '6036280000000007777',
               },
               amount: {
                 currency: 'EUR',
@@ -1395,6 +1396,7 @@ describe('notification.converter', () => {
             fields: {
               brand: 'Givex',
               lastFour: '7777',
+              storedValueId: '6036280000000007777',
             },
             type: {
               key: 'commercetools-checkout-giftcard-details',
@@ -1403,6 +1405,43 @@ describe('notification.converter', () => {
           },
         },
       ]);
+    });
+
+    test('does not include storedValueId in gift card custom fields when Adyen sends it empty', async () => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: {
+                cardSummary: '7777',
+              },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference: 'some-merchant-reference',
+              paymentMethod: 'givex',
+              pspReference: 'some-psp-reference',
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      // toEqual ignores undefined properties, so absence of the key is asserted explicitly.
+      expect(result[0].paymentMethodInfoCustomField?.fields).toEqual({ brand: 'Givex', lastFour: '7777' });
+      expect(result[0].paymentMethodInfoCustomField?.fields).not.toHaveProperty('storedValueId');
     });
   });
 
