@@ -1396,7 +1396,7 @@ describe('notification.converter', () => {
             fields: {
               brand: 'Givex',
               lastFour: '7777',
-              storedValueId: '6036280000000007777',
+              giftCardNumber: '6036280000000007777',
             },
             type: {
               key: 'commercetools-checkout-giftcard-details',
@@ -1407,7 +1407,7 @@ describe('notification.converter', () => {
       ]);
     });
 
-    test('does not include storedValueId in gift card custom fields when Adyen sends it empty', async () => {
+    test('does not include the giftCardNumber in gift card custom fields when Adyen does not send it', async () => {
       // Arrange
       setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
 
@@ -1441,7 +1441,7 @@ describe('notification.converter', () => {
       // Assert
       // toEqual ignores undefined properties, so absence of the key is asserted explicitly.
       expect(result[0].paymentMethodInfoCustomField?.fields).toEqual({ brand: 'Givex', lastFour: '7777' });
-      expect(result[0].paymentMethodInfoCustomField?.fields).not.toHaveProperty('storedValueId');
+      expect(result[0].paymentMethodInfoCustomField?.fields).not.toHaveProperty('giftCardNumber');
     });
   });
 
