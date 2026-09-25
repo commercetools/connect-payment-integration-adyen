@@ -18,6 +18,11 @@ interface ResultModalProps {
 
 function ResultModal({ result, onClose }: ResultModalProps) {
   const isSuccess = result.isSuccess;
+
+  const goToDonation = () => {
+    window.location.href = `/dev-utils/commercestore/donation.html?paymentReference=${result.paymentReference}`;
+  };
+
   return (
     <div className="cs-modal-backdrop" onClick={onClose}>
       <div className="cs-modal cs-modal--result" onClick={e => e.stopPropagation()}>
@@ -32,9 +37,19 @@ function ResultModal({ result, onClose }: ResultModalProps) {
           </div>
         )}
         {!isSuccess && result.message && <p className="text-danger mt-2">{result.message}</p>}
-        <button className="btn btn-primary mt-3" onClick={onClose}>
-          {isSuccess ? 'New Checkout' : 'Close'}
-        </button>
+        <div className="mt-3" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+          {isSuccess && result.paymentReference && (
+            <button className="btn btn-primary" onClick={goToDonation}>
+              Donate
+            </button>
+          )}
+          <button
+            className={isSuccess && result.paymentReference ? 'btn btn-outline-secondary' : 'btn btn-primary'}
+            onClick={onClose}
+          >
+            {isSuccess ? 'New Checkout' : 'Close'}
+          </button>
+        </div>
       </div>
     </div>
   );

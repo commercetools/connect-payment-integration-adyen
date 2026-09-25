@@ -71,6 +71,7 @@ export const config = {
   // Adyen — webhooks
   adyenHMACKey: process.env.ADYEN_NOTIFICATION_HMAC_KEY || 'adyenHMACKey',
   adyenHMACTokenizationWebHooksKey: process.env.ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY || undefined,
+  adyenHMACDonationWebHooksKey: process.env.ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY || undefined,
 
   // Adyen — Apple Pay (own certificate)
   adyenApplePayOwnCerticate: process.env.ADYEN_APPLEPAY_OWN_CERTIFICATE
@@ -88,6 +89,9 @@ export const config = {
 
   // Adyen — recurring payments
   adyenRecurringPaymentsEnabled: process.env.ADYEN_RECURRING_PAYMENTS_ENABLED === 'true',
+
+  // Adyen — Giving (donations)
+  adyenGivingEnabled: process.env.ADYEN_GIVING_ENABLED === 'true',
 
   // Adyen — partial payments (gift cards)
   adyenPartialPaymentsEnabled: process.env.ADYEN_PARTIAL_PAYMENTS_ENABLED === 'true',

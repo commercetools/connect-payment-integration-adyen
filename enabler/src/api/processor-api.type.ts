@@ -1,5 +1,5 @@
 import { CTAmount, CocoStoredPaymentMethod } from '../payment-enabler/payment-enabler';
-import { CoreConfiguration, PaymentAction, RawPaymentMethod, ResultCode } from '@adyen/adyen-web';
+import { CoreConfiguration, DonationCampaign, PaymentAction, RawPaymentMethod, ResultCode } from '@adyen/adyen-web';
 
 type AdyenEnvironment = CoreConfiguration['environment'];
 
@@ -84,6 +84,30 @@ export type UpdatePaypalOrderRequest = {
   originalAmount: CTAmount;
 };
 export type UpdatePaypalOrderResponse = Record<string, unknown>;
+
+// ─── Donations (Adyen Giving) ────────────────────────────────────────────────
+
+export type DonationAmount = { value: number; currency: string };
+
+export type DonationConfigRequest = { locale?: string; withCountryCode?: boolean };
+export type DonationConfigResponse = {
+  environment: AdyenEnvironment;
+  clientKey: string;
+  countryCode?: string;
+  /** The payment the donation is charged against. */
+  paymentReference: string;
+  paidAmount: DonationAmount;
+  donationCampaign?: DonationCampaign;
+};
+
+export type CreateDonationRequest = {
+  donationCampaignId: string;
+  amount: DonationAmount;
+};
+export type CreateDonationResponse = {
+  status?: 'completed' | 'pending' | 'refused';
+  id?: string;
+};
 
 // ─── Orders (gift card split payments) ───────────────────────────────────────
 

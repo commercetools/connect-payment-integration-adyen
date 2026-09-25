@@ -81,6 +81,8 @@ If the feature stored payment methods is enabled then the scopes must also inclu
 
 If recurring payments are enabled (`ADYEN_RECURRING_PAYMENTS_ENABLED`) then the scopes must also include the scope: `manage_recurring_payment_jobs`
 
+If Adyen Giving is enabled (`ADYEN_GIVING_ENABLED`) then the scopes must also include the scope: `manage_types`, needed to create the custom type that holds the donation details on the payment
+
 ```
 npm run dev
 ```
@@ -178,6 +180,8 @@ Any other type of event will be silently ignored. For more information see the [
 
 If the feature stored payment methods is enabled then the webhook of type "Recurring tokens life cycle events" with the event type of "recurring.token.created" must also be enabled.
 
+If Adyen Giving is enabled then a webhook of type "Adyen Giving" with the event `DONATION` must also be enabled. Adyen sends that event for the charity account the donation was credited to, so set it up on the account that receives the donations.
+
 ### Configuring the notifications in Adyen
 
 To configure notifications in Adyen, follow this [guide](https://docs.adyen.com/development-resources/webhooks/#set-up-webhooks-in-your-customer-area).
@@ -187,6 +191,9 @@ In the webhook server's url, the following value must be set:
 
 For the stored payment methods feature the url must be set as:
 `{processorUrl}/notifications/tokenization`
+
+For Adyen Giving the url must be set as:
+`{processorUrl}/notifications/donations`
 
 `processorUrl` is the url of the connector once it has been installed. It can be retrieved from the Merchant Center, inside the installation details of the processor.
 The url looks like `https://service-[id].[region].commercetools.app`.
@@ -307,6 +314,63 @@ The requests are authenticated by validating the HTTP header HMAC signature usin
 #### Response Parameters
 
 It returns a 200 `[accepted]` response to Adyen to indicate that the notification has been processed.
+
+`POST /notifications/donations`
+
+#### Request Parameters
+
+The request body is an [Adyen Webhook](https://docs.adyen.com/development-resources/webhooks/webhook-types/#webhook-structure) carrying a `DONATION` notification item. Any other `eventCode` is accepted and ignored.
+The requests are authenticated by validating the HMAC signature of the notification item, using the `ADYEN_NOTIFICATION_HMAC_KEY` if `ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY` is not set. Otherwise the latter will be used.
+
+#### Response Parameters
+
+It returns a 200 `[accepted]` response to Adyen to indicate that the notification has been processed.
+
+### Get donation configuration
+
+Returns what the front-end needs to render the Adyen Giving component for the payment of the checkout session. Only available when Adyen Giving is enabled.
+
+#### Endpoint
+
+`GET /donation-config`
+
+#### Request Parameters
+
+As query string:
+
+- locale (optional): locale used to resolve the campaign content.
+- withCountryCode (optional): resolving the country code requires an extra cart lookup, so it is opt-in.
+
+#### Response Parameters
+
+- clientKey / environment: client-side Adyen configuration.
+- countryCode: only returned when requested through `withCountryCode`.
+- paymentReference: unique identifier of the payment the donation would be charged against.
+- paidAmount: amount of the original payment, in Adyen minor units. Needed to render roundup campaigns.
+- donationCampaign: the active campaign of the merchant account for the currency of the payment. A merchant account can have at most one.
+
+It fails with the error code `PaymentNotEligible` when the payment carries no Adyen donation token, or when a donation has already been charged against it.
+
+### Make donation
+
+Charges a donation against the payment of the checkout session, using the donation token Adyen returned for that payment. The donation token, the PSP reference and the payment itself are taken from the session, never from the request body.
+
+#### Endpoint
+
+`POST /donations`
+
+#### Request Parameters
+
+- donationCampaignId: id of the campaign to donate to. It is rejected when it is not the currently active one.
+- amount: `{ currency, value }` in Adyen minor units. It is validated against the currency of the payment and against the amounts the campaign allows.
+- locale (optional)
+
+#### Response Parameters
+
+- id: Adyen's unique identifier of the donation.
+- status: status of the donation in Adyen. It can be `completed`, `pending` or `refused`.
+
+The outcome is also recorded on the commercetools payment, in the `adyenDonationAmount` and `adyenDonationState` custom fields, and settled later by the `DONATION` webhook.
 
 ### Get supported payment components
 

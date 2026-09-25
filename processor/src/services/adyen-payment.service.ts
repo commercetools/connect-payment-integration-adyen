@@ -20,7 +20,6 @@ import {
   ErrorInternalConstraintViolated,
   CurrencyConverters,
   CustomFieldsDraft,
-  FieldContainer,
   GenerateCardDetailsCustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import { AdyenOrderService } from './adyen-order.service';
@@ -102,12 +101,14 @@ import {
   isCollapsedTypePayment,
   isGiftCardSplitPayment,
 } from './converters/helper.converter';
-import { populateInterfaceInteraction, AdyenRequestPayload, AdyenResponsePayload } from './helper.service';
 import {
-  AdyenOrderDetailsTypeDraft,
-  AdyenOrderDetailsTypeKey,
-  GenerateAdyenOrderDetailsCustomFieldsDraft,
-} from '../custom-types/adyen-order-details';
+  AdyenPaymentCustomFieldsUpdate,
+  AdyenRequestPayload,
+  buildAdyenPaymentCustomFields,
+  buildInterfaceInteraction,
+  isPaymentApproved,
+} from './helper.service';
+import { AdyenPaymentDetailsFields } from '../custom-types/adyen-payment-details';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
@@ -393,7 +394,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       .filter(
         (payment): payment is Payment =>
           payment !== undefined &&
-          this.isPaymentApproved(payment) &&
+          isPaymentApproved(payment) &&
           payment.custom?.fields?.['adyenOrderData'] === undefined,
       )
       .reduce((sum, payment) => sum + payment.amountPlanned.centAmount, 0);
@@ -408,20 +409,6 @@ export class AdyenPaymentService extends AbstractPaymentService {
       currencyCode: basePrice.currencyCode,
       fractionDigits: basePrice.fractionDigits,
     };
-  }
-
-  private isPaymentApproved(payment: Payment): boolean {
-    const wasReverted = payment.transactions.some(
-      (tx) =>
-        (tx.type === 'CancelAuthorization' || tx.type === 'Refund') &&
-        (tx.state === 'Success' || tx.state === 'Pending'),
-    );
-    if (wasReverted) return false;
-
-    return payment.transactions.some(
-      (tx) =>
-        (tx.state === 'Success' || tx.state === 'Pending') && (tx.type === 'Authorization' || tx.type === 'Charge'),
-    );
   }
 
   public async createPayment(opts: { data: CreatePaymentRequestDTO }): Promise<CreatePaymentResponseDTO> {
@@ -467,12 +454,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    const orderCustomFields =
-      getConfig().adyenPartialPaymentsEnabled && res.order
-        ? await this.buildAdyenOrderCustomFields(ctPayment, res.order)
-        : {};
-
-    const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
+    const interfaceInteraction = buildInterfaceInteraction('CreatePayment', data, res);
+    const adyenCustomFields = await this.buildAdyenCustomFieldsUpdate(ctPayment, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -488,7 +471,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         data.paymentMethod.storedPaymentMethodId && {
           paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
         }),
-      ...orderCustomFields,
+      ...adyenCustomFields,
       pspInteractions: interfaceInteraction,
     });
 
@@ -524,7 +507,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
-    const interfaceInteraction = this.buildInterfaceInteraction('ConfirmPayment', data, res);
+    const interfaceInteraction = buildInterfaceInteraction('ConfirmPayment', data, res);
+    const adyenCustomFields = await this.buildAdyenCustomFieldsUpdate(ctPayment, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -536,6 +520,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
+      ...adyenCustomFields,
       pspInteractions: interfaceInteraction,
     });
 
@@ -607,7 +592,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       throw wrapAdyenError(e);
     }
 
-    const interfaceInteraction = this.buildInterfaceInteraction('ConfirmPayment', data, res);
+    const interfaceInteraction = buildInterfaceInteraction('ConfirmPayment', data, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -1105,7 +1090,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const txState = this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false);
 
-    const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
+    const interfaceInteraction = buildInterfaceInteraction('CreatePayment', data, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: newlyCreatedPayment.id,
@@ -1627,7 +1612,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const { adyenRequest, adyenResponse } = await this.makeCallToAdyenInternal(interfaceId, adyenOperation, request);
 
-    const interfaceInteraction = this.buildInterfaceInteraction(
+    const interfaceInteraction = buildInterfaceInteraction(
       MODIFICATION_TYPE_MAP[adyenOperation],
       adyenRequest,
       adyenResponse,
@@ -1797,52 +1782,28 @@ export class AdyenPaymentService extends AbstractPaymentService {
     return data.action?.type !== undefined;
   }
 
-  /**
-   * Builds the custom field update for storing Adyen Order data on a commercetools payment.
-   *
-   * If the payment has no custom type, returns `customFields` (setCustomType) using our own type.
-   * If the payment already has our type, refreshes it via `customFields`.
-   * If the payment has a merchant-owned custom type, adds our field definitions to that type
-   * (idempotent) and returns `customFieldValues` (setCustomField) so the merchant's type is
-   * preserved and not replaced.
-   */
-  private async buildAdyenOrderCustomFields(
+  /** Returns an empty object when the response carries nothing worth persisting. */
+  private async buildAdyenCustomFieldsUpdate(
     ctPayment: Payment,
-    order: CheckoutOrderResponse,
-  ): Promise<{ customFields?: CustomFieldsDraft; customFieldValues?: FieldContainer }> {
-    if (!ctPayment.custom) {
-      return {
-        customFields: GenerateAdyenOrderDetailsCustomFieldsDraft({
-          adyenOrderData: order.orderData,
-          adyenOrderPspReference: order.pspReference,
-        }),
-      };
+    adyenResponse: { order?: CheckoutOrderResponse | null; donationToken?: string },
+  ): Promise<AdyenPaymentCustomFieldsUpdate> {
+    const { adyenPartialPaymentsEnabled, adyenGivingEnabled } = getConfig();
+    const fields: AdyenPaymentDetailsFields = {};
+
+    if (adyenPartialPaymentsEnabled && adyenResponse.order) {
+      fields.adyenOrderData = adyenResponse.order.orderData;
+      fields.adyenOrderPspReference = adyenResponse.order.pspReference;
     }
 
-    // Payment already has a custom type from the merchant — fetch it by ID to get its key,
-    // then add our fields to it rather than replacing it
-    const existingType = await paymentSDK.ctCustomTypeService.getById(ctPayment.custom.type.id);
-
-    if (existingType.key === AdyenOrderDetailsTypeKey) {
-      return {
-        customFields: GenerateAdyenOrderDetailsCustomFieldsDraft({
-          adyenOrderData: order.orderData,
-          adyenOrderPspReference: order.pspReference,
-        }),
-      };
+    if (adyenGivingEnabled && adyenResponse.donationToken) {
+      fields.adyenDonationToken = adyenResponse.donationToken;
     }
 
-    await paymentSDK.ctCustomTypeService.createOrUpdate({
-      ...AdyenOrderDetailsTypeDraft,
-      key: existingType.key,
-    });
+    if (Object.keys(fields).length === 0) {
+      return {};
+    }
 
-    return {
-      customFieldValues: {
-        adyenOrderData: order.orderData,
-        adyenOrderPspReference: order.pspReference,
-      },
-    };
+    return buildAdyenPaymentCustomFields(ctPayment, fields);
   }
 
   private buildRedirectMerchantUrl(
@@ -1872,7 +1833,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
   ): Promise<void> {
     const payment = await this.getPaymentFromNotification(updateData);
     const interfaceInteraction = rawNotification
-      ? this.buildInterfaceInteraction('Notification', rawNotification, undefined)
+      ? buildInterfaceInteraction('Notification', rawNotification, undefined)
       : undefined;
     for (let i = 0; i < updateData.transactions.length; i++) {
       const tx = updateData.transactions[i];
@@ -2059,7 +2020,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       this.isActionRequired(res),
     );
 
-    const interfaceInteraction = this.buildInterfaceInteraction('CreatePayment', data, res);
+    const interfaceInteraction = buildInterfaceInteraction('CreatePayment', data, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -2127,19 +2088,5 @@ export class AdyenPaymentService extends AbstractPaymentService {
     } catch (e) {
       throw wrapAdyenError(e);
     }
-  }
-
-  private buildInterfaceInteraction(
-    type: string,
-    request: AdyenRequestPayload,
-    response: AdyenResponsePayload | undefined,
-  ) {
-    return populateInterfaceInteraction({
-      interactionId: randomUUID(),
-      type,
-      createdAt: new Date().toISOString(),
-      request,
-      response,
-    });
   }
 }

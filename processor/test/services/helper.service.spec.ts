@@ -1,6 +1,15 @@
-import { describe, test, expect, jest } from '@jest/globals';
+import { afterEach, describe, test, expect, jest } from '@jest/globals';
+import { Payment, Type } from '@commercetools/connect-payments-sdk';
 import * as Config from '../../src/config/config';
-import { populateInterfaceInteraction, maskRequest, maskResponse } from '../../src/services/helper.service';
+import { AdyenPaymentDetailsTypeKey } from '../../src/custom-types/adyen-payment-details';
+import { paymentSDK } from '../../src/payment-sdk';
+import {
+  buildAdyenPaymentCustomFields,
+  populateInterfaceInteraction,
+  maskRequest,
+  maskResponse,
+} from '../../src/services/helper.service';
+import { mockGetPaymentResult } from '../utils/mock-payment-data';
 import { CardDetails } from '@adyen/api-library/lib/src/typings/checkout/cardDetails';
 import { ApplePayDetails } from '@adyen/api-library/lib/src/typings/checkout/applePayDetails';
 import { PayWithGoogleDetails } from '@adyen/api-library/lib/src/typings/checkout/payWithGoogleDetails';
@@ -270,4 +279,61 @@ describe('populateInterfaceInteraction', () => {
       additionalData: { 'tokenization.storedPaymentMethodId': '***' },
     });
   });
+});
+
+describe('buildAdyenPaymentCustomFields', () => {
+  const merchantType: Type = {
+    id: 'custom-type-id',
+    version: 1,
+    key: 'merchant-own-payment-type',
+    name: { en: 'Merchant own payment type' },
+    resourceTypeIds: ['payment'],
+    fieldDefinitions: [],
+    createdAt: '2024-02-13T00:00:00.000Z',
+    lastModifiedAt: '2024-02-13T00:00:00.000Z',
+  };
+  // The payment only carries the id of its type; the key is resolved through ctCustomTypeService.
+  const paymentWithCustomType: Payment = {
+    ...mockGetPaymentResult,
+    custom: {
+      type: { typeId: 'type', id: merchantType.id },
+      fields: { adyenDonationToken: 'a-donation-token' },
+    },
+  };
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('assigns the connector type when the payment has none', async () => {
+    // Act
+    const result = await buildAdyenPaymentCustomFields(mockGetPaymentResult, { adyenDonationState: 'Success' });
+
+    // Assert
+    expect(result).toEqual({
+      customFields: {
+        type: { key: AdyenPaymentDetailsTypeKey, typeId: 'type' },
+        fields: { adyenDonationState: 'Success' },
+      },
+    });
+  });
+
+  test.each([AdyenPaymentDetailsTypeKey, merchantType.key])(
+    'only sets the given values when the payment already carries the type %s',
+    async (typeKey) => {
+      // Arrange
+      jest.spyOn(paymentSDK.ctCustomTypeService, 'getById').mockResolvedValue({ ...merchantType, key: typeKey });
+      const createOrUpdate = jest
+        .spyOn(paymentSDK.ctCustomTypeService, 'createOrUpdate')
+        .mockResolvedValue({ ...merchantType, key: typeKey });
+
+      // Act
+      const result = await buildAdyenPaymentCustomFields(paymentWithCustomType, { adyenDonationState: 'Success' });
+
+      // Assert: setCustomField only, so the fields the caller did not pass survive the update
+      expect(result).toEqual({ customFieldValues: { adyenDonationState: 'Success' } });
+      // the field definitions are only added to a type the connector does not own
+      expect(createOrUpdate).toHaveBeenCalledTimes(typeKey === AdyenPaymentDetailsTypeKey ? 0 : 1);
+    },
+  );
 });

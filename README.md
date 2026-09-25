@@ -232,10 +232,13 @@ deployAs:
           description: Adyen API key
           required: true
         - key: ADYEN_NOTIFICATION_HMAC_KEY
-          description: Adyen HMAC key
+          description: Adyen HMAC key, used for every webhook that has no HMAC key of its own
           required: true
         - key: ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY
           description: Adyen HMAC tokenization webhooks key. This will be used if provided, otherwise the ADYEN_NOTIFICATION_HMAC_KEY will be used. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
+          required: false
+        - key: ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY
+          description: Adyen HMAC donation webhooks key. This will be used if provided, otherwise the ADYEN_NOTIFICATION_HMAC_KEY will be used. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
           required: false
         - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
           description: Apple Pay own certificate
@@ -260,7 +263,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_LIVE_URL_PREFIX`: It represents live endpoint prefix used by Adyen platform. It is only required for Adyen live environment. For details, please refer to [Adyen live endpoints](https://docs.adyen.com/development-resources/live-endpoints/).
 - `MERCHANT_RETURN_URL`: The return URL located in merchant platform.
 - `ADYEN_API_KEY`: It represents the API Key used for Ayden request authentication. For details, please refer to [Ayden API key authentication](https://docs.adyen.com/development-resources/api-authentication/#api-key-authentication).
-- `ADYEN_NOTIFICATION_HMAC_KEY`: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
+- `ADYEN_NOTIFICATION_HMAC_KEY`: It represents a hash-based signature within Ayden webhook event. It aims at protecting the connector from any unauthorized webhook event. It verifies the standard payment webhook, and every other webhook for which no dedicated key is configured. For details, please refer to [Verify HMAC signatures](https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures).
 - `ADYEN_APPLEPAY_OWN_CERTIFICATE`: The merchant identity certificate. This is only needed if using an own certificate instead of the Adyen's Apple Pay certificate. Follow [Adyen's guide](https://docs.adyen.com/payment-methods/apple-pay/enable-apple-pay/?tab=setup-own_2) to create the certificate. **The value should be in base64 format**.
 - `ADYEN_APPLEPAY_OWN_MERCHANT_ID`: The merchant identifier created in the Apple portal. Only needed if using an own certificate
 - `ADYEN_APPLEPAY_OWN_MERCHANT_DOMAIN`: The merchant domain verified in the Apple portal. Only needed if using an own certificate. Do not add the https protocol.
@@ -272,6 +275,7 @@ Here you can see the details about various variables in configuration
 - `ADYEN_STORED_PAYMENT_METHODS_PAYMENT_INTERFACE`: A string value which is used to set the corresponding "paymentInterface" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
 - `ADYEN_STORED_PAYMENT_METHODS_INTERFACE_ACCOUNT`: A string value which is used to set the corresponding "interfaceAccount" value on the CT payment-methods. If this value gets changed then previously created payment-methods won't be retrieved and would need to be manually migrated over.
 - `ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY`: A specific hmac key for the tokenization webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
+- `ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY`: A specific hmac key for the donation webhooks from Adyen. If not provided then the existing "ADYEN_NOTIFICATION_HMAC_KEY" env value is used.
 - `ADYEN_ORDER_EXPIRY_MINUTES`: Number of minutes before an Adyen Order expires for split payments (e.g. gift card + remaining method). When the order expires, Adyen sends an `ORDER_CLOSED` webhook which cancels the pending split and automatically refunds any partial payments. Default value is `60`.
 - `ADYEN_PARTIAL_PAYMENTS_ENABLED`: If set to `"true"` then partial payments (split payments via the Adyen Orders API, e.g. gift cards) are enabled. When enabled, the connector creates a custom type to store Adyen Order data (`adyenOrderData`, `adyenOrderPspReference`) on the CT `payment` resource. Only supported with the **Drop-in** component. Default value is `"false"`.
 - `ADYEN_RECURRING_PAYMENTS_ENABLED`: If set to `"true"` then payment methods are tokenized for recurring carts so they can be used for future recurring payments. Enabling this also forces the stored payment methods feature on, regardless of `ADYEN_STORED_PAYMENT_METHODS_ENABLED`. Default value is `"false"`.
@@ -428,7 +432,7 @@ If the shopper abandons the flow and a new session is created while a previous A
 #### Configuration
 
 1. Ensure the configured commercetools API client has the scope `manage_types` (needed to create the custom type on deploy).
-2. Set `ADYEN_PARTIAL_PAYMENTS_ENABLED` to `"true"`. On the next re-deploy, the connector will create the `commercetools-checkout-adyen-order-details` custom type.
+2. Set `ADYEN_PARTIAL_PAYMENTS_ENABLED` to `"true"`. On the next re-deploy, the connector will create the `commercetools-checkout-adyen-payment-details` custom type.
 3. Optionally configure `ADYEN_ORDER_EXPIRY_MINUTES` (default: `60`) to control how long an open Adyen Order stays active before expiring.
 4. In the Adyen Customer Area, on your webhook's **Additional settings** tab, under **Payment**, it is recommended to enable **"Include a success boolean for the payments listed in an ORDER_CLOSED event"**. This makes Adyen report the approval status of each partial payment directly in the `ORDER_CLOSED` webhook.
 
@@ -436,9 +440,30 @@ If the shopper abandons the flow and a new session is created while a previous A
 
 | Type key | Resource | Fields |
 |---|---|---|
-| `commercetools-checkout-adyen-order-details` | `payment` | `adyenOrderData` (String), `adyenOrderPspReference` (String) |
+| `commercetools-checkout-adyen-payment-details` | `payment` | `adyenOrderData` (String), `adyenOrderPspReference` (String), `adyenDonationToken` (String), `adyenDonationAmount` (Money), `adyenDonationState` (Enum: `Pending`, `Success`, `Failure`) |
 
 > If the CT payment already has a merchant-defined custom type applied, the connector will add its fields to that existing type rather than replacing it.
+
+
+### Adyen Giving (donations)
+
+> For a full integration guide (creating the checkout session, loading the enabler, mounting the
+> donation form, callbacks and known errors), see [Adyen Giving](./docs/adyen-giving.md). This
+> section only covers how the connector itself persists and reports on a donation.
+
+#### Donation result on the payment
+
+The donation is charged against the payment the shopper already made, so its outcome is recorded on that same commercetools payment, in the `adyenDonationAmount` and `adyenDonationState` fields of the `commercetools-checkout-adyen-payment-details` custom type. `adyenDonationState` is `Pending` while Adyen has not settled the donation yet, and `Success` or `Failure` once it has.
+
+A donation token is good for a single donation, so once one is charged (`Pending` or `Success`) the payment is no longer donatable: both the donation configuration and the donation itself are then rejected with `PaymentNotEligible`, which keeps the campaign from being rendered again when the shopper reloads the confirmation page. A `Failure` leaves the payment donatable, since nothing was charged.
+
+#### Donation webhook
+
+1. Set `ADYEN_GIVING_ENABLED` to `"true"` and ensure the configured commercetools API client has the scope `manage_types` (needed to create the custom type on deploy).
+2. In the Adyen Customer Area, create a webhook of type **Adyen Giving** with the event **Donation** enabled. Adyen sends this event for the charity account the donation was credited to, so set the webhook up on the account that receives the donations.
+   1. the destination must be to `<processorUrl>/notifications/donations`
+   2. choose between using a new HMAC key by setting `ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY` or, if unset, the connector will use the HMAC key of `ADYEN_NOTIFICATION_HMAC_KEY`
+
 
 ### Payment methods configuration overrides
 
@@ -529,6 +554,8 @@ The following operations are recorded:
 | Cancel | `CancelPayment` |
 | Reverse | `ReversePayment` |
 | Incoming Adyen notification | `Notification` |
+| Donation | `MakeDonation` |
+| Incoming Adyen donation notification | `DonationNotification` |
 
 Each interaction records the full request and response .
 

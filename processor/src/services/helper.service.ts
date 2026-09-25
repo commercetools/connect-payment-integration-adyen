@@ -1,5 +1,19 @@
-import { CustomFieldsDraft, GenerateInterfaceInteractionCustomFieldsDraft } from '@commercetools/connect-payments-sdk';
+import {
+  CustomFieldsDraft,
+  FieldContainer,
+  GenerateInterfaceInteractionCustomFieldsDraft,
+  Payment,
+} from '@commercetools/connect-payments-sdk';
+import { Money } from '@commercetools/platform-sdk';
 import { getConfig } from '../config/config';
+import {
+  AdyenDonationState,
+  AdyenPaymentDetailsFields,
+  AdyenPaymentDetailsTypeDraft,
+  AdyenPaymentDetailsTypeKey,
+  GenerateAdyenPaymentDetailsCustomFieldsDraft,
+} from '../custom-types/adyen-payment-details';
+import { paymentSDK } from '../payment-sdk';
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { PaymentDetailsRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentDetailsRequest';
 import { PaymentCaptureRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentCaptureRequest';
@@ -12,6 +26,9 @@ import { PaymentCaptureResponse } from '@adyen/api-library/lib/src/typings/check
 import { PaymentRefundResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentRefundResponse';
 import { PaymentCancelResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentCancelResponse';
 import { PaymentReversalResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentReversalResponse';
+import { DonationPaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/donationPaymentRequest';
+import { DonationPaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/donationPaymentResponse';
+import { randomUUID } from 'node:crypto';
 import { NotificationRequestDTO } from '../dtos/adyen-payment.dto';
 
 export type AdyenRequestPayload =
@@ -21,6 +38,7 @@ export type AdyenRequestPayload =
   | PaymentRefundRequest
   | PaymentCancelRequest
   | PaymentReversalRequest
+  | DonationPaymentRequest
   | NotificationRequestDTO;
 
 export type AdyenResponsePayload =
@@ -29,7 +47,8 @@ export type AdyenResponsePayload =
   | PaymentCaptureResponse
   | PaymentRefundResponse
   | PaymentCancelResponse
-  | PaymentReversalResponse;
+  | PaymentReversalResponse
+  | DonationPaymentResponse;
 
 export type InterfaceInteractionData = {
   interactionId: string;
@@ -116,4 +135,81 @@ export const populateInterfaceInteraction = (data: InterfaceInteractionData): Cu
       response: data.response !== undefined ? JSON.stringify(maskResponse(data.response)) : undefined,
     }),
   ];
+};
+
+/** Whether the payment was approved and not reverted afterwards. */
+export const isPaymentApproved = (payment: Payment): boolean => {
+  const wasReverted = payment.transactions.some(
+    (tx) =>
+      (tx.type === 'CancelAuthorization' || tx.type === 'Refund') && (tx.state === 'Success' || tx.state === 'Pending'),
+  );
+  if (wasReverted) return false;
+
+  return payment.transactions.some(
+    (tx) => (tx.state === 'Success' || tx.state === 'Pending') && (tx.type === 'Authorization' || tx.type === 'Charge'),
+  );
+};
+
+/** Ready to be assigned to `pspInteractions`; undefined when the feature is disabled. */
+export const buildInterfaceInteraction = (
+  type: string,
+  request: AdyenRequestPayload,
+  response: AdyenResponsePayload | undefined,
+): CustomFieldsDraft[] | undefined =>
+  populateInterfaceInteraction({
+    interactionId: randomUUID(),
+    type,
+    createdAt: new Date().toISOString(),
+    request,
+    response,
+  });
+
+/** Ready to be spread into `ctPaymentService.updatePayment`; the two keys are mutually exclusive. */
+export type AdyenPaymentCustomFieldsUpdate = {
+  customFields?: CustomFieldsDraft;
+  customFieldValues?: FieldContainer;
+};
+
+export const getAdyenPaymentCustomFields = (ctPayment: Payment): AdyenPaymentDetailsFields => {
+  const fields = ctPayment.custom?.fields ?? {};
+
+  return {
+    adyenOrderData: fields['adyenOrderData'] as string | undefined,
+    adyenOrderPspReference: fields['adyenOrderPspReference'] as string | undefined,
+    adyenDonationToken: fields['adyenDonationToken'] as string | undefined,
+    adyenDonationAmount: fields['adyenDonationAmount'] as Money | undefined,
+    adyenDonationState: fields['adyenDonationState'] as AdyenDonationState | undefined,
+  };
+};
+
+/**
+ * A payment without a custom type gets the connector's own type assigned. Once a type is in place — the
+ * connector's own or a merchant-owned one, in which case the field definitions are added to it — only the values
+ * are set, so that neither the type nor any field outside {@link AdyenPaymentDetailsFields} is replaced.
+ *
+ */
+export const buildAdyenPaymentCustomFields = async (
+  ctPayment: Payment,
+  fields: AdyenPaymentDetailsFields,
+): Promise<AdyenPaymentCustomFieldsUpdate> => {
+  if (!ctPayment.custom) {
+    return {
+      customFields: GenerateAdyenPaymentDetailsCustomFieldsDraft(fields),
+    };
+  }
+
+  const existingType = await paymentSDK.ctCustomTypeService.getById(ctPayment.custom.type.id);
+
+  if (existingType.key !== AdyenPaymentDetailsTypeKey) {
+    await paymentSDK.ctCustomTypeService.createOrUpdate({
+      ...AdyenPaymentDetailsTypeDraft,
+      key: existingType.key,
+    });
+  }
+
+  // setCustomField only touches the fields given; setCustomType would replace the whole container, dropping
+  // every field the caller did not pass — the donation token and the order data among them.
+  return {
+    customFieldValues: fields as FieldContainer,
+  };
 };

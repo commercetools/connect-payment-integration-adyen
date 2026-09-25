@@ -1,11 +1,11 @@
-import { Cart, CommercetoolsCartService, Payment } from '@commercetools/connect-payments-sdk';
-import { Transaction } from '@commercetools/platform-sdk';
+import { Cart, CommercetoolsCartService } from '@commercetools/connect-payments-sdk';
 import { AdyenApi, wrapAdyenError } from '../clients/adyen.client';
 import { CancelOrderRequestDTO, CancelOrderResponseDTO, CreateOrderResponseDTO } from '../dtos/adyen-payment.dto';
 import { getCartIdFromContext } from '../libs/fastify/context/context';
 import { log } from '../libs/logger';
 import { CancelOrderConverter } from './converters/cancel-order.converter';
 import { CreateOrderConverter } from './converters/create-order.converter';
+import { isPaymentApproved } from './helper.service';
 
 export type AdyenOrderServiceOptions = {
   ctCartService: CommercetoolsCartService;
@@ -103,17 +103,4 @@ export class AdyenOrderService {
     }
     return activeOrders;
   }
-}
-
-function isPaymentApproved(payment: Payment): boolean {
-  const wasReverted = payment.transactions.some(
-    (tx: Transaction) =>
-      (tx.type === 'CancelAuthorization' || tx.type === 'Refund') && (tx.state === 'Success' || tx.state === 'Pending'),
-  );
-  if (wasReverted) return false;
-
-  return payment.transactions.some(
-    (tx: Transaction) =>
-      (tx.state === 'Success' || tx.state === 'Pending') && (tx.type === 'Authorization' || tx.type === 'Charge'),
-  );
 }
