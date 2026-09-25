@@ -55,20 +55,29 @@ export async function getJwtToken(): Promise<string> {
   return data.token;
 }
 
-export async function getSessionId(cartId: string, { isDropin = false } = {}): Promise<string> {
+/**
+ * A session need not be bound to a cart: post-checkout flows open one on an existing payment,
+ * passed in the metadata instead.
+ */
+export async function getSessionId({
+  cartId,
+  paymentId,
+  isDropin = false,
+}: { cartId?: string; paymentId?: string; isDropin?: boolean }): Promise<string> {
   const token = await getCtpToken();
   const returnPath = window.location.href.replace(/\/[^/]*(\?.*)?$/, '/return');
   const metadata: Record<string, unknown> = {
     processorUrl: window.__VITE_PROCESSOR_URL__,
     checkoutTransactionItemId: crypto.randomUUID(),
     merchantReturnUrl: returnPath,
+    ...(paymentId && { paymentId }),
     ...(!isDropin && { allowedPaymentMethods: ALLOWED_PAYMENT_METHODS }),
   };
 
   const res = await fetch(`${sessionUrl()}/${projectKey()}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ cart: { cartRef: { id: cartId } }, metadata }),
+    body: JSON.stringify({ ...(cartId && { cart: { cartRef: { id: cartId } } }), metadata }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as { message?: string };

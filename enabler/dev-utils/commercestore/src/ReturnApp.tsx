@@ -62,6 +62,10 @@ export default function ReturnApp() {
     window.location.href = '/dev-utils/commercestore/payments.html';
   };
 
+  const goToDonation = () => {
+    window.location.href = `/dev-utils/commercestore/donation.html?paymentReference=${paymentReference}`;
+  };
+
   const renderContent = () => {
     if (state === 'loading') {
       return <Spinner text="Loading payment result…" />;
@@ -99,7 +103,10 @@ export default function ReturnApp() {
         )}
 
         <div className="mt-3" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button className="btn btn-primary" onClick={goToCheckout}>New Checkout</button>
+          {(state === 'success' || state === 'pending') && paymentReference && (
+            <button className="btn btn-primary" onClick={goToDonation}>Donate</button>
+          )}
+          <button className="btn btn-outline-secondary" onClick={goToCheckout}>New Checkout</button>
           {payment && (
             <button className="btn btn-outline-secondary" onClick={goToPayments}>View Payments</button>
           )}

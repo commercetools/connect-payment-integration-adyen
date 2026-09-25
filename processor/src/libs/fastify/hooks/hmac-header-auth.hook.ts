@@ -1,5 +1,4 @@
 import HmacValidator from '@adyen/api-library/lib/src/utils/hmacValidator';
-import { config } from '../../../config/config';
 import { FastifyRequest } from 'fastify';
 import { ErrorAuthErrorResponse } from '@commercetools/connect-payments-sdk';
 
@@ -7,6 +6,8 @@ import { ErrorAuthErrorResponse } from '@commercetools/connect-payments-sdk';
  * @see https://docs.adyen.com/development-resources/webhooks/verify-hmac-signatures/#verify-hmac-in-header
  */
 export class HmacHeaderAuthHook {
+  constructor(private readonly hmacKey: string) {}
+
   public authenticate() {
     return async (request: FastifyRequest) => {
       const hmacSignatureHeaders = request.headers['hmacsignature'];
@@ -27,15 +28,10 @@ export class HmacHeaderAuthHook {
         hmacSignature = hmacSignatureHeaders;
       }
 
-      const hmacKey =
-        config.adyenHMACTokenizationWebHooksKey !== undefined
-          ? config.adyenHMACTokenizationWebHooksKey
-          : config.adyenHMACKey;
-
       const validator = new HmacValidator();
 
       const reqBody = JSON.stringify(request.body);
-      const isValid = validator.validateHMACSignature(hmacKey, hmacSignature, reqBody);
+      const isValid = validator.validateHMACSignature(this.hmacKey, hmacSignature, reqBody);
 
       if (!isValid) {
         throw new ErrorAuthErrorResponse('HMAC is not valid');
