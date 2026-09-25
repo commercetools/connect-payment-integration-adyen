@@ -19,11 +19,33 @@ export const GiftCardDetailsTypeDraft: TypeDraft = {
       },
       required: false,
     },
+    {
+      name: 'lastFour',
+      label: {
+        en: 'Last four digits of the gift card',
+      },
+      type: {
+        name: 'String',
+      },
+      required: false,
+    },
+    {
+      name: 'giftCardNumber',
+      label: {
+        en: 'Complete giftcard number',
+      },
+      type: {
+        name: 'String',
+      },
+      required: false,
+    },
   ],
 };
 
 export type GiftCardDetailsFields = {
   brand?: string;
+  lastFour?: string;
+  giftCardNumber?: string;
 };
 
 export const GenerateGiftCardDetailsCustomFieldsDraft = (fields: GiftCardDetailsFields): CustomFieldsDraft => {
