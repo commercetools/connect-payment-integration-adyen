@@ -16,19 +16,19 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.45.0",
+    "@adyen/adyen-web": "6.45.2",
     "serve": "14.2.6"
   },
   "devDependencies": {
-    "@jest/globals": "30.5.1",
+    "@jest/globals": "30.5.2",
     "@types/node": "26.5.1",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.1.1",
-    "jest": "30.5.1",
+    "jest": "30.5.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "sass": "1.104.0",
+    "sass": "1.104.1",
     "ts-jest": "29.4.12",
     "typescript": "6.0.3",
     "vite": "8.3.0",
