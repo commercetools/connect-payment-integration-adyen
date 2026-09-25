@@ -314,6 +314,7 @@ export class NotificationConverter {
     if (isGiftCard) {
       return GenerateGiftCardDetailsCustomFieldsDraft({
         brand: convertAdyenGiftCardBrandToCTFormat(item.paymentMethod),
+        lastFour: item.additionalData?.cardSummary,
       });
     }
 
