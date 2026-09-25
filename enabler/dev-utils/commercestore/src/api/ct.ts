@@ -84,15 +84,7 @@ export async function getSessionId({
     throw new Error(err.message || 'Failed to create session');
   }
   const data = await res.json() as { id: string };
-  // Stored so post-payment pages can call the processor with the same checkout session.
-  sessionStorage.setItem(CT_SESSION_ID_KEY, data.id);
   return data.id;
-}
-
-const CT_SESSION_ID_KEY = 'cs-ct-session-id';
-
-export function getStoredSessionId(): string | null {
-  return sessionStorage.getItem(CT_SESSION_ID_KEY);
 }
 
 export type CtApiError = Error & { code?: string };

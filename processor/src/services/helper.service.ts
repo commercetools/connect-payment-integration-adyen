@@ -64,6 +64,7 @@ const MASKED_FIELDS = new Set([
   'shopperIP',
   'holderName',
   'storedPaymentMethodId',
+  'donationToken',
   // Noise / opaque blobs
   'riskData',
   'sdkData',

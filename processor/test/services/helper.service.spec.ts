@@ -16,6 +16,7 @@ import { PayWithGoogleDetails } from '@adyen/api-library/lib/src/typings/checkou
 import { PaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/paymentRequest';
 import { PaymentResponse } from '@adyen/api-library/lib/src/typings/checkout/paymentResponse';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
+import { DonationPaymentRequest } from '@adyen/api-library/lib/src/typings/checkout/donationPaymentRequest';
 import { NotificationRequestDTO } from '../../src/dtos/adyen-payment.dto';
 
 describe('maskRequest', () => {
@@ -185,6 +186,27 @@ describe('maskRequest', () => {
           },
         },
       ],
+    });
+  });
+
+  test('donation: masks donationToken', () => {
+    // Arrange
+    const input: DonationPaymentRequest = {
+      amount: { currency: 'EUR', value: 500 },
+      reference: 'payment-id',
+      donationToken: 'super-secret-bearer-token',
+      donationOriginalPspReference: 'V4HZ4RBFJGXXGN82',
+      merchantAccount: 'YOUR_MERCHANT_ACCOUNT',
+      returnUrl: 'https://your-company.example.com/...',
+    };
+
+    // Act
+    const result = maskRequest(input);
+
+    // Assert
+    expect(result).toEqual({
+      ...input,
+      donationToken: '***',
     });
   });
 });

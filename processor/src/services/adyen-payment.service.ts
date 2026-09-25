@@ -593,6 +593,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     }
 
     const interfaceInteraction = buildInterfaceInteraction('ConfirmPayment', data, res);
+    const adyenCustomFields = await this.buildAdyenCustomFieldsUpdate(ctPayment, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -607,6 +608,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: this.convertAdyenResultCode(res.resultCode as PaymentResponse.ResultCodeEnum, false),
       },
+      ...adyenCustomFields,
       pspInteractions: interfaceInteraction,
     });
 
@@ -2021,6 +2023,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     );
 
     const interfaceInteraction = buildInterfaceInteraction('CreatePayment', data, res);
+    const adyenCustomFields = await this.buildAdyenCustomFieldsUpdate(ctPayment, res);
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -2032,6 +2035,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: txState,
       },
+      ...adyenCustomFields,
       pspInteractions: interfaceInteraction,
     });
 

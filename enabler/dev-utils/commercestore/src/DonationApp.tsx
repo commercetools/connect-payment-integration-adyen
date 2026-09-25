@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Header from './components/Header.tsx';
 import Spinner from './components/Spinner.tsx';
-import { getSessionId, getStoredSessionId } from './api/ct.ts';
+import { getSessionId } from './api/ct.ts';
 import type { DonationEnablerConstructor, MountableComponent } from './types.ts';
 
 type Status = 'idle' | 'loading' | 'shown' | 'thanks' | 'dismissed' | 'rejected' | 'error';
@@ -22,7 +22,6 @@ export default function DonationApp() {
   const [paymentReference, setPaymentReference] = useState(params.get('paymentReference') ?? '');
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const componentRef = useRef<MountableComponent | null>(null);
   const [autoStart] = useState(() => !!params.get('paymentReference'));
@@ -30,7 +29,6 @@ export default function DonationApp() {
   const mountDonation = async (reference: string) => {
     setStatus('loading');
     setError(null);
-    setInfo(null);
     // Unmount via the component: it renders with Preact, which keeps state on the container node,
     // so clearing that node by hand breaks the next mount.
     try { componentRef.current?.unmount?.(); } catch (_) {}
@@ -38,17 +36,8 @@ export default function DonationApp() {
 
     try {
       // The processor authenticates on the session, so open a cartless one carrying the payment.
-      let sessionId: string;
       const paymentId = reference.trim();
-      try {
-        sessionId = await getSessionId({ paymentId });
-      } catch (e) {
-        // Fall back to the session stored by the checkout tab.
-        const stored = getStoredSessionId();
-        if (!stored) throw e;
-        sessionId = stored;
-        setInfo(`Could not open a new session (${(e as Error).message}) — reusing the stored one`);
-      }
+      const sessionId = await getSessionId({ paymentId });
 
       // @ts-ignore — Vite resolves this path to the connector enabler at dev runtime
       const { DonationEnabler } = await import('/src/main.ts') as { DonationEnabler: DonationEnablerConstructor };
@@ -112,7 +101,6 @@ export default function DonationApp() {
           </button>
         </div>
 
-        {info && <div className="alert alert-secondary py-2">{info}</div>}
         {status === 'loading' && <Spinner text="Loading donation form…" />}
         {status === 'error' && <div className="alert alert-danger">{error}</div>}
         {status === 'thanks' && <div className="alert alert-success">Thanks for your donation!</div>}
