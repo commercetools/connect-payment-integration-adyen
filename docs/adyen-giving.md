@@ -42,18 +42,26 @@ The response's `id` is the `sessionId` the enabler needs below.
 
 ## 2. Load the enabler and mount the donation form
 
-The enabler is distributed as a static bundle served by the connector's `enabler` module (see
-[Development of Enabler](../enabler/README.md)), not as an npm package. Import it from wherever that
-bundle is served (e.g. `<script type="module">` pointing at the connector's enabler URL, or a bundler
-alias in dev).
-
-The donation has its own entry point, `DonationEnabler`, separate from the `Enabler` used to take the
-payment: it runs after the payment is done, so it takes neither the payment method configuration nor
-the payment callbacks.
+The enabler is distributed as a static bundle served by the connector's `enabler` module, not as an
+npm package. The connector is deployed with `applicationType: assets`, so the bundle is served from
+the enabler URL of the installation, which you can find in the Merchant Center under the connector's
+installation details. The ES module to load is `connector-enabler.es.js`, appended to that URL:
 
 ```ts
-import { DonationEnabler, DonationErrorCode } from "<enabler bundle>";
+// The URL is only known at runtime, so it is imported dynamically.
+const { DonationEnabler, DonationErrorCode } = await import(
+  `${enablerUrl}/connector-enabler.es.js`
+);
+```
 
+A UMD build, `connector-enabler.umd.js`, is published next to it for plain `<script>` tags; it
+exposes the same entry points under the global `Connector`.
+
+For running the bundle locally against a dev server, see
+[Development of Enabler](../enabler/README.md).
+
+```ts
+// `DonationEnabler` and `DonationErrorCode` come from the bundle imported above.
 const enabler = new DonationEnabler({
   processorUrl,            // same processor base URL used in the session metadata above
   sessionId,               // the session id from step 1
