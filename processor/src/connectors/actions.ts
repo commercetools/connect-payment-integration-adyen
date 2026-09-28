@@ -2,7 +2,57 @@ import { log } from '../libs/logger';
 import { getConfig } from '../config/config';
 import { paymentSDK } from '../payment-sdk';
 import { GiftCardDetailsTypeDraft } from '../custom-types/gift-card-details';
-import { AdyenOrderDetailsTypeDraft } from '../custom-types/adyen-order-details';
+import {
+  AdyenPaymentDetailsTypeDraft,
+  AdyenPaymentDetailsTypeKey,
+  AdyenPaymentDetailsTypeName,
+  LegacyAdyenOrderDetailsTypeKey,
+} from '../custom-types/adyen-payment-details';
+
+/**
+ * Creates the Adyen payment details custom type, renaming it in place from its legacy key when
+ * present. Payments reference the type by id, so no data migration is needed. Idempotent.
+ */
+async function createOrRenameAdyenPaymentDetailsCustomType(): Promise<void> {
+  log.info('Creating Adyen payment details custom type if not existing...');
+  try {
+    const alreadyMigrated = await paymentSDK.ctCustomTypeService.existsByKey({ key: AdyenPaymentDetailsTypeKey });
+
+    if (!alreadyMigrated) {
+      const legacyExists = await paymentSDK.ctCustomTypeService.existsByKey({ key: LegacyAdyenOrderDetailsTypeKey });
+
+      if (legacyExists) {
+        const legacyType = await paymentSDK.ctCustomTypeService.getByKey({ key: LegacyAdyenOrderDetailsTypeKey });
+
+        await paymentSDK.ctCustomTypeService.update({
+          key: LegacyAdyenOrderDetailsTypeKey,
+          updateActions: {
+            version: legacyType.version,
+            actions: [
+              { action: 'changeKey', key: AdyenPaymentDetailsTypeKey },
+              { action: 'changeName', name: { en: AdyenPaymentDetailsTypeName } },
+            ],
+          },
+        });
+
+        log.info('Renamed the legacy Adyen order details custom type', {
+          typeId: legacyType.id,
+          previousTypeKey: LegacyAdyenOrderDetailsTypeKey,
+          typeKey: AdyenPaymentDetailsTypeKey,
+        });
+      }
+    }
+
+    // Also adds any field definitions an already existing type is lacking
+    const paymentDetailsType = await paymentSDK.ctCustomTypeService.createOrUpdate(AdyenPaymentDetailsTypeDraft);
+    log.info('Created (if not existing) Adyen payment details custom type', {
+      typeId: paymentDetailsType.id,
+      typeKey: paymentDetailsType.key,
+    });
+  } catch (error) {
+    log.error('Error creating Adyen payment details custom type', { error });
+  }
+}
 
 export async function createCheckoutCustomType(): Promise<void> {
   if (getConfig().saveInterfaceInteractions) {
@@ -19,17 +69,8 @@ export async function createCheckoutCustomType(): Promise<void> {
     }
   }
 
-  if (getConfig().adyenPartialPaymentsEnabled) {
-    log.info('Creating Adyen order details custom type if not existing...');
-    try {
-      const orderDetailsType = await paymentSDK.ctCustomTypeService.createOrUpdate(AdyenOrderDetailsTypeDraft);
-      log.info('Created (if not existing) Adyen order details custom type', {
-        typeId: orderDetailsType.id,
-        typeKey: orderDetailsType.key,
-      });
-    } catch (error) {
-      log.error('Error creating Adyen order details custom type', { error });
-    }
+  if (getConfig().adyenPartialPaymentsEnabled || getConfig().adyenGivingEnabled) {
+    await createOrRenameAdyenPaymentDetailsCustomType();
   }
 
   if (!getConfig().adyenStorePaymentMethodDetailsEnabled) {

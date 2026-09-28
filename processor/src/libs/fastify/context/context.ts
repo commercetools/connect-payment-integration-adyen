@@ -45,6 +45,11 @@ export const getCartIdFromContext = (): string => {
   return paymentSdk.getCartIdFromContext(contextData) as string;
 };
 
+export const getPaymentIdFromContext = (): string | undefined => {
+  const contextData = getRequestContext() as ContextData;
+  return paymentSdk.getPaymentIdFromContext(contextData);
+};
+
 export const getAllowedPaymentMethodsFromContext = (): string[] => {
   const contextData = getRequestContext() as ContextData;
   return paymentSdk.getAllowedPaymentMethodsFromContext(contextData) as string[];

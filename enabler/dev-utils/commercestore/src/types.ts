@@ -198,6 +198,16 @@ interface ExpressBuilder {
   build(config: ExpressOptions): MountableComponent;
 }
 
+export type DonationCompletionReason = 'donated' | 'cancelled' | 'rejected';
+
+export interface DonationOptions {
+  showCancelButton?: boolean;
+}
+
+interface DonationBuilder {
+  build(config?: DonationOptions): MountableComponent;
+}
+
 export interface EnablerInstance {
   createComponentBuilder(type: string): Promise<ComponentBuilder>;
   createDropinBuilder(type: 'embedded'): Promise<DropinBuilder>;
@@ -208,6 +218,26 @@ export interface EnablerInstance {
 }
 
 export type EnablerConstructor = new (config: EnablerConfig) => EnablerInstance;
+
+/** The donation runs after the payment, so it takes neither the payment config nor its callbacks. */
+export interface DonationEnablerConfig {
+  processorUrl: string;
+  sessionId: string;
+  countryCode?: string;
+  locale?: string;
+  onComplete?: (opts: {
+    isSuccess: boolean;
+    reason: DonationCompletionReason;
+    paymentReference: string;
+  }) => void;
+  onError?: (error: unknown, context?: { paymentReference?: string }) => void;
+}
+
+export interface DonationEnablerInstance {
+  createDonationBuilder(): Promise<DonationBuilder>;
+}
+
+export type DonationEnablerConstructor = new (config: DonationEnablerConfig) => DonationEnablerInstance;
 
 // ---- UI types ----
 

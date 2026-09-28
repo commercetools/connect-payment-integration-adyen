@@ -82,7 +82,7 @@ export default function ExpressPdpSection() {
     const cfg = allCountries.find(c => c.code === code) ?? allCountries[0];
     const cart = await createExpressCart(cfg.currency, cfg.code, centAmountRef.current);
     cartRef.current = cart;
-    const sessionId = await getSessionId(cart.id);
+    const sessionId = await getSessionId({ cartId: cart.id });
     return { sessionId };
   }, []);
 

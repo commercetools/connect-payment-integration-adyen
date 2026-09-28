@@ -102,6 +102,9 @@ deployAs:
         - key: ADYEN_RECURRING_PAYMENTS_ENABLED
           description: If set to "true" then a commercetools recurring payment job is created when a stored payment method is saved for a recurring cart. Also forces the stored payment methods feature on regardless of ADYEN_STORED_PAYMENT_METHODS_ENABLED. Default value is "false".
           required: false
+        - key: ADYEN_GIVING_ENABLED
+          description: If set to "true" then Adyen Giving (donations) is enabled. The donation token returned by Adyen for the original payment is stored on the commercetools Payment so that a donation can be offered afterwards, e.g. on the order confirmation page. Default value is "false".
+          required: false
 
       securedConfiguration:
         - key: CTP_CLIENT_SECRET
@@ -111,10 +114,13 @@ deployAs:
           description: Adyen API key
           required: true
         - key: ADYEN_NOTIFICATION_HMAC_KEY
-          description: Adyen HMAC key (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
+          description: Adyen HMAC key. It is used for every webhook that has no HMAC key of its own. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
           required: true
         - key: ADYEN_NOTIFICATION_HMAC_TOKENIZATION_WEBHOOKS_KEY
           description: Adyen HMAC tokenization webhooks key. This will be used if provided, otherwise the ADYEN_NOTIFICATION_HMAC_KEY will be used. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
+          required: false
+        - key: ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY
+          description: Adyen HMAC donation webhooks key. This will be used if provided, otherwise the ADYEN_NOTIFICATION_HMAC_KEY will be used. (Please use the dummy placeholder value during the installation process. Once the webhook configuration in Adyen is complete and HMAC known, replace this placeholder with the actual value and redeploy.)
           required: false
         - key: ADYEN_APPLEPAY_OWN_CERTIFICATE
           description: Apple Pay own certificate in base 64 format

@@ -1,9 +1,11 @@
 import {
   ErrorInvalidJsonInput,
+  ErrorInvalidOperation,
   SessionHeaderAuthenticationHook,
   SessionQueryParamAuthenticationHook,
 } from '@commercetools/connect-payments-sdk';
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import { getPaymentIdFromContext } from '../libs/fastify/context/context';
 import {
   ConfirmPaymentRequestDTO,
   ConfirmPaymentResponseDTO,
@@ -29,6 +31,14 @@ import {
   CancelOrderRequestDTO,
   CancelOrderResponseDTO,
 } from '../dtos/adyen-payment.dto';
+import {
+  MakeDonationRequestDTO,
+  MakeDonationResponseDTO,
+  GetDonationConfigRequestDTO,
+  GetDonationConfigResponseDTO,
+  NotificationDonationDTO,
+} from '../dtos/adyen-donation.dto';
+import { AdyenDonationService } from '../services/adyen-donation.service';
 import { AdyenOrderService } from '../services/adyen-order.service';
 import { AdyenPaymentService } from '../services/adyen-payment.service';
 import { HmacAuthHook } from '../libs/fastify/hooks/hmac-auth.hook';
@@ -40,9 +50,11 @@ import { corsAuthHook } from '../libs/fastify/cors/cors';
 type PaymentRoutesOptions = {
   paymentService: AdyenPaymentService;
   orderService: AdyenOrderService;
+  donationService: AdyenDonationService;
   sessionHeaderAuthHook: SessionHeaderAuthenticationHook;
   sessionQueryParamAuthHook: SessionQueryParamAuthenticationHook;
   hmacAuthHook: HmacAuthHook;
+  donationHmacAuthHook: HmacAuthHook;
   hmacHeaderAuthHook: HmacHeaderAuthHook;
 };
 
@@ -231,6 +243,20 @@ export const adyenPaymentRoutes = async (
     },
   );
 
+  fastify.post<{ Body: NotificationDonationDTO }>(
+    '/notifications/donations',
+    {
+      preHandler: [opts.donationHmacAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      await opts.donationService.processNotification({
+        data: request.body,
+      });
+
+      return reply.status(200).send('[accepted]');
+    },
+  );
+
   fastify.get(
     '/stored-payment-methods',
     {
@@ -332,6 +358,45 @@ export const adyenPaymentRoutes = async (
     },
   );
 
+  fastify.get<{ Querystring: GetDonationConfigRequestDTO; Reply: GetDonationConfigResponseDTO }>(
+    '/donation-config',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            locale: Type.Optional(Type.String()),
+            withCountryCode: Type.Optional(Type.Boolean()),
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const resp = await opts.donationService.getDonationConfig({
+        paymentId: getSessionPaymentId(),
+        data: request.query ?? {},
+      });
+
+      return reply.status(200).send(resp);
+    },
+  );
+
+  fastify.post<{ Body: MakeDonationRequestDTO; Reply: MakeDonationResponseDTO }>(
+    '/donations',
+    {
+      preHandler: [opts.sessionHeaderAuthHook.authenticate()],
+    },
+    async (request, reply) => {
+      const resp = await opts.donationService.makeDonation({
+        paymentId: getSessionPaymentId(),
+        data: request.body,
+      });
+
+      return reply.status(200).send(resp);
+    },
+  );
+
   fastify.post<{ Body: GetExpressConfigRequestDTO; Reply: GetExpressConfigResponseDTO }>(
     '/express-config',
     {
@@ -344,6 +409,14 @@ export const adyenPaymentRoutes = async (
       return reply.status(200).send(response);
     },
   );
+};
+
+const getSessionPaymentId = (): string => {
+  const paymentId = getPaymentIdFromContext();
+  if (!paymentId) {
+    throw new ErrorInvalidOperation('The checkout session is not bound to a payment');
+  }
+  return paymentId;
 };
 
 /**

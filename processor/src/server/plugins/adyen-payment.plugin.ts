@@ -7,9 +7,11 @@ export default async function (server: FastifyInstance) {
   await server.register(adyenPaymentRoutes, {
     paymentService: app.services.paymentService,
     orderService: app.services.orderService,
+    donationService: app.services.donationService,
     sessionHeaderAuthHook: paymentSDK.sessionHeaderAuthHookFn,
     sessionQueryParamAuthHook: paymentSDK.sessionQueryParamAuthHookFn,
     hmacAuthHook: app.hooks.hmacAuthHook,
+    donationHmacAuthHook: app.hooks.donationHmacAuthHook,
     hmacHeaderAuthHook: app.hooks.hmacHeaderAuthHook,
   });
 }

@@ -55,7 +55,7 @@ export function useCheckout(): {
     try {
       const [cartData, sessionId] = await Promise.all([
         getCartById(cartId),
-        getSessionId(cartId, { isDropin }),
+        getSessionId({ cartId, isDropin }),
       ]);
       setCart(cartData);
 
