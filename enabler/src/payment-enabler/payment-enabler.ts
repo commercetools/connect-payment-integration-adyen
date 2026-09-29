@@ -88,16 +88,10 @@ export type CTAmount = {
   fractionDigits: number;
 };
 
-export const getPaymentMethodType = (adyenPaymentMethod: string | undefined): PaymentMethod => {
-  if (!adyenPaymentMethod) {
-    throw new Error('Adyen payment method type is undefined');
-  }
-  const entry = Object.entries(PaymentMethod).find(([, value]) => value === adyenPaymentMethod);
-  if (!entry) {
-    throw new Error(`Unknown Adyen payment method type: "${adyenPaymentMethod}"`);
-  }
-  return entry[0] as PaymentMethod;
-};
+// These methods show their own native sheet that stays open on a decline so the shopper can
+// retry another time; the attempt only really ends when they close that sheet themselves
+// (surfaced via Adyen's "CANCEL" error), not on the first declined attempt.
+export const METHODS_WITH_NATIVE_RETRY_SHEET: string[] = [PaymentMethod.googlepay];
 
 export type PaymentResult =
   | {

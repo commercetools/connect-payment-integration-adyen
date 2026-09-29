@@ -7,7 +7,7 @@ import {
 import { convertToAdyenLocale } from "../converters/locale.converter";
 import { AdyenInit } from "./adyen-init-session";
 import { AdyenEnablerOptions, BaseOptions } from "./adyen-payment-enabler";
-import { getPaymentMethodType } from "./payment-enabler";
+import { getPaymentMethodType, hasNativeRetrySheet } from "./payment-method.helper";
 import { ProcessorApiClient } from '../api/processor-api.client';
 
 class AdyenInitError extends Error {
@@ -27,20 +27,21 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
 
   constructor(initOptions: AdyenEnablerOptions) {
     this.initOptions = initOptions;
-    this.apiClient = new ProcessorApiClient({ processorUrl: initOptions.processorUrl, sessionId: initOptions.sessionId });
+    this.apiClient = new ProcessorApiClient({
+      processorUrl: initOptions.processorUrl,
+      sessionId: initOptions.sessionId,
+    });
     this.expressPaymentMethodsConfig = new Map();
   }
 
   async init(): Promise<BaseOptions> {
-    const adyenLocale = convertToAdyenLocale(
-      this.initOptions.locale || "en-US"
-    );
+    const adyenLocale = convertToAdyenLocale(this.initOptions.locale || "en-US");
 
-    let configJson: Awaited<ReturnType<ProcessorApiClient['getExpressConfig']>>;
+    let configJson: Awaited<ReturnType<ProcessorApiClient["getExpressConfig"]>>;
     try {
       configJson = await this.apiClient.getExpressConfig({ countryCode: this.initOptions.countryCode });
     } catch {
-      throw new AdyenInitError('Not able to initialize Adyen', this.initOptions.sessionId);
+      throw new AdyenInitError("Not able to initialize Adyen", this.initOptions.sessionId);
     }
 
     configJson.methods.forEach((method: any) => {
@@ -49,12 +50,19 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
 
     const adyenCheckout = await AdyenCheckout({
       onPaymentFailed: (_result: PaymentFailedData, component: UIElement) => {
+        console.info("payment failed", _result.resultCode);
+        if (hasNativeRetrySheet(this.resolveMethodType(component)?.type)) {
+          return;
+        }
         this.handleComplete({ isSuccess: false, component });
       },
       onError: (error: AdyenCheckoutError, component: UIElement) => {
         if (error.name === "CANCEL") {
           console.info("shopper canceled the payment attempt");
           component.setStatus("ready");
+          if (hasNativeRetrySheet(this.resolveMethodType(component)?.type)) {
+            this.handleComplete({ isSuccess: false, component });
+          }
         } else {
           console.error(error.name, error.message, error.stack, component);
         }
@@ -89,22 +97,26 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
   private handleError(opts: { error: any; component: UIElement }) {
     if (this.initOptions.onError) {
       this.initOptions.onError(opts.error, {
-        method: opts.component?.props?.type ? { type: getPaymentMethodType(opts.component.props.type) } : undefined,
+        method: this.resolveMethodType(opts.component),
       });
     }
   }
 
-  private handleComplete(opts: {
-    isSuccess: boolean;
-    component: UIElement;
-    paymentReference?: string;
-  }) {
+  private handleComplete(opts: { isSuccess: boolean; component: UIElement; paymentReference?: string }) {
     if (this.initOptions.onComplete) {
       this.initOptions.onComplete({
         isSuccess: opts.isSuccess,
         paymentReference: opts?.paymentReference,
-        method: { type: getPaymentMethodType(opts.component.props?.type) },
+        method: this.resolveMethodType(opts.component),
       });
+    }
+  }
+
+  private resolveMethodType(component: UIElement): { type: string } | undefined {
+    try {
+      return { type: getPaymentMethodType(component?.props?.type) };
+    } catch {
+      return undefined;
     }
   }
 }

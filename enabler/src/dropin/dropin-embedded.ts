@@ -2,10 +2,10 @@ import {
   DropinComponent,
   DropinOptions,
   DropinType,
-  getPaymentMethodType,
   PaymentDropinBuilder,
   PaymentMethod,
 } from "../payment-enabler/payment-enabler";
+import { getPaymentMethodType } from "../payment-enabler/payment-method.helper";
 import { BaseOptions, StoredPaymentMethodsConfig } from "../payment-enabler/adyen-payment-enabler";
 import { ProcessorApiClient } from "../api/processor-api.client";
 import {
