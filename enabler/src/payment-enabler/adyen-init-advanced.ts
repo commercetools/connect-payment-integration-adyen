@@ -114,7 +114,7 @@ export class AdyenInitWithAdvancedFlow implements AdyenInit {
 
   private resolveMethodType(component: UIElement): { type: string } | undefined {
     try {
-      return { type: getPaymentMethodType(component?.props?.type) };
+      return { type: getPaymentMethodType(component?.type) };
     } catch {
       return undefined;
     }

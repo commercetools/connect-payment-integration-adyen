@@ -62,6 +62,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
 
     const { sessionData: data } = sessionJson;
     let paymentReference = "";
+    let lastSubmittedMethodType: string | undefined;
 
     if (!data || !data.id) {
       throw new AdyenInitError("Not able to initialize Adyen, session data missing", this.initOptions.sessionId);
@@ -72,8 +73,8 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         console.info("payment completed", result.resultCode);
       },
       onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
-        console.info("payment failed", result.resultCode);
-        if (hasNativeRetrySheet(this.resolveMethodType(_component))) {
+        console.info("payment failed", result.resultCode, lastSubmittedMethodType);
+        if (hasNativeRetrySheet(lastSubmittedMethodType)) {
           return;
         }
         this.handleComplete({
@@ -86,7 +87,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         if (error.name === "CANCEL") {
           console.info("shopper canceled the payment attempt");
           component.setStatus("ready");
-          if (hasNativeRetrySheet(this.resolveMethodType(component))) {
+          if (hasNativeRetrySheet(lastSubmittedMethodType)) {
             this.handleComplete({
               isSuccess: false,
               component,
@@ -99,6 +100,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         this.handleError({ error, component, paymentReference });
       },
       onSubmit: async (state: SubmitData, component: UIElement, actions: SubmitActions) => {
+        lastSubmittedMethodType = state.data.paymentMethod?.type;
         try {
           const reqData = {
             ...state.data,
@@ -126,7 +128,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
                   paymentReference,
                 });
               }
-            } else if (!hasNativeRetrySheet(this.resolveMethodType(component))) {
+            } else if (!hasNativeRetrySheet(lastSubmittedMethodType)) {
               this.handleComplete({
                 isSuccess: false,
                 component: component,
