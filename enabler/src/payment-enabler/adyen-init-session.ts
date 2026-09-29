@@ -11,7 +11,8 @@ import {
 } from "@adyen/adyen-web";
 import { AdyenEnablerOptions, BaseOptions, StoredPaymentMethodsConfig } from "./adyen-payment-enabler";
 import { convertToAdyenLocale } from "../converters/locale.converter";
-import { CocoStoredPaymentMethod, DropinType, getPaymentMethodType } from "./payment-enabler";
+import { CocoStoredPaymentMethod, DropinType } from "./payment-enabler";
+import { getPaymentMethodType, hasNativeRetrySheet } from "./payment-method.helper";
 import { ProcessorApiClient } from "../api/processor-api.client";
 
 export interface AdyenInit {
@@ -71,17 +72,27 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
         console.info("payment completed", result.resultCode);
       },
       onPaymentFailed: (result: PaymentFailedData, _component: UIElement) => {
+        console.info("payment failed", result.resultCode);
+        if (hasNativeRetrySheet(this.resolveMethodType(_component))) {
+          return;
+        }
         this.handleComplete({
           isSuccess: false,
           component: _component,
           paymentReference,
         });
-        console.info("payment failed", result.resultCode);
       },
       onError: (error: AdyenCheckoutError, component: UIElement) => {
         if (error.name === "CANCEL") {
           console.info("shopper canceled the payment attempt");
           component.setStatus("ready");
+          if (hasNativeRetrySheet(this.resolveMethodType(component))) {
+            this.handleComplete({
+              isSuccess: false,
+              component,
+              paymentReference,
+            });
+          }
         } else {
           console.error(error.name, error.message, error.stack, component);
         }
@@ -115,7 +126,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
                   paymentReference,
                 });
               }
-            } else {
+            } else if (!hasNativeRetrySheet(this.resolveMethodType(component))) {
               this.handleComplete({
                 isSuccess: false,
                 component: component,
