@@ -1,7 +1,7 @@
 {
   "name": "enabler",
   "private": true,
-  "version": "5.29.0",
+  "version": "5.30.0",
   "type": "module",
   "engines": {
     "node": ">=24.0.0",
@@ -37,6 +37,6 @@
   "overrides": {
     "@babel/core": "7.29.7",
     "js-yaml": "^4.2.0",
-    "brace-expansion": "5.0.9"
+    "brace-expansion": "5.0.12"
   }
 }
