@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test } from 'vitest';
 import { ErrorAuthErrorResponse } from '@commercetools/connect-payments-sdk';
 import HmacValidator from '@adyen/api-library/lib/src/utils/hmacValidator';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';

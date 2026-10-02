@@ -1,4 +1,4 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { config } from '../../../src/config/config';
 import { CancelOrderConverter } from '../../../src/services/converters/cancel-order.converter';
 import { CancelOrderRequestDTO } from '../../../src/dtos/adyen-payment.dto';

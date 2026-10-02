@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach, jest, beforeEach } from '@jest/globals';
+import { describe, test, expect, afterEach, vi, beforeEach } from 'vitest';
 import {
   convertPaymentMethodFromAdyenFormat,
   convertPaymentMethodToAdyenFormat,
@@ -30,12 +30,12 @@ import CartDiscounts from '../../data/cart-discounts.json';
 
 describe('helper.converter', () => {
   beforeEach(() => {
-    jest.setTimeout(10000);
-    jest.resetAllMocks();
+    vi.setConfig({ testTimeout: 10000 });
+    vi.resetAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('convertPaymentMethodFromAdyenFormat', async () => {
@@ -484,7 +484,7 @@ describe('helper.converter', () => {
   });
 
   test('getPaymentMethodsBlockedForRecurring returns the Adyen type keys not marked as recurringPayments', () => {
-    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+    vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
       enabled: true,
       config: {
         paymentInterface: 'paymentInterface',
@@ -508,7 +508,7 @@ describe('helper.converter', () => {
     const supportedPaymentMethodTypes = Object.fromEntries(
       SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES.map((type) => [type, { oneOffPayments: true, recurringPayments: true }]),
     );
-    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+    vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
       enabled: true,
       config: {
         paymentInterface: 'paymentInterface',
