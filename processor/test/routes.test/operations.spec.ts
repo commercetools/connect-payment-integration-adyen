@@ -1,5 +1,5 @@
 import fastify from 'fastify';
-import { describe, beforeAll, afterAll, test, expect, jest, afterEach } from '@jest/globals';
+import { describe, beforeAll, afterAll, test, expect, vi, afterEach } from 'vitest';
 import {
   AuthorityAuthorizationHook,
   AuthorityAuthorizationManager,
@@ -27,57 +27,57 @@ describe('/operations APIs', () => {
   const token = 'token';
   const jwtToken = 'jwtToken';
   const sessionId = 'session-id';
-  const logger = jest.fn() as unknown as Logger;
+  const logger = vi.fn() as unknown as Logger;
 
-  const spyAuthenticateJWT = jest
+  const spyAuthenticateJWT = vi
     .spyOn(JWTAuthenticationHook.prototype, 'authenticate')
     .mockImplementationOnce(() => async (request: { headers: IncomingHttpHeaders }) => {
       expect(request.headers['authorization']).toContain(`Bearer ${jwtToken}`);
     });
 
-  const spyAuthenticateOauth2 = jest
+  const spyAuthenticateOauth2 = vi
     .spyOn(Oauth2AuthenticationHook.prototype, 'authenticate')
     .mockImplementationOnce(() => async (request: { headers: IncomingHttpHeaders }) => {
       expect(request.headers['authorization']).toContain(`Bearer ${token}`);
     });
 
-  const spyAuthenticateSession = jest
+  const spyAuthenticateSession = vi
     .spyOn(SessionHeaderAuthenticationHook.prototype, 'authenticate')
     .mockImplementationOnce(() => async (request: { headers: IncomingHttpHeaders }) => {
       expect(request.headers['x-session-id']).toContain('session-id');
     });
 
   const spiedJwtAuthenticationHook = new JWTAuthenticationHook({
-    authenticationManager: jest.fn() as unknown as JWTAuthenticationManager,
-    contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    authenticationManager: vi.fn() as unknown as JWTAuthenticationManager,
+    contextProvider: vi.fn() as unknown as ContextProvider<RequestContextData>,
     logger,
   });
 
   const spiedOauth2AuthenticationHook = new Oauth2AuthenticationHook({
-    authenticationManager: jest.fn() as unknown as Oauth2AuthenticationManager,
-    contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    authenticationManager: vi.fn() as unknown as Oauth2AuthenticationManager,
+    contextProvider: vi.fn() as unknown as ContextProvider<RequestContextData>,
     logger,
   });
 
   const spiedSessionHeaderAuthenticationHook = new SessionHeaderAuthenticationHook({
-    authenticationManager: jest.fn() as unknown as SessionHeaderAuthenticationManager,
-    contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    authenticationManager: vi.fn() as unknown as SessionHeaderAuthenticationManager,
+    contextProvider: vi.fn() as unknown as ContextProvider<RequestContextData>,
     logger,
   });
 
   const spiedAuthorityAuthorizationHook = new AuthorityAuthorizationHook({
-    authorizationManager: jest.fn() as unknown as AuthorityAuthorizationManager,
-    contextProvider: jest.fn() as unknown as ContextProvider<RequestContextData>,
+    authorizationManager: vi.fn() as unknown as AuthorityAuthorizationManager,
+    contextProvider: vi.fn() as unknown as ContextProvider<RequestContextData>,
     logger,
   });
 
   const spiedPaymentService = new AdyenPaymentService({
-    ctCartService: jest.fn() as unknown as CommercetoolsCartService,
-    ctPaymentService: jest.fn() as unknown as CommercetoolsPaymentService,
-    ctOrderService: jest.fn() as unknown as CommercetoolsOrderService,
-    ctPaymentMethodService: jest.fn() as unknown as CommercetoolsPaymentMethodService,
-    ctRecurringPaymentJobService: jest.fn() as unknown as CommercetoolsRecurringPaymentJobService,
-    orderService: jest.fn() as unknown as ConstructorParameters<typeof AdyenPaymentService>[0]['orderService'],
+    ctCartService: vi.fn() as unknown as CommercetoolsCartService,
+    ctPaymentService: vi.fn() as unknown as CommercetoolsPaymentService,
+    ctOrderService: vi.fn() as unknown as CommercetoolsOrderService,
+    ctPaymentMethodService: vi.fn() as unknown as CommercetoolsPaymentMethodService,
+    ctRecurringPaymentJobService: vi.fn() as unknown as CommercetoolsRecurringPaymentJobService,
+    orderService: vi.fn() as unknown as ConstructorParameters<typeof AdyenPaymentService>[0]['orderService'],
   });
 
   beforeAll(async () => {
@@ -104,7 +104,7 @@ describe('/operations APIs', () => {
 
   describe('GET /operations/config', () => {
     test('it should return the Adyen client config', async () => {
-      jest.spyOn(spiedPaymentService, 'isStoredPaymentMethodsEnabled').mockResolvedValueOnce(true);
+      vi.spyOn(spiedPaymentService, 'isStoredPaymentMethodsEnabled').mockResolvedValueOnce(true);
 
       //When
       const responseGetConfig = await app.inject({
@@ -134,7 +134,7 @@ describe('/operations APIs', () => {
   describe('GET /operations/status', () => {
     test('it should return the status of the connector', async () => {
       //Given
-      jest.spyOn(spiedPaymentService, 'status').mockResolvedValue({
+      vi.spyOn(spiedPaymentService, 'status').mockResolvedValue({
         metadata: {
           name: 'payment-integration-adyen',
           description: 'Payment integration with Adyen',
@@ -196,7 +196,7 @@ describe('/operations APIs', () => {
 
     test('it should return the status of the connector in case of partial availability', async () => {
       //Given
-      jest.spyOn(spiedPaymentService, 'status').mockResolvedValue({
+      vi.spyOn(spiedPaymentService, 'status').mockResolvedValue({
         metadata: {
           name: 'payment-integration-adyen',
           description: 'Payment integration with Adyen',

@@ -1,4 +1,4 @@
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
 import { config } from '../../../src/config/config';
 import { CreateOrderConverter } from '../../../src/services/converters/create-order.converter';
@@ -10,14 +10,14 @@ describe('create-order.converter', () => {
   const converter = new CreateOrderConverter(paymentSDK.ctCartService);
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('should build a valid Adyen create order request from a cart', async () => {
     // Arrange
     const cart = mockGetCartResultShippingModeSimple();
 
-    jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
+    vi.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
 
     // Act
     const result = await converter.convertRequest({ cart });
@@ -37,7 +37,7 @@ describe('create-order.converter', () => {
     // Arrange
     const cart = mockGetCartResultShippingModeSimple();
 
-    jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
+    vi.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
 
     const before = Date.now();
     const result = await converter.convertRequest({ cart });

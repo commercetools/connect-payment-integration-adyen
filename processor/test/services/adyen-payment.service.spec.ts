@@ -3,7 +3,7 @@ import { DefaultOrderService } from '@commercetools/connect-payments-sdk/dist/co
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
 import { DefaultPaymentMethodService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment-method.service';
 import { DefaultRecurringPaymentJobService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-recurring-payment-job.service';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, vi, test } from 'vitest';
 import { paymentSDK } from '../../src/payment-sdk';
 import { ConfigResponse, ModifyPayment, StatusResponse } from '../../src/services/types/operation.type';
 import { mockGetCartResultShippingModeMultiple, mockGetCartResultShippingModeSimple } from '../utils/mock-cart-data';
@@ -83,7 +83,7 @@ function setupMockConfig(keysAndValues: Record<string, string | boolean>) {
     mockConfig[key] = keysAndValues[key];
   });
 
-  jest.spyOn(Config, 'getConfig').mockReturnValue(mockConfig as any);
+  vi.spyOn(Config, 'getConfig').mockReturnValue(mockConfig as any);
 }
 
 describe('adyen-payment.service', () => {
@@ -105,12 +105,12 @@ describe('adyen-payment.service', () => {
   });
 
   beforeEach(() => {
-    jest.setTimeout(10000);
-    jest.resetAllMocks();
+    vi.setConfig({ testTimeout: 10000 });
+    vi.resetAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   afterAll(() => {
@@ -118,7 +118,7 @@ describe('adyen-payment.service', () => {
   });
 
   test('getConfig', async () => {
-    jest.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
+    vi.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
       storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
     });
     // Setup mock config for a system using `clientKey`
@@ -132,7 +132,7 @@ describe('adyen-payment.service', () => {
   });
 
   test('getConfig uses the frontend-specific environment when it diverges from the backend one', async () => {
-    jest.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
+    vi.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
       storedPaymentMethods: [{ token: 'sometokenidvaluefromadyen' } as StoredPaymentMethod],
     });
     setupMockConfig({ adyenClientKey: 'adyen', adyenEnvironment: 'LIVE', adyenClientEnvironment: 'live-au' });
@@ -185,8 +185,8 @@ describe('adyen-payment.service', () => {
       return result;
     };
 
-    jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
-    const mockHealthCheck = jest
+    vi.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
+    const mockHealthCheck = vi
       .spyOn(StatusHandler, 'healthCheckCommercetoolsPermissions')
       .mockReturnValue(mockHealthCheckFunction);
     const result: StatusResponse = await paymentService.status();
@@ -218,15 +218,15 @@ describe('adyen-payment.service', () => {
     });
 
     setupMockConfig({ adyenRecurringPaymentsEnabled: true });
-    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+    vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
       enabled: false,
       config: {
         paymentInterface: 'adyen',
         supportedPaymentMethodTypes: { scheme: { oneOffPayments: true, recurringPayments: true } },
       },
     });
-    jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
-    const mockHealthCheck = jest
+    vi.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
+    const mockHealthCheck = vi
       .spyOn(StatusHandler, 'healthCheckCommercetoolsPermissions')
       .mockReturnValue(mockHealthCheckFunction);
 
@@ -251,12 +251,12 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-    jest
-      .spyOn(ModificationsApi.prototype, 'cancelAuthorisedPaymentByPspReference')
-      .mockResolvedValue(mockAdyenCancelPaymentResponse);
+    vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+    vi.spyOn(ModificationsApi.prototype, 'cancelAuthorisedPaymentByPspReference').mockResolvedValue(
+      mockAdyenCancelPaymentResponse,
+    );
 
     const result = await paymentService.modifyPayment(modifyPaymentOpts);
     expect(result?.outcome).toStrictEqual('received');
@@ -280,11 +280,11 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-      const mockOrderService = jest.spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId');
-      const mockCartService = jest.spyOn(DefaultCartService.prototype, 'getCartByPaymentId');
-      const mockAdyenService = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const mockOrderService = vi.spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId');
+      const mockCartService = vi.spyOn(DefaultCartService.prototype, 'getCartByPaymentId');
+      const mockAdyenService = vi
         .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
         .mockResolvedValue(mockAdyenCapturePaymentResponse);
 
@@ -321,13 +321,13 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
-        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
-      jest.spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId').mockResolvedValue(mockGetOrderResult);
-      const mockCartService = jest.spyOn(DefaultCartService.prototype, 'getCartByPaymentId');
-      const mockAdyenService = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(
+        mockUpdatePaymentResultKlarnaPayLater,
+      );
+      vi.spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId').mockResolvedValue(mockGetOrderResult);
+      const mockCartService = vi.spyOn(DefaultCartService.prototype, 'getCartByPaymentId');
+      const mockAdyenService = vi
         .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
         .mockResolvedValue(mockAdyenCapturePaymentResponse);
 
@@ -373,17 +373,17 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
-        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
-      const mockOrderService = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(
+        mockUpdatePaymentResultKlarnaPayLater,
+      );
+      const mockOrderService = vi
         .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
         .mockRejectedValue(new Error('Could not retrieve order'));
-      jest
-        .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
-        .mockResolvedValue(mockGetCartResultShippingModeSimple());
-      const mockAdyenService = jest
+      vi.spyOn(DefaultCartService.prototype, 'getCartByPaymentId').mockResolvedValue(
+        mockGetCartResultShippingModeSimple(),
+      );
+      const mockAdyenService = vi
         .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
         .mockResolvedValue(mockAdyenCapturePaymentResponse);
 
@@ -425,7 +425,7 @@ describe('adyen-payment.service', () => {
         reference: '123456',
       };
 
-      expect(mockOrderService).rejects.toThrow('Could not retrieve order');
+      await expect(mockOrderService).rejects.toThrow('Could not retrieve order');
       expect(mockAdyenService).toHaveBeenCalledWith('92C12661DS923781G', expectedAdyenCapturePayload);
       expect(result?.outcome).toStrictEqual('received');
     });
@@ -447,17 +447,17 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
-        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
-      const mockOrderService = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(
+        mockUpdatePaymentResultKlarnaPayLater,
+      );
+      const mockOrderService = vi
         .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
         .mockRejectedValue(new Error('Could not retrieve order'));
-      jest
-        .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
-        .mockResolvedValue(mockGetCartResultShippingModeMultiple());
-      const mockAdyenService = jest
+      vi.spyOn(DefaultCartService.prototype, 'getCartByPaymentId').mockResolvedValue(
+        mockGetCartResultShippingModeMultiple(),
+      );
+      const mockAdyenService = vi
         .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
         .mockResolvedValue(mockAdyenCapturePaymentResponse);
 
@@ -499,7 +499,7 @@ describe('adyen-payment.service', () => {
         reference: '123456',
       };
 
-      expect(mockOrderService).rejects.toThrow('Could not retrieve order');
+      await expect(mockOrderService).rejects.toThrow('Could not retrieve order');
       expect(mockAdyenService).toHaveBeenCalledWith('92C12661DS923781G', expectedAdyenCapturePayload);
       expect(result?.outcome).toStrictEqual('received');
     });
@@ -521,17 +521,17 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
-        .mockResolvedValue(mockUpdatePaymentResultKlarnaPayLater);
-      const mockOrderService = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResultKlarnaPayLater);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(
+        mockUpdatePaymentResultKlarnaPayLater,
+      );
+      const mockOrderService = vi
         .spyOn(DefaultOrderService.prototype, 'getOrderByPaymentId')
         .mockRejectedValue(new Error('Could not retrieve order'));
-      const mockCartService = jest
+      const mockCartService = vi
         .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
         .mockRejectedValue(new Error('Could not retrieve cart'));
-      const mockAdyenService = jest.spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment');
+      const mockAdyenService = vi.spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment');
 
       // Act
       const adyenModifyPaymentCall = paymentService.modifyPayment(modifyPaymentOpts);
@@ -539,9 +539,9 @@ describe('adyen-payment.service', () => {
       // Expect
       const expectedErrorMessage =
         "The referenced object of type 'cart' '123456' was not found. It either doesn't exist, or it can't be accessed from this endpoint (e.g., if the endpoint filters by store or customer account).";
-      expect(adyenModifyPaymentCall).rejects.toThrow(expectedErrorMessage);
-      expect(mockOrderService).rejects.toThrow('Could not retrieve order');
-      expect(mockCartService).rejects.toThrow('Could not retrieve cart');
+      await expect(adyenModifyPaymentCall).rejects.toThrow(expectedErrorMessage);
+      await expect(mockOrderService).rejects.toThrow('Could not retrieve order');
+      await expect(mockCartService).rejects.toThrow('Could not retrieve cart');
       expect(mockAdyenService).not.toHaveBeenCalled();
     });
   });
@@ -562,10 +562,10 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-    jest.spyOn(ModificationsApi.prototype, 'refundCapturedPayment').mockResolvedValue(mockAdyenRefundPaymentResponse);
+    vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+    vi.spyOn(ModificationsApi.prototype, 'refundCapturedPayment').mockResolvedValue(mockAdyenRefundPaymentResponse);
 
     const result = await paymentService.modifyPayment(modifyPaymentOpts);
     expect(result?.outcome).toStrictEqual('received');
@@ -582,16 +582,16 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-    jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
-    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+    vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    vi.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+    vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
 
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
@@ -611,16 +611,16 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-    jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
-    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+    vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    vi.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+    vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
 
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
@@ -650,16 +650,16 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-    jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
-    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+    vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    vi.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+    vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
 
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
@@ -677,16 +677,16 @@ describe('adyen-payment.service', () => {
       },
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-    jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-    jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
-    jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+    vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+    vi.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+    vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
 
     const result = await adyenPaymentService.createPayment(createPaymentOpts);
@@ -718,16 +718,16 @@ describe('adyen-payment.service', () => {
 
     test('reverses the individual payment via the modification API when there is no Adyen order', async () => {
       // Given
-      const updateSpy = jest
+      const updateSpy = vi
         .spyOn(DefaultPaymentService.prototype, 'updatePayment')
         .mockResolvedValue(mockUpdatePaymentResult);
-      const reversalSpy = jest.spyOn(ModificationsApi.prototype, 'refundOrCancelPayment').mockResolvedValue({
+      const reversalSpy = vi.spyOn(ModificationsApi.prototype, 'refundOrCancelPayment').mockResolvedValue({
         status: 'received' as never,
         pspReference: 'REVERSAL-PSP-789',
         paymentPspReference: paymentWithSuccessfulCharge.interfaceId as string,
         merchantAccount: 'adyenMerchantAccount',
       });
-      const cancelOrderSpy = jest.spyOn(OrdersApi.prototype, 'cancelOrder');
+      const cancelOrderSpy = vi.spyOn(OrdersApi.prototype, 'cancelOrder');
 
       // Act
       const result = await paymentService.reversePayment({ payment: paymentWithSuccessfulCharge });
@@ -753,14 +753,14 @@ describe('adyen-payment.service', () => {
 
     test('cancels the Adyen order instead of reversing the leg when the payment belongs to an Adyen order', async () => {
       // Given
-      const updateSpy = jest
+      const updateSpy = vi
         .spyOn(DefaultPaymentService.prototype, 'updatePayment')
         .mockResolvedValue(mockUpdatePaymentResult);
-      const cancelOrderSpy = jest.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValue({
+      const cancelOrderSpy = vi.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValue({
         pspReference: 'CANCEL-REQUEST-PSP-456',
         resultCode: CancelOrderResponse.ResultCodeEnum.Received,
       });
-      const reversalSpy = jest.spyOn(ModificationsApi.prototype, 'refundOrCancelPayment');
+      const reversalSpy = vi.spyOn(ModificationsApi.prototype, 'refundOrCancelPayment');
 
       // Act
       const result = await paymentService.reversePayment({ payment: paymentWithAdyenOrder });
@@ -801,10 +801,10 @@ describe('adyen-payment.service', () => {
           },
         ],
       };
-      const updateSpy = jest
+      const updateSpy = vi
         .spyOn(DefaultPaymentService.prototype, 'updatePayment')
         .mockResolvedValue(mockUpdatePaymentResult);
-      jest.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValue({
+      vi.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValue({
         pspReference: 'CANCEL-REQUEST-PSP-456',
         resultCode: CancelOrderResponse.ResultCodeEnum.Received,
       });
@@ -837,21 +837,22 @@ describe('adyen-payment.service', () => {
     };
 
     const setupCreatePaymentMocks = () => {
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
-      jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-      jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-      jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
-      jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+      vi.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+      vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
     };
 
     test('createPayment passes pspInteractions to updatePayment when saveInterfaceInteractions is enabled', async () => {
       // Arrange
-      jest
-        .spyOn(Config, 'getConfig')
-        .mockReturnValue({ saveInterfaceInteractions: true, adyenMerchantAccount: 'adyenMerchantAccount' } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({
+        saveInterfaceInteractions: true,
+        adyenMerchantAccount: 'adyenMerchantAccount',
+      } as any);
       setupCreatePaymentMocks();
 
       // Act
@@ -872,9 +873,10 @@ describe('adyen-payment.service', () => {
 
     test('createPayment does not pass pspInteractions to updatePayment when saveInterfaceInteractions is disabled', async () => {
       // Arrange
-      jest
-        .spyOn(Config, 'getConfig')
-        .mockReturnValue({ saveInterfaceInteractions: false, adyenMerchantAccount: 'adyenMerchantAccount' } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({
+        saveInterfaceInteractions: false,
+        adyenMerchantAccount: 'adyenMerchantAccount',
+      } as any);
       setupCreatePaymentMocks();
 
       // Act
@@ -892,10 +894,10 @@ describe('adyen-payment.service', () => {
       data: {},
     };
 
-    jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-    jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
-    jest.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
-    jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['card']);
+    vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+    vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+    vi.spyOn(PaymentsApi.prototype, 'paymentMethods').mockResolvedValue(mockAdyenPaymentMethodsResponse);
+    vi.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['card']);
 
     const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
     const result = await adyenPaymentService.getPaymentMethods(getPaymentMethodsOpts);
@@ -906,11 +908,11 @@ describe('adyen-payment.service', () => {
 
   describe('createSession', () => {
     beforeEach(() => {
-      jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-      jest.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('session-123');
-      jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue([]);
-      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(0);
-      jest.spyOn(PaymentsApi.prototype, 'sessions').mockResolvedValue(mockAdyenCreateSessionResponse);
+      vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+      vi.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('session-123');
+      vi.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue([]);
+      vi.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(0);
+      vi.spyOn(PaymentsApi.prototype, 'sessions').mockResolvedValue(mockAdyenCreateSessionResponse);
     });
 
     test('returns session data', async () => {
@@ -918,14 +920,14 @@ describe('adyen-payment.service', () => {
         data: {},
       };
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
 
-      jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-      jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      jest.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['applepay']);
+      vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(FastifyContext, 'getAllowedPaymentMethodsFromContext').mockReturnValue(['applepay']);
 
-      jest.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('123456789');
+      vi.spyOn(FastifyContext, 'getCtSessionIdFromContext').mockReturnValue('123456789');
 
       const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
       const result = await adyenPaymentService.createSession(createSessionOpts);
@@ -941,11 +943,11 @@ describe('adyen-payment.service', () => {
 
     test('when adyenPartialPaymentsEnabled is disabled: uses SDK getPlannedPaymentAmount and does not cancel orders', async () => {
       setupMockConfig({});
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      const plannedAmountSpy = jest
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      const plannedAmountSpy = vi
         .spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount')
         .mockResolvedValue(mockGetPaymentAmount);
-      const cancelSpy = jest.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
+      const cancelSpy = vi.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
 
       const service = new AdyenPaymentService(opts);
       await service.createSession({ data: {} });
@@ -955,16 +957,16 @@ describe('adyen-payment.service', () => {
     });
 
     test('when adyenPartialPaymentsEnabled is enabled: cancels active orders and uses calculateRemainingAmount', async () => {
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenPartialPaymentsEnabled: true } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenPartialPaymentsEnabled: true } as any);
       const cartWithExpand = { ...mockGetCartResultShippingModeSimple(), paymentInfo: undefined };
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartWithExpand);
-      const plannedAmountSpy = jest
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartWithExpand);
+      const plannedAmountSpy = vi
         .spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount')
         .mockResolvedValue(mockGetPaymentAmount);
-      const cancelSpy = jest.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
+      const cancelSpy = vi.spyOn(opts.orderService, 'cancelCartActiveOrders').mockResolvedValue(undefined);
 
       const service = new AdyenPaymentService(opts);
-      const calcSpy = jest.spyOn(service, 'calculateRemainingAmount').mockReturnValue(mockGetPaymentAmount);
+      const calcSpy = vi.spyOn(service, 'calculateRemainingAmount').mockReturnValue(mockGetPaymentAmount);
       await service.createSession({ data: {} });
 
       expect(cancelSpy).toHaveBeenCalledWith(cartWithExpand);
@@ -1032,7 +1034,7 @@ describe('adyen-payment.service', () => {
         })
         .reply(400, applePayResponse);
 
-      jest.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue('abcd');
+      vi.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue('abcd');
 
       //When
       const adyenPaymentService: AdyenPaymentService = new AdyenPaymentService(opts);
@@ -1078,10 +1080,10 @@ describe('adyen-payment.service', () => {
         ],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockUpdatePaymentResult]);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockUpdatePaymentResult,
+      ]);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
 
       // When
       await paymentService.processNotification({ data: notification });
@@ -1131,10 +1133,10 @@ describe('adyen-payment.service', () => {
         ],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockUpdatePaymentResult]);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockUpdatePaymentResult,
+      ]);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
 
       // When
       await paymentService.processNotification({ data: notification });
@@ -1188,7 +1190,7 @@ describe('adyen-payment.service', () => {
 
       setupMockConfig({ adyenRecurringPaymentsEnabled: true });
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface: 'adyen-payment-interface',
@@ -1208,10 +1210,10 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockUpdatePaymentResult]);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(updatedPaymentWithToken);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockUpdatePaymentResult,
+      ]);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(updatedPaymentWithToken);
 
       const existingPaymentMethod: PaymentMethod = {
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
@@ -1225,11 +1227,11 @@ describe('adyen-payment.service', () => {
         paymentMethodStatus: 'Active',
         version: 1,
       };
-      const getByTokenValueSpy = jest
+      const getByTokenValueSpy = vi
         .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
         .mockResolvedValueOnce(existingPaymentMethod);
 
-      const createRecurringPaymentJobSpy = jest
+      const createRecurringPaymentJobSpy = vi
         .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
         .mockResolvedValueOnce({
           id: 'recurring-payment-job-id',
@@ -1294,11 +1296,11 @@ describe('adyen-payment.service', () => {
 
       setupMockConfig({ adyenRecurringPaymentsEnabled: true });
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockUpdatePaymentResult]);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
-      const getByTokenValueSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue');
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockUpdatePaymentResult,
+      ]);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const getByTokenValueSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue');
 
       // When
       await paymentService.processNotification({ data: notification });
@@ -1332,7 +1334,7 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -1343,7 +1345,7 @@ describe('adyen-payment.service', () => {
         },
       });
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: merchantReference,
         shopperReference,
         storedPaymentMethods: [
@@ -1358,11 +1360,11 @@ describe('adyen-payment.service', () => {
         ],
       });
 
-      jest
-        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
-        .mockRejectedValueOnce(new ErrorResourceNotFound(storedPaymentMethodId));
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockRejectedValueOnce(
+        new ErrorResourceNotFound(storedPaymentMethodId),
+      );
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
         customer: {
           id: shopperReference,
@@ -1399,13 +1401,13 @@ describe('adyen-payment.service', () => {
         lastModifiedAt: '2024-02-13T00:00:00.000Z',
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValueOnce([mockGetPaymentResult]);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([
+        mockGetPaymentResult,
+      ]);
 
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
 
-      const mockCreateRecurringPaymentJob = jest
+      const mockCreateRecurringPaymentJob = vi
         .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
         .mockResolvedValueOnce(null);
 
@@ -1463,7 +1465,7 @@ describe('adyen-payment.service', () => {
 
       setupMockConfig({ adyenRecurringPaymentsEnabled: true });
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -1474,7 +1476,7 @@ describe('adyen-payment.service', () => {
         },
       });
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: merchantReference,
         shopperReference,
         storedPaymentMethods: [
@@ -1489,9 +1491,9 @@ describe('adyen-payment.service', () => {
         ],
       });
 
-      jest
-        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
-        .mockRejectedValueOnce(new ErrorResourceNotFound(storedPaymentMethodId));
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockRejectedValueOnce(
+        new ErrorResourceNotFound(storedPaymentMethodId),
+      );
 
       const newlyCreatedPaymentMethod = {
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
@@ -1508,7 +1510,7 @@ describe('adyen-payment.service', () => {
         paymentMethodStatus: 'Active' as const,
         version: 1,
       };
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce(newlyCreatedPaymentMethod);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce(newlyCreatedPaymentMethod);
 
       const mockGetPaymentResult: Payment = {
         id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
@@ -1531,13 +1533,13 @@ describe('adyen-payment.service', () => {
         lastModifiedAt: '2024-02-13T00:00:00.000Z',
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValueOnce([mockGetPaymentResult]);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([
+        mockGetPaymentResult,
+      ]);
 
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
 
-      const mockCreateRecurringPaymentJob = jest
+      const mockCreateRecurringPaymentJob = vi
         .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
         .mockResolvedValueOnce({
           id: 'recurring-payment-job-id',
@@ -1586,7 +1588,7 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -1597,7 +1599,7 @@ describe('adyen-payment.service', () => {
         },
       });
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: merchantReference,
         shopperReference,
         storedPaymentMethods: [
@@ -1612,11 +1614,11 @@ describe('adyen-payment.service', () => {
         ],
       });
 
-      jest
-        .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
-        .mockRejectedValueOnce(new ErrorResourceNotFound(storedPaymentMethodId));
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockRejectedValueOnce(
+        new ErrorResourceNotFound(storedPaymentMethodId),
+      );
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
         customer: {
           id: shopperReference,
@@ -1653,11 +1655,11 @@ describe('adyen-payment.service', () => {
         lastModifiedAt: '2024-02-13T00:00:00.000Z',
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValueOnce([mockGetPaymentResult]);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([
+        mockGetPaymentResult,
+      ]);
 
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
 
       // When
       await paymentService.processNotificationTokenization({ data: notification });
@@ -1708,7 +1710,7 @@ describe('adyen-payment.service', () => {
         },
       };
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -1719,7 +1721,7 @@ describe('adyen-payment.service', () => {
         },
       });
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: merchantReference,
         shopperReference,
         storedPaymentMethods: [
@@ -1750,9 +1752,9 @@ describe('adyen-payment.service', () => {
         paymentMethodStatus: 'Active',
         version: 1,
       };
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce(existingPaymentMethod);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce(existingPaymentMethod);
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save');
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save');
 
       const mockGetPaymentResult: Payment = {
         id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
@@ -1774,13 +1776,13 @@ describe('adyen-payment.service', () => {
         createdAt: '2024-02-13T00:00:00.000Z',
         lastModifiedAt: '2024-02-13T00:00:00.000Z',
       };
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValueOnce([mockGetPaymentResult]);
-      const updatePaymentSpy = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([
+        mockGetPaymentResult,
+      ]);
+      const updatePaymentSpy = vi
         .spyOn(DefaultPaymentService.prototype, 'updatePayment')
         .mockResolvedValueOnce(mockGetPaymentResult);
-      const createRecurringPaymentJobSpy = jest
+      const createRecurringPaymentJobSpy = vi
         .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
         .mockResolvedValueOnce(null);
 
@@ -1826,7 +1828,7 @@ describe('adyen-payment.service', () => {
 
       setupMockConfig({ adyenRecurringPaymentsEnabled: true });
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -1837,7 +1839,7 @@ describe('adyen-payment.service', () => {
         },
       });
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: merchantReference,
         shopperReference,
         storedPaymentMethods: [
@@ -1868,7 +1870,7 @@ describe('adyen-payment.service', () => {
         paymentMethodStatus: 'Active',
         version: 1,
       };
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce(existingPaymentMethod);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue').mockResolvedValueOnce(existingPaymentMethod);
 
       const mockGetPaymentResult: Payment = {
         id: '61d6bf13-aa20-4297-bc22-07e528ca9c37',
@@ -1890,11 +1892,11 @@ describe('adyen-payment.service', () => {
         createdAt: '2024-02-13T00:00:00.000Z',
         lastModifiedAt: '2024-02-13T00:00:00.000Z',
       };
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValueOnce([mockGetPaymentResult]);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
-      const createRecurringPaymentJobSpy = jest
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([
+        mockGetPaymentResult,
+      ]);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValueOnce(mockGetPaymentResult);
+      const createRecurringPaymentJobSpy = vi
         .spyOn(DefaultRecurringPaymentJobService.prototype, 'createRecurringPaymentJobIfApplicable')
         .mockResolvedValueOnce({
           id: 'recurring-payment-job-id',
@@ -1923,7 +1925,7 @@ describe('adyen-payment.service', () => {
 
   describe('isStoredPaymentMethodsEnabled', () => {
     test('should return an "false" if the feature flag is disabled', async () => {
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: false,
         config: {
           paymentInterface: 'paymentInterface',
@@ -1940,7 +1942,7 @@ describe('adyen-payment.service', () => {
     });
 
     test('should return an "false" if the feature flag is enabled but no customerId is set on the cart', async () => {
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface: 'paymentInterface',
@@ -1958,7 +1960,7 @@ describe('adyen-payment.service', () => {
           omitFields: ['billingAddress', 'shippingAddress', 'customerId'],
         }) as Cart;
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
       const result = await paymentService.isStoredPaymentMethodsEnabled();
 
@@ -1966,7 +1968,7 @@ describe('adyen-payment.service', () => {
     });
 
     test('should return an "true" if the feature flag is enabled and the cart has an customerId set', async () => {
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface: 'paymentInterface',
@@ -1984,7 +1986,7 @@ describe('adyen-payment.service', () => {
           omitFields: ['billingAddress', 'shippingAddress'],
         }) as Cart;
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
       const result = await paymentService.isStoredPaymentMethodsEnabled();
 
@@ -2001,11 +2003,14 @@ describe('adyen-payment.service', () => {
           omitFields: ['billingAddress', 'shippingAddress', 'customerId'],
         }) as Cart;
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
       const result = paymentService.getStoredPaymentMethods();
 
-      expect(result).rejects.toThrow(new ErrorInternalConstraintViolated('The cart does not have a customerId set.'));
+      const expectedError = new ErrorInternalConstraintViolated('The cart does not have a customerId set.');
+      await expect(result).rejects.toThrow(
+        expect.objectContaining({ message: expectedError.message, code: expectedError.code }),
+      );
     });
 
     test('should return an empty list if no stored payment methods are stored for the given customerId from the cart', async () => {
@@ -2017,13 +2022,13 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount,
         shopperReference: customerId,
         storedPaymentMethods: [],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
@@ -2051,7 +2056,7 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount,
         shopperReference: customerId,
         storedPaymentMethods: [
@@ -2073,8 +2078,8 @@ describe('adyen-payment.service', () => {
           },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
@@ -2163,7 +2168,7 @@ describe('adyen-payment.service', () => {
       const interfaceAccount = 'adyen-interface-account';
       const adyenToken = 'adyen-token-value-123';
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -2180,7 +2185,7 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount,
         shopperReference: customerId,
         storedPaymentMethods: [
@@ -2194,8 +2199,8 @@ describe('adyen-payment.service', () => {
           },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
@@ -2228,7 +2233,7 @@ describe('adyen-payment.service', () => {
       const interfaceAccount = 'adyen-interface-account';
       const adyenToken = 'adyen-token-value-123';
 
-      jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
         enabled: true,
         config: {
           paymentInterface,
@@ -2245,7 +2250,7 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount,
         shopperReference: customerId,
         storedPaymentMethods: [
@@ -2259,8 +2264,8 @@ describe('adyen-payment.service', () => {
           },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
@@ -2314,7 +2319,7 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [
@@ -2322,8 +2327,8 @@ describe('adyen-payment.service', () => {
           { id: orphanToken, type: methodType, lastFour: '2222', brand: 'mc' },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 1,
         limit: 100,
         offset: 0,
@@ -2354,8 +2359,8 @@ describe('adyen-payment.service', () => {
         version: 1,
       } as PaymentMethod;
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce(createdOrphan);
-      const updateSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'update');
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce(createdOrphan);
+      const updateSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'update');
 
       const result = await paymentService.getStoredPaymentMethods();
 
@@ -2376,24 +2381,22 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [{ id: adyenToken, type: methodType, lastFour: '1234', brand: 'visa' }],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
         results: [],
       });
 
-      jest
-        .spyOn(DefaultPaymentMethodService.prototype, 'save')
-        .mockRejectedValueOnce(
-          new ErrorInternalConstraintViolated('A payment method with the same token already exists.'),
-        );
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockRejectedValueOnce(
+        new ErrorInternalConstraintViolated('A payment method with the same token already exists.'),
+      );
 
       const concurrentlyCreated = {
         id: 'concurrently-created-id',
@@ -2407,7 +2410,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       } as PaymentMethod;
 
-      const getByTokenValueSpy = jest
+      const getByTokenValueSpy = vi
         .spyOn(DefaultPaymentMethodService.prototype, 'getByTokenValue')
         .mockResolvedValueOnce(concurrentlyCreated);
 
@@ -2430,7 +2433,7 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [
@@ -2438,8 +2441,8 @@ describe('adyen-payment.service', () => {
           { id: brokenToken, type: methodType, lastFour: '5678', brand: 'mc' },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
@@ -2458,8 +2461,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       } as PaymentMethod;
 
-      jest
-        .spyOn(DefaultPaymentMethodService.prototype, 'save')
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'save')
         .mockResolvedValueOnce(createdHealthy)
         .mockRejectedValueOnce(new Error('CT is temporarily unavailable'));
 
@@ -2473,7 +2475,7 @@ describe('adyen-payment.service', () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const orphanToken = 'adyen-token-value-orphan';
 
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
 
       const cartRandom = CartRest.random()
         .lineItems([])
@@ -2481,22 +2483,22 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [
           { id: orphanToken, type: 'scheme', brand: 'visa', lastFour: '1234', expiryMonth: '03', expiryYear: '30' },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
         results: [],
       });
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'new-ct-id',
         customer: { id: customerId, typeId: 'customer' },
         token: { value: orphanToken },
@@ -2529,7 +2531,7 @@ describe('adyen-payment.service', () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const orphanToken = 'adyen-token-value-orphan-sepa';
 
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
 
       const cartRandom = CartRest.random()
         .lineItems([])
@@ -2537,7 +2539,7 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [
@@ -2550,15 +2552,15 @@ describe('adyen-payment.service', () => {
           },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
         results: [],
       });
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'new-ct-id',
         customer: { id: customerId, typeId: 'customer' },
         token: { value: orphanToken },
@@ -2579,7 +2581,7 @@ describe('adyen-payment.service', () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const orphanToken = 'adyen-token-value-orphan';
 
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
 
       const cartRandom = CartRest.random()
         .lineItems([])
@@ -2587,20 +2589,20 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [{ id: orphanToken, type: 'scheme', brand: 'visa', lastFour: '1234' }],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
         results: [],
       });
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'new-ct-id',
         customer: { id: customerId, typeId: 'customer' },
         token: { value: orphanToken },
@@ -2631,7 +2633,7 @@ describe('adyen-payment.service', () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const orphanToken = 'adyen-token-value-orphan';
 
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: true } as any);
 
       const cartRandom = CartRest.random()
         .lineItems([])
@@ -2639,20 +2641,20 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [{ id: orphanToken, type: 'paypal' }],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
         results: [],
       });
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'new-ct-id',
         customer: { id: customerId, typeId: 'customer' },
         token: { value: orphanToken },
@@ -2673,7 +2675,7 @@ describe('adyen-payment.service', () => {
       const customerId = '12303506-396c-4163-9193-11115c10fc2e';
       const orphanToken = 'adyen-token-value-orphan';
 
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: false } as any);
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenStorePaymentMethodDetailsEnabled: false } as any);
 
       const cartRandom = CartRest.random()
         .lineItems([])
@@ -2681,22 +2683,22 @@ describe('adyen-payment.service', () => {
         .customerId(customerId)
         .buildRest<TCartRest>({}) as Cart;
 
-      jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+      vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
         merchantAccount: 'merchantAccount',
         shopperReference: customerId,
         storedPaymentMethods: [
           { id: orphanToken, type: 'scheme', brand: 'visa', lastFour: '1234', expiryMonth: '03', expiryYear: '30' },
         ],
       });
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'find').mockResolvedValueOnce({
         count: 0,
         limit: 100,
         offset: 0,
         results: [],
       });
 
-      const saveSpy = jest.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
+      const saveSpy = vi.spyOn(DefaultPaymentMethodService.prototype, 'save').mockResolvedValueOnce({
         id: 'new-ct-id',
         customer: { id: customerId, typeId: 'customer' },
         token: { value: orphanToken },
@@ -2724,11 +2726,14 @@ describe('adyen-payment.service', () => {
           omitFields: ['billingAddress', 'shippingAddress', 'customerId'],
         }) as Cart;
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
 
       const result = paymentService.deleteStoredPaymentMethodViaCart(ctPaymentMethodId);
 
-      expect(result).rejects.toThrow(new ErrorInternalConstraintViolated('The cart does not have a customerId set.'));
+      const expectedError = new ErrorInternalConstraintViolated('The cart does not have a customerId set.');
+      await expect(result).rejects.toThrow(
+        expect.objectContaining({ message: expectedError.message, code: expectedError.code }),
+      );
     });
   });
 
@@ -2747,8 +2752,8 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -2767,13 +2772,13 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockImplementationOnce(() => {
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockImplementationOnce(() => {
         throw new Error('some error thrown during delete');
       });
 
       const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
-      expect(result).rejects.toThrow(new Error('some error thrown during delete'));
+      await expect(result).rejects.toThrow(new Error('some error thrown during delete'));
     });
 
     test('should immediatly stop trying to delete the token in Adyen if the API call returns a 404', async () => {
@@ -2790,8 +2795,8 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cartRandom);
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -2810,7 +2815,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -2829,7 +2834,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
+      vi.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
         throw new HttpClientException({
           message: 'adyen error message',
           responseBody:
@@ -2853,7 +2858,7 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -2872,7 +2877,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
         customer: {
           id: customerId,
@@ -2891,7 +2896,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
+      vi.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
         throw new HttpClientException({
           message: 'adyen error message',
           responseBody:
@@ -2915,7 +2920,7 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -2934,7 +2939,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
         id: 'd85435f2-2628-457f-8b8e-1a567da30a8d',
         customer: {
           id: customerId,
@@ -2953,7 +2958,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
+      vi.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementationOnce(() => {
         throw new HttpClientException({
           message: 'adyen error message',
           responseBody:
@@ -2977,7 +2982,7 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -2996,7 +3001,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -3015,7 +3020,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementation(async () => {
+      vi.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockImplementation(async () => {
         throw new HttpClientException({
           message: 'adyen error message',
           responseBody:
@@ -3026,23 +3031,11 @@ describe('adyen-payment.service', () => {
       });
 
       const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
-      expect(result).rejects.toThrow(
-        new Errorx({
-          cause: {
-            errorCode: 'error-code',
-            message: 'adyen error message',
-            name: 'HttpClientException',
-            responseBody:
-              '{"status":500,"errorCode":"000","message":"HTTP Status Response - Internal Server Error","errorType":"security"}',
-            statusCode: 500,
-          },
+      await expect(result).rejects.toThrow(
+        expect.objectContaining({
           code: 'AdyenError-000',
-          fields: undefined,
           httpErrorStatus: 500,
           message: 'HTTP Status Response - Internal Server Error',
-          privateFields: undefined,
-          privateMessage: undefined,
-          skipLog: undefined,
         }),
       );
     });
@@ -3056,7 +3049,7 @@ describe('adyen-payment.service', () => {
       const paymentInterface = 'adyen-payment-interface';
       const interfaceAccount = 'adyen-interface-account';
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -3075,7 +3068,7 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentMethodService.prototype, 'delete').mockResolvedValueOnce({
         id: ctPaymentMethodId,
         customer: {
           id: customerId,
@@ -3094,11 +3087,11 @@ describe('adyen-payment.service', () => {
         version: 1,
       });
 
-      jest.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockResolvedValueOnce(undefined);
+      vi.spyOn(RecurringApi.prototype, 'deleteTokenForStoredPaymentDetails').mockResolvedValueOnce(undefined);
 
       const result = paymentService.deleteStoredPaymentMethod(ctPaymentMethodId, customerId);
 
-      expect(result).resolves.not.toThrow();
+      await expect(result).resolves.not.toThrow();
     });
   });
 
@@ -3133,7 +3126,7 @@ describe('adyen-payment.service', () => {
         type: 'UnknownType',
       } as unknown as TransactionDraftDTO;
 
-      expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+      await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
         new ErrorInvalidField('type', 'UnknownType', 'Recurring'),
       );
     });
@@ -3141,14 +3134,14 @@ describe('adyen-payment.service', () => {
     test('it should throw an ErrorInvalidField if the "type" value is not provided', async () => {
       const transactionDraft: TransactionDraftDTO = {} as unknown as TransactionDraftDTO;
 
-      expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+      await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
         new ErrorInvalidField('type', 'not-provided', 'Recurring'),
       );
     });
 
     describe('Recurring', () => {
       test('it should throw an ErrorInvalidOperation if the StoredPaymentMethods feature is not enabled', async () => {
-        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+        await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
           new ErrorInvalidOperation(
             'The stored-payment-methods feature is disabled and thus cannot request an transaction using stored-payment-methods',
           ),
@@ -3156,7 +3149,9 @@ describe('adyen-payment.service', () => {
       });
 
       test('it should throw an ErrorInternalConstraintViolated if the provided cart does not have an customerId set', async () => {
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3174,17 +3169,20 @@ describe('adyen-payment.service', () => {
           .customerId(undefined)
           .buildRest<TCartRest>({}) as Cart;
 
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
 
-        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
-          new ErrorInternalConstraintViolated(
-            'The cart associated with this transaction does not have a customerId set.',
-          ),
+        const expectedError = new ErrorInternalConstraintViolated(
+          'The cart associated with this transaction does not have a customerId set.',
+        );
+        await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          expect.objectContaining({ message: expectedError.message, code: expectedError.code }),
         );
       });
 
       test('it should fall back to the cart amount, skipping currency/amount validation, when the draft does not have an amount set', async () => {
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3222,12 +3220,12 @@ describe('adyen-payment.service', () => {
           fractionDigits: 2,
         };
 
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(cartAmount);
-        jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
-        jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
-        jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(cartRandom);
-        jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(cartAmount);
+        vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
+        vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
+        vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(cartRandom);
+        vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
           merchantAccount: merchantReference,
           shopperReference: customerId,
           storedPaymentMethods: [
@@ -3241,8 +3239,8 @@ describe('adyen-payment.service', () => {
             },
           ],
         });
-        jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
-        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(paymentRandom);
+        vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+        vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(paymentRandom);
 
         const transactionDraftWithoutAmount: TransactionDraftDTO = { ...transactionDraft, amount: undefined };
 
@@ -3256,7 +3254,9 @@ describe('adyen-payment.service', () => {
       });
 
       test('it should throw an ErrorInvalidField if the draft amount currency does not match the cart amount currency', async () => {
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3274,20 +3274,22 @@ describe('adyen-payment.service', () => {
           .customerId(customerId)
           .buildRest<TCartRest>({}) as Cart;
 
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
           centAmount: transactionDraft.amount!.centAmount,
           currencyCode: 'USD',
           fractionDigits: 2,
         });
 
-        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+        await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
           new ErrorInvalidField('amount.currencyCode', transactionDraft.amount!.currencyCode, 'USD'),
         );
       });
 
       test('it should throw an ErrorInvalidField if the draft amount is greater than the cart amount', async () => {
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3305,14 +3307,14 @@ describe('adyen-payment.service', () => {
           .customerId(customerId)
           .buildRest<TCartRest>({}) as Cart;
 
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
           centAmount: transactionDraft.amount!.centAmount - 1,
           currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
 
-        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+        await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
           new ErrorInvalidField(
             'amount.centAmount',
             String(transactionDraft.amount!.centAmount),
@@ -3322,7 +3324,9 @@ describe('adyen-payment.service', () => {
       });
 
       test('it should throw an ErrorRequiredField if the draft does not have a paymentMethodId set', async () => {
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3340,8 +3344,8 @@ describe('adyen-payment.service', () => {
           .customerId(customerId)
           .buildRest<TCartRest>({}) as Cart;
 
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
           centAmount: transactionDraft.amount!.centAmount,
           currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
@@ -3352,13 +3356,16 @@ describe('adyen-payment.service', () => {
           paymentMethodId: undefined,
         };
 
-        expect(paymentService.handleTransaction(transactionDraftWithoutPaymentMethodId)).rejects.toThrow(
-          new ErrorRequiredField('paymentMethodId'),
+        const expectedError = new ErrorRequiredField('paymentMethodId');
+        await expect(paymentService.handleTransaction(transactionDraftWithoutPaymentMethodId)).rejects.toThrow(
+          expect.objectContaining({ message: expectedError.message, code: expectedError.code }),
         );
       });
 
       test('it should throw an ErrorRequiredField if the paymentMethod referenced does not have an token value set', async () => {
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3385,22 +3392,27 @@ describe('adyen-payment.service', () => {
           default: false,
         };
 
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
           centAmount: transactionDraft.amount!.centAmount,
           currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
-        jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
+        vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
 
-        expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
-          new ErrorInternalConstraintViolated('The referenced payment method does not have a token set.'),
+        const expectedError = new ErrorInternalConstraintViolated(
+          'The referenced payment method does not have a token set.',
+        );
+        await expect(paymentService.handleTransaction(transactionDraft)).rejects.toThrow(
+          expect.objectContaining({ message: expectedError.message, code: expectedError.code }),
         );
       });
 
       test('it should handle the "Recurring" transaction draft type', async () => {
         // Arrange
-        jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        setupMockConfig({ adyenRecurringPaymentsEnabled: true });
+
+        vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
           enabled: true,
           config: {
             paymentInterface,
@@ -3433,17 +3445,17 @@ describe('adyen-payment.service', () => {
 
         const paymentRandom = PaymentRest.random().id(paymentId).buildRest<TPaymentRest>() as Payment;
 
-        jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-        jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
-        jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
+        vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+        vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(cartRandom);
+        vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue({
           centAmount: transactionDraft.amount!.centAmount,
           currencyCode: transactionDraft.amount!.currencyCode,
           fractionDigits: 2,
         });
-        jest.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
+        vi.spyOn(DefaultPaymentMethodService.prototype, 'get').mockResolvedValue(paymentMethod);
 
-        jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
-        jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue({
+        vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(paymentRandom);
+        vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue({
           ...cartRandom,
           paymentInfo: {
             payments: [
@@ -3455,7 +3467,7 @@ describe('adyen-payment.service', () => {
           },
         });
 
-        jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+        vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
           merchantAccount: merchantReference,
           shopperReference: customerId,
           storedPaymentMethods: [
@@ -3469,9 +3481,9 @@ describe('adyen-payment.service', () => {
             },
           ],
         });
-        jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+        vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
 
-        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(paymentRandom);
+        vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(paymentRandom);
 
         // Process
         const result = await paymentService.handleTransaction(transactionDraft);
@@ -3562,7 +3574,7 @@ describe('adyen-payment.service', () => {
     });
 
     beforeEach(() => {
-      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(0);
+      vi.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(0);
     });
 
     test('returns full totalPrice when cart has no payments', () => {
@@ -3624,7 +3636,7 @@ describe('adyen-payment.service', () => {
     });
 
     test('deducts giftCardCentAmount from context', () => {
-      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(500);
+      vi.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(500);
       const result = service.calculateRemainingAmount(baseCart());
       expect(result.centAmount).toBe(10000 - 500);
     });
@@ -3659,7 +3671,7 @@ describe('adyen-payment.service', () => {
     });
 
     test('throws ErrorInvalidOperation when remaining amount would be negative', () => {
-      jest.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(10001);
+      vi.spyOn(FastifyContext, 'getGiftCardPlannedCentAmountFromContext').mockReturnValue(10001);
       expect(() => service.calculateRemainingAmount(baseCart())).toThrow(ErrorInvalidOperation);
     });
   });
@@ -3673,19 +3685,19 @@ describe('adyen-payment.service', () => {
     };
 
     beforeEach(() => {
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      jest.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
-      jest.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
-      jest.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
-      jest.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
-      jest.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
-      jest.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(DefaultCartService.prototype, 'getPaymentAmount').mockResolvedValue(mockGetPaymentAmount);
+      vi.spyOn(DefaultPaymentService.prototype, 'createPayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DefaultCartService.prototype, 'addPayment').mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(FastifyContext, 'getProcessorUrlFromContext').mockReturnValue('http://127.0.0.1');
+      vi.spyOn(FastifyContext, 'getMerchantReturnUrlFromContext').mockReturnValue('http://127.0.0.1/checkout/result');
+      vi.spyOn(PaymentsApi.prototype, 'payments').mockResolvedValue(mockAdyenCreatePaymentResponse);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockGetPaymentResult);
     });
 
     test('uses gift card balance as amountPlanned when balance is less than cart amount', async () => {
       // cartAmount = 150000 (mockGetPaymentAmount), balance = 5000 → use 5000
-      jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
+      vi.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
         balance: { value: 5000, currency: 'USD' },
         pspReference: 'BALANCE-PSP-1',
         resultCode: BalanceCheckResponse.ResultCodeEnum.Success,
@@ -3703,7 +3715,7 @@ describe('adyen-payment.service', () => {
 
     test('caps amountPlanned at cart amount when gift card balance exceeds remaining cart amount', async () => {
       // cartAmount = 150000 (mockGetPaymentAmount), balance = 200000 → cap at 150000
-      jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
+      vi.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
         balance: { value: 200000, currency: 'USD' },
         pspReference: 'BALANCE-PSP-2',
         resultCode: BalanceCheckResponse.ResultCodeEnum.Success,
@@ -3720,7 +3732,7 @@ describe('adyen-payment.service', () => {
     });
 
     test('falls back to cart amount when balance check returns no balance', async () => {
-      jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
+      vi.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard').mockResolvedValue({
         pspReference: 'BALANCE-PSP-3',
         resultCode: BalanceCheckResponse.ResultCodeEnum.NotEnoughBalance,
       } as BalanceCheckResponse);
@@ -3740,7 +3752,7 @@ describe('adyen-payment.service', () => {
         data: { paymentMethod: { type: 'scheme' } as Record<string, string> },
       };
 
-      const balanceSpy = jest.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard');
+      const balanceSpy = vi.spyOn(OrdersApi.prototype, 'getBalanceOfGiftCard');
 
       const adyenPaymentService = new AdyenPaymentService(opts);
       await adyenPaymentService.createPayment(cardPaymentOpts);

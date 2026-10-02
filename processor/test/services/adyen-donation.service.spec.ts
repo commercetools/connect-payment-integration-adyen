@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, jest, test } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest';
 import { Payment } from '@commercetools/connect-payments-sdk';
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
 import { DefaultPaymentService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-payment.service';
@@ -27,9 +27,9 @@ const PAID_CURRENCY = mockGetPaymentResult.amountPlanned.currencyCode;
 
 /** `null` mocks a merchant account with no active campaign. */
 const mockActiveCampaign = (campaign: DonationCampaign | null = { id: 'campaign-id' }): void => {
-  jest
-    .spyOn(DonationsApi.prototype, 'donationCampaigns')
-    .mockResolvedValue({ donationCampaigns: campaign ? [campaign] : [] });
+  vi.spyOn(DonationsApi.prototype, 'donationCampaigns').mockResolvedValue({
+    donationCampaigns: campaign ? [campaign] : [],
+  });
 };
 
 const donationNotification = (overrides: Partial<NotificationRequestItem> = {}): NotificationDonationDTO => ({
@@ -59,10 +59,10 @@ describe('adyen-donation.service', () => {
   });
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenGivingEnabled: true } as any);
-    jest.spyOn(paymentSDK.ctCustomTypeService, 'getById').mockResolvedValue({
+    vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenGivingEnabled: true } as any);
+    vi.spyOn(paymentSDK.ctCustomTypeService, 'getById').mockResolvedValue({
       id: 'custom-type-id',
       version: 1,
       key: AdyenPaymentDetailsTypeKey,
@@ -75,7 +75,7 @@ describe('adyen-donation.service', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('getDonationConfig', () => {
@@ -89,7 +89,7 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign(activeCampaign);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
 
       // Act
       const result = await donationService.getDonationConfig({ paymentId: payment.id, data: {} });
@@ -109,7 +109,7 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign(activeCampaign);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
 
       // Act
       await donationService.getDonationConfig({ paymentId: payment.id, data: { locale: 'en-US' } });
@@ -124,7 +124,7 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign(null);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
 
       // Act
       const result = await donationService.getDonationConfig({ paymentId: payment.id, data: {} });
@@ -137,10 +137,10 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign(activeCampaign);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest
-        .spyOn(DefaultCartService.prototype, 'getCartByPaymentId')
-        .mockResolvedValue(mockGetCartResultShippingModeSimple());
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultCartService.prototype, 'getCartByPaymentId').mockResolvedValue(
+        mockGetCartResultShippingModeSimple(),
+      );
 
       // Act
       const withoutCountryCode = await donationService.getDonationConfig({ paymentId: payment.id, data: {} });
@@ -158,8 +158,8 @@ describe('adyen-donation.service', () => {
     test('rejects when Adyen Giving is not enabled', async () => {
       // Arrange
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      jest.spyOn(Config, 'getConfig').mockReturnValue({ adyenGivingEnabled: false } as any);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment');
+      vi.spyOn(Config, 'getConfig').mockReturnValue({ adyenGivingEnabled: false } as any);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment');
 
       // Act & Assert
       await expect(donationService.getDonationConfig({ paymentId: 'payment-id', data: {} })).rejects.toThrow(
@@ -170,8 +170,8 @@ describe('adyen-donation.service', () => {
 
     test('rejects when the payment carries no donation token', async () => {
       // Arrange
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
-      jest.spyOn(DonationsApi.prototype, 'donationCampaigns');
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+      vi.spyOn(DonationsApi.prototype, 'donationCampaigns');
 
       // Act & Assert
       await expect(donationService.getDonationConfig({ paymentId: mockGetPaymentResult.id, data: {} })).rejects.toThrow(
@@ -188,9 +188,9 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign();
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Completed,
         amount: { currency: PAID_CURRENCY, value: 500 },
@@ -214,11 +214,11 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign();
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
-        .mockRejectedValue(new Error('commercetools unavailable'));
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockRejectedValue(
+        new Error('commercetools unavailable'),
+      );
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Completed,
       });
@@ -234,9 +234,9 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken();
       mockActiveCampaign();
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Pending,
       });
@@ -257,12 +257,11 @@ describe('adyen-donation.service', () => {
       const payment = paymentWithDonationToken({ adyenDonationState: 'Success' });
       mockActiveCampaign();
       // The payment is donatable when the request comes in, and the webhook lands before the result is stored.
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'getPayment')
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment')
         .mockResolvedValueOnce(paymentWithDonationToken())
         .mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Pending,
       });
@@ -278,12 +277,11 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken({ adyenDonationState: 'Success' });
       mockActiveCampaign();
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'getPayment')
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment')
         .mockResolvedValueOnce(paymentWithDonationToken())
         .mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Refused,
       });
@@ -299,12 +297,11 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken({ adyenDonationState: 'Pending' });
       mockActiveCampaign();
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'getPayment')
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment')
         .mockResolvedValueOnce(paymentWithDonationToken())
         .mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Refused,
       });
@@ -337,9 +334,9 @@ describe('adyen-donation.service', () => {
       const attemptDonation = (campaign: DonationCampaign | null, data: MakeDonationRequestDTO) => {
         const payment = paymentWithDonationToken();
         mockActiveCampaign(campaign);
-        jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-        jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-        jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce(completedDonation);
+        vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+        vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+        vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce(completedDonation);
 
         return donationService.makeDonation({ paymentId: payment.id, data });
       };
@@ -398,8 +395,8 @@ describe('adyen-donation.service', () => {
     /** Asserts that no campaign is offered for a payment in the given donation state. */
     const expectNoCampaignOffered = async (donationState: AdyenDonationState): Promise<void> => {
       const payment = paymentWithDonationToken({ adyenDonationState: donationState });
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donationCampaigns');
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donationCampaigns');
 
       await expect(donationService.getDonationConfig({ paymentId: payment.id, data: {} })).rejects.toThrow(
         'a donation has already been charged against it',
@@ -411,8 +408,8 @@ describe('adyen-donation.service', () => {
     const expectNotDonatable = async (donationState: AdyenDonationState): Promise<void> => {
       const payment = paymentWithDonationToken({ adyenDonationState: donationState });
       mockActiveCampaign();
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations');
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations');
 
       await expect(donationService.makeDonation({ paymentId: payment.id, data: donationRequest })).rejects.toThrow(
         'a donation has already been charged against it',
@@ -440,9 +437,9 @@ describe('adyen-donation.service', () => {
       // Arrange
       const payment = paymentWithDonationToken({ adyenDonationState: 'Failure' });
       mockActiveCampaign();
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
-      jest.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DonationsApi.prototype, 'donations').mockResolvedValueOnce({
         id: 'donation-id',
         status: DonationPaymentResponse.StatusEnum.Completed,
       });
@@ -459,9 +456,9 @@ describe('adyen-donation.service', () => {
     test('stores the outcome of the donation on the funding payment', async () => {
       // Arrange
       const payment = paymentWithDonationToken({ adyenDonationState: 'Pending' });
-      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([payment]);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([payment]);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
 
       // Act
       await donationService.processNotification({ data: donationNotification() });
@@ -479,9 +476,9 @@ describe('adyen-donation.service', () => {
     test('falls back to the merchant reference when the funding payment has no matching interface id', async () => {
       // Arrange
       const payment = paymentWithDonationToken();
-      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([]);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([]);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
 
       // Act
       await donationService.processNotification({
@@ -500,9 +497,9 @@ describe('adyen-donation.service', () => {
     test('does not downgrade a recorded success when a late webhook reports a failure', async () => {
       // Arrange
       const payment = paymentWithDonationToken({ adyenDonationState: 'Success' });
-      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([payment]);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([payment]);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(payment);
 
       // Act
       await donationService.processNotification({
@@ -516,11 +513,11 @@ describe('adyen-donation.service', () => {
     test('propagates a failure to update the payment so that Adyen retries the webhook', async () => {
       // Arrange
       const payment = paymentWithDonationToken();
-      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([payment]);
-      jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'updatePayment')
-        .mockRejectedValue(new Error('commercetools unavailable'));
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValueOnce([payment]);
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockRejectedValue(
+        new Error('commercetools unavailable'),
+      );
 
       // Act & Assert
       await expect(donationService.processNotification({ data: donationNotification() })).rejects.toThrow(
@@ -530,8 +527,8 @@ describe('adyen-donation.service', () => {
 
     test('accepts and ignores an event other than DONATION', async () => {
       // Arrange
-      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId');
-      jest.spyOn(DefaultPaymentService.prototype, 'updatePayment');
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId');
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment');
 
       // Act
       await donationService.processNotification({

@@ -10,29 +10,28 @@
   "scripts": {
     "dev": "vite --port 3000",
     "start": "serve public -l 8080 --cors",
-    "test": "jest --detectOpenHandles",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.45.2",
+    "@adyen/adyen-web": "6.46.0",
     "serve": "14.2.6"
   },
   "devDependencies": {
-    "@jest/globals": "30.5.2",
-    "@types/node": "26.6.3",
+    "@types/node": "26.6.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
-    "jest": "30.5.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "sass": "1.105.0",
-    "ts-jest": "29.4.14",
-    "typescript": "6.0.3",
-    "vite": "8.3.1",
-    "vite-plugin-css-injected-by-js": "5.0.2"
+    "sass": "1.105.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.2",
+    "vite-plugin-css-injected-by-js": "5.0.2",
+    "vitest": "5.0.3"
   },
   "overrides": {
     "@babel/core": "7.29.7",

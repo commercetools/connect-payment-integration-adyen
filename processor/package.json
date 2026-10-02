@@ -11,9 +11,9 @@
     "build": "rm -rf /dist && tsc",
     "dev": "ts-node src/main.ts",
     "watch": "nodemon --watch \"src/**\" --ext \"ts,json\" --ignore \"src/**/*.spec.ts\" --exec \"ts-node src/main.ts\" --legacy-watch",
-    "test": "jest --detectOpenHandles",
-    "test:watch": "jest --watch --detectOpenHandles",
-    "test:coverage": "jest --detectOpenHandles --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "connector:post-deploy": "node dist/connectors/post-deploy.js",
     "connector:pre-undeploy": "node dist/connectors/pre-undeploy.js"
   },
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@adyen/api-library": "32.2.0",
-    "@commercetools-backend/loggers": "27.11.4",
+    "@commercetools-backend/loggers": "27.12.0",
     "@commercetools/connect-payments-sdk": "1.5.0",
     "@fastify/autoload": "6.5.0",
     "@fastify/cors": "11.3.0",
@@ -35,8 +35,8 @@
     "@fastify/request-context": "7.0.0",
     "@fastify/static": "10.1.5",
     "@fastify/type-provider-typebox": "6.1.0",
-    "@sinclair/typebox": "0.34.49",
-    "dotenv": "18.0.4",
+    "@sinclair/typebox": "0.34.52",
+    "dotenv": "18.0.5",
     "fastify": "5.12.5",
     "fastify-plugin": "6.0.0"
   },
@@ -44,25 +44,21 @@
     "@commercetools/composable-commerce-test-data": "13.13.1",
     "@eslint/eslintrc": "3.3.7",
     "@eslint/js": "10.0.1",
-    "globals": "17.12.0",
-    "@jest/globals": "30.5.2",
-    "@types/jest": "30.0.0",
-    "@types/node": "24.19.0",
-    "@typescript-eslint/eslint-plugin": "8.70.1",
-    "@typescript-eslint/parser": "8.70.1",
+    "@types/node": "26.6.4",
+    "@typescript-eslint/eslint-plugin": "8.71.0",
+    "@typescript-eslint/parser": "8.71.0",
     "eslint": "10.11.0",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jest": "29.16.6",
     "eslint-plugin-prettier": "5.5.6",
     "eslint-plugin-unused-imports": "4.4.1",
-    "jest": "30.5.2",
-    "msw": "2.15.0",
+    "globals": "17.13.0",
+    "msw": "3.0.1",
     "node-fetch": "3.3.2",
     "nodemon": "3.1.14",
     "prettier": "3.9.9",
-    "ts-jest": "29.4.14",
     "ts-node": "10.9.2",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
   },
   "overrides": {
     "lodash": "4.18.1",
@@ -71,7 +67,7 @@
     "@commercetools/composable-commerce-test-data": {
       "@commercetools-frontend/application-config": {
         "ajv": "8.20.0",
-        "dompurify": "3.4.14"
+        "dompurify": "3.4.16"
       }
     }
   }

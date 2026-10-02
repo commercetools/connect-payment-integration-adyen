@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, jest, test } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest';
 import { Cart, Payment } from '@commercetools/connect-payments-sdk';
 import { DefaultCartService } from '@commercetools/connect-payments-sdk/dist/commercetools/services/ct-cart.service';
 import { paymentSDK } from '../../src/payment-sdk';
@@ -17,11 +17,11 @@ describe('adyen-order.service', () => {
   });
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('createOrder', () => {
@@ -38,10 +38,10 @@ describe('adyen-order.service', () => {
         resultCode: CreateOrderResponse.ResultCodeEnum.Success,
       };
 
-      jest.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue(cart.id);
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cart);
-      jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
-      jest.spyOn(OrdersApi.prototype, 'orders').mockResolvedValueOnce(mockOrderResponse);
+      vi.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue(cart.id);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cart);
+      vi.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
+      vi.spyOn(OrdersApi.prototype, 'orders').mockResolvedValueOnce(mockOrderResponse);
 
       // Act
       const result = await orderService.createOrder();
@@ -64,10 +64,10 @@ describe('adyen-order.service', () => {
       // Arrange
       const cart = mockGetCartResultShippingModeSimple();
 
-      jest.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue(cart.id);
-      jest.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cart);
-      jest.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
-      jest.spyOn(OrdersApi.prototype, 'orders').mockRejectedValueOnce(new Error('Adyen API failure'));
+      vi.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue(cart.id);
+      vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValueOnce(cart);
+      vi.spyOn(DefaultCartService.prototype, 'getPlannedPaymentAmount').mockResolvedValueOnce(mockGetPaymentAmount);
+      vi.spyOn(OrdersApi.prototype, 'orders').mockRejectedValueOnce(new Error('Adyen API failure'));
 
       // Act & Assert
       await expect(orderService.createOrder()).rejects.toThrow();
@@ -86,7 +86,7 @@ describe('adyen-order.service', () => {
         resultCode: CancelOrderResponse.ResultCodeEnum.Received,
       };
 
-      jest.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValueOnce(mockCancelResponse);
+      vi.spyOn(OrdersApi.prototype, 'cancelOrder').mockResolvedValueOnce(mockCancelResponse);
 
       // Act
       const result = await orderService.cancelOrder({ data: dto });
@@ -110,7 +110,7 @@ describe('adyen-order.service', () => {
         pspReference: 'ORDER-PSP-123',
       };
 
-      jest.spyOn(OrdersApi.prototype, 'cancelOrder').mockRejectedValueOnce(new Error('Adyen API failure'));
+      vi.spyOn(OrdersApi.prototype, 'cancelOrder').mockRejectedValueOnce(new Error('Adyen API failure'));
 
       // Act & Assert
       await expect(orderService.cancelOrder({ data: dto })).rejects.toThrow();
@@ -145,7 +145,7 @@ describe('adyen-order.service', () => {
 
     test('should do nothing when cart has no paymentInfo', async () => {
       const cart = mockGetCartResultShippingModeSimple();
-      const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
+      const cancelSpy = vi.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
       await orderService.cancelCartActiveOrders(cart);
 
@@ -166,7 +166,7 @@ describe('adyen-order.service', () => {
           },
         ],
       };
-      const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
+      const cancelSpy = vi.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
       await orderService.cancelCartActiveOrders(cartWithPayments([payment]));
 
@@ -183,7 +183,7 @@ describe('adyen-order.service', () => {
           fields: { adyenOrderData: 'order-data', adyenOrderPspReference: 'ORDER-PSP-1' },
         },
       };
-      const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
+      const cancelSpy = vi.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
       await orderService.cancelCartActiveOrders(cartWithPayments([payment]));
 
@@ -192,7 +192,7 @@ describe('adyen-order.service', () => {
 
     test('should cancel one active Adyen order', async () => {
       const payment = approvedPaymentWithOrder('payment-1', 'ORDER-PSP-1', 'order-data-1');
-      const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
+      const cancelSpy = vi.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
       await orderService.cancelCartActiveOrders(cartWithPayments([payment]));
 
@@ -203,7 +203,7 @@ describe('adyen-order.service', () => {
     test('should deduplicate payments that share the same adyenOrderPspReference', async () => {
       const p1 = approvedPaymentWithOrder('payment-1', 'ORDER-PSP-SHARED', 'order-data-1');
       const p2 = approvedPaymentWithOrder('payment-2', 'ORDER-PSP-SHARED', 'order-data-1');
-      const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
+      const cancelSpy = vi.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
       await orderService.cancelCartActiveOrders(cartWithPayments([p1, p2]));
 
@@ -213,7 +213,7 @@ describe('adyen-order.service', () => {
     test('should cancel each distinct active order independently', async () => {
       const p1 = approvedPaymentWithOrder('payment-1', 'ORDER-PSP-1', 'order-data-1');
       const p2 = approvedPaymentWithOrder('payment-2', 'ORDER-PSP-2', 'order-data-2');
-      const cancelSpy = jest.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
+      const cancelSpy = vi.spyOn(orderService, 'cancelOrder').mockResolvedValue(mockCancelResponse);
 
       await orderService.cancelCartActiveOrders(cartWithPayments([p1, p2]));
 
@@ -225,8 +225,7 @@ describe('adyen-order.service', () => {
     test('should log error and continue when a cancellation fails', async () => {
       const p1 = approvedPaymentWithOrder('payment-1', 'ORDER-PSP-1', 'order-data-1');
       const p2 = approvedPaymentWithOrder('payment-2', 'ORDER-PSP-2', 'order-data-2');
-      jest
-        .spyOn(orderService, 'cancelOrder')
+      vi.spyOn(orderService, 'cancelOrder')
         .mockRejectedValueOnce(new Error('Adyen failure'))
         .mockResolvedValueOnce(mockCancelResponse);
 

@@ -1,4 +1,4 @@
-import { describe, test, expect, jest } from '@jest/globals';
+import { describe, test, expect, vi } from 'vitest';
 import { NotificationConverter } from '../../../src/services/converters/notification.converter';
 import { NotificationRequestDTO } from '../../../src/dtos/adyen-payment.dto';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
@@ -18,7 +18,7 @@ function setupMockConfig(keysAndValues: FlexibleConfig) {
     mockConfig[key] = keysAndValues[key];
   });
 
-  jest.spyOn(Config, 'getConfig').mockReturnValue(mockConfig as any);
+  vi.spyOn(Config, 'getConfig').mockReturnValue(mockConfig as any);
 }
 
 describe('notification.converter', () => {
@@ -835,11 +835,9 @@ describe('notification.converter', () => {
     }
   });
   test('convert a cancelORrefund event notification (where modification.action === refund)', async () => {
-    jest
-      .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-      .mockResolvedValue([mockUpdatePaymentResult]);
+    vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([mockUpdatePaymentResult]);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
 
     // Arrange
     const merchantReference = 'some-merchant-reference';
@@ -904,11 +902,9 @@ describe('notification.converter', () => {
     ]);
   });
   test('convert a cancelORrefund event notification (where modification.action === cancel)', async () => {
-    jest
-      .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-      .mockResolvedValue([mockUpdatePaymentResult]);
+    vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([mockUpdatePaymentResult]);
 
-    jest.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
+    vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(mockGetPaymentResult);
 
     // Arrange
     const merchantReference = 'some-merchant-reference';
@@ -1492,9 +1488,9 @@ describe('notification.converter', () => {
         ],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockPaymentWithCharge] as any);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockPaymentWithCharge,
+      ] as any);
 
       const merchantReference = 'some-merchant-reference';
       const notification: NotificationRequestDTO = {
@@ -1555,9 +1551,9 @@ describe('notification.converter', () => {
         ],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockPaymentWithAuthOnly] as any);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockPaymentWithAuthOnly,
+      ] as any);
 
       const merchantReference = 'some-merchant-reference';
       const notification: NotificationRequestDTO = {
@@ -1605,7 +1601,7 @@ describe('notification.converter', () => {
 
     test('returns [] when success=false but CT payment is not found', async () => {
       // Arrange
-      jest.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([]);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([]);
 
       const merchantReference = 'some-merchant-reference';
       const notification: NotificationRequestDTO = {
@@ -1652,7 +1648,7 @@ describe('notification.converter', () => {
         ],
       };
 
-      const findPaymentsByInterfaceIdSpy = jest
+      const findPaymentsByInterfaceIdSpy = vi
         .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
         .mockResolvedValue([mockGiftCardPaymentWithCharge] as any);
 
@@ -1737,8 +1733,7 @@ describe('notification.converter', () => {
         ],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
         .mockResolvedValueOnce([mockGiftCardPaymentWithCharge] as any)
         .mockResolvedValueOnce([mockCardPaymentWithFailureOnly] as any);
 
@@ -1798,9 +1793,9 @@ describe('notification.converter', () => {
         transactions: [],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
-        .mockResolvedValue([mockPaymentWithNoAuthOrCharge] as any);
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId').mockResolvedValue([
+        mockPaymentWithNoAuthOrCharge,
+      ] as any);
 
       const merchantReference = 'some-merchant-reference';
       const notification: NotificationRequestDTO = {
@@ -1872,8 +1867,7 @@ describe('notification.converter', () => {
         ],
       };
 
-      jest
-        .spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
+      vi.spyOn(DefaultPaymentService.prototype, 'findPaymentsByInterfaceId')
         .mockResolvedValueOnce([mockPaymentWithCharge] as any)
         .mockResolvedValueOnce([mockPaymentWithAuthOnly] as any);
 
