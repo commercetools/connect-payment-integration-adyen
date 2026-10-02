@@ -219,7 +219,7 @@ describe('/operations APIs', () => {
           {
             name: 'CoCo Permissions',
             status: 'DOWN',
-            message: `CoCo permissions are not correct, expected scopes: manage_payments view_sessions view_api_clients manage_orders introspect_oauth_tokens manage_checkout_payment_intents, actual scopes: manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout`,
+            message: `CoCo permissions are not correct, expected scopes: manage_payments view_sessions view_api_clients manage_orders introspect_oauth_tokens, actual scopes: manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout`,
             details: {
               expectedScopes: [
                 'manage_payments',
@@ -227,10 +227,9 @@ describe('/operations APIs', () => {
                 'view_api_clients',
                 'manage_orders',
                 'introspect_oauth_tokens',
-                'manage_checkout_payment_intents',
               ],
               actualScopes:
-                'manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout',
+                'manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout',
               reason: 'scopes not available',
             },
           },
@@ -259,7 +258,7 @@ describe('/operations APIs', () => {
             expect.objectContaining({
               name: 'CoCo Permissions',
               status: 'DOWN',
-              message: `CoCo permissions are not correct, expected scopes: manage_payments view_sessions view_api_clients manage_orders introspect_oauth_tokens manage_checkout_payment_intents, actual scopes: manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout`,
+              message: `CoCo permissions are not correct, expected scopes: manage_payments view_sessions view_api_clients manage_orders introspect_oauth_tokens, actual scopes: manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout`,
               details: {
                 expectedScopes: [
                   'manage_payments',
@@ -267,10 +266,9 @@ describe('/operations APIs', () => {
                   'view_api_clients',
                   'manage_orders',
                   'introspect_oauth_tokens',
-                  'manage_checkout_payment_intents',
                 ],
                 actualScopes:
-                  'manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout manage_checkout_payment_intents:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout',
+                  'manage_payments:dev-commercetools-checkout view_api_clients:dev-commercetools-checkout manage_orders:dev-commercetools-checkout introspect_oauth_tokens:dev-commercetools-checkout view_payments:dev-commercetools-checkout view_orders:dev-commercetools-checkout',
                 reason: 'scopes not available',
               },
             }),
