@@ -1,4 +1,4 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { mockGetPaymentResult } from '../../utils/mock-payment-data';
 import { config } from '../../../src/config/config';
 import { CancelPaymentConverter } from '../../../src/services/converters/cancel-payment.converter';

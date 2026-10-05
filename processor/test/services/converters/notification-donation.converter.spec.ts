@@ -1,4 +1,4 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { NotificationRequestItem } from '@adyen/api-library/lib/src/typings/notification/notificationRequestItem';
 import { NotificationDonationDTO } from '../../../src/dtos/adyen-donation.dto';
 import { UnsupportedNotificationError } from '../../../src/errors/adyen-api.error';

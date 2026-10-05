@@ -1,4 +1,4 @@
-import { afterEach, describe, test, expect, jest } from '@jest/globals';
+import { afterEach, describe, test, expect, vi } from 'vitest';
 import { Payment, Type } from '@commercetools/connect-payments-sdk';
 import * as Config from '../../src/config/config';
 import { AdyenPaymentDetailsTypeKey } from '../../src/custom-types/adyen-payment-details';
@@ -243,7 +243,7 @@ describe('maskResponse', () => {
 describe('populateInterfaceInteraction', () => {
   test('returns undefined when saveInterfaceInteractions is false', () => {
     // Arrange
-    jest.spyOn(Config, 'getConfig').mockReturnValueOnce({ saveInterfaceInteractions: false } as any);
+    vi.spyOn(Config, 'getConfig').mockReturnValueOnce({ saveInterfaceInteractions: false } as any);
 
     // Act
     const result = populateInterfaceInteraction({
@@ -258,7 +258,7 @@ describe('populateInterfaceInteraction', () => {
 
   test('returns array with masked and serialized fields when enabled', () => {
     // Arrange
-    jest.spyOn(Config, 'getConfig').mockReturnValueOnce({ saveInterfaceInteractions: true } as any);
+    vi.spyOn(Config, 'getConfig').mockReturnValueOnce({ saveInterfaceInteractions: true } as any);
     const request: PaymentRequest = {
       amount: { currency: 'USD', value: 1000 },
       reference: 'ORDER-123',
@@ -324,7 +324,7 @@ describe('buildAdyenPaymentCustomFields', () => {
   };
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('assigns the connector type when the payment has none', async () => {
@@ -344,8 +344,8 @@ describe('buildAdyenPaymentCustomFields', () => {
     'only sets the given values when the payment already carries the type %s',
     async (typeKey) => {
       // Arrange
-      jest.spyOn(paymentSDK.ctCustomTypeService, 'getById').mockResolvedValue({ ...merchantType, key: typeKey });
-      const createOrUpdate = jest
+      vi.spyOn(paymentSDK.ctCustomTypeService, 'getById').mockResolvedValue({ ...merchantType, key: typeKey });
+      const createOrUpdate = vi
         .spyOn(paymentSDK.ctCustomTypeService, 'createOrUpdate')
         .mockResolvedValue({ ...merchantType, key: typeKey });
 

@@ -1,4 +1,4 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import {
   CapturePaymentConverter,
   METHODS_REQUIRE_LINE_ITEMS,

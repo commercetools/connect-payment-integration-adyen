@@ -1,4 +1,4 @@
-import { describe, expect, jest, test } from '@jest/globals';
+import { describe, expect, vi, test } from 'vitest';
 import {
   TokenizationCreatedDetailsNotificationRequest,
   TokenizationUpdatedDetailsNotificationRequest,
@@ -38,7 +38,7 @@ describe('notification.tokenization.converter', () => {
       },
     };
 
-    jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+    vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
       merchantAccount: merchantReference,
       shopperReference,
       storedPaymentMethods: [
@@ -53,7 +53,7 @@ describe('notification.tokenization.converter', () => {
       ],
     });
 
-    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+    vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
       enabled: true,
       config: {
         paymentInterface,
@@ -103,7 +103,7 @@ describe('notification.tokenization.converter', () => {
 
     // Real shape of an iDEAL stored payment method resource from Adyen: `type` and `brand` both
     // stay "ideal", but it carries iban/ownerName since it's backed by a SEPA Direct Debit mandate.
-    jest.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
+    vi.spyOn(RecurringApi.prototype, 'getTokensForStoredPaymentDetails').mockResolvedValueOnce({
       merchantAccount: merchantReference,
       shopperReference,
       storedPaymentMethods: [
@@ -117,7 +117,7 @@ describe('notification.tokenization.converter', () => {
       ],
     });
 
-    jest.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+    vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
       enabled: true,
       config: {
         paymentInterface,
@@ -128,7 +128,7 @@ describe('notification.tokenization.converter', () => {
       },
     });
 
-    jest.spyOn(Config, 'getConfig').mockReturnValue({
+    vi.spyOn(Config, 'getConfig').mockReturnValue({
       adyenMerchantAccount: merchantReference,
       adyenStorePaymentMethodDetailsEnabled: true,
     } as any);
@@ -179,7 +179,7 @@ describe('notification.tokenization.converter', () => {
     const result = converter.convert({ data: notification });
 
     // Assert
-    expect(result).rejects.toThrow(
+    await expect(result).rejects.toThrow(
       new UnsupportedNotificationError({
         notificationEvent: TokenizationUpdatedDetailsNotificationRequest.TypeEnum.RecurringTokenUpdated,
       }),
