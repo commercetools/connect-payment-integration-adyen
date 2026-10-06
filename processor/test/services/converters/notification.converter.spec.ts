@@ -1403,6 +1403,55 @@ describe('notification.converter', () => {
       ]);
     });
 
+    test.each([
+      {
+        scenario: 'only giftcardDetails is present',
+        additionalData: { giftcardDetails: '6036280000000007777' },
+        expected: '6036280000000007777',
+      },
+      {
+        scenario: 'both are present (giftcardDetails wins)',
+        additionalData: { giftcardDetails: '6036280000000007777', storedValueId: '1111111111111111111' },
+        expected: '6036280000000007777',
+      },
+      {
+        scenario: 'only storedValueId is present',
+        additionalData: { storedValueId: '1111111111111111111' },
+        expected: '1111111111111111111',
+      },
+    ])('resolves the giftCardNumber when $scenario', async ({ additionalData, expected }) => {
+      // Arrange
+      setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
+
+      const notification: NotificationRequestDTO = {
+        live: 'false',
+        notificationItems: [
+          {
+            NotificationRequestItem: {
+              additionalData: { cardSummary: '7777', ...additionalData },
+              amount: {
+                currency: 'EUR',
+                value: 10000,
+              },
+              eventCode: NotificationRequestItem.EventCodeEnum.Authorisation,
+              eventDate: '2024-06-17T11:37:05+02:00',
+              merchantAccountCode: 'MyMerchantAccount',
+              merchantReference: 'some-merchant-reference',
+              paymentMethod: 'givex',
+              pspReference: 'some-psp-reference',
+              success: NotificationRequestItem.SuccessEnum.True,
+            },
+          },
+        ],
+      };
+
+      // Act
+      const result = await converter.convert({ data: notification });
+
+      // Assert
+      expect(result[0].paymentMethodInfoCustomField?.fields?.giftCardNumber).toEqual(expected);
+    });
+
     test('does not include the giftCardNumber in gift card custom fields when Adyen does not send it', async () => {
       // Arrange
       setupMockConfig({ adyenStorePaymentMethodDetailsEnabled: true });
