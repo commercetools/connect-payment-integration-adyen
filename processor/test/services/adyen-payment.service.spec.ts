@@ -304,6 +304,111 @@ describe('adyen-payment.service', () => {
       expect(result?.outcome).toStrictEqual('received');
     });
 
+    test('capturePayment keeps Payment.interfaceId when it matches the successful authorization', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [{ action: 'capturePayment', amount: { centAmount: 150000, currencyCode: 'USD' } }],
+        },
+      };
+      const authorizations = [
+        { state: 'Failure', ref: 'PSPREF_REFUSED' },
+        { state: 'Success', ref: 'PSPREF_SUCCESS' },
+      ];
+      const payment = {
+        ...mockGetPaymentResult,
+        interfaceId: 'PSPREF_SUCCESS',
+        transactions: authorizations.map(({ state, ref }) => ({
+          ...mockGetPaymentResult.transactions[0],
+          type: 'Authorization',
+          state,
+          interfaceId: ref,
+        })),
+      } as typeof mockGetPaymentResult;
+
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const mockAdyenService = vi
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      expect(mockAdyenService).toHaveBeenCalledWith('PSPREF_SUCCESS', expect.anything());
+    });
+
+    test('capturePayment uses the successful authorization when Payment.interfaceId points at a refused attempt', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [{ action: 'capturePayment', amount: { centAmount: 150000, currencyCode: 'USD' } }],
+        },
+      };
+      const authorizations = [
+        { state: 'Failure', ref: 'PSPREF_REFUSED' },
+        { state: 'Success', ref: 'PSPREF_SUCCESS' },
+      ];
+      const payment = {
+        ...mockGetPaymentResult,
+        interfaceId: 'PSPREF_REFUSED',
+        transactions: authorizations.map(({ state, ref }) => ({
+          ...mockGetPaymentResult.transactions[0],
+          type: 'Authorization',
+          state,
+          interfaceId: ref,
+        })),
+      } as typeof mockGetPaymentResult;
+
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const mockAdyenService = vi
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      expect(mockAdyenService).toHaveBeenCalledWith('PSPREF_SUCCESS', expect.anything());
+    });
+
+    test('capturePayment falls back to Payment.interfaceId when there is no successful authorization', async () => {
+      // Given
+      const modifyPaymentOpts: ModifyPayment = {
+        paymentId: 'dummy-paymentId',
+        data: {
+          actions: [{ action: 'capturePayment', amount: { centAmount: 150000, currencyCode: 'USD' } }],
+        },
+      };
+      const authorizations = [{ state: 'Failure', ref: 'PSPREF_REFUSED' }];
+      const payment = {
+        ...mockGetPaymentResult,
+        interfaceId: 'PSPREF_REFUSED',
+        transactions: authorizations.map(({ state, ref }) => ({
+          ...mockGetPaymentResult.transactions[0],
+          type: 'Authorization',
+          state,
+          interfaceId: ref,
+        })),
+      } as typeof mockGetPaymentResult;
+
+      vi.spyOn(DefaultPaymentService.prototype, 'getPayment').mockResolvedValue(payment);
+      vi.spyOn(DefaultPaymentService.prototype, 'updatePayment').mockResolvedValue(mockUpdatePaymentResult);
+      const mockAdyenService = vi
+        .spyOn(ModificationsApi.prototype, 'captureAuthorisedPayment')
+        .mockResolvedValue(mockAdyenCapturePaymentResponse);
+
+      // Act
+      await paymentService.modifyPayment(modifyPaymentOpts);
+
+      // Expect
+      expect(mockAdyenService).toHaveBeenCalledWith('PSPREF_REFUSED', expect.anything());
+    });
+
     test('capturePayment with lineitems with a order', async () => {
       // Given
       const modifyPaymentOpts: ModifyPayment = {

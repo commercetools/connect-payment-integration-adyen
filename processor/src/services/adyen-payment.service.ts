@@ -1610,7 +1610,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
       },
     });
 
-    const interfaceId = request.payment.interfaceId as string;
+    const interfaceId = this.resolveModificationReference(request.payment);
 
     const { adyenRequest, adyenResponse } = await this.makeCallToAdyenInternal(interfaceId, adyenOperation, request);
 
@@ -1633,6 +1633,25 @@ export class AdyenPaymentService extends AbstractPaymentService {
     });
 
     return { outcome: PaymentModificationStatus.RECEIVED, pspReference: adyenResponse.pspReference };
+  }
+
+  /**
+   * Payment.interfaceId is write-once, so after a refused first attempt followed by a successful retry
+   * on the same Payment it still points at the refused PSP reference. The successful authorization
+   * transaction holds the reference modifications must be addressed to.
+   */
+  private resolveModificationReference(payment: Payment): string {
+    const authorised = payment.transactions.find((t) => t.type === 'Authorization' && t.state === 'Success');
+
+    if (authorised?.interfaceId && authorised.interfaceId !== payment.interfaceId) {
+      log.warn('Payment.interfaceId does not match the successful authorization, using the latter.', {
+        paymentId: payment.id,
+        paymentInterfaceId: payment.interfaceId,
+        authorizationInterfaceId: authorised.interfaceId,
+      });
+    }
+
+    return authorised?.interfaceId ?? (payment.interfaceId as string);
   }
 
   private async makeCallToAdyenInternal(
