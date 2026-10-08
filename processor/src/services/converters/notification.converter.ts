@@ -313,7 +313,7 @@ export class NotificationConverter {
     const isGiftCard = this.isGiftCardBrand(item.paymentMethod);
     if (isGiftCard) {
       // The full giftcard number, is only returned by Adyen when enabled for the merchant account.
-      const giftCardNumber = item.additionalData?.giftcardDetails || item.additionalData?.storedValueId;
+      const giftCardNumber = item.additionalData?.giftcardDetails || item.additionalData?.StoredValueId;
       return GenerateGiftCardDetailsCustomFieldsDraft({
         brand: convertAdyenGiftCardBrandToCTFormat(item.paymentMethod),
         lastFour: item.additionalData?.cardSummary,
