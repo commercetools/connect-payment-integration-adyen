@@ -1340,7 +1340,7 @@ describe('notification.converter', () => {
               additionalData: {
                 // Last four digits of the gift card, sent by Adyen when "Card summary" is enabled in Additional data settings.
                 cardSummary: '7777',
-                StoredValueId: '6036280000000007777',
+                StoredValueID: '6036280000000007777',
               },
               amount: {
                 currency: 'EUR',
@@ -1411,12 +1411,12 @@ describe('notification.converter', () => {
       },
       {
         scenario: 'both are present (giftcardDetails wins)',
-        additionalData: { giftcardDetails: '6036280000000007777', StoredValueId: '1111111111111111111' },
+        additionalData: { giftcardDetails: '6036280000000007777', StoredValueID: '1111111111111111111' },
         expected: '6036280000000007777',
       },
       {
-        scenario: 'only StoredValueId is present',
-        additionalData: { StoredValueId: '1111111111111111111' },
+        scenario: 'only StoredValueID is present',
+        additionalData: { StoredValueID: '1111111111111111111' },
         expected: '1111111111111111111',
       },
     ])('resolves the giftCardNumber when $scenario', async ({ additionalData, expected }) => {
