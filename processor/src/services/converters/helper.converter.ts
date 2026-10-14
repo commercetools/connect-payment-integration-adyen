@@ -9,6 +9,7 @@ import {
   NormalizedShipping,
   CurrencyConverters,
   TaxRateConverter,
+  CustomFieldsDraft,
 } from '@commercetools/connect-payments-sdk';
 import {
   getAllowedPaymentMethodsFromContext,
@@ -24,6 +25,7 @@ import { config } from '../../config/config';
 import { GIFT_CARD_BRANDS, SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES } from '../../config/payment-method.config';
 import { getStoredPaymentMethodsConfig } from '../../config/stored-payment-methods.config';
 import { log } from '../../libs/logger';
+import { GenerateGiftCardDetailsCustomFieldsDraft } from '../../custom-types/gift-card-details';
 
 /**
  * These payment methods require product line item discounts to be send seperately as a new (negative value) line item
@@ -499,6 +501,36 @@ export const convertAdyenGiftCardBrandToCTFormat = (brand?: string): string => {
   }
 
   return ADYEN_GIFT_CARD_BRAND_TO_CT_MAPPING[brand] ?? 'Unknown';
+};
+
+/**
+ * Builds the gift card custom fields from a /payments response. The full gift card number is only
+ * returned in the API response (as additionalData.StoredValueID) and is not part of the AUTHORISATION
+ * webhook unless Adyen enabled giftcardDetails for the merchant account.
+ *
+ * Returns undefined when the response is not an authorised gift card or carries no number, so that
+ * the brand and lastFour written by the webhook are never replaced by a partial set of fields.
+ */
+export const buildGiftCardDetailsFromPaymentResponse = (response: {
+  resultCode?: string;
+  paymentMethod?: { brand?: string } | null;
+  additionalData?: { [key: string]: string } | null;
+}): CustomFieldsDraft | undefined => {
+  const brand = response.paymentMethod?.brand;
+  if (response.resultCode !== 'Authorised' || !brand || !(GIFT_CARD_BRANDS as readonly string[]).includes(brand)) {
+    return undefined;
+  }
+
+  const giftCardNumber = response.additionalData?.giftcardDetails || response.additionalData?.StoredValueID;
+  if (!giftCardNumber) {
+    return undefined;
+  }
+
+  return GenerateGiftCardDetailsCustomFieldsDraft({
+    brand: convertAdyenGiftCardBrandToCTFormat(brand),
+    lastFour: response.additionalData?.cardSummary,
+    giftCardNumber,
+  });
 };
 
 /**
