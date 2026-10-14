@@ -100,6 +100,7 @@ import {
   extractCollapsedTypeFromBrand,
   isCollapsedTypePayment,
   isGiftCardSplitPayment,
+  buildGiftCardDetailsFromPaymentResponse,
 } from './converters/helper.converter';
 import {
   AdyenPaymentCustomFieldsUpdate,
@@ -109,6 +110,7 @@ import {
   isPaymentApproved,
 } from './helper.service';
 import { AdyenPaymentDetailsFields } from '../custom-types/adyen-payment-details';
+import { GiftCardDetailsTypeKey } from '../custom-types/gift-card-details';
 import { PaypalUpdateOrderRequest } from '@adyen/api-library/lib/src/typings/checkout/paypalUpdateOrderRequest';
 import { randomUUID } from 'node:crypto';
 import { TransactionDraftDTO, TransactionResponseDTO } from '../dtos/operations/transaction.dto';
@@ -456,6 +458,9 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
     const interfaceInteraction = buildInterfaceInteraction('CreatePayment', data, res);
     const adyenCustomFields = await this.buildAdyenCustomFieldsUpdate(ctPayment, res);
+    const giftCardCustomFields = getConfig().adyenStorePaymentMethodDetailsEnabled
+      ? buildGiftCardDetailsFromPaymentResponse(res)
+      : undefined;
 
     const updatedPayment = await this.ctPaymentService.updatePayment({
       id: ctPayment.id,
@@ -467,10 +472,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
         interfaceId: res.pspReference,
         state: txState,
       },
-      ...('storedPaymentMethodId' in data.paymentMethod &&
-        data.paymentMethod.storedPaymentMethodId && {
-          paymentMethodInfo: { token: { value: data.paymentMethod.storedPaymentMethodId } },
-        }),
+      ...(('storedPaymentMethodId' in data.paymentMethod && data.paymentMethod.storedPaymentMethodId) ||
+      giftCardCustomFields
+        ? {
+            paymentMethodInfo: {
+              ...('storedPaymentMethodId' in data.paymentMethod &&
+                data.paymentMethod.storedPaymentMethodId && {
+                  token: { value: data.paymentMethod.storedPaymentMethodId },
+                }),
+              ...(giftCardCustomFields && { custom: giftCardCustomFields }),
+            },
+          }
+        : {}),
       ...adyenCustomFields,
       pspInteractions: interfaceInteraction,
     });
@@ -1856,14 +1869,18 @@ export class AdyenPaymentService extends AbstractPaymentService {
     const interfaceInteraction = rawNotification
       ? buildInterfaceInteraction('Notification', rawNotification, undefined)
       : undefined;
+    const paymentMethodInfoCustomField = this.preserveStoredGiftCardNumber(
+      payment,
+      updateData.paymentMethodInfoCustomField,
+    );
     for (let i = 0; i < updateData.transactions.length; i++) {
       const tx = updateData.transactions[i];
       const updatedPayment = await this.ctPaymentService.updatePayment({
         id: payment.id,
         pspReference: updateData.pspReference,
         transaction: tx,
-        ...(updateData.paymentMethodInfoCustomField && {
-          paymentMethodInfo: { custom: updateData.paymentMethodInfoCustomField },
+        ...(paymentMethodInfoCustomField && {
+          paymentMethodInfo: { custom: paymentMethodInfoCustomField },
         }),
         ...(i === 0 && { pspInteractions: interfaceInteraction }),
       });
@@ -1920,6 +1937,26 @@ export class AdyenPaymentService extends AbstractPaymentService {
         paymentId: payment.id,
       });
     }
+  }
+
+  /**
+   * The webhook replaces the whole gift card custom type. When it carries no gift card number but the
+   * payment already has one (written from the /payments response), keep it.
+   */
+  private preserveStoredGiftCardNumber(
+    payment: Payment,
+    customField: CustomFieldsDraft | undefined,
+  ): CustomFieldsDraft | undefined {
+    if (customField?.type?.key !== GiftCardDetailsTypeKey || customField.fields?.giftCardNumber) {
+      return customField;
+    }
+
+    const storedNumber = payment.paymentMethodInfo?.custom?.fields?.giftCardNumber;
+    if (!storedNumber) {
+      return customField;
+    }
+
+    return { ...customField, fields: { ...customField.fields, giftCardNumber: storedNumber } };
   }
 
   private async getPaymentFromNotification(data: NotificationUpdatePayment): Promise<Payment> {
