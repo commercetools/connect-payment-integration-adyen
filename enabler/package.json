@@ -4,7 +4,7 @@
   "version": "5.31.3",
   "type": "module",
   "engines": {
-    "node": ">=24.0.0",
+    "node": "^24.22.1",
     "npm": ">=11.0.0"
   },
   "scripts": {
@@ -21,21 +21,21 @@
     "serve": "14.2.6"
   },
   "devDependencies": {
-    "@types/node": "26.6.5",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "sass": "1.105.2",
+    "sass": "1.106.1",
     "typescript": "7.0.2",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vite-plugin-css-injected-by-js": "5.0.2",
     "vitest": "5.0.5"
   },
   "overrides": {
     "@babel/core": "7.29.7",
-    "js-yaml": "^4.2.0",
+    "js-yaml": "4.2.0",
     "brace-expansion": "5.0.12",
     "compression": "1.8.2"
   }
