@@ -84,7 +84,9 @@ export function useDropinMount(
       if (patchedCheckout && origStoreElementReference) {
         patchedCheckout.storeElementReference = origStoreElementReference;
       }
-      try { instance?.unmount?.(); } catch (_) {}
+      // The connector's dropin exposes remove(), not unmount(); remove() also tears down the
+      // nested Adyen components (e.g. the Card's secured-fields load watchdog).
+      try { instance?.remove?.()?.catch(() => {}); } catch (_) {}
     };
   }, [enabler]); // eslint-disable-line react-hooks/exhaustive-deps
 

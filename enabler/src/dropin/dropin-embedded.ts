@@ -298,6 +298,10 @@ export class DropinComponents implements DropinComponent {
     });
   }
 
+  async remove() {
+    this.component.remove();
+  }
+
   async mount(selector: string) {
     this.component.mount(selector);
   }
