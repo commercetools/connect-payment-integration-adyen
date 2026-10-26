@@ -145,6 +145,7 @@ export enum DropinType {
 export interface DropinComponent {
   submit(): Promise<void>;
   mount(selector: string): Promise<void>;
+  remove(): Promise<void>;
 }
 export type DropinOptions = {
   showPayButton?: boolean;
