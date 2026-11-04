@@ -1,6 +1,8 @@
 services:
   jwt-server:
-    build: ./docker-dev/jwt-mock
+    build:
+      context: ./docker-dev/jwt-mock
+      secrets: [corp_ca]
     restart: always
     ports:
       - 9002:9002
@@ -36,3 +38,7 @@ services:
     command: /bin/sh -c 'npm install && npm run watch'
     ports:
       - 8080:8080
+
+secrets:
+  corp_ca:
+    file: ${HOME}/certs/corp-ca.pem

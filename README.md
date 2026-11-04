@@ -607,6 +607,11 @@ With the help of docker compose, you are able to spin up all necessary component
 docker compose up
 ```
 
+When working locally, use this instead, as compose needs access to your local certificate, which lives outside this repo.
+```bash
+BUILDX_BAKE_ENTITLEMENTS_FS=0 docker compose up --build
+```
+
 This command would start 3 required services, necessary for development
 
 1. JWT Server
