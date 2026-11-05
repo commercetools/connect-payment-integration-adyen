@@ -187,6 +187,8 @@ export class AdyenPaymentService extends AbstractPaymentService {
 
   async config(): Promise<ConfigResponse> {
     const usesOwnCertificate = getConfig().adyenApplePayOwnCerticate?.length > 0;
+    const paymentComponentsConfig = this.getPaymentComponentsConfig();
+    const cartShopperEmail = await this.getClickToPayCartShopperEmail(paymentComponentsConfig);
 
     return {
       clientKey: getConfig().adyenClientKey,
@@ -194,11 +196,28 @@ export class AdyenPaymentService extends AbstractPaymentService {
       applePayConfig: {
         usesOwnCertificate,
       },
-      paymentComponentsConfig: this.getPaymentComponentsConfig(),
+      paymentComponentsConfig,
       storedPaymentMethodsConfig: {
         isEnabled: await this.isStoredPaymentMethodsEnabled(),
       },
+      ...(cartShopperEmail && { cartShopperEmail }),
     };
+  }
+
+  /**
+   * Click to Pay is opt-in: only when the merchant configured `clickToPayConfiguration` for the
+   * embedded drop-in card or the card web component is the cart email exposed to the enabler.
+   * The enabler uses it as a fallback when the merchant does not pass a `shopperEmail` at runtime.
+   */
+  private async getClickToPayCartShopperEmail(paymentComponentsConfig: unknown): Promise<string | undefined> {
+    type CardCfg = { card?: { clickToPayConfiguration?: unknown } };
+    const cfg = paymentComponentsConfig as (CardCfg & { embedded?: CardCfg }) | undefined;
+    const ctpConfig = cfg?.embedded?.card?.clickToPayConfiguration ?? cfg?.card?.clickToPayConfiguration;
+    if (!ctpConfig || typeof ctpConfig !== 'object') {
+      return undefined;
+    }
+    const ctCart = await this.ctCartService.getCart({ id: getCartIdFromContext() });
+    return ctCart.billingAddress?.email ?? ctCart.shippingAddress?.email ?? ctCart.customerEmail;
   }
 
   async expressConfig(opts: { data: GetExpressConfigRequestDTO }): Promise<GetExpressConfigResponseDTO> {

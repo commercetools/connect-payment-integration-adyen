@@ -16,6 +16,12 @@ export const ConfigResponseSchema = Type.Object({
       usesOwnCertificate: Type.Boolean(),
     }),
   ),
+  cartShopperEmail: Type.Optional(
+    Type.String({
+      description:
+        'Cart customer email, used by Click to Pay when the merchant does not pass a shopperEmail to the enabler. Only set when Click to Pay is enabled via paymentComponentsConfig',
+    }),
+  ),
   paymentComponentsConfig: Type.Optional(Type.Any()),
   storedPaymentMethodsConfig: Type.Object(
     {

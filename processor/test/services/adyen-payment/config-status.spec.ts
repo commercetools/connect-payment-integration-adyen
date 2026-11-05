@@ -43,6 +43,44 @@ describe('adyen-payment.service - config, status & Apple Pay', () => {
     expect(result?.environment).toStrictEqual('live-au');
   });
 
+  describe('getConfig Click to Pay cart email', () => {
+    const run = async (paymentComponentsConfig?: object) => {
+      vi.spyOn(AdyenPaymentService.prototype, 'getStoredPaymentMethods').mockResolvedValueOnce({
+        storedPaymentMethods: [],
+      });
+      vi.spyOn(FastifyContext, 'getCartIdFromContext').mockReturnValue('cart-id');
+      const getCart = vi.spyOn(DefaultCartService.prototype, 'getCart').mockResolvedValue({
+        ...mockGetCartResultShippingModeSimple(),
+        billingAddress: { country: 'DE', email: 'billing@example.com' },
+      });
+      setupMockConfig({
+        adyenClientKey: 'adyen',
+        adyenEnvironment: 'test',
+        ...(paymentComponentsConfig && { adyenPaymentComponentsConfig: JSON.stringify(paymentComponentsConfig) }),
+      });
+      return { result: await paymentService.config(), getCart };
+    };
+
+    test('is not exposed when Click to Pay is not enabled', async () => {
+      const { result, getCart } = await run({ card: { hasHolderName: false } });
+      expect(result.cartShopperEmail).toBeUndefined();
+      expect(getCart).not.toHaveBeenCalled();
+    });
+
+    test.each([
+      ['web component', { card: { clickToPayConfiguration: { merchantDisplayName: 'Shop' } } }],
+      ['drop-in', { embedded: { card: { clickToPayConfiguration: {} } } }],
+    ])('is exposed when Click to Pay is enabled for the %s', async (_name, cfg) => {
+      const { result } = await run(cfg);
+      expect(result.cartShopperEmail).toBe('billing@example.com');
+    });
+
+    test('ignores a static shopperEmail in the component config', async () => {
+      const { result } = await run({ card: { clickToPayConfiguration: { shopperEmail: 'static@example.com' } } });
+      expect(result.cartShopperEmail).toBe('billing@example.com');
+    });
+  });
+
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
     expect(result?.components).toHaveLength(28);
