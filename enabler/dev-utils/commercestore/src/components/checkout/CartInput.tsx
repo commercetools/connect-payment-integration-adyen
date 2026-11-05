@@ -1,6 +1,8 @@
 interface CartInputProps {
   cartId: string;
   onChange: (value: string) => void;
+  shopperEmail?: string;
+  onShopperEmailChange?: (value: string) => void;
   onStart: () => void;
   onQuickCart: () => void;
   onCustomCart: () => void;
@@ -9,7 +11,7 @@ interface CartInputProps {
   hasCart: boolean;
 }
 
-export default function CartInput({ cartId, onChange, onStart, onQuickCart, onCustomCart, onViewSummary, loading, hasCart }: CartInputProps) {
+export default function CartInput({ cartId, onChange, shopperEmail, onShopperEmailChange, onStart, onQuickCart, onCustomCart, onViewSummary, loading, hasCart }: CartInputProps) {
   return (
     <div className="cs-cart-section">
       <div className="cs-cart-actions">
@@ -44,6 +46,20 @@ export default function CartInput({ cartId, onChange, onStart, onQuickCart, onCu
           </button>
         </div>
       </div>
+      {onShopperEmailChange && (
+        <div className="cs-cart-input-row">
+          <label className="cs-cart-label">Shopper email</label>
+          <div className="cs-cart-input-group">
+            <input
+              type="email"
+              className="form-control"
+              placeholder="Click to Pay: overrides the cart email (leave empty to use it)"
+              value={shopperEmail ?? ''}
+              onChange={e => onShopperEmailChange(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

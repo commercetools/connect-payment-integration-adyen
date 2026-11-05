@@ -3,6 +3,7 @@ import { useAdyenMount } from '../../hooks/useAdyenMount.ts';
 import { usePaymentAvailability } from '../../hooks/usePaymentAvailability.ts';
 import { METHOD_LABELS, METHODS_WITH_NO_CARDS } from '../../../../method-labels.ts';
 import type { EnablerInstance, MountableComponent, PaymentMethod, StoredPaymentMethod, CheckoutResult } from '../../types.ts';
+import { getShopperEmail } from '../../hooks/shopperEmail.ts';
 
 interface PaymentMethodItemProps {
   type: string;
@@ -176,10 +177,10 @@ export default function ComponentsTab({ enabler, paymentMethods, savedMethods, i
 
       let instance: MountableComponent;
       if (hasOwnButton) {
-        instance = builder.build({ showPayButton: true });
+        instance = builder.build({ showPayButton: true, ...(type === 'card' ? getShopperEmail() : {}) });
         instancesRef.current[type] = instance;
       } else {
-        instance = instancesRef.current[type] ?? builder.build({ showPayButton: false });
+        instance = instancesRef.current[type] ?? builder.build({ showPayButton: false, ...(type === 'card' ? getShopperEmail() : {}) });
         instancesRef.current[type] = instance;
       }
 

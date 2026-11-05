@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import type { EnablerInstance, MountableComponent, PaymentMethod } from '../types.ts';
+import { getShopperEmail } from './shopperEmail.ts';
 
 export function usePaymentAvailability(
   enabler: EnablerInstance | null,
@@ -28,7 +29,10 @@ export function usePaymentAvailability(
         methods.map(async (method) => {
           try {
             const builder = await enabler.createComponentBuilder(method.type);
-            const instance = builder.build({ showPayButton: false });
+            const instance = builder.build({
+              showPayButton: false,
+              ...(method.type === 'card' ? getShopperEmail() : {}),
+            });
             instancesRef.current[method.type] = instance;
             const available = await (instance as { isAvailable?(): Promise<boolean> }).isAvailable?.() ?? true;
             if (!cancelled) setAvailability(prev => ({ ...prev, [method.type]: available }));

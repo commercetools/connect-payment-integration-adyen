@@ -1,5 +1,6 @@
 import { useEffect, useState, type RefObject } from 'react';
 import type { EnablerInstance, MountableComponent, DropinBuildOptions } from '../types.ts';
+import { getShopperEmail } from './shopperEmail.ts';
 
 export function useAdyenMount(
   component: MountableComponent | null | undefined,
@@ -36,7 +37,7 @@ export function useDropinMount(
       try {
         const builder = await enabler.createDropinBuilder('embedded');
         if (cancelled) return;
-        const dropin = builder.build(options);
+        const dropin = builder.build({ ...options, ...getShopperEmail() });
         if (cancelled) return;
         dropin.mount(containerRef.current!);
         instance = dropin;

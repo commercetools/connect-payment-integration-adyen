@@ -7,6 +7,7 @@ import {
 } from "../payment-enabler/payment-enabler";
 import { getPaymentMethodType } from "../payment-enabler/payment-method.helper";
 import { BaseOptions, StoredPaymentMethodsConfig } from "../payment-enabler/adyen-payment-enabler";
+import { resolveClickToPayConfiguration } from "../utils/click-to-pay";
 import { ProcessorApiClient } from "../api/processor-api.client";
 import {
   ICore,
@@ -45,6 +46,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private sessionId: string;
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private getRemainingAmount: (() => number) | undefined;
+  private cartShopperEmail: string | undefined;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -53,6 +55,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
     this.processorUrl = baseOptions.processorUrl;
     this.sessionId = baseOptions.sessionId;
     this.getRemainingAmount = baseOptions.getRemainingAmount;
+    this.cartShopperEmail = baseOptions.cartShopperEmail;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -64,6 +67,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       processorUrl: this.processorUrl,
       sessionId: this.sessionId,
       getRemainingAmount: this.getRemainingAmount,
+      cartShopperEmail: this.cartShopperEmail,
     });
 
     dropin.init();
@@ -84,6 +88,7 @@ export class DropinComponents implements DropinComponent {
   private apiClient: ProcessorApiClient;
   private lastKnownGiftCardBalance: number | null = null;
   private getRemainingAmount: (() => number) | undefined;
+  private cartShopperEmail: string | undefined;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -93,6 +98,7 @@ export class DropinComponents implements DropinComponent {
     processorUrl: string;
     sessionId: string;
     getRemainingAmount?: () => number;
+    cartShopperEmail?: string;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
@@ -100,6 +106,7 @@ export class DropinComponents implements DropinComponent {
     this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
     this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
     this.getRemainingAmount = opts.getRemainingAmount;
+    this.cartShopperEmail = opts.cartShopperEmail;
 
     this.overrideBalanceCheckCallback();
     this.overrideOnSubmit();
@@ -204,6 +211,13 @@ export class DropinComponents implements DropinComponent {
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)],
           // Configuration that can not be overridden
           enableStoreDetails: this.storedPaymentMethodsConfig.isEnabled,
+          ...resolveClickToPayConfiguration(
+            this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)],
+            {
+              merchantShopperEmail: this.dropinOptions.shopperEmail,
+              cartShopperEmail: this.cartShopperEmail,
+            },
+          ),
         },
         // A stored card resolves its configuration from the "storedCard" key of the drop-in
         // and does not fall back to the "card" key above.

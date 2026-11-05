@@ -44,6 +44,15 @@
             <div class="form-group col-md-6">
               <label for="cartId">Cart ID:</label>
               <input type="text" class="form-control" id="cartId" value="" />
+              <label for="shopperEmail" class="mt-2">
+                Shopper email (Click to Pay, overrides the cart email):
+              </label>
+              <input
+                type="email"
+                class="form-control"
+                id="shopperEmail"
+                placeholder="leave empty to use the cart email"
+              />
             </div>
 
             <div class="form-group col-md-6">
@@ -299,8 +308,15 @@
             builder = await enabler.createComponentBuilder(type);
           }
 
+          const shopperEmail = document
+            .getElementById("shopperEmail")
+            .value.trim();
           const component = await builder.build({
             showPayButton: !builder.componentHasSubmit,
+            // Click to Pay: only the card component and the drop-in consume it
+            ...(shopperEmail && ["component", "dropin"].includes(category)
+              ? { shopperEmail }
+              : {}),
             ...(builder.componentHasSubmit
               ? {}
               : {

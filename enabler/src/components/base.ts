@@ -66,6 +66,7 @@ export abstract class AdyenBaseComponentBuilder
   protected processorUrl: string;
   protected paymentComponentsConfigOverride: Record<string, any>;
   protected setStorePaymentDetails?: (enabled: boolean) => void;
+  protected cartShopperEmail?: string;
 
   constructor(paymentMethod: PaymentMethod, baseOptions: BaseOptions) {
     this.paymentMethod = paymentMethod;
@@ -75,6 +76,7 @@ export abstract class AdyenBaseComponentBuilder
     this.paymentComponentsConfigOverride =
       baseOptions.paymentComponentsConfigOverride;
     this.setStorePaymentDetails = baseOptions.setStorePaymentDetails;
+    this.cartShopperEmail = baseOptions.cartShopperEmail;
   }
 
   abstract build(config: ComponentOptions): PaymentComponent;

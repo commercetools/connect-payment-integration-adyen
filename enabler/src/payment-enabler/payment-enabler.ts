@@ -108,6 +108,11 @@ export type PaymentResult =
 export type ComponentOptions = {
   showPayButton?: boolean;
   onPayButtonClick?: () => Promise<{ storePaymentDetails?: boolean }>;
+  /**
+   * Email of the current shopper, used to look up their Click to Pay profile (card only).
+   * Takes precedence over the email on the cart. Ignored unless Click to Pay is enabled.
+   */
+  shopperEmail?: string;
 };
 
 export interface StoredComponent {
@@ -151,6 +156,11 @@ export type DropinOptions = {
   showPayButton?: boolean;
   onDropinReady?: () => Promise<void>;
   onPayButtonClick?: () => Promise<void>;
+  /**
+   * Email of the current shopper, used to look up their Click to Pay profile (card only).
+   * Takes precedence over the email on the cart. Ignored unless Click to Pay is enabled.
+   */
+  shopperEmail?: string;
 };
 
 export interface PaymentDropinBuilder {

@@ -5,6 +5,7 @@ import {
 } from "../../payment-enabler/payment-enabler";
 import { AdyenBaseComponentBuilder, DefaultAdyenComponent } from "../base";
 import { BaseOptions } from "../../payment-enabler/adyen-payment-enabler";
+import { resolveClickToPayConfiguration } from "../../utils/click-to-pay";
 import { Card, ICore } from "@adyen/adyen-web";
 
 /**
@@ -26,14 +27,24 @@ export class CardBuilder extends AdyenBaseComponentBuilder {
       componentOptions: config,
       sessionId: this.sessionId,
       processorUrl: this.processorUrl,
-      paymentComponentConfigOverride:
-        this.resolvePaymentComponentConfigOverride("card"),
+      paymentComponentConfigOverride: {
+        ...this.resolvePaymentComponentConfigOverride("card"),
+        ...resolveClickToPayConfiguration(
+          this.resolvePaymentComponentConfigOverride("card"),
+          {
+            merchantShopperEmail: config.shopperEmail,
+            cartShopperEmail: this.cartShopperEmail,
+          },
+        ),
+      },
       setStorePaymentDetails: this.setStorePaymentDetails,
     });
     cardComponent.init();
     return cardComponent;
   }
 }
+
+const omitShopperEmail = ({ shopperEmail: _shopperEmail, ...rest }: ComponentOptions) => rest; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 export class CardComponent extends DefaultAdyenComponent {
   private endDigits: string;
@@ -64,7 +75,8 @@ export class CardComponent extends DefaultAdyenComponent {
           that.endDigits = endDigits;
         }
       },
-      ...this.componentOptions,
+      // shopperEmail is only consumed by Click to Pay (see CardBuilder), not a Card prop
+      ...omitShopperEmail(this.componentOptions),
     });
 
     this.component.props = {

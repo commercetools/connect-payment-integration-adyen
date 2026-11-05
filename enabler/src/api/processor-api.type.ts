@@ -15,6 +15,7 @@ export type ConfigResponse = {
   clientKey: string;
   applePayConfig?: { usesOwnCertificate: boolean };
   paymentComponentsConfig?: Record<string, Record<string, unknown>>;
+  cartShopperEmail?: string;
   storedPaymentMethodsConfig?: { isEnabled: boolean };
 };
 

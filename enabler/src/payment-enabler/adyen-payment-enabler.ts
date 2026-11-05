@@ -33,6 +33,7 @@ export type BaseOptions = {
   applePayConfig?: {
     usesOwnCertificate: boolean;
   };
+  cartShopperEmail?: string;
   paymentMethodConfig?: { [key: string]: string };
   paymentComponentsConfigOverride?: Record<string, any>;
   storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;

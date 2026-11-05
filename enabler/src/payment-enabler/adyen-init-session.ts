@@ -244,6 +244,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       getRemainingAmount: () => currentRemainingAmount,
       currencyCode: this.initOptions.currencyCode,
       applePayConfig: this.applePayConfig,
+      cartShopperEmail: configJson.cartShopperEmail,
       paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
       storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
       setStorePaymentDetails: this.setStorePaymentDetails,

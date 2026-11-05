@@ -153,6 +153,7 @@ interface ComponentBuilder {
 }
 
 export interface DropinBuildOptions {
+  shopperEmail?: string;
   onDropinReady?: () => Promise<void>;
   onPayButtonClick?: () => Promise<void>;
 }

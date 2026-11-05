@@ -9,6 +9,7 @@ import CustomCartModal from './components/cart/CustomCartModal.tsx';
 import { useCheckout } from './hooks/useCheckout.ts';
 import { useToast } from './hooks/useToast.ts';
 import { isRecurringCart } from './api/ct.ts';
+import { getInitialShopperEmail, setShopperEmail } from './hooks/shopperEmail.ts';
 import type { CheckoutResult } from './types.ts';
 
 interface ResultModalProps {
@@ -57,6 +58,7 @@ function ResultModal({ result, onClose }: ResultModalProps) {
 
 export default function CheckoutApp() {
   const [cartId, setCartId] = useState('');
+  const [shopperEmail, setShopperEmailState] = useState(getInitialShopperEmail);
   const [showQuickCart, setShowQuickCart] = useState(false);
   const [showCustomCart, setShowCustomCart] = useState(false);
   const [result, setResult] = useState<CheckoutResult | null>(null);
@@ -70,6 +72,7 @@ export default function CheckoutApp() {
 
   const handleStartCheckout = useCallback(async () => {
     try {
+      setShopperEmail(shopperEmail);
       await load(cartId, {
         onComplete: (r) => setResult(r),
         onError: (e) => setResult({ isSuccess: false, message: e.message || String(e) }),
@@ -77,7 +80,7 @@ export default function CheckoutApp() {
     } catch (e) {
       addToast('error', (e as Error).message);
     }
-  }, [cartId, load, addToast]);
+  }, [cartId, shopperEmail, load, addToast]);
 
   const handleResultClose = useCallback(() => {
     if (result?.isSuccess) { reset(); setCartId(''); }
@@ -96,6 +99,8 @@ export default function CheckoutApp() {
         <CartInput
           cartId={cartId}
           onChange={setCartId}
+          shopperEmail={shopperEmail}
+          onShopperEmailChange={setShopperEmailState}
           onStart={handleStartCheckout}
           onQuickCart={() => setShowQuickCart(true)}
           onCustomCart={() => setShowCustomCart(true)}
