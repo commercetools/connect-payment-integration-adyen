@@ -45,6 +45,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
   private sessionId: string;
   private storedPaymentMethodsConfig: StoredPaymentMethodsConfig;
   private getRemainingAmount: (() => number) | undefined;
+  private shopperEmail: string | undefined;
 
   constructor(baseOptions: BaseOptions) {
     this.adyenCheckout = baseOptions.adyenCheckout;
@@ -53,6 +54,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
     this.processorUrl = baseOptions.processorUrl;
     this.sessionId = baseOptions.sessionId;
     this.getRemainingAmount = baseOptions.getRemainingAmount;
+    this.shopperEmail = baseOptions.shopperEmail;
   }
 
   build(config: DropinOptions): DropinComponent {
@@ -64,6 +66,7 @@ export class DropinEmbeddedBuilder implements PaymentDropinBuilder {
       processorUrl: this.processorUrl,
       sessionId: this.sessionId,
       getRemainingAmount: this.getRemainingAmount,
+      shopperEmail: this.shopperEmail,
     });
 
     dropin.init();
@@ -84,6 +87,7 @@ export class DropinComponents implements DropinComponent {
   private apiClient: ProcessorApiClient;
   private lastKnownGiftCardBalance: number | null = null;
   private getRemainingAmount: (() => number) | undefined;
+  private shopperEmail: string | undefined;
 
   constructor(opts: {
     adyenCheckout: ICore;
@@ -93,6 +97,7 @@ export class DropinComponents implements DropinComponent {
     processorUrl: string;
     sessionId: string;
     getRemainingAmount?: () => number;
+    shopperEmail?: string;
   }) {
     this.dropinOptions = opts.dropinOptions;
     this.adyenCheckout = opts.adyenCheckout;
@@ -100,6 +105,7 @@ export class DropinComponents implements DropinComponent {
     this.storedPaymentMethodsConfig = opts.storedPaymentMethodsConfig;
     this.apiClient = new ProcessorApiClient({ processorUrl: opts.processorUrl, sessionId: opts.sessionId });
     this.getRemainingAmount = opts.getRemainingAmount;
+    this.shopperEmail = opts.shopperEmail;
 
     this.overrideBalanceCheckCallback();
     this.overrideOnSubmit();
@@ -204,6 +210,13 @@ export class DropinComponents implements DropinComponent {
           ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)],
           // Configuration that can not be overridden
           enableStoreDetails: this.storedPaymentMethodsConfig.isEnabled,
+          // Click to Pay recognizes the shopper by email, only known at runtime
+          ...(this.shopperEmail && {
+            clickToPayConfiguration: {
+              ...this.dropinConfigOverride[getPaymentMethodType(PaymentMethod.card)]?.clickToPayConfiguration,
+              shopperEmail: this.shopperEmail,
+            },
+          }),
         },
         // A stored card resolves its configuration from the "storedCard" key of the drop-in
         // and does not fall back to the "card" key above.

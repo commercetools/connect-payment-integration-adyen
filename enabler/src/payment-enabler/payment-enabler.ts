@@ -45,6 +45,8 @@ export type EnablerOptions = {
   countryCode?: string;
   currencyCode?: string;
   locale?: string;
+  /** Used by the Drop-in to let Click to Pay recognize the shopper */
+  shopperEmail?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: OnComplete;
   onError?: OnError;
