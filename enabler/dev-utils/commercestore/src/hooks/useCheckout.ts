@@ -64,6 +64,7 @@ export function useCheckout(): {
       const instance = new Enabler({
         processorUrl: window.__VITE_PROCESSOR_URL__,
         sessionId,
+        shopperEmail: cartData.customerEmail ?? cartData.billingAddress?.email,
         onComplete: (result) => completionRef.current.onComplete?.(result),
         onError: (err, ctx) => completionRef.current.onError?.(err, ctx),
       });

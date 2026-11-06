@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { COUNTRIES } from '../../data/countries.ts';
 import { createCart, searchCustomerByEmail, createCustomer } from '../../api/ct.ts';
+import type { CtCustomer } from '../../types.ts';
 import { useRecurrencePolicies } from '../../hooks/useRecurrencePolicies.ts';
 import RecurringCartFields from './RecurringCartFields.tsx';
 import type { LineItem } from '../../types.ts';
@@ -81,17 +82,16 @@ export default function CustomCartModal({ onCreated, onClose }: CustomCartModalP
     setLoading(true);
     setError('');
     try {
-      let customerId: string | undefined;
+      let customer: CtCustomer | undefined;
       if (customerMode === 'existing') {
-        const customer = await searchCustomerByEmail(email);
-        if (!customer) throw new Error(`No customer found with email: ${email}`);
-        customerId = customer.id;
+        const found = await searchCustomerByEmail(email);
+        if (!found) throw new Error(`No customer found with email: ${email}`);
+        customer = found;
       } else if (customerMode === 'new') {
-        const result = await createCustomer({ email, firstName, lastName });
-        customerId = result.customer.id;
+        customer = (await createCustomer({ email, firstName, lastName })).customer;
       }
 
-      const cart = await createCart({ country: countryCode, customerId, lineItems: items, isRecurring, recurrencePolicyId });
+      const cart = await createCart({ country: countryCode, customer, lineItems: items, isRecurring, recurrencePolicyId });
       onCreated(cart.id);
       onClose();
     } catch (e) {
