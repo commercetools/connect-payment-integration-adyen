@@ -2,6 +2,7 @@ import { ALLOWED_PAYMENT_METHODS } from '../data/countries.ts';
 import { getAllCountries, getAllAddresses, getAllShippingCosts } from '../data/customCountries.ts';
 import type {
   Country,
+  Address,
   CtCart,
   CtCustomer,
   CtPayment,
@@ -331,13 +332,13 @@ export async function ensureProjectConfiguration(): Promise<void> {
 
 export async function createCart({
   country,
-  customerId,
+  customer,
   lineItems,
   isRecurring,
   recurrencePolicyId,
 }: {
   country: string;
-  customerId?: string;
+  customer?: CtCustomer;
   lineItems: LineItem[];
   isRecurring?: boolean;
   recurrencePolicyId?: string;
@@ -346,7 +347,16 @@ export async function createCart({
   const addresses = getAllAddresses();
   const countryConfig = countries.find((c) => c.code === country);
   const currency = countryConfig?.currency ?? country;
-  const address = addresses[country];
+  // The customer's own details take precedence over the sample address of the country,
+  // so the cart (customerEmail and both addresses) reflects the shopper it is attached to.
+  const address: Address = {
+    ...addresses[country],
+    ...(customer && {
+      email: customer.email,
+      ...(customer.firstName && { firstName: customer.firstName }),
+      ...(customer.lastName && { lastName: customer.lastName }),
+    }),
+  };
   const taxCategory = await getOrCreateTaxCategory();
 
   const taxRate = countryConfig?.taxRate ?? 0;
@@ -380,7 +390,7 @@ export async function createCart({
     taxMode: "External",
     taxRoundingMode: "HalfEven",
     taxCalculationMode: "LineItemLevel",
-    ...(customerId && { customerId }),
+    ...(customer && { customerId: customer.id, customerEmail: customer.email }),
     shippingAddress: { ...address, country },
     billingAddress: { ...address, country },
     customLineItems,
@@ -422,15 +432,12 @@ export async function createPreconfiguredCart(
 
   await ensureProjectConfiguration();
 
-  let customerId: string | undefined;
+  let customer: CtCustomer | undefined;
   if (withCustomer) {
     const email = `commercestore-${country.toLowerCase()}@example.com`;
-    let customer = await searchCustomerByEmail(email);
-    if (!customer) {
-      const result = await createCustomer({ email, firstName: address.firstName, lastName: address.lastName });
-      customer = result.customer;
-    }
-    customerId = customer.id;
+    customer =
+      (await searchCustomerByEmail(email)) ??
+      (await createCustomer({ email, firstName: address.firstName, lastName: address.lastName })).customer;
   }
 
   const lineItems: LineItem[] = [
@@ -438,7 +445,7 @@ export async function createPreconfiguredCart(
     { name: "Organic Cotton T-Shirt", quantity: 2, centAmount: 3499 },
   ];
 
-  return createCart({ country, customerId, lineItems, isRecurring: withCustomer && isRecurring, recurrencePolicyId });
+  return createCart({ country, customer, lineItems, isRecurring: withCustomer && isRecurring, recurrencePolicyId });
 }
 
 // Admin helpers
