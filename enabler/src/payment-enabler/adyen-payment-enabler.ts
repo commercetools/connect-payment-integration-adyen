@@ -35,6 +35,7 @@ export type BaseOptions = {
   };
   paymentMethodConfig?: { [key: string]: string };
   paymentComponentsConfigOverride?: Record<string, any>;
+  shopperEmail?: string;
   storedPaymentMethodsConfig?: StoredPaymentMethodsConfig;
   setStorePaymentDetails?: (enabled: boolean) => void;
   setSessionId?: (sessionId: string) => void;

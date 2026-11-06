@@ -45,7 +45,7 @@ describe('adyen-payment.service - config, status & Apple Pay', () => {
 
   test('getSupportedPaymentComponents', async () => {
     const result: SupportedPaymentComponentsSchemaDTO = await paymentService.getSupportedPaymentComponents();
-    expect(result?.components).toHaveLength(28);
+    expect(result?.components).toHaveLength(29);
     expect(result?.components[0]?.type).toStrictEqual('afterpay');
     expect(result?.components[1]?.type).toStrictEqual('alipay');
     expect(result?.components[2]?.type).toStrictEqual('applepay');
@@ -74,6 +74,7 @@ describe('adyen-payment.service - config, status & Apple Pay', () => {
     expect(result?.components[25]?.type).toStrictEqual('wechatpay');
     expect(result?.components[26]?.type).toStrictEqual('zip');
     expect(result?.components[27]?.type).toStrictEqual('jcs');
+    expect(result?.components[28]?.type).toStrictEqual('clicktopay');
   });
 
   test('getStatus', async () => {

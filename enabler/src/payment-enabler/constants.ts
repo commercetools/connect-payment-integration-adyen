@@ -33,6 +33,7 @@ import { WeChatPayBuilder } from "../components/payment-methods/wechatpay";
 import { ZipBuilder } from "../components/payment-methods/zip";
 import { AlipayBuilder } from "../components/payment-methods/alipay";
 import { JCSBuilder } from "../components/payment-methods/jcs";
+import { ClickToPayBuilder } from "../components/payment-methods/click-to-pay";
 
 export const SUPPORTED_METHODS = {
   alipay: AlipayBuilder,
@@ -63,6 +64,7 @@ export const SUPPORTED_METHODS = {
   wechatpay: WeChatPayBuilder,
   zip: ZipBuilder,
   jcs: JCSBuilder,
+  clicktopay: ClickToPayBuilder,
 } as const;
 
 export type SupportedMethod = keyof typeof SUPPORTED_METHODS;

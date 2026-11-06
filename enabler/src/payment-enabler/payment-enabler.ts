@@ -45,6 +45,8 @@ export type EnablerOptions = {
   countryCode?: string;
   currencyCode?: string;
   locale?: string;
+  /** Email of the shopper, used by the Drop-in to let Click to Pay recognize them */
+  shopperEmail?: string;
   onActionRequired?: () => Promise<void>;
   onComplete?: OnComplete;
   onError?: OnError;
@@ -80,6 +82,7 @@ export enum PaymentMethod {
   wechatpay = "wechatpayQR", // WeChat Pay
   zip = "zip",
   jcs= "econtext_stores",
+  clicktopay = "clicktopay",
 }
 
 export type CTAmount = {

@@ -245,6 +245,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       currencyCode: this.initOptions.currencyCode,
       applePayConfig: this.applePayConfig,
       paymentComponentsConfigOverride: this.paymentComponentsConfigOverride,
+      shopperEmail: this.initOptions.shopperEmail,
       storedPaymentMethodsConfig: this.storedPaymentMethodsConfig,
       setStorePaymentDetails: this.setStorePaymentDetails,
     };

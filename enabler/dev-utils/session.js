@@ -73,7 +73,8 @@ const getSessionId = async (cartId, isDropin = false) => {
         "clearpay",
         "mbway",
         "trustly",
-        "jcs"
+        "jcs",
+        "clicktopay"
       ], // add here your allowed methods for development purposes
     }),
   };

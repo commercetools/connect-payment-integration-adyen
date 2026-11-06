@@ -116,6 +116,7 @@ export const SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES = [
   'wechatpayQR', // wechatpay
   'zip',
   'econtext_stores', // jcs
+  'clicktopay', // clicktopay
 ] as const;
 
 const giftCardConfig: PaymentMethodConfig = Object.fromEntries(
