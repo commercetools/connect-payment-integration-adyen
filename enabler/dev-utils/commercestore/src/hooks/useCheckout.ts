@@ -64,6 +64,7 @@ export function useCheckout(): {
       const instance = new Enabler({
         processorUrl: window.__VITE_PROCESSOR_URL__,
         sessionId,
+        shopperEmail: cartData.customerEmail ?? cartData.billingAddress?.email,
         onComplete: (result) => completionRef.current.onComplete?.(result),
         onError: (err, ctx) => completionRef.current.onError?.(err, ctx),
       });
@@ -77,9 +78,9 @@ export function useCheckout(): {
       setDropinMethods(methodsData.dropins);
 
       if (storedEnabled && cartData.customerId) {
-        const stored = await instance.getStoredPaymentMethods({ allowedMethodTypes: ['card', ...Object.keys(METHOD_LABELS)] }).catch(() => ({ storedPaymentMethods: [] }));
+        const stored = await instance.getStoredPaymentMethods({ allowedMethodTypes: ['card', ...Object.keys(METHOD_LABELS)] }).catch(() => [] as StoredPaymentMethod[]);
         console.log('[useCheckout] getStoredPaymentMethods raw:', JSON.stringify(stored, null, 2));
-        setSavedMethods(stored.storedPaymentMethods ?? []);
+        setSavedMethods(stored ?? []);
       }
 
       setEnabler(instance);

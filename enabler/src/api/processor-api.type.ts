@@ -7,7 +7,7 @@ type AdyenEnvironment = CoreConfiguration['environment'];
 
 export type CreateSessionRequest = { shopperLocale: string };
 export type CreateSessionResponse = {
-  sessionData: { id: string; sessionData: string };
+  sessionData: { id: string; sessionData: string; shopperEmail?: string };
 };
 
 export type ConfigResponse = {

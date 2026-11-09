@@ -74,6 +74,8 @@ export interface CtCart {
   country?: string;
   customerId?: string;
   origin?: string;
+  customerEmail?: string;
+  billingAddress?: Address;
   totalPrice?: CtMoney;
   taxedPrice?: { totalGross: CtMoney };
   shippingInfo?: { price: CtMoney };
@@ -134,6 +136,7 @@ export interface EnablerConfig {
   countryCode?: string;
   currencyCode?: string;
   locale?: string;
+  shopperEmail?: string;
   onComplete?: (result: CheckoutResult) => void;
   onError?: (err: Error, ctx?: unknown) => void;
 }
