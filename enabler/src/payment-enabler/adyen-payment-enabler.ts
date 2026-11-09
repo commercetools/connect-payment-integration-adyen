@@ -39,6 +39,7 @@ export type BaseOptions = {
   setStorePaymentDetails?: (enabled: boolean) => void;
   setSessionId?: (sessionId: string) => void;
   onComplete?: OnComplete;
+  shopperEmail?: string;
   getRemainingAmount?: () => number;
 };
 

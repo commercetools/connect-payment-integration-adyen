@@ -219,6 +219,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
       session: {
         id: data.id,
         sessionData: data.sessionData,
+        shopperEmail: data.shopperEmail,
       },
     });
 
@@ -240,6 +241,7 @@ export class AdyenInitWithSessionFlow implements AdyenInit {
     return {
       adyenCheckout,
       sessionId: this.initOptions.sessionId,
+      shopperEmail: data.shopperEmail,
       processorUrl: this.initOptions.processorUrl,
       getRemainingAmount: () => currentRemainingAmount,
       currencyCode: this.initOptions.currencyCode,
