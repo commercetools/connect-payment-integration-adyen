@@ -12,7 +12,7 @@ export function useAdyenMount(
     component.mount(containerRef.current);
 
     return () => {
-      try { component.unmount?.(); } catch (_) {}
+      try { component?.remove?.()?.catch(() => {}); } catch (_) {}
     };
   }, [component]); // eslint-disable-line react-hooks/exhaustive-deps
 }
