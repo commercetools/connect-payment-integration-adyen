@@ -465,6 +465,50 @@ A donation token is good for a single donation, so once one is charged (`Pending
    2. choose between using a new HMAC key by setting `ADYEN_NOTIFICATION_HMAC_DONATION_WEBHOOKS_KEY` or, if unset, the connector will use the HMAC key of `ADYEN_NOTIFICATION_HMAC_KEY`
 
 
+### Blocking payment methods per cart
+
+Merchants can hide specific payment methods for an individual cart by setting the optional `adyenBlockedPaymentMethods` custom field on it. The field must be of type `Set of String` and must be added to the custom type the cart already uses, since the connector does not create one. 
+
+If the cart does not use a custom type yet, this is a minimal one that defines the field. Carts and orders share the `order` resource type:
+
+```json
+{
+  "key": "my-cart-custom-type",
+  "name": { "en": "Cart custom fields" },
+  "resourceTypeIds": ["order"],
+  "fieldDefinitions": [
+    {
+      "name": "adyenBlockedPaymentMethods",
+      "label": { "en": "Adyen blocked payment methods" },
+      "required": false,
+      "type": { "name": "Set", "elementType": { "name": "String" } }
+    }
+  ]
+}
+```
+
+With the type in place, this cart update sets the field so that PayPal and Giftcard are not offered on that cart:
+
+```json
+{
+  "version": 1,
+  "actions": [
+    {
+      "action": "setCustomType",
+      "type": { "typeId": "type", "key": "my-cart-custom-type" },
+      "fields": {
+        "adyenBlockedPaymentMethods": ["paypal", "giftcard"]
+      }
+    }
+  ]
+}
+```
+
+If the cart already has the custom type applied, use the `setCustomField` action with `name` and `value` instead.
+
+On a recurring cart, they are combined with the payment methods that the connector already blocks because they cannot be used for recurring payments. 
+
+
 ### Payment methods configuration overrides
 
 #### Problem

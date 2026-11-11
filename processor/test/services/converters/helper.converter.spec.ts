@@ -12,6 +12,7 @@ import {
   convertCTCardBrandToAdyenFormat,
   extractShopperName,
   getPaymentMethodsBlockedForRecurring,
+  getBlockedPaymentMethods,
   extractCollapsedTypeFromBrand,
   isCollapsedTypePayment,
   extractCardBrand,
@@ -518,6 +519,84 @@ describe('helper.converter', () => {
     });
 
     expect(getPaymentMethodsBlockedForRecurring()).toEqual([]);
+  });
+
+  describe('getBlockedPaymentMethods', () => {
+    const mockRecurringConfig = () => {
+      vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig').mockReturnValue({
+        enabled: true,
+        config: {
+          paymentInterface: 'paymentInterface',
+          interfaceAccount: 'interfaceAccount',
+          supportedPaymentMethodTypes: Object.fromEntries(
+            SUPPORTED_ADYEN_PAYMENT_METHOD_TYPES.map((type) => [
+              type,
+              { oneOffPayments: true, recurringPayments: type !== 'paypal' },
+            ]),
+          ),
+        },
+      });
+    };
+
+    const buildCart = (fields?: Record<string, unknown>): Cart =>
+      ({
+        ...CoCoCartSimpleJSON,
+        ...(fields && {
+          custom: {
+            type: { typeId: 'type', id: 'type-id' },
+            fields,
+          },
+        }),
+      }) as Cart;
+
+    test('returns an empty list when the cart has no custom field and is not recurring', () => {
+      expect(getBlockedPaymentMethods({ cart: buildCart(), isRecurringCart: false })).toEqual([]);
+    });
+
+    test('returns the payment methods from the cart custom field converted to Adyen format', () => {
+      const cart = buildCart({ adyenBlockedPaymentMethods: ['card', 'klarna_pay_later', 'ideal'] });
+
+      expect(getBlockedPaymentMethods({ cart, isRecurringCart: false })).toEqual(['scheme', 'klarna', 'ideal']);
+    });
+
+    test('accepts payment methods already in Adyen format', () => {
+      const cart = buildCart({ adyenBlockedPaymentMethods: ['scheme', 'klarna_account'] });
+
+      expect(getBlockedPaymentMethods({ cart, isRecurringCart: false })).toEqual(['scheme', 'klarna_account']);
+    });
+
+    test('ignores the cart custom field when it is not an array', () => {
+      const cart = buildCart({ adyenBlockedPaymentMethods: 'card' });
+
+      expect(getBlockedPaymentMethods({ cart, isRecurringCart: false })).toEqual([]);
+    });
+
+    test('ignores entries of the cart custom field that are not non-empty strings', () => {
+      const cart = buildCart({ adyenBlockedPaymentMethods: ['card', 42, '', null] });
+
+      expect(getBlockedPaymentMethods({ cart, isRecurringCart: false })).toEqual(['scheme']);
+    });
+
+    test('returns only the payment methods blocked for recurring when the recurring cart has no custom field', () => {
+      mockRecurringConfig();
+
+      expect(getBlockedPaymentMethods({ cart: buildCart(), isRecurringCart: true })).toEqual(['paypal']);
+    });
+
+    test('joins the cart custom field and the recurring blocked payment methods without duplicates', () => {
+      mockRecurringConfig();
+      const cart = buildCart({ adyenBlockedPaymentMethods: ['paypal', 'card'] });
+
+      expect(getBlockedPaymentMethods({ cart, isRecurringCart: true })).toEqual(['paypal', 'scheme']);
+    });
+
+    test('does not compute the recurring blocked payment methods when the cart is not recurring', () => {
+      const configSpy = vi.spyOn(StoredPaymentMethodsConfig, 'getStoredPaymentMethodsConfig');
+
+      getBlockedPaymentMethods({ cart: buildCart(), isRecurringCart: false });
+
+      expect(configSpy).not.toHaveBeenCalled();
+    });
   });
 
   test('extractCollapsedTypeFromBrand recognizes brands that collapse into a generic "scheme" token', () => {
