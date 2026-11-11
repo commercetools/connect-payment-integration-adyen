@@ -9,17 +9,22 @@ import {
   getShopperStatement,
   getCountryCodeFromCart,
   extractShopperName,
-  getPaymentMethodsBlockedForRecurring,
+  getBlockedPaymentMethods,
 } from './helper.converter';
 import { CreateSessionRequestDTO } from '../../dtos/adyen-payment.dto';
-import { Cart, CurrencyConverters } from '@commercetools/connect-payments-sdk';
+import { Cart, CommercetoolsCartService, CurrencyConverters } from '@commercetools/connect-payments-sdk';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
-import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ADYEN_TO_ISO_MAPPING, CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { CreateCheckoutSessionResponse } from '@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse';
 import { isTokenizationEnabled } from '../../config/stored-payment-methods.config';
 
 export class CreateSessionConverter {
+  private ctCartService: CommercetoolsCartService;
+
+  constructor(ctCartService: CommercetoolsCartService) {
+    this.ctCartService = ctCartService;
+  }
+
   public convertRequest(opts: {
     data: CreateSessionRequestDTO;
     cart: Cart;
@@ -27,11 +32,14 @@ export class CreateSessionConverter {
   }): CreateCheckoutSessionRequest {
     const allowedPaymentMethods = convertAllowedPaymentMethodsToAdyenFormat();
     const futureOrderNumber = getFutureOrderNumberFromContext();
-    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const deliveryAddress = this.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
     const shopperName = extractShopperName(opts.cart);
-    const isCurrentCartRecurringOrder = paymentSDK.ctCartService.isRecurringCart(opts.cart);
-    const blockedPaymentMethods = isCurrentCartRecurringOrder ? getPaymentMethodsBlockedForRecurring() : [];
+    const isCurrentCartRecurringOrder = this.ctCartService.isRecurringCart(opts.cart);
+    const blockedPaymentMethods = getBlockedPaymentMethods({
+      cart: opts.cart,
+      isRecurringCart: isCurrentCartRecurringOrder,
+    });
 
     return {
       ...opts.data,

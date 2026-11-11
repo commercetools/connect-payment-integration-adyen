@@ -553,6 +553,55 @@ export const getPaymentMethodsBlockedForRecurring = (): string[] => {
   return blocked;
 };
 
+/**
+ * Name of the optional cart custom field (Set of String) that merchants can use
+ * to block payment methods for a specific cart.
+ */
+export const CART_BLOCKED_PAYMENT_METHODS_FIELD = 'adyenBlockedPaymentMethods';
+
+/**
+ * Reads the payment methods that the merchant blocked through the cart custom field and
+ * converts them to Adyen format. Values that are not non-empty strings are ignored.
+ *
+ * @param cart - Cart whose custom field is read.
+ * @returns Blocked payment methods in Adyen format, or an empty list when the field is absent or invalid.
+ */
+const getPaymentMethodsBlockedByCart = (cart: Cart): string[] => {
+  const value = cart.custom?.fields?.[CART_BLOCKED_PAYMENT_METHODS_FIELD];
+
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    log.warn('Ignoring cart custom field with blocked payment methods because it is not a list', {
+      cartId: cart.id,
+      field: CART_BLOCKED_PAYMENT_METHODS_FIELD,
+    });
+    return [];
+  }
+
+  return value
+    .filter((paymentMethod): paymentMethod is string => typeof paymentMethod === 'string' && paymentMethod !== '')
+    .map(convertPaymentMethodToAdyenFormat);
+};
+
+/**
+ * Payment method types (Adyen format) that Adyen must not offer for the given cart. It joins the
+ * payment methods blocked through the cart custom field with the ones that can't be used on a
+ * recurring cart, without duplicates.
+ *
+ * @param opts.cart - Cart the session or payment methods request is created for.
+ * @param opts.isRecurringCart - Whether the cart is a recurring cart.
+ * @returns Blocked payment methods in Adyen format.
+ */
+export const getBlockedPaymentMethods = (opts: { cart: Cart; isRecurringCart: boolean }): string[] => {
+  const blockedByCart = getPaymentMethodsBlockedByCart(opts.cart);
+  const blockedForRecurring = opts.isRecurringCart ? getPaymentMethodsBlockedForRecurring() : [];
+
+  return [...new Set([...blockedByCart, ...blockedForRecurring])];
+};
+
 export function isGiftCardSplitPayment(data: { paymentMethod?: { type?: string }; order?: unknown }): boolean {
   return data.paymentMethod?.type === 'giftcard' && data.order != null;
 }

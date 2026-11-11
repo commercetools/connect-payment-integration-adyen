@@ -23,7 +23,6 @@ import {
 } from './helper.converter';
 import { CreatePaymentRequestDTO } from '../../dtos/adyen-payment.dto';
 import { getFutureOrderNumberFromContext } from '../../libs/fastify/context/context';
-import { paymentSDK } from '../../payment-sdk';
 import { CURRENCIES_FROM_ISO_TO_ADYEN_MAPPING } from '../../constants/currencies';
 import { randomUUID } from 'node:crypto';
 import {
@@ -54,7 +53,7 @@ export class CreatePaymentConverter {
   }): Promise<PaymentRequest> {
     const requestData = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
-    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const deliveryAddress = this.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
     const shopperName = extractShopperName(opts.cart);
     const storedPaymentMethodsData = await this.populateStoredPaymentMethodsData(opts.data, opts.cart);
@@ -101,7 +100,7 @@ export class CreatePaymentConverter {
     paymentMethod: PaymentMethod;
     futureOrderNumber?: string;
   }): Promise<PaymentRequest> {
-    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const deliveryAddress = this.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
     const lineItems = mapCoCoCartItemsToAdyenLineItems(opts.cart);
 
@@ -158,7 +157,7 @@ export class CreatePaymentConverter {
   }): Promise<PaymentRequest> {
     const requestData = opts.data;
     const futureOrderNumber = getFutureOrderNumberFromContext();
-    const deliveryAddress = paymentSDK.ctCartService.getOneShippingAddress({ cart: opts.cart });
+    const deliveryAddress = this.ctCartService.getOneShippingAddress({ cart: opts.cart });
     const shopperStatement = getShopperStatement();
     const shopperName = extractShopperName(opts.cart);
     const lineItems = mapCoCoCartItemsToAdyenLineItems(opts.cart, opts.data.paymentMethod?.type);

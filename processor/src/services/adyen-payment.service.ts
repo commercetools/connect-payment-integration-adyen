@@ -160,7 +160,7 @@ export class AdyenPaymentService extends AbstractPaymentService {
     );
     this.orderService = opts.orderService;
     this.paymentMethodsConverter = new PaymentMethodsConverter(this.ctCartService);
-    this.createSessionConverter = new CreateSessionConverter();
+    this.createSessionConverter = new CreateSessionConverter(this.ctCartService);
     this.createPaymentConverter = new CreatePaymentConverter(this.ctPaymentMethodService, this.ctCartService);
     this.confirmPaymentConverter = new ConfirmPaymentConverter();
     this.notificationConverter = new NotificationConverter(this.ctPaymentService);
