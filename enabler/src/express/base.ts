@@ -61,6 +61,10 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     this.component.mount(selector);
   }
 
+  async remove(): Promise<void> {
+    this.component.remove();
+  }
+
   async setShippingAddress(opts: {
     address: ExpressAddressData;
   }): Promise<void> {

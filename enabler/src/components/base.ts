@@ -126,6 +126,10 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     this.component.submit();
   }
 
+  async remove(): Promise<void> {
+    this.component.remove();
+  }
+
   async mount(selector: string): Promise<void> {
     this.component.mount(selector);
   }

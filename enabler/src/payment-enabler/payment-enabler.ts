@@ -9,12 +9,9 @@ type CardPaymentState = {
 };
 
 export interface PaymentComponent {
-  submit({
-    storePaymentDetails,
-  }: {
-    storePaymentDetails?: boolean;
-  }): Promise<void>;
+  submit({ storePaymentDetails }: { storePaymentDetails?: boolean }): Promise<void>;
   mount(selector: string): Promise<void>;
+  remove(): Promise<void>;
   showValidation?(): Promise<void>;
   isValid?(): Promise<boolean>;
   getState?(): Promise<CardPaymentState>;
@@ -251,6 +248,7 @@ export type ExpressAddressData = {
 
 export interface ExpressComponent {
   mount(selector: string): void;
+  remove(): Promise<void>;
 }
 type OnclickResponse = {
   sessionId: string;
