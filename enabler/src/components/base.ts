@@ -126,7 +126,10 @@ export abstract class DefaultAdyenComponent implements PaymentComponent {
     this.component.submit();
   }
 
-  async remove(): Promise<void> {
+  /**
+   * Destroys the component and cleans up any resources.
+   */
+  async destroy(): Promise<void> {
     this.component.remove();
   }
 

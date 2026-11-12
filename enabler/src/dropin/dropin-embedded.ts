@@ -311,7 +311,7 @@ export class DropinComponents implements DropinComponent {
     });
   }
 
-  async remove() {
+  async destroy() {
     this.component.remove();
   }
 

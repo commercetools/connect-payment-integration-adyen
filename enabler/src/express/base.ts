@@ -61,7 +61,7 @@ export abstract class DefaultAdyenExpressComponent implements ExpressComponent {
     this.component.mount(selector);
   }
 
-  async remove(): Promise<void> {
+  async destroy(): Promise<void> {
     this.component.remove();
   }
 

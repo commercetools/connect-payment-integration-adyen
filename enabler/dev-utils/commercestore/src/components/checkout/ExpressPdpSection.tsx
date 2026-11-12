@@ -169,7 +169,7 @@ export default function ExpressPdpSection() {
 
     return () => {
       cancelled = true;
-      instances.forEach(i => { try { i.unmount?.(); } catch (_) {} });
+      instances.forEach(i => { try { i.destroy?.(); } catch (_) {} });
     };
   }, [enabler]); // eslint-disable-line react-hooks/exhaustive-deps
 
