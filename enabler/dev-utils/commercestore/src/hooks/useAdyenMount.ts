@@ -12,7 +12,7 @@ export function useAdyenMount(
     component.mount(containerRef.current);
 
     return () => {
-      try { component?.remove?.()?.catch(() => {}); } catch (_) {}
+      try { component?.destroy?.()?.catch(() => {}); } catch (_) {}
     };
   }, [component]); // eslint-disable-line react-hooks/exhaustive-deps
 }
@@ -84,9 +84,9 @@ export function useDropinMount(
       if (patchedCheckout && origStoreElementReference) {
         patchedCheckout.storeElementReference = origStoreElementReference;
       }
-      // The connector's dropin exposes remove(), not unmount(); remove() also tears down the
+      // The connector's dropin exposes destroy(), not unmount(); destroy() also tears down the
       // nested Adyen components (e.g. the Card's secured-fields load watchdog).
-      try { instance?.remove?.()?.catch(() => {}); } catch (_) {}
+      try { instance?.destroy?.()?.catch(() => {}); } catch (_) {}
     };
   }, [enabler]); // eslint-disable-line react-hooks/exhaustive-deps
 

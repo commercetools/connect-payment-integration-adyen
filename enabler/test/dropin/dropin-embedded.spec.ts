@@ -37,7 +37,7 @@ vi.mock("@adyen/adyen-web", () => {
 
 import { DropinComponents } from "../../src/dropin/dropin-embedded";
 
-describe("DropinComponents.remove", () => {
+describe("DropinComponents.destroy", () => {
   beforeEach(() => {
     dropinRemove.mockClear();
   });
@@ -56,7 +56,7 @@ describe("DropinComponents.remove", () => {
     const dropin = buildDropin();
     dropin.init();
 
-    await dropin.remove();
+    await dropin.destroy();
 
     expect(dropinRemove).toHaveBeenCalledTimes(1);
   });
