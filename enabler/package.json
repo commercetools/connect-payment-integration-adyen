@@ -17,8 +17,8 @@
     "serve": "npm run build && serve public -l 3000 --cors"
   },
   "dependencies": {
-    "@adyen/adyen-web": "6.48.0",
-    "serve": "14.2.6"
+    "@adyen/adyen-web": "6.48.1",
+    "serve": "14.2.7"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
@@ -29,7 +29,7 @@
     "react-dom": "19.3.1",
     "sass": "1.108.1",
     "typescript": "7.0.2",
-    "vite": "8.3.5",
+    "vite": "8.3.6",
     "vite-plugin-css-injected-by-js": "5.0.3",
     "vitest": "5.1.0"
   },
